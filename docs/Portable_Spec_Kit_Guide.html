@@ -460,6 +460,51 @@ cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git 
   <tr><td>Version numbering scheme</td><td>Database schema</td></tr>
 </table>
 
+<h2>Examples Included</h2>
+
+<p>The repo includes two example projects showing the framework in action:</p>
+
+<table>
+  <tr><th>Example</th><th>What It Shows</th><th>Best For</th></tr>
+  <tr>
+    <td><strong><code>examples/starter/</code></strong></td>
+    <td>Fresh project right after setup. Self-documenting README explains every file and directory.</td>
+    <td>Understanding the framework — <strong>start here</strong></td>
+  </tr>
+  <tr>
+    <td><strong><code>examples/my-app/</code></strong></td>
+    <td>Mid-development Next.js + Supabase project. 11/16 tasks done, 24 tests at 92% coverage.</td>
+    <td>Seeing a realistic project in progress</td>
+  </tr>
+</table>
+
+<h3>Starter Project Structure</h3>
+<pre>
+examples/starter/
+├── CLAUDE.md              ← Framework file (your dev standards)
+├── CLAUDE_CONTEXT.md      ← Auto-created workspace state
+├── README.md              ← Self-documenting (explains everything)
+├── agent/
+│   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
+│   ├── AGENT_CONTEXT.md   ← Status: "Setup — waiting for specs"
+│   ├── SPECS.md           ← Empty — ready for requirements
+│   ├── PLANNING.md        ← Empty — ready for architecture
+│   ├── TASKS.md           ← 1/5 tasks (project initialized)
+│   └── TRACKER.md         ← v0.1 placeholder
+</pre>
+
+<h3>Mid-Development Project</h3>
+<pre>
+examples/my-app/
+├── agent/
+│   ├── AGENT.md           ← Next.js + Supabase configured
+│   ├── AGENT_CONTEXT.md   ← v0.1: 11/16 tasks, 24 tests
+│   ├── SPECS.md           ← 8 features, priorities, criteria
+│   ├── PLANNING.md        ← Data model, APIs, 3 phases
+│   ├── TASKS.md           ← 5 modules with progress
+│   └── TRACKER.md         ← Categorized changelog
+</pre>
+
 <div class="highlight">
   <strong>One file. Any project. Your standards.</strong><br>
   The framework travels with you — consistent engineering practices across every project, every team, every AI session.
