@@ -372,6 +372,7 @@ MIT License — use it, fork it, customize it, share it.
 Specialization: Computer Science — Artificial Intelligence
 Research: Multimodal AI, Healthcare AI, Autonomous Surveillance
 
+- [Portfolio](https://aqibmumtaz.github.io)
 - [LinkedIn](https://linkedin.com/in/aqibmumtaz)
 - [GitHub](https://github.com/aqibmumtaz)
 - [Google Scholar](https://scholar.google.com/citations?user=zL4pvBgAAAAJ)
