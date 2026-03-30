@@ -353,21 +353,37 @@ Contributions welcome! This framework improves through real-world usage.
 
 ---
 
-## Example Project
+## Examples
 
-See **[`examples/my-app/`](examples/my-app/)** for a complete example of what the framework produces — a realistic Next.js project with all agent files filled with sample data.
+### [`examples/starter/`](examples/starter/) — Fresh Project (Start Here)
+
+What your project looks like right after setup. The README explains every file, every directory, and why it exists. **Read this first** to understand how the framework works.
+
+```
+examples/starter/
+├── CLAUDE.md              ← Framework file
+├── README.md              ← Self-documenting — explains the entire structure
+├── agent/
+│   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
+│   ├── AGENT_CONTEXT.md   ← Status: "Setup — waiting for specs"
+│   ├── SPECS.md           ← Empty template — ready for your requirements
+│   ├── PLANNING.md        ← Empty template — ready for architecture
+│   ├── TASKS.md           ← 1/5 tasks done (project initialized)
+│   └── TRACKER.md         ← v0.1 placeholder
+```
+
+### [`examples/my-app/`](examples/my-app/) — Mid-Development Project
+
+A realistic Next.js + Supabase project with 11/16 tasks complete. Shows what the framework looks like when you're actively building — filled specs, architecture plan, module-based tasks.
 
 ```
 examples/my-app/
-├── CLAUDE.md              ← Framework file
-├── CLAUDE_CONTEXT.md      ← Auto-generated workspace state
-├── README.md              ← Standard structure, filled in
 ├── agent/
-│   ├── AGENT.md           ← Next.js + Supabase stack configured
-│   ├── AGENT_CONTEXT.md   ← Shows v0.1 with 11/16 tasks done
-│   ├── SPECS.md           ← 8 features, priorities, acceptance criteria
-│   ├── PLANNING.md        ← Architecture, data model, API endpoints, phases
-│   ├── TASKS.md           ← 5 modules, progress table
+│   ├── AGENT.md           ← Next.js + Supabase + Vercel configured
+│   ├── AGENT_CONTEXT.md   ← v0.1 with 11/16 tasks, 24 tests at 92%
+│   ├── SPECS.md           ← 8 features with priorities + acceptance criteria
+│   ├── PLANNING.md        ← Data model, API endpoints, 3 build phases
+│   ├── TASKS.md           ← 5 modules, progress summary table
 │   └── TRACKER.md         ← v0.1 changelog with categorized changes
 ```
 
@@ -376,8 +392,9 @@ examples/my-app/
 ## Documentation
 
 - **[Quick Guide (PDF)](docs/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
-- **[Example Project](examples/my-app/)** — See the framework in action
-- **[CLAUDE.md](CLAUDE.md)** — The complete framework file (readable as documentation)
+- **[Starter Example](examples/starter/)** — Fresh project with self-documenting README
+- **[My App Example](examples/my-app/)** — Mid-development project
+- **[CLAUDE.md](CLAUDE.md)** — The complete framework file
 
 ---
 
