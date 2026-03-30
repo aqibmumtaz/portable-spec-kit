@@ -472,6 +472,8 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 3. "I'll break this into tasks in TASKS.md — here's the module breakdown"
 4. "I'll track everything as we go and log it in TRACKER.md at the end"
 
+**Always mention project name when reporting.** When confirming tasks, status, or actions — always include which project it applies to (e.g. "Noted in **ProjectName** agent/TASKS.md").
+
 **Always track silently.** Even if the user doesn't follow the process:
 - User says "build me X" → add to TASKS.md, then build it
 - User says "fix this bug" → add to TASKS.md, fix it, mark done
