@@ -353,9 +353,30 @@ Contributions welcome! This framework improves through real-world usage.
 
 ---
 
+## Example Project
+
+See **[`examples/my-app/`](examples/my-app/)** for a complete example of what the framework produces — a realistic Next.js project with all agent files filled with sample data.
+
+```
+examples/my-app/
+├── CLAUDE.md              ← Framework file
+├── CLAUDE_CONTEXT.md      ← Auto-generated workspace state
+├── README.md              ← Standard structure, filled in
+├── agent/
+│   ├── AGENT.md           ← Next.js + Supabase stack configured
+│   ├── AGENT_CONTEXT.md   ← Shows v0.1 with 11/16 tasks done
+│   ├── SPECS.md           ← 8 features, priorities, acceptance criteria
+│   ├── PLANNING.md        ← Architecture, data model, API endpoints, phases
+│   ├── TASKS.md           ← 5 modules, progress table
+│   └── TRACKER.md         ← v0.1 changelog with categorized changes
+```
+
+---
+
 ## Documentation
 
 - **[Quick Guide (PDF)](docs/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
+- **[Example Project](examples/my-app/)** — See the framework in action
 - **[CLAUDE.md](CLAUDE.md)** — The complete framework file (readable as documentation)
 
 ---
@@ -372,7 +393,6 @@ MIT License — use it, fork it, customize it, share it.
 Specialization: Computer Science — Artificial Intelligence
 Research: Multimodal AI, Healthcare AI, Autonomous Surveillance
 
-- [Portfolio](https://aqibmumtaz.github.io)
 - [LinkedIn](https://linkedin.com/in/aqibmumtaz)
 - [GitHub](https://github.com/aqibmumtaz)
 - [Google Scholar](https://scholar.google.com/citations?user=zL4pvBgAAAAJ)
