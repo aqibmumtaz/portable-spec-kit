@@ -22,7 +22,7 @@
 - Commits are allowed when user requests or says "commit" / "done with changes"
 - Do NOT auto-commit without user requesting it
 - Commit messages must be descriptive with clear summary of changes
-- Always include `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`
+- Always include `Co-Authored-By: AI Agent <noreply@anthropic.com>`
 
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
