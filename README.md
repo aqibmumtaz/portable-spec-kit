@@ -397,7 +397,10 @@ What your project looks like right after setup. The README explains every file, 
 
 ```
 examples/starter/
-├── CLAUDE.md              ← Framework file
+├── portable-spec-kit.md   ← Framework file (source)
+├── CLAUDE.md              ← Symlink (Claude Code)
+├── .cursorrules           ← Symlink (Cursor)
+├── WORKSPACE_CONTEXT.md   ← Auto-created workspace state
 ├── README.md              ← Self-documenting — explains the entire structure
 ├── agent/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
@@ -414,6 +417,8 @@ A realistic Next.js + Supabase project with 11/16 tasks complete. Shows what the
 
 ```
 examples/my-app/
+├── portable-spec-kit.md   ← Framework file (source)
+├── WORKSPACE_CONTEXT.md   ← Workspace state
 ├── agent/
 │   ├── AGENT.md           ← Next.js + Supabase + Vercel configured
 │   ├── AGENT_CONTEXT.md   ← v0.1 with 11/16 tasks, 24 tests at 92%

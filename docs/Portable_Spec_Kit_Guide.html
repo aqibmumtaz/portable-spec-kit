@@ -414,20 +414,20 @@ Added JD-tailored resume, PDF generation, 604 tests.
 
 <div class="option-card recommended">
   <h4>📦 Single-Source-of-Truth Repo</h4>
-  <p>One repo holds CLAUDE.md. All projects pull from it. Updates pushed back from any project.</p>
+  <p>One repo holds portable-spec-kit.md. All projects pull from it. Updates pushed back from any project.</p>
   <pre>
 # Setup (once)
-mkdir dev-framework && cd dev-framework
-git init && cp /path/to/CLAUDE.md .
+mkdir portable-spec-kit && cd portable-spec-kit
+git init && cp /path/to/portable-spec-kit.md .
 git add . && git commit -m "Framework v1.0"
-gh repo create dev-framework --private --push
+gh repo create portable-spec-kit --private --push
 
 # Pull into any project
-curl -sO https://raw.githubusercontent.com/you/dev-framework/main/CLAUDE.md
+curl -sO https://raw.githubusercontent.com/you/portable-spec-kit/main/portable-spec-kit.md
 
 # Push updates back from any project
-cp CLAUDE.md ~/dev-framework/
-cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git push</pre>
+cp portable-spec-kit.md ~/portable-spec-kit/
+cd ~/portable-spec-kit && git add . && git commit -m "Updated from ProjectX" && git push</pre>
   <p class="pros">✓ Version controlled ✓ Pull anywhere ✓ Change history ✓ Cross-machine sync</p>
 </div>
 
@@ -436,8 +436,8 @@ cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git 
 <table>
   <tr><th>Method</th><th>How</th><th>Best For</th></tr>
   <tr><td><strong>Git Submodule</strong></td><td><code>git submodule add repo .framework</code></td><td>Auto-sync across repos</td></tr>
-  <tr><td><strong>GitHub Gist</strong></td><td><code>gh gist create CLAUDE.md</code></td><td>Quick sharing, browser editable</td></tr>
-  <tr><td><strong>Shell Alias</strong></td><td><code>alias init-dev='curl -sO URL/CLAUDE.md'</code></td><td>One-command setup</td></tr>
+  <tr><td><strong>GitHub Gist</strong></td><td><code>gh gist create portable-spec-kit.md</code></td><td>Quick sharing, browser editable</td></tr>
+  <tr><td><strong>Shell Alias</strong></td><td><code>alias init-dev='curl -sO URL/portable-spec-kit.md'</code></td><td>One-command setup</td></tr>
 </table>
 
 <h2>Update Workflow Across Projects</h2>
@@ -450,7 +450,7 @@ cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git 
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">2</div>
-    <div class="flow-text"><strong>AI updates CLAUDE.md</strong> in Project A with the new rule</div>
+    <div class="flow-text"><strong>AI updates portable-spec-kit.md</strong> in Project A with the new rule</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
@@ -467,7 +467,7 @@ cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git 
 <h2>Portable vs Project-Specific</h2>
 
 <table>
-  <tr><th>In CLAUDE.md (Portable Framework)</th><th>In agent/AGENT.md (Per Project)</th></tr>
+  <tr><th>In portable-spec-kit.md (Portable Framework)</th><th>In agent/AGENT.md (Per Project)</th></tr>
   <tr><td>Git/push/commit rules</td><td>Tech stack choices</td></tr>
   <tr><td>Security practices</td><td>Brand colors & fonts</td></tr>
   <tr><td>Testing methodology</td><td>AI model/provider config</td></tr>
@@ -499,8 +499,10 @@ cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git 
 <h3>Starter Project Structure</h3>
 <pre>
 examples/starter/
-├── CLAUDE.md              ← Framework file (your dev standards)
-├── WORKSPACE_CONTEXT.md      ← Auto-created workspace state
+├── portable-spec-kit.md   ← Framework file (source)
+├── CLAUDE.md              ← Symlink (Claude Code)
+├── .cursorrules           ← Symlink (Cursor)
+├── WORKSPACE_CONTEXT.md   ← Auto-created workspace state
 ├── README.md              ← Self-documenting (explains everything)
 ├── agent/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
