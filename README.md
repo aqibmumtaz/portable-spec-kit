@@ -132,7 +132,7 @@ The agent reads the framework and automatically creates everything:
     agent/AGENT.md           ← Project rules, stack, brand
     agent/AGENT_CONTEXT.md   ← Living state (updated every session)
     agent/SPECS.md           ← Requirements & features
-    agent/PLANNING.md        ← Architecture & phases
+    agent/PLANNING.md        ← Architecture, methodology & research
     agent/TASKS.md           ← Task tracking
     agent/TRACKER.md         ← Version history
 ✓ Creates project directories (src/, tests/, docs/, ard/, input/, output/)
@@ -198,7 +198,7 @@ What to build      How to build it     Track progress      Log results
 | `AGENT.md` | Project rules, stack, brand, AI config | Setup |
 | `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers | Every session |
 | `SPECS.md` | Requirements, features, acceptance criteria | Before dev |
-| `PLANNING.md` | Architecture, API endpoints, data model, phases | Before dev |
+| `PLANNING.md` | Architecture, data model, phases, methodology & research | Before dev |
 | `TASKS.md` | Module-based task tracking with checkboxes | During dev |
 | `TRACKER.md` | Version changelog, test results, deployment log | End of version |
 

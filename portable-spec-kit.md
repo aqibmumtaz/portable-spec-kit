@@ -398,7 +398,7 @@ backend/
 | `agent/AGENT.md` | Project-specific AI instructions — stack, tools, project rules | Setup, rarely changes |
 | `agent/AGENT_CONTEXT.md` | Living state — what's done, what's next, key decisions, blockers | **Every session** |
 | `agent/SPECS.md` | Requirements, features, acceptance criteria | Before dev |
-| `agent/PLANNING.md` | Architecture, tech decisions, data model, phases | Before dev |
+| `agent/PLANNING.md` | Architecture, tech decisions, data model, phases, methodology & research | Before dev |
 | `agent/TASKS.md` | Task board — `[ ]` todo, `[x]` done | During dev |
 | `agent/TRACKER.md` | Version changelog, deployments, test results | End of version |
 | `ard/` | Generated docs — technical overview (HTML+PDF), presentation (HTML+PDF) | End of each version |
@@ -636,8 +636,8 @@ Brief description of what this project does and who it's for.
 ```markdown
 # PLANNING.md — <Project Name>
 
-> **Purpose:** How to build it — architecture, phases, data model, tech decisions.
-> **Role:** Defined before dev starts. Updated when architecture changes.
+> **Purpose:** How to build it — architecture, phases, data model, tech decisions, methodology & research.
+> **Role:** Defined before dev starts. Updated when architecture changes or new research informs decisions.
 
 ## Stack
 | Layer | Technology | Why |
@@ -674,6 +674,21 @@ src/
 ### Phase 2: Features
 1. Task 1
 2. Task 2
+
+## Methodology & Research
+### Approaches Evaluated
+<!-- What options were considered and why -->
+
+### Decision Log
+| Decision | Options Considered | Chosen | Why | Evidence |
+|----------|-------------------|--------|-----|----------|
+| | | | | |
+
+### Research Notes
+<!-- Key findings, benchmarks, comparisons. Detailed research files go in research/ directory -->
+
+### References
+<!-- Papers, articles, docs, benchmarks that informed decisions -->
 
 ## Verification
 - How to test the system end-to-end

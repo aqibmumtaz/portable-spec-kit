@@ -139,7 +139,7 @@ grep -q "Portable Spec Kit" "$PROJ/README.md" && pass "README: title present" ||
 grep -q "spec-kit" "$PROJ/README.md" && pass "README: spec-kit comparison" || fail "README: no spec-kit comparison"
 grep -q "Setup" "$PROJ/README.md" && pass "README: Setup section" || fail "README: no Setup"
 grep -q "Multi-Agent Support" "$PROJ/README.md" && pass "README: Multi-Agent section" || fail "README: no Multi-Agent"
-grep -q "Quick Start" "$PROJ/README.md" && pass "README: Quick Start" || fail "README: no Quick Start"
+grep -q "Complete Flow" "$PROJ/README.md" && pass "README: Complete Flow" || fail "README: no Complete Flow"
 grep -q "Core Principles" "$PROJ/README.md" && pass "README: Core Principles" || fail "README: no Core Principles"
 grep -q "Examples" "$PROJ/README.md" && pass "README: Examples section" || fail "README: no Examples"
 grep -q "Contributing" "$PROJ/README.md" && pass "README: Contributing" || fail "README: no Contributing"
