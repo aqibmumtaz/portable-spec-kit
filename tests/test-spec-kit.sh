@@ -40,7 +40,8 @@ section "2. Framework File Content"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Portable Spec Kit — AI Agentic" "$PROJ/portable-spec-kit.md" && pass "Title correct" || fail "Title wrong"
-grep -q "About the User" "$PROJ/portable-spec-kit.md" && pass "Has About the User section" || fail "Missing About the User"
+grep -q "User Profile" "$PROJ/portable-spec-kit.md" && pass "Has User Profile section" || fail "Missing User Profile"
+grep -q "\.user-profile\.md" "$PROJ/portable-spec-kit.md" && pass "References .user-profile.md" || fail "Missing .user-profile.md reference"
 grep -q "Git & GitHub Rules" "$PROJ/portable-spec-kit.md" && pass "Has Git rules" || fail "Missing Git rules"
 grep -q "Security Rules" "$PROJ/portable-spec-kit.md" && pass "Has Security rules" || fail "Missing Security rules"
 grep -q "Versioning" "$PROJ/portable-spec-kit.md" && pass "Has Versioning" || fail "Missing Versioning"
@@ -144,7 +145,7 @@ grep -q "Core Principles" "$PROJ/README.md" && pass "README: Core Principles" ||
 grep -q "Examples" "$PROJ/README.md" && pass "README: Examples section" || fail "README: no Examples"
 grep -q "Contributing" "$PROJ/README.md" && pass "README: Contributing" || fail "README: no Contributing"
 grep -q "Author" "$PROJ/README.md" && pass "README: Author" || fail "README: no Author"
-grep -q "Self-Scaffolding" "$PROJ/README.md" && pass "README: 8 features (Self-Scaffolding)" || fail "README: missing feature"
+grep -q "Personalized" "$PROJ/README.md" && pass "README: 8 features (Personalized)" || fail "README: missing feature"
 grep -q "Context-Persistent" "$PROJ/README.md" && pass "README: 8 features (Context-Persistent)" || fail "README: missing feature"
 grep -q "Self-Validating" "$PROJ/README.md" && pass "README: 8 features (Self-Validating)" || fail "README: missing feature"
 

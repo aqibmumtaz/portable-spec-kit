@@ -25,17 +25,66 @@ On first session, the agent also auto-creates:
 
 ---
 
-## About the User
+## User Profile
 
 > **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
 >
-> **Setup:** Auto-populated from GitHub on install. Run `portable-spec-kit-setup.sh` or customize manually.
+> **Location:** `.user-profile.md` (auto-created on first session, never committed to git)
 
-<!-- Customize: replace with your profile and working style -->
-- **Your Name** — your background and expertise
-- Communication style: how you prefer to communicate (e.g., direct, detailed, data-driven)
-- Working pattern: how you approach projects (e.g., iterative, starts brief, expands scope)
-- AI delegation: what % of work you want the AI agent to handle (e.g., AI does 90%, you review 10%)
+### First Session — Profile Setup
+If `.user-profile.md` does not exist:
+1. Fetch GitHub profile via `gh api user` (if gh CLI is available and authenticated — if not, ask user manually)
+2. Greet user by full name: "Welcome, {Name}! Let me set up your personalized development profile."
+3. Ask 3 preference questions with options:
+
+   **Communication style?**
+   - (a) direct, data-driven, prefers comprehensive analysis with tables and evidence
+   - (b) direct and concise, prefers short answers with bullet points and minimal explanation
+   - (c) conversational and collaborative, prefers discussing ideas and thinking through problems together
+
+   **Working pattern?**
+   - (a) iterative — starts brief, expands scope, builds ambitiously over time
+   - (b) plan-first — defines full specs and architecture before writing any code
+   - (c) prototype-fast — gets something working quickly, then refines and polishes
+
+   **AI delegation?**
+   - (a) AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
+   - (b) AI does 70%, user guides 30% — AI proposes approach, user approves before execution
+   - (c) 50/50 collaboration — discuss and decide together before each major step
+
+4. Write `.user-profile.md` with results. User can also type custom answers instead of picking a/b/c.
+
+**If user skips** ("skip" / "later" / "default") → write default profile:
+```
+- **{GitHub name or "Developer"}** — {GitHub bio or "Software Developer"}
+- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
+- AI delegation: AI does 70%, user guides 30% — AI proposes approach, user approves before execution
+```
+
+**Edge cases:**
+- GitHub name empty → use GitHub username as fallback
+- GitHub bio empty → ask user for education and expertise
+- `.user-profile.md` exists but empty → treat as missing, run setup
+- `.user-profile.md` exists with content → read and use, don't recreate
+- Agent can't write files → show profile content, ask user to create file manually
+
+### Every Session
+- Read `.user-profile.md` for user context
+- Address user by name
+- Adapt response depth, language, and autonomy to their preferences
+
+### .user-profile.md Format
+```
+# User Profile
+> Auto-created on first session. Edit anytime. Never committed to git.
+
+- **Name** — Education. Expertise.
+- Communication style: {selected or custom}
+- Working pattern: {selected or custom}
+- AI delegation: {selected or custom}
+```
+
 ---
 
 ## Git & GitHub Rules

@@ -1,8 +1,8 @@
 # Portable Spec Kit
 
-**A lightweight, zero-install specification-driven development framework for AI-assisted engineering.**
+**A lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering.**
 
-> Drop one file into any project. Your AI agent instantly follows your engineering standards, manages specifications, tracks tasks, writes tests, and maintains context across sessions.
+> Drop one file into any project. Your AI agent detects your GitHub profile, adapts to your expertise and working style, follows your engineering standards, manages specifications, tracks tasks, writes tests, and maintains context across sessions — personalized from the first session.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -11,7 +11,7 @@
 <td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
 <td width="25%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
-<td width="25%" align="center"><strong>🏗️ Self-Scaffolding</strong><br><sub>Auto-creates 6 agent files<br>README · Workspace context<br>Project structure in seconds</sub></td>
+<td width="25%" align="center"><strong>👤 Personalized</strong><br><sub>GitHub profile auto-detect<br>Adapts to your expertise<br>Tailored AI behavior</sub></td>
 </tr>
 <tr>
 <td width="25%" align="center"><strong>📋 Spec-Driven</strong><br><sub>SPECS → PLAN → TASKS → TRACK<br>Complete dev pipeline<br>Retroactive spec-filling</sub></td>
@@ -37,12 +37,7 @@ AI coding agents are powerful but inconsistent. Every new conversation starts fr
 
 ### Setup
 
-#### macOS / Linux (recommended — includes GitHub profile auto-populate)
-```bash
-curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/setup.sh && bash setup.sh
-```
-
-#### macOS / Linux (manual — without GitHub auto-populate)
+#### macOS / Linux (one command)
 ```bash
 curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
   && ln -sf portable-spec-kit.md CLAUDE.md \
@@ -63,17 +58,15 @@ New-Item -ItemType Directory -Force -Path .github | Out-Null
 Copy-Item portable-spec-kit.md .github/copilot-instructions.md
 ```
 
-**What happens:**
-- Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent
-- **Auto-populates your profile** from GitHub (name, bio) into the "About the User" section (setup.sh only, requires [gh CLI](https://cli.github.com))
-- Edit one file — all agents stay in sync
+**What happens:** Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent. Edit one file — all agents stay in sync.
 
-Your AI agent reads the framework and immediately:
+Your AI agent reads the framework and on first session:
+- **Sets up your personalized profile** — fetches your GitHub identity, asks your preferences, creates `.user-profile.md`
 - Creates project management files (`agent/` directory with 6 structured files)
 - Follows your coding standards, testing rules, security practices
 - Tracks every task, decision, and version
 - Maintains context across sessions — pick up weeks later seamlessly
-- Guides you through spec-driven development **without blocking you**
+- Addresses you by name, adapts to your expertise and working style
 
 ---
 
@@ -287,6 +280,7 @@ You do 10% — review and approve.
 
 | Section | What It Governs |
 |---------|----------------|
+| **User Profile** | Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation |
 | **Git & GitHub** | Commit rules, push rules, critical ops requiring approval |
 | **Security** | .env handling, secret management, code security practices |
 | **Versioning** | v0.1 → v1.0 numbering, changelog standards |
@@ -304,26 +298,45 @@ You do 10% — review and approve.
 
 ## Customization
 
-### About the User — Why It Matters
+### User Profile — Personalized AI Experience
 
-The "About the User" section tells the AI agent **who it's working with**. This directly affects:
+On first session, the agent creates `.user-profile.md` by fetching your GitHub profile and asking 3 quick questions:
+
+```
+Agent: "Welcome, Jane Smith! Let me set up your profile."
+
+Communication style?
+  (a) direct, data-driven, prefers comprehensive analysis with tables and evidence
+  (b) direct and concise, prefers short answers with bullet points
+  (c) conversational and collaborative
+
+Working pattern?
+  (a) iterative — starts brief, expands scope, builds ambitiously
+  (b) plan-first — full specs and architecture before writing code
+  (c) prototype-fast — get something working, then refine
+
+AI delegation?
+  (a) AI does 90%, user reviews 10%
+  (b) AI does 70%, user guides 30%
+  (c) 50/50 collaboration
+```
+
+**Result** — `.user-profile.md` (never committed to git):
+```markdown
+- **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
+- Communication style: direct and concise, prefers short answers with bullet points
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously
+- AI delegation: AI does 90%, user reviews 10%
+```
 
 | What You Set | How the Agent Adapts |
 |---|---|
-| **Your expertise** (e.g., "PhD in AI" vs "first-time coder") | Adjusts technical depth, skips/explains concepts accordingly |
-| **Communication style** (e.g., "direct, data-driven") | Uses tables, evidence, and concise language vs. conversational |
-| **Working pattern** (e.g., "iterative, starts brief") | Adapts planning granularity and suggestion style |
-| **AI delegation** (e.g., "AI does 90%") | Controls how autonomous the agent is vs. asking for approval |
+| **Your expertise** (e.g., "PhD in AI" vs "first-time coder") | Adjusts technical depth, skips/explains concepts |
+| **Communication style** | Uses tables & evidence vs. conversational |
+| **Working pattern** | Adapts planning granularity |
+| **AI delegation** | Controls autonomy vs. asking for approval |
 
-**Auto-populated on install** from your GitHub profile (name, bio). Customize further:
-
-```markdown
-## About the User
-- **Jane Smith** — Senior backend engineer, 8 years Python/Go
-- Communication style: direct, prefers code examples over explanations
-- Working pattern: TDD, small PRs, iterative
-- AI delegation: AI does 80%, I review everything before commit
-```
+Skip the questions? Agent writes a sensible default. Edit `.user-profile.md` anytime to change.
 
 ### For Your Projects
 

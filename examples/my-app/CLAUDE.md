@@ -6,16 +6,18 @@
 
 ---
 
-## About the User
+## User Profile
 
 > **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
 >
-> **Setup:** Auto-populated from GitHub on install. Run `setup.sh` or customize manually.
+> **Location:** `.user-profile.md` (auto-created on first session, never committed to git)
 
-- **Alex Chen** — Full-stack developer, 5 years React/Node.js, building a SaaS dashboard
-- Communication style: direct, prefers working code over lengthy explanations
-- Working pattern: iterative — ship fast, refine later
-- AI delegation: AI does 90%, I review before commit
+<!-- Example .user-profile.md for this project:
+- **Alex Chen** — B.S. Computer Science. Full-stack development, React, Node.js.
+- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
+- AI delegation: AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
+-->
 
 ---
 

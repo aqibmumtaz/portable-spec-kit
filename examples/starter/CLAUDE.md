@@ -6,17 +6,13 @@
 
 ---
 
-## About the User
+## User Profile
 
 > **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
 >
-> **Setup:** Auto-populated from GitHub on install. Run `setup.sh` or customize manually.
+> **Location:** `.user-profile.md` (auto-created on first session, never committed to git)
 
-<!-- Customize: replace with your profile and working style -->
-- **Your Name** — your background and expertise
-- Communication style: how you prefer to communicate (e.g., direct, detailed, data-driven)
-- Working pattern: how you approach projects (e.g., iterative, starts brief, expands scope)
-- AI delegation: what % of work you want the AI agent to handle (e.g., AI does 90%, you review 10%)
+<!-- On first session, the agent will create .user-profile.md by fetching your GitHub profile and asking your preferences -->
 
 ---
 

@@ -74,7 +74,7 @@
   <h1>Portable Spec Kit</h1>
   <div class="subtitle">AI Agentic Specification-Driven Development</div>
   <div class="tagline">
-    A single portable file that defines your complete development methodology — from specifications to deployment. Drop it into any project and the AI agent follows your engineering standards, manages tasks, writes tests, and maintains context across sessions.
+    A single portable file that defines your complete development methodology — personalized from the first session. Drop it into any project and the AI agent detects your GitHub profile, adapts to your expertise and working style, follows your engineering standards, manages tasks, writes tests, and maintains context across sessions.
   </div>
   <div class="framework-flow">
     <div class="fw-step">SPECS</div>
@@ -131,7 +131,7 @@
   <tr><td><strong>🪶 Lightweight</strong></td><td>Single markdown file. Zero dependencies. Zero install.</td></tr>
   <tr><td><strong>📦 Portable</strong></td><td>One file → any repo. Works instantly. Symlinks for all agents.</td></tr>
   <tr><td><strong>🤖 Agent-Agnostic</strong></td><td>Claude, Copilot, Cursor, Windsurf, Cline — one source, all sync.</td></tr>
-  <tr><td><strong>🏗️ Self-Scaffolding</strong></td><td>Auto-creates 6 agent files, README, workspace context. Project structure in seconds.</td></tr>
+  <tr><td><strong>👤 Personalized</strong></td><td>GitHub profile auto-detect. Adapts to your expertise, communication style, and working pattern. Tailored AI behavior.</td></tr>
   <tr><td><strong>📋 Spec-Driven</strong></td><td>SPECS → PLAN → TASKS → TRACK. Complete dev pipeline. Retroactive spec-filling.</td></tr>
   <tr><td><strong>🧠 Context-Persistent</strong></td><td>AGENT_CONTEXT.md carries state across sessions. Pick up after weeks. Never lose context.</td></tr>
   <tr><td><strong>🔄 Non-Blocking</strong></td><td>Code first, specs later. Agent tracks silently. Never blocks the developer.</td></tr>
@@ -144,6 +144,7 @@
 
 <table>
   <tr><th>Section</th><th>What It Governs</th></tr>
+  <tr><td>User Profile</td><td>Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation</td></tr>
   <tr><td>Git & GitHub Rules</td><td>When to commit, push, ask before critical ops</td></tr>
   <tr><td>Security Rules</td><td>Secret handling, .env practices, code security</td></tr>
   <tr><td>Versioning</td><td>v0.1 → v1.0 numbering, changelog standards</td></tr>
@@ -417,29 +418,26 @@ Added JD-tailored resume, PDF generation, 604 tests.
 
 <h2>Customization</h2>
 
-<h3>About the User — Why It Matters</h3>
-<p>The "About the User" section tells the AI agent <strong>who it's working with</strong>. This directly affects how the agent behaves:</p>
+<h3>User Profile — Personalized AI Experience</h3>
+<p>On first session, the agent creates <code>.user-profile.md</code> by fetching your GitHub profile and asking 3 quick questions:</p>
 
 <table>
-  <tr><th>What You Set</th><th>How the Agent Adapts</th></tr>
-  <tr><td><strong>Your expertise</strong> (e.g., "PhD in AI" vs "first-time coder")</td><td>Adjusts technical depth, skips or explains concepts</td></tr>
-  <tr><td><strong>Communication style</strong> (e.g., "direct, data-driven")</td><td>Uses tables, evidence, concise language vs. conversational</td></tr>
-  <tr><td><strong>Working pattern</strong> (e.g., "iterative, starts brief")</td><td>Adapts planning granularity and suggestion style</td></tr>
-  <tr><td><strong>AI delegation</strong> (e.g., "AI does 90%")</td><td>Controls how autonomous the agent is vs. asking for approval</td></tr>
+  <tr><th>Question</th><th>Options</th></tr>
+  <tr><td><strong>Communication style?</strong></td><td>(a) direct, data-driven, comprehensive with tables<br>(b) direct and concise, bullet points<br>(c) conversational and collaborative</td></tr>
+  <tr><td><strong>Working pattern?</strong></td><td>(a) iterative — start small, expand ambitiously<br>(b) plan-first — full specs before code<br>(c) prototype-fast — build quick, refine later</td></tr>
+  <tr><td><strong>AI delegation?</strong></td><td>(a) AI does 90%, user reviews 10%<br>(b) AI does 70%, user guides 30%<br>(c) 50/50 collaboration</td></tr>
 </table>
 
-<p><strong>Auto-populated on install</strong> from your GitHub profile (name, bio) via <code>setup.sh</code>. Customize further:</p>
-
+<p><strong>Result</strong> — <code>.user-profile.md</code> (never committed to git):</p>
 <pre>
-## About the User
-- **Jane Smith** — Senior backend engineer, 8 years Python/Go
-- Communication style: direct, prefers code examples over explanations
-- Working pattern: TDD, small PRs, iterative
-- AI delegation: AI does 80%, I review everything before commit
+- **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
+- Communication style: direct and concise, prefers short answers with bullet points
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously
+- AI delegation: AI does 90%, user reviews 10%
 </pre>
 
 <div class="highlight">
-  <strong>Fork-friendly + auto-populated.</strong> On install, <code>setup.sh</code> pulls your name and bio from GitHub. Customize the rest manually. The public repo ships with a generic placeholder — no merge conflicts for forkers.
+  <strong>Personalized from first session.</strong> The agent addresses you by name, adapts to your expertise, and follows your preferred working style. Skip the questions? A sensible default is applied. Edit <code>.user-profile.md</code> anytime to change.
 </div>
 
 <h3>Your Projects</h3>
