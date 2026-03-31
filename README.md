@@ -118,8 +118,10 @@ The agent reads the framework file and automatically:
 ✓ Detects your environment (OS, Node, Python, tools)
 ✓ Creates WORKSPACE_CONTEXT.md (workspace state)
 ✓ Scans for projects → creates agent/ directories
-✓ Creates 6 management files from templates
-✓ Creates/restructures README.md
+✓ Creates 6 management files from templates (AGENT, SPECS, PLANNING, TASKS, TRACKER, CONTEXT)
+✓ Creates project directory structure (src/, tests/, docs/, ard/, input/, output/)
+✓ Creates/restructures README.md with standard sections
+✓ Creates .gitignore + .env.example
 ✓ Ready to work — following YOUR standards
 ```
 
