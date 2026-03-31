@@ -68,7 +68,7 @@ section "3. Agent-Agnostic — No Claude-Specific Language"
 ! grep -q "CLAUDE_CONTEXT" "$PROJ/portable-spec-kit.md" && pass "No 'CLAUDE_CONTEXT'" || fail "Found 'CLAUDE_CONTEXT'"
 grep -q "WORKSPACE_CONTEXT" "$PROJ/portable-spec-kit.md" && pass "Uses WORKSPACE_CONTEXT" || fail "Missing WORKSPACE_CONTEXT"
 grep -q "Co-Authored-By: AI Agent" "$PROJ/portable-spec-kit.md" && pass "Generic Co-Authored-By" || fail "Claude-specific Co-Authored-By"
-grep -q "AI agent to do 90%" "$PROJ/portable-spec-kit.md" && pass "Generic AI agent reference" || fail "Claude-specific agent reference"
+grep -q "Agent does 90%" "$PROJ/portable-spec-kit.md" && pass "Generic AI agent reference" || fail "Claude-specific agent reference"
 
 # ═══════════════════════════════════════════════════════════════
 section "4. Multi-Agent Support Table"

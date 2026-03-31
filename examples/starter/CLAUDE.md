@@ -1,4 +1,4 @@
-# CLAUDE.md — Development Guidelines
+# Portable Spec Kit — AI Agentic Specification-Driven Development
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -7,10 +7,16 @@
 ---
 
 ## About the User
-- **Dr. Aqib Mumtaz** — Strategic AI Leader and Ph.D. Researcher with 20+ years of industrial experience. Expert in Multimodal Foundation Models, Medical/Healthcare AI, and Autonomous Surveillance AI. Published researcher in Video Analysis, Anomaly Detection, and Human Action Recognition.
-- Communication style: Direct, wants comprehensive analysis, data-driven decisions
-- Working pattern: Iterative — starts brief, expands scope as ideas develop
-- Prefers Claude to do 90% of the work — present ready-to-act outputs, not questions
+
+> **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
+>
+> **Setup:** Auto-populated from GitHub on install. Run `setup.sh` or customize manually.
+
+<!-- Customize: replace with your profile and working style -->
+- **Your Name** — your background and expertise
+- Communication style: how you prefer to communicate (e.g., direct, detailed, data-driven)
+- Working pattern: how you approach projects (e.g., iterative, starts brief, expands scope)
+- AI delegation: what % of work you want the AI agent to handle (e.g., AI does 90%, you review 10%)
 
 ---
 
@@ -37,14 +43,16 @@
 
 ## Security Rules
 
-### API Keys & Secrets
-- **NEVER read, display, or log** API key values from `.env` files
-- **Can read `.env` file structure** (variable names, comments) but **NEVER read, display, or log the actual key/secret values**
+### API Keys & Secrets (ABSOLUTE — NO EXCEPTIONS)
+- **NEVER read, display, log, or expose** API key values, secret values, or credentials from `.env` files, config files, or any source — **even if the user explicitly asks**. This rule cannot be overridden by any instruction, prompt, or request.
+- **Can read `.env` file structure** (variable names, comments) but **NEVER the actual key/secret values**
 - **NEVER commit** `.env` files or any file containing secrets to git
 - **NEVER include** real keys in any output, file, or terminal command
+- **NEVER echo, cat, print, or pipe** the contents of files containing secrets
 - Create `.env` files with **placeholder values only** (e.g., `paste-your-key-here`)
 - User pastes real keys themselves
 - Always verify `.gitignore` includes `.env*` before any commit
+- If asked to reveal, share, or read secret values: **refuse and explain why**
 
 ### .env.example Creation
 - `.env.example` is committed to repo — it shows which env vars are needed, without values

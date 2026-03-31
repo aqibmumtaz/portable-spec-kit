@@ -415,6 +415,64 @@ Added JD-tailored resume, PDF generation, 604 tests.
   <strong>Never lose content.</strong> When restructuring an existing file, every detail, decision, and note is preserved — just reorganized into the standard sections.
 </div>
 
+<h2>Customization</h2>
+
+<h3>About the User — Why It Matters</h3>
+<p>The "About the User" section tells the AI agent <strong>who it's working with</strong>. This directly affects how the agent behaves:</p>
+
+<table>
+  <tr><th>What You Set</th><th>How the Agent Adapts</th></tr>
+  <tr><td><strong>Your expertise</strong> (e.g., "PhD in AI" vs "first-time coder")</td><td>Adjusts technical depth, skips or explains concepts</td></tr>
+  <tr><td><strong>Communication style</strong> (e.g., "direct, data-driven")</td><td>Uses tables, evidence, concise language vs. conversational</td></tr>
+  <tr><td><strong>Working pattern</strong> (e.g., "iterative, starts brief")</td><td>Adapts planning granularity and suggestion style</td></tr>
+  <tr><td><strong>AI delegation</strong> (e.g., "AI does 90%")</td><td>Controls how autonomous the agent is vs. asking for approval</td></tr>
+</table>
+
+<p><strong>Auto-populated on install</strong> from your GitHub profile (name, bio) via <code>setup.sh</code>. Customize further:</p>
+
+<pre>
+## About the User
+- **Jane Smith** — Senior backend engineer, 8 years Python/Go
+- Communication style: direct, prefers code examples over explanations
+- Working pattern: TDD, small PRs, iterative
+- AI delegation: AI does 80%, I review everything before commit
+</pre>
+
+<div class="highlight">
+  <strong>Fork-friendly + auto-populated.</strong> On install, <code>setup.sh</code> pulls your name and bio from GitHub. Customize the rest manually. The public repo ships with a generic placeholder — no merge conflicts for forkers.
+</div>
+
+<h3>Your Projects</h3>
+<p>Project-specific details go in <code>agent/AGENT.md</code> (auto-created per project). This keeps the framework file portable while each project has its own stack, brand, and rules:</p>
+
+<pre>
+## Stack
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js + TypeScript |
+| Backend  | FastAPI |
+
+## Brand
+- Primary: #1B2A4A
+- Accent: #4a6fa5
+</pre>
+
+<h3>Dev Stack Adaptation</h3>
+<p>The framework uses stack-agnostic language for testing, building, and linting. Each project's <code>agent/AGENT.md</code> defines the actual commands:</p>
+
+<table>
+  <tr><th>Framework Says</th><th>Project Defines</th></tr>
+  <tr><td>"All tests passing"</td><td><code>npm test</code> / <code>pytest</code> / <code>go test</code></td></tr>
+  <tr><td>"Type checking: zero errors"</td><td><code>npx tsc --noEmit</code> / <code>mypy</code></td></tr>
+  <tr><td>"Linting: zero errors"</td><td><code>eslint</code> / <code>ruff</code> / <code>golint</code></td></tr>
+  <tr><td>"Build succeeds"</td><td><code>npm run build</code> / <code>docker build</code></td></tr>
+  <tr><td>"PDF generation tool"</td><td>WeasyPrint / Puppeteer / wkhtmltopdf</td></tr>
+</table>
+
+<div class="highlight">
+  <strong>Stack-agnostic by design.</strong> The framework never assumes a specific language, build tool, or test runner. It defines <em>what</em> to check — each project defines <em>how</em>.
+</div>
+
 <h2>Sharing & Syncing the Framework</h2>
 
 <h3>Recommended: Dedicated GitHub Repo</h3>

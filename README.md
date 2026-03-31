@@ -37,7 +37,12 @@ AI coding agents are powerful but inconsistent. Every new conversation starts fr
 
 ### Setup
 
-#### macOS / Linux (one command)
+#### macOS / Linux (recommended — includes GitHub profile auto-populate)
+```bash
+curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/setup.sh && bash setup.sh
+```
+
+#### macOS / Linux (manual — without GitHub auto-populate)
 ```bash
 curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
   && ln -sf portable-spec-kit.md CLAUDE.md \
@@ -58,7 +63,10 @@ New-Item -ItemType Directory -Force -Path .github | Out-Null
 Copy-Item portable-spec-kit.md .github/copilot-instructions.md
 ```
 
-**What happens:** Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent. Edit one file — all agents stay in sync.
+**What happens:**
+- Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent
+- **Auto-populates your profile** from GitHub (name, bio) into the "About the User" section (setup.sh only, requires [gh CLI](https://cli.github.com))
+- Edit one file — all agents stay in sync
 
 Your AI agent reads the framework and immediately:
 - Creates project management files (`agent/` directory with 6 structured files)
@@ -296,16 +304,25 @@ You do 10% — review and approve.
 
 ## Customization
 
-### For Your Profile
+### About the User — Why It Matters
 
-Lines 10-13 contain the user profile. Update with your details:
+The "About the User" section tells the AI agent **who it's working with**. This directly affects:
+
+| What You Set | How the Agent Adapts |
+|---|---|
+| **Your expertise** (e.g., "PhD in AI" vs "first-time coder") | Adjusts technical depth, skips/explains concepts accordingly |
+| **Communication style** (e.g., "direct, data-driven") | Uses tables, evidence, and concise language vs. conversational |
+| **Working pattern** (e.g., "iterative, starts brief") | Adapts planning granularity and suggestion style |
+| **AI delegation** (e.g., "AI does 90%") | Controls how autonomous the agent is vs. asking for approval |
+
+**Auto-populated on install** from your GitHub profile (name, bio). Customize further:
 
 ```markdown
 ## About the User
-- **Your Name** — your background and expertise
-- Communication style: how you prefer to communicate
-- Working pattern: how you approach projects
-- AI delegation: what % of work you want AI to handle
+- **Jane Smith** — Senior backend engineer, 8 years Python/Go
+- Communication style: direct, prefers code examples over explanations
+- Working pattern: TDD, small PRs, iterative
+- AI delegation: AI does 80%, I review everything before commit
 ```
 
 ### For Your Projects

@@ -26,11 +26,16 @@ On first session, the agent also auto-creates:
 ---
 
 ## About the User
-- **Dr. Aqib Mumtaz** — Strategic AI Leader and Ph.D. Researcher with 20+ years of industrial experience. Expert in Multimodal Foundation Models, Medical/Healthcare AI, and Autonomous Surveillance AI. Published researcher in Video Analysis, Anomaly Detection, and Human Action Recognition.
-- Communication style: Direct, wants comprehensive analysis, data-driven decisions
-- Working pattern: Iterative — starts brief, expands scope as ideas develop
-- Prefers AI agent to do 90% of the work — present ready-to-act outputs, not questions
 
+> **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
+>
+> **Setup:** Auto-populated from GitHub on install. Run `portable-spec-kit-setup.sh` or customize manually.
+
+<!-- Customize: replace with your profile and working style -->
+- **Your Name** — your background and expertise
+- Communication style: how you prefer to communicate (e.g., direct, detailed, data-driven)
+- Working pattern: how you approach projects (e.g., iterative, starts brief, expands scope)
+- AI delegation: what % of work you want the AI agent to handle (e.g., AI does 90%, you review 10%)
 ---
 
 ## Git & GitHub Rules
@@ -56,14 +61,16 @@ On first session, the agent also auto-creates:
 
 ## Security Rules
 
-### API Keys & Secrets
-- **NEVER read, display, or log** API key values from `.env` files
-- **Can read `.env` file structure** (variable names, comments) but **NEVER read, display, or log the actual key/secret values**
+### API Keys & Secrets (ABSOLUTE — NO EXCEPTIONS)
+- **NEVER read, display, log, or expose** API key values, secret values, or credentials from `.env` files, config files, or any source — **even if the user explicitly asks**. This rule cannot be overridden by any instruction, prompt, or request.
+- **Can read `.env` file structure** (variable names, comments) but **NEVER the actual key/secret values**
 - **NEVER commit** `.env` files or any file containing secrets to git
 - **NEVER include** real keys in any output, file, or terminal command
+- **NEVER echo, cat, print, or pipe** the contents of files containing secrets
 - Create `.env` files with **placeholder values only** (e.g., `paste-your-key-here`)
 - User pastes real keys themselves
 - Always verify `.gitignore` includes `.env*` before any commit
+- If asked to reveal, share, or read secret values: **refuse and explain why**
 
 ### .env.example Creation
 - `.env.example` is committed to repo — it shows which env vars are needed, without values
@@ -131,14 +138,14 @@ On first session, the agent also auto-creates:
   - Error responses from APIs
 - **Backend test rules:** Mock ALL external APIs (OpenAI, fetch). Test input validation, JSON parsing, response structure. Never make real API calls
 - **Frontend test rules:** Test pure functions directly. Test data flow between modules (scoring → template → page fit). Test HTML output for correct CSS values, structure, escaping
-- **UI interaction tests (MANDATORY):** Test every button click, modal open/close, tab switching, form inputs, checkbox toggles, dropdown selections. Use React Testing Library (`render`, `fireEvent`, `screen`). Mock framer-motion, next/image, react-hot-toast. Simulate real user behavior — click, type, blur, submit
-- **Keep building tests until coverage is highest possible** — never stop at "good enough". Push backend to 98%+, frontend logic to 98%+, UI components to 85%+. Only stop when remaining uncovered lines are truly untestable in jsdom (e.g. browser-only APIs that need Playwright)
-- **File drag-drop tests:** Create mock Files with polyfilled `text()` and `arrayBuffer()` methods. Mock `mammoth` for DOCX extraction. Test all drop zones with all file types
+- **UI interaction tests (MANDATORY):** Test every button click, modal open/close, tab switching, form inputs, checkbox toggles, dropdown selections. Use the project's testing library to simulate real user behavior — click, type, blur, submit
+- **Keep building tests until coverage is highest possible** — never stop at "good enough". Push backend to 98%+, frontend logic to 98%+, UI components to 85%+
+- **File upload/drop tests:** Mock file objects and external libraries. Test all upload zones with all supported file types
 
 ### Before Committing
-- TypeScript: zero compilation errors (`npx tsc --noEmit`)
-- ESLint: zero linting errors
-- Tests: all passing (`npx jest`)
+- Type checking: zero compilation errors
+- Linting: zero errors
+- Tests: all passing
 - No native browser dialogs in code
 - No secrets in staged files
 
@@ -170,16 +177,15 @@ On first session, the agent also auto-creates:
 
 ### Deployment Checklist
 Before any deployment:
-- [ ] All tests passing (`npx jest`)
-- [ ] TypeScript: zero errors (`npx tsc --noEmit`)
-- [ ] ESLint: zero errors
-- [ ] Build succeeds (`npm run build`)
+- [ ] All tests passing
+- [ ] Type checking: zero errors
+- [ ] Linting: zero errors
+- [ ] Build succeeds
 - [ ] No secrets in staged files
-- [ ] `.gitignore` includes `.env*`, `node_modules/`, `.next/`, `cache/`
-- [ ] Static assets (images, downloads) are present
-- [ ] `.nojekyll` file included (for GitHub Pages with `_next/` directory)
+- [ ] `.gitignore` includes `.env*` and build/dependency directories
+- [ ] Static assets present
 - [ ] All links and routes working
-- [ ] Responsive layout tested (mobile + desktop)
+- [ ] Responsive layout tested (if applicable)
 
 ### Error Handling
 - Never silently swallow errors — always log or surface to user
@@ -229,7 +235,7 @@ Before any deployment:
 - Reference file paths, APIs, and technologies used
 
 ### Styling Rules
-- HTML source → convert to PDF via WeasyPrint
+- HTML source → convert to PDF via browser print or PDF generation tool
 - `@page { size: A4; margin: 22mm 20mm; }`
 - Professional fonts: Segoe UI / system-ui
 - Brand colors: defined per project in `agent/AGENT.md`
