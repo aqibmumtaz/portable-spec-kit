@@ -229,7 +229,145 @@ rm -rf "$TEMP"
 pass "Setup: temp dir cleaned"
 
 # ═══════════════════════════════════════════════════════════════
-section "13. License"
+section "13. Agent Switching — Cross-Agent Compatibility"
+# ═══════════════════════════════════════════════════════════════
+
+SWITCH_TEMP="/tmp/psk-switch-$(date +%s)"
+mkdir -p "$SWITCH_TEMP" && cd "$SWITCH_TEMP"
+
+# --- Setup: simulate install ---
+cp "$PROJ/portable-spec-kit.md" "$SWITCH_TEMP/portable-spec-kit.md"
+ln -sf portable-spec-kit.md CLAUDE.md
+ln -sf portable-spec-kit.md .cursorrules
+ln -sf portable-spec-kit.md .windsurfrules
+ln -sf portable-spec-kit.md .clinerules
+mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
+
+# --- Test: All 5 agents read identical content ---
+AGENTS="CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md"
+ALL_IDENTICAL=true
+for a in $AGENTS; do
+  diff "$SWITCH_TEMP/portable-spec-kit.md" "$SWITCH_TEMP/$a" > /dev/null 2>&1 || ALL_IDENTICAL=false
+done
+$ALL_IDENTICAL && pass "All 5 agents read identical framework content" || fail "Agent content mismatch"
+
+# --- Test: Edit source → every agent sees change instantly ---
+echo "# SWITCH_TEST_MARKER" >> "$SWITCH_TEMP/portable-spec-kit.md"
+ALL_SYNCED=true
+for a in $AGENTS; do
+  grep -q "SWITCH_TEST_MARKER" "$SWITCH_TEMP/$a" || ALL_SYNCED=false
+done
+$ALL_SYNCED && pass "Edit source → all 5 agents see change instantly" || fail "Symlink sync broken"
+
+# --- Test: Simulate AGENT_CONTEXT.md written by Agent A, read by Agent B ---
+mkdir -p "$SWITCH_TEMP/agent"
+cat > "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" << 'CTXEOF'
+# AGENT_CONTEXT.md — Test Project
+
+## Current Status
+- **Version:** v0.2
+- **Phase:** Development
+- **Status:** 8/12 tasks done
+
+## What's Done
+- [x] Auth system
+- [x] Dashboard
+
+## What's Next
+- [ ] Payment integration
+
+## Key Decisions
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Database | PostgreSQL | Better JSON support |
+
+## Last Updated
+- **Date:** 2026-04-01
+- **Summary:** Completed auth, starting payment
+CTXEOF
+
+# Agent B reads Agent A's context
+grep -q "v0.2" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's version" || fail "Context version lost"
+grep -q "8/12 tasks done" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's progress" || fail "Context progress lost"
+grep -q "Payment integration" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's next task" || fail "Context next task lost"
+grep -q "PostgreSQL" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's decisions" || fail "Context decisions lost"
+
+# --- Test: Simulate .user-profile.md written by Agent A, read by Agent B ---
+cat > "$SWITCH_TEMP/.user-profile.md" << 'PROFEOF'
+# User Profile
+> Auto-created on first session. Edit anytime. Never committed to git.
+
+- **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
+- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
+- AI delegation: AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
+PROFEOF
+
+grep -q "Jane Smith" "$SWITCH_TEMP/.user-profile.md" && pass "Agent B reads user name from Agent A's profile" || fail "Profile name lost"
+grep -q "direct and concise" "$SWITCH_TEMP/.user-profile.md" && pass "Agent B reads communication style" || fail "Communication style lost"
+grep -q "AI does 90%" "$SWITCH_TEMP/.user-profile.md" && pass "Agent B reads delegation preference" || fail "Delegation lost"
+
+# --- Test: Simulate TASKS.md written by Agent A, read by Agent B ---
+cat > "$SWITCH_TEMP/agent/TASKS.md" << 'TASKEOF'
+# TASKS.md — Test Project
+
+## v0.2 — Current
+
+### Module 1: Auth
+| # | Task | Status |
+|---|------|:------:|
+| 1.1 | Login page | [x] |
+| 1.2 | JWT middleware | [x] |
+
+### Module 2: Payment
+| # | Task | Status |
+|---|------|:------:|
+| 2.1 | Stripe integration | [ ] |
+| 2.2 | Checkout flow | [ ] |
+TASKEOF
+
+grep -q "Login page" "$SWITCH_TEMP/agent/TASKS.md" && pass "Agent B sees Agent A's completed tasks" || fail "Completed tasks lost"
+grep -q "Stripe integration" "$SWITCH_TEMP/agent/TASKS.md" && pass "Agent B sees Agent A's pending tasks" || fail "Pending tasks lost"
+
+# --- Test: No agent-specific format in managed files ---
+! grep -q "\.claude/" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No .claude/ paths in framework" || fail ".claude/ path found"
+! grep -q "anthropic" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No anthropic references in framework" || fail "anthropic reference found"
+! grep -q "Claude Opus" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No Claude Opus in framework" || fail "Claude Opus found"
+! grep -qi "prefers claude" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No 'prefers Claude' in framework" || fail "'prefers Claude' found"
+
+# --- Test: All managed files are plain markdown (no proprietary format) ---
+for f in agent/AGENT_CONTEXT.md agent/TASKS.md .user-profile.md; do
+  head -1 "$SWITCH_TEMP/$f" | grep -q "^#" && pass "$f is valid markdown (starts with #)" || fail "$f is not valid markdown"
+done
+
+# --- Test: Framework references .user-profile.md (not embedded profile) ---
+grep -q "\.user-profile\.md" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Framework references .user-profile.md" || fail "Framework missing .user-profile.md reference"
+! grep -q "^- \*\*Dr\." "$SWITCH_TEMP/portable-spec-kit.md" && pass "No embedded personal profile in framework" || fail "Personal profile still embedded"
+
+# --- Test: Co-Authored-By is agent-agnostic ---
+grep -q "Co-Authored-By: AI Agent" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Co-Authored-By uses generic 'AI Agent'" || fail "Co-Authored-By is agent-specific"
+! grep -q "Co-Authored-By: Claude" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Co-Authored-By does NOT mention Claude" || fail "Co-Authored-By mentions Claude"
+
+# --- Test: Multiple sequential agent switches preserve all data ---
+# Simulate: Claude writes → Cursor reads/writes → Copilot reads
+echo "- [x] Added by Claude session" >> "$SWITCH_TEMP/agent/TASKS.md"
+grep -q "Added by Claude session" "$SWITCH_TEMP/agent/TASKS.md" && pass "Switch 1: Claude writes task" || fail "Switch 1 failed"
+
+echo "- [x] Added by Cursor session" >> "$SWITCH_TEMP/agent/TASKS.md"
+grep -q "Added by Claude session" "$SWITCH_TEMP/agent/TASKS.md" && pass "Switch 2: Cursor preserves Claude's task" || fail "Switch 2: Claude's task lost"
+grep -q "Added by Cursor session" "$SWITCH_TEMP/agent/TASKS.md" && pass "Switch 2: Cursor adds own task" || fail "Switch 2: Cursor write failed"
+
+grep -q "Added by Claude session" "$SWITCH_TEMP/agent/TASKS.md" \
+  && grep -q "Added by Cursor session" "$SWITCH_TEMP/agent/TASKS.md" \
+  && grep -q "Stripe integration" "$SWITCH_TEMP/agent/TASKS.md" \
+  && pass "Switch 3: Copilot reads all data from Claude + Cursor" || fail "Switch 3: data loss on read"
+
+# --- Cleanup ---
+rm -rf "$SWITCH_TEMP"
+pass "Agent switching: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "14. License"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "License wrong"

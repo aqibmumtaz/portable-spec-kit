@@ -93,7 +93,7 @@ If `.user-profile.md` does not exist:
 - Commits are allowed when user requests or says "commit" / "done with changes"
 - Do NOT auto-commit without user requesting it
 - Commit messages must be descriptive with clear summary of changes
-- Always include `Co-Authored-By: AI Agent <noreply@anthropic.com>`
+- Always include `Co-Authored-By: AI Agent <noreply@ai-agent.dev>`
 
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
@@ -259,6 +259,7 @@ Before any deployment:
 - Avoid adding dependencies for things that can be done in <20 lines of code
 
 ### Context Management
+- Read `.user-profile.md` at start of every conversation — adapt to user's preferences
 - Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
 - **Update the root framework file** whenever a new general guideline or development practice decision is made — these are shared across all projects
@@ -325,11 +326,12 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 ### First Session in New Workspace
 
 If `WORKSPACE_CONTEXT.md` does not exist:
-1. Create `WORKSPACE_CONTEXT.md` using the File Creation/Update Rule above
-2. Sections: Workspace Overview (table), Environment & Tools, Key Conventions, Last Updated
-3. Auto-detect environment (OS, Node, Python, tools installed) → populate Environment
-4. Scan workspace for existing projects/directories → populate Workspace Overview table
-5. Create `agent/` dirs for any projects found without them
+1. If `.user-profile.md` does not exist → run First Session Profile Setup (see User Profile section above)
+2. Create `WORKSPACE_CONTEXT.md` using the File Creation/Update Rule above
+3. Sections: Workspace Overview (table), Environment & Tools, Key Conventions, Last Updated
+4. Auto-detect environment (OS, Node, Python, tools installed) → populate Environment
+5. Scan workspace for existing projects/directories → populate Workspace Overview table
+6. Create `agent/` dirs for any projects found without them
 
 **WORKSPACE_CONTEXT.md rules:**
 - Only created once on first session — never overwritten unless user explicitly asks
@@ -582,9 +584,10 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 `<path>`
 
 ## On Every Session Start:
-1. Read `agent/AGENT_CONTEXT.md` — project state
-2. Read `agent/TASKS.md` — current tasks
-3. Read `agent/PLANNING.md` — architecture
+1. Read `.user-profile.md` — user preferences (adapt behavior)
+2. Read `agent/AGENT_CONTEXT.md` — project state
+3. Read `agent/TASKS.md` — current tasks
+4. Read `agent/PLANNING.md` — architecture
 
 ## On Every Session End:
 1. Update `agent/AGENT_CONTEXT.md` — progress, decisions

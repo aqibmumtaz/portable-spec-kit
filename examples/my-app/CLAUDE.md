@@ -27,7 +27,7 @@
 - Commits are allowed when user requests or says "commit" / "done with changes"
 - Do NOT auto-commit without user requesting it
 - Commit messages must be descriptive with clear summary of changes
-- Always include `Co-Authored-By: AI Agent <noreply@anthropic.com>`
+- Always include `Co-Authored-By: AI Agent <noreply@ai-agent.dev>`
 
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
@@ -121,14 +121,14 @@
   - Error responses from APIs
 - **Backend test rules:** Mock ALL external APIs (OpenAI, fetch). Test input validation, JSON parsing, response structure. Never make real API calls
 - **Frontend test rules:** Test pure functions directly. Test data flow between modules (scoring → template → page fit). Test HTML output for correct CSS values, structure, escaping
-- **UI interaction tests (MANDATORY):** Test every button click, modal open/close, tab switching, form inputs, checkbox toggles, dropdown selections. Use React Testing Library (`render`, `fireEvent`, `screen`). Mock framer-motion, next/image, react-hot-toast. Simulate real user behavior — click, type, blur, submit
-- **Keep building tests until coverage is highest possible** — never stop at "good enough". Push backend to 98%+, frontend logic to 98%+, UI components to 85%+. Only stop when remaining uncovered lines are truly untestable in jsdom (e.g. browser-only APIs that need Playwright)
-- **File drag-drop tests:** Create mock Files with polyfilled `text()` and `arrayBuffer()` methods. Mock `mammoth` for DOCX extraction. Test all drop zones with all file types
+- **UI interaction tests (MANDATORY):** Test every button click, modal open/close, tab switching, form inputs, checkbox toggles, dropdown selections. Use the project's testing library to simulate real user behavior — click, type, blur, submit
+- **Keep building tests until coverage is highest possible** — never stop at "good enough". Push backend to 98%+, frontend logic to 98%+, UI components to 85%+
+- **File upload/drop tests:** Mock file objects and external libraries. Test all upload zones with all supported file types
 
 ### Before Committing
-- TypeScript: zero compilation errors (`npx tsc --noEmit`)
-- ESLint: zero linting errors
-- Tests: all passing (`npx jest`)
+- Type checking: zero compilation errors
+- Linting: zero errors
+- Tests: all passing
 - No native browser dialogs in code
 - No secrets in staged files
 
@@ -160,16 +160,15 @@
 
 ### Deployment Checklist
 Before any deployment:
-- [ ] All tests passing (`npx jest`)
-- [ ] TypeScript: zero errors (`npx tsc --noEmit`)
-- [ ] ESLint: zero errors
-- [ ] Build succeeds (`npm run build`)
+- [ ] All tests passing
+- [ ] Type checking: zero errors
+- [ ] Linting: zero errors
+- [ ] Build succeeds
 - [ ] No secrets in staged files
-- [ ] `.gitignore` includes `.env*`, `node_modules/`, `.next/`, `cache/`
-- [ ] Static assets (images, downloads) are present
-- [ ] `.nojekyll` file included (for GitHub Pages with `_next/` directory)
+- [ ] `.gitignore` includes `.env*` and build/dependency directories
+- [ ] Static assets present
 - [ ] All links and routes working
-- [ ] Responsive layout tested (mobile + desktop)
+- [ ] Responsive layout tested (if applicable)
 
 ### Error Handling
 - Never silently swallow errors — always log or surface to user
@@ -194,11 +193,12 @@ Before any deployment:
 - Avoid adding dependencies for things that can be done in <20 lines of code
 
 ### Context Management
+- Read `.user-profile.md` at start of every conversation — adapt to user's preferences
 - Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
 - **Update root `CLAUDE.md`** whenever a new general guideline or development practice decision is made — these are shared across all projects
 - Root `CLAUDE.md` = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
-- User preferences stored in `.claude/` memory files
+- User preferences stored in agent memory/preference files
 - Context continuity is critical — user works across weeks/months
 
 ---
@@ -219,7 +219,7 @@ Before any deployment:
 - Reference file paths, APIs, and technologies used
 
 ### Styling Rules
-- HTML source → convert to PDF via WeasyPrint
+- HTML source → convert to PDF via browser print or PDF generation tool
 - `@page { size: A4; margin: 22mm 20mm; }`
 - Professional fonts: Segoe UI / system-ui
 - Brand colors: defined per project in `agent/AGENT.md`
@@ -241,7 +241,7 @@ Before any deployment:
 - Read the relevant project's `agent/AGENT.md` based on user's current task
 - Do not mix context between projects
 - **When working on a specific project, stay in that project's directory** — do not create files outside it unless explicitly told to
-- Memory files in `.claude/` contain cross-project user preferences
+- Agent memory/preference files contain cross-project user preferences
 
 ### Agent-Created Files
 - Any documentation, rules, trackers, or reference files created by the AI agent **must go inside `agent/` directory** — not project root
@@ -515,9 +515,10 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 `<path>`
 
 ## On Every Session Start:
-1. Read `agent/AGENT_CONTEXT.md` — project state
-2. Read `agent/TASKS.md` — current tasks
-3. Read `agent/PLANNING.md` — architecture
+1. Read `.user-profile.md` — user preferences (adapt behavior)
+2. Read `agent/AGENT_CONTEXT.md` — project state
+3. Read `agent/TASKS.md` — current tasks
+4. Read `agent/PLANNING.md` — architecture
 
 ## On Every Session End:
 1. Update `agent/AGENT_CONTEXT.md` — progress, decisions
