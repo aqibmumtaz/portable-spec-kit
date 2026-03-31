@@ -8,10 +8,10 @@
 
 <table>
 <tr>
-<td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies</sub></td>
-<td width="25%" align="center"><strong>📦 Portable</strong><br><sub>Drop into any repo<br>Works instantly</sub></td>
-<td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude, Copilot, Cursor<br>Any AI that reads markdown</sub></td>
-<td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent adapts to you</sub></td>
+<td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
+<td width="25%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
+<td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
+<td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
 </tr>
 </table>
 

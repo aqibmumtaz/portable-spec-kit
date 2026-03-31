@@ -4,6 +4,25 @@
 >
 > **Role:** Portable across all projects. Drop this file into any repo and the AI agent follows these standards immediately. Project-specific rules go in `agent/AGENT.md`. Workspace state goes in `WORKSPACE_CONTEXT.md` (auto-created on first session).
 
+## How This File Works
+
+This file is the **Portable Spec Kit** framework. It is distributed as `portable-spec-kit.md` and installed into projects as agent-specific filenames via symlinks (Mac/Linux) or copies (Windows):
+
+| Agent | Installed As |
+|-------|-------------|
+| Claude Code | `CLAUDE.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Cursor | `.cursorrules` |
+| Windsurf | `.windsurfrules` |
+| Cline | `.clinerules` |
+
+**All point to the same source file** — `portable-spec-kit.md`. Edit one, all agents read the update.
+
+On first session, the agent also auto-creates:
+- `WORKSPACE_CONTEXT.md` — workspace environment and project listing
+- `agent/` directory in each project — with 6 management files (AGENT.md, AGENT_CONTEXT.md, SPECS.md, PLANNING.md, TASKS.md, TRACKER.md)
+- `README.md` — structured project overview
+
 ---
 
 ## About the User
@@ -187,8 +206,8 @@ Before any deployment:
 ### Context Management
 - Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
-- **Update root `CLAUDE.md`** whenever a new general guideline or development practice decision is made — these are shared across all projects
-- Root `CLAUDE.md` = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
+- **Update the root framework file** whenever a new general guideline or development practice decision is made — these are shared across all projects
+- Root framework file = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
 - User preferences stored in agent memory/preference files
 - Context continuity is critical — user works across weeks/months
 
