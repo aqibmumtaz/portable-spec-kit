@@ -8,18 +8,20 @@
 
 <table>
 <tr>
-<td width="20%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
-<td width="20%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
-<td width="20%" align="center"><strong>👤 Personalized</strong><br><sub>GitHub profile auto-detect<br>Adapts to your expertise<br>Tailored AI behavior</sub></td>
-<td width="20%" align="center"><strong>📋 Spec-Driven</strong><br><sub>SPECS → PLAN → TASKS → TRACK<br>Complete dev pipeline<br>Retroactive spec-filling</sub></td>
-<td width="20%" align="center"><strong>🧠 Context-Persistent</strong><br><sub>Remembers across sessions<br>Pick up after weeks<br>Never lose context</sub></td>
+<td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
+<td width="25%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
+<td width="25%" align="center"><strong>👤 Personalized</strong><br><sub>GitHub profile auto-detect<br>Adapts to your expertise<br>Tailored AI behavior</sub></td>
+<td width="25%" align="center"><strong>📋 Spec-Driven</strong><br><sub>SPECS → PLAN → TASKS → TRACK<br>Complete dev pipeline<br>Retroactive spec-filling</sub></td>
 </tr>
 <tr>
-<td width="20%" align="center"><strong>🔒 Secure</strong><br><sub>Never expose API keys<br>Strict .env rules<br>Code security enforced</sub></td>
-<td width="20%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
-<td width="20%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
-<td width="20%" align="center"><strong>🏗️ Self-Scaffolding</strong><br><sub>Auto-creates 6 agent files<br>README · Workspace context<br>Project structure in seconds</sub></td>
-<td width="20%" align="center"><strong>✅ Self-Validating</strong><br><sub>Agent tests everything<br>Fixes before presenting<br>98%+ coverage target</sub></td>
+<td width="25%" align="center"><strong>🧠 Context-Persistent</strong><br><sub>Remembers across sessions<br>Pick up after weeks<br>Never lose context</sub></td>
+<td width="25%" align="center"><strong>🔒 Secure</strong><br><sub>Never expose API keys<br>Strict .env rules<br>Code security enforced</sub></td>
+<td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
+<td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
+</tr>
+<tr>
+<td width="25%" align="center"><strong>🏗️ Self-Scaffolding</strong><br><sub>Auto-creates 6 agent files<br>README · Workspace context<br>Project structure in seconds</sub></td>
+<td width="25%" align="center"><strong>✅ Self-Validating</strong><br><sub>Agent tests everything<br>Fixes before presenting<br>98%+ coverage target</sub></td>
 </tr>
 </table>
 
