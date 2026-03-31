@@ -1,4 +1,4 @@
-# Portable Spec Kit — Agentic Specification-Driven Development
+# Portable Spec Kit — AI Agentic Specification-Driven Development
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >

@@ -29,7 +29,9 @@ AI coding agents are powerful but inconsistent. Every new conversation starts fr
 
 **One markdown file. Zero dependencies. Zero install. Works with every AI agent.**
 
-### macOS / Linux (one command)
+### Setup
+
+#### macOS / Linux (one command)
 ```bash
 curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
   && ln -sf portable-spec-kit.md CLAUDE.md \
@@ -39,7 +41,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
   && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
 ```
 
-### Windows (PowerShell)
+#### Windows (PowerShell)
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md" -OutFile "portable-spec-kit.md"
 Copy-Item portable-spec-kit.md CLAUDE.md
