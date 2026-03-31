@@ -1,4 +1,4 @@
-# CLAUDE.md — Development Guidelines
+# Portable Spec Kit — Agentic Specification-Driven Development
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -10,7 +10,7 @@
 - **Dr. Aqib Mumtaz** — Strategic AI Leader and Ph.D. Researcher with 20+ years of industrial experience. Expert in Multimodal Foundation Models, Medical/Healthcare AI, and Autonomous Surveillance AI. Published researcher in Video Analysis, Anomaly Detection, and Human Action Recognition.
 - Communication style: Direct, wants comprehensive analysis, data-driven decisions
 - Working pattern: Iterative — starts brief, expands scope as ideas develop
-- Prefers Claude to do 90% of the work — present ready-to-act outputs, not questions
+- Prefers AI agent to do 90% of the work — present ready-to-act outputs, not questions
 
 ---
 
@@ -20,7 +20,7 @@
 - Commits are allowed when user requests or says "commit" / "done with changes"
 - Do NOT auto-commit without user requesting it
 - Commit messages must be descriptive with clear summary of changes
-- Always include `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`
+- Always include `Co-Authored-By: AI Agent <noreply@anthropic.com>`
 
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
@@ -189,7 +189,7 @@ Before any deployment:
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
 - **Update root `CLAUDE.md`** whenever a new general guideline or development practice decision is made — these are shared across all projects
 - Root `CLAUDE.md` = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
-- User preferences stored in `.claude/` memory files
+- User preferences stored in agent memory/preference files
 - Context continuity is critical — user works across weeks/months
 
 ---
@@ -232,7 +232,7 @@ Before any deployment:
 - Read the relevant project's `agent/AGENT.md` based on user's current task
 - Do not mix context between projects
 - **When working on a specific project, stay in that project's directory** — do not create files outside it unless explicitly told to
-- Memory files in `.claude/` contain cross-project user preferences
+- Agent memory/preference files contain cross-project user preferences
 
 ### Agent-Created Files
 - Any documentation, rules, trackers, or reference files created by the AI agent **must go inside `agent/` directory** — not project root

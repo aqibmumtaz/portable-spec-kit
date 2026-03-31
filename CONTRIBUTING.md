@@ -15,7 +15,7 @@ Found a gap in the framework? Something unclear? [Open an issue](https://github.
 
 ### 2. Suggest Framework Improvements
 
-The best contributions come from real-world usage. If you've been using CLAUDE.md and discovered:
+The best contributions come from real-world usage. If you've been using portable-spec-kit.md and discovered:
 - A new testing pattern that catches more bugs
 - A better project structure for a specific stack
 - An agent behavior rule that improves developer experience
@@ -33,7 +33,7 @@ cd portable-spec-kit
 # Create a branch
 git checkout -b improve/testing-rules
 
-# Make your changes to CLAUDE.md
+# Make your changes to portable-spec-kit.md
 # ...
 
 # Commit and push
@@ -72,7 +72,7 @@ git push origin improve/testing-rules
 
 Before submitting, ask: **"Would this rule apply to ANY project, in ANY language, with ANY AI agent?"**
 
-- If yes → it belongs in CLAUDE.md
+- If yes → it belongs in portable-spec-kit.md
 - If no → it belongs in a project's `agent/AGENT.md`
 
 ---
@@ -83,7 +83,7 @@ Before submitting, ask: **"Would this rule apply to ANY project, in ANY language
 - **Explain the why** — not just what changed, but why it's better
 - **Show real-world evidence** — "I used this rule on 3 projects and it caught X" is compelling
 - **Keep it concise** — the framework's strength is being lightweight. Don't bloat it.
-- **Test your changes** — drop the modified CLAUDE.md into a fresh project and verify the agent follows it correctly
+- **Test your changes** — drop the modified portable-spec-kit.md into a fresh project and verify the agent follows it correctly
 
 ---
 

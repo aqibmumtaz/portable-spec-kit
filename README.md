@@ -27,14 +27,32 @@ AI coding agents are powerful but inconsistent. Every new conversation starts fr
 
 ## The Solution
 
-**One markdown file. Zero dependencies. Zero install.**
+**One markdown file. Zero dependencies. Zero install. Works with every AI agent.**
 
+### macOS / Linux (one command)
 ```bash
-# That's it. You're done.
-curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/CLAUDE.md
+curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
+  && ln -sf portable-spec-kit.md CLAUDE.md \
+  && ln -sf portable-spec-kit.md .cursorrules \
+  && ln -sf portable-spec-kit.md .windsurfrules \
+  && ln -sf portable-spec-kit.md .clinerules \
+  && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
 ```
 
-Your AI agent reads `CLAUDE.md` and immediately:
+### Windows (PowerShell)
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md" -OutFile "portable-spec-kit.md"
+Copy-Item portable-spec-kit.md CLAUDE.md
+Copy-Item portable-spec-kit.md .cursorrules
+Copy-Item portable-spec-kit.md .windsurfrules
+Copy-Item portable-spec-kit.md .clinerules
+New-Item -ItemType Directory -Force -Path .github | Out-Null
+Copy-Item portable-spec-kit.md .github/copilot-instructions.md
+```
+
+**What happens:** Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent. Edit one file — all agents stay in sync.
+
+Your AI agent reads the framework and immediately:
 - Creates project management files (`agent/` directory with 6 structured files)
 - Follows your coding standards, testing rules, security practices
 - Tracks every task, decision, and version
@@ -54,7 +72,7 @@ Your AI agent reads `CLAUDE.md` and immediately:
 | **Learning curve** | Moderate — 6-phase workflow | **Zero** — start coding, agent tracks |
 | **Rigidity** | Sequential, spec-before-code | **Flexible** — code first, specs retroactively |
 | **Blocking** | Must complete specs before implementation | **Never blocks** — work however you want |
-| **AI agents** | 30+ with config per agent | **Any AI** that reads markdown |
+| **AI agents** | 30+ with config per agent | **Any AI** — zero-config symlinks for all |
 | **Execution time** | 33+ min agent + hours review | **Instant** — read file, start working |
 | **Context persistence** | Per-session | **Cross-session** — AGENT_CONTEXT.md |
 | **Portability** | Per-project setup required | **One file across all projects** |
@@ -62,17 +80,31 @@ Your AI agent reads `CLAUDE.md` and immediately:
 
 ---
 
+## Multi-Agent Support
+
+One source file — `portable-spec-kit.md` — works with every AI coding agent:
+
+| Agent | File Created | How |
+|-------|-------------|-----|
+| **Claude Code** | `CLAUDE.md` | Symlink → portable-spec-kit.md |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | Symlink → portable-spec-kit.md |
+| **Cursor** | `.cursorrules` | Symlink → portable-spec-kit.md |
+| **Windsurf** | `.windsurfrules` | Symlink → portable-spec-kit.md |
+| **Cline** | `.clinerules` | Symlink → portable-spec-kit.md |
+
+Edit `portable-spec-kit.md` once — all agents read the update instantly (via symlinks on Mac/Linux, copies on Windows).
+
+---
+
 ## Quick Start
 
 ### 1. Add to any project
 
-```bash
-curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/CLAUDE.md
-```
+See install commands above (macOS/Linux or Windows).
 
 ### 2. Start a conversation with your AI agent
 
-The agent reads `CLAUDE.md` and automatically:
+The agent reads the framework file and automatically:
 
 ```
 ✓ Detects your environment (OS, Node, Python, tools)
@@ -122,7 +154,9 @@ What to build      How to build it     Track progress      Log results
 
 ```
 your-project/
-├── CLAUDE.md              ← The framework (portable)
+├── portable-spec-kit.md   ← The framework (source file)
+├── CLAUDE.md              ← Symlink (Claude Code)
+├── .cursorrules           ← Symlink (Cursor)
 ├── CLAUDE_CONTEXT.md      ← Auto-created (workspace state)
 ├── README.md              ← Auto-created (standard structure)
 │
@@ -172,7 +206,7 @@ The agent doesn't just build — it validates:
 
 ### 4. One File, All Projects
 
-`CLAUDE.md` is project-agnostic. It contains:
+`portable-spec-kit.md` is project-agnostic. It contains:
 - Git/GitHub rules
 - Security practices
 - Testing standards
@@ -189,7 +223,7 @@ You do 10% — review and approve.
 
 ---
 
-## What's Inside CLAUDE.md
+## What's Inside portable-spec-kit.md
 
 | Section | What It Governs |
 |---------|----------------|
@@ -246,23 +280,23 @@ Project-specific details go in `agent/AGENT.md` (auto-created per project):
 
 ```bash
 # In any project
-curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/CLAUDE.md
+curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md
 ```
 
 ### Push Updates Back
 
-When you improve CLAUDE.md from any project:
+When you improve portable-spec-kit.md from any project:
 
 ```bash
 # Copy to your fork
-cp CLAUDE.md ~/portable-spec-kit/
+cp portable-spec-kit.md ~/portable-spec-kit/
 cd ~/portable-spec-kit
 git add . && git commit -m "Add new testing rule" && git push
 ```
 
 ### For Teams
 
-Fork this repo → customize CLAUDE.md for your team → everyone pulls from your fork.
+Fork this repo → customize portable-spec-kit.md for your team → everyone pulls from your fork.
 
 ---
 
@@ -342,7 +376,7 @@ Let's start — what's the core problem this project solves?
 Contributions welcome! This framework improves through real-world usage.
 
 1. Fork the repo
-2. Customize CLAUDE.md for your workflow
+2. Customize portable-spec-kit.md for your workflow
 3. Submit a PR with improvements that benefit everyone
 
 **What makes a good contribution:**
@@ -394,7 +428,7 @@ examples/my-app/
 - **[Quick Guide (PDF)](docs/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README
 - **[My App Example](examples/my-app/)** — Mid-development project
-- **[CLAUDE.md](CLAUDE.md)** — The complete framework file
+- **[portable-spec-kit.md](portable-spec-kit.md)** — The complete framework file
 
 ---
 

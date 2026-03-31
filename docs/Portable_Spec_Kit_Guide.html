@@ -72,7 +72,7 @@
 <!-- COVER -->
 <div class="cover">
   <h1>Portable Spec Kit</h1>
-  <div class="subtitle">Portable Specification-Driven Development Kit</div>
+  <div class="subtitle">Agentic Specification-Driven Development</div>
   <div class="tagline">
     A single portable file that defines your complete development methodology — from specifications to deployment. Drop it into any project and the AI agent follows your engineering standards, manages tasks, writes tests, and maintains context across sessions.
   </div>
@@ -121,7 +121,7 @@
   </div>
   <div style="margin: 12px 0; color: #94a3b8; font-size: 10pt;">All governed by</div>
   <div class="fd-row">
-    <div class="fd-box" style="background:#1B2A4A;color:white;border:none;padding:12px 24px;">CLAUDE.md<br><span style="font-weight:400;font-size:8pt;">Your portable dev standards</span></div>
+    <div class="fd-box" style="background:#1B2A4A;color:white;border:none;padding:12px 24px;">portable-spec-kit.md<br><span style="font-weight:400;font-size:8pt;">Your portable dev standards</span></div>
   </div>
 </div>
 
@@ -138,7 +138,7 @@
 
 <h2>What the Framework File Contains</h2>
 
-<p>The <code>CLAUDE.md</code> file is the single source of truth for your development methodology. It contains:</p>
+<p>The <code>portable-spec-kit.md</code> file is the single source of truth for your development methodology. It contains:</p>
 
 <table>
   <tr><th>Section</th><th>What It Governs</th></tr>
@@ -156,12 +156,28 @@
   <tr><td>Agent Behavior</td><td>Guide don't enforce, silent tracking, retroactive spec-filling</td></tr>
 </table>
 
+<h2>Multi-Agent Support</h2>
+
+<p>One source file — <code>portable-spec-kit.md</code> — works with every AI coding agent via symlinks:</p>
+
+<table>
+  <tr><th>Agent</th><th>File Created</th><th>How</th></tr>
+  <tr><td><strong>Claude Code</strong></td><td><code>CLAUDE.md</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td><strong>GitHub Copilot</strong></td><td><code>.github/copilot-instructions.md</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td><strong>Cursor</strong></td><td><code>.cursorrules</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td><strong>Windsurf</strong></td><td><code>.windsurfrules</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td><strong>Cline</strong></td><td><code>.clinerules</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+</table>
+
+<p><strong>macOS/Linux:</strong> Uses symlinks — edit <code>portable-spec-kit.md</code>, all agents read the update instantly.</p>
+<p><strong>Windows:</strong> Uses copies — re-run install command after editing, or let the AI agent keep files in sync.</p>
+
 <h2>How It Works</h2>
 
 <div class="flow">
   <div class="flow-step">
     <div class="flow-num">1</div>
-    <div class="flow-text"><strong>Drop CLAUDE.md</strong> into your repo root — this is the only file you need</div>
+    <div class="flow-text"><strong>Install portable-spec-kit.md</strong> — one command, all agents configured</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
@@ -189,7 +205,9 @@
 
 <pre>
 your-project/
-├── CLAUDE.md              ← Framework file (portable, drop-in)
+├── portable-spec-kit.md   ← Framework file (source)
+├── CLAUDE.md              ← Symlink (Claude Code)
+├── .cursorrules           ← Symlink (Cursor)
 ├── CLAUDE_CONTEXT.md      ← Auto-created (workspace state)
 ├── README.md              ← Auto-created (standard structure)
 │

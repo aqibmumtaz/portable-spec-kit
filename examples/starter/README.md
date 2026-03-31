@@ -4,7 +4,7 @@
 
 ## What Happened When You Set Up This Project
 
-When you dropped `CLAUDE.md` into this repo and started your first AI session, the framework automatically:
+When you installed `portable-spec-kit.md` and started your first AI session, the framework automatically:
 
 1. **Detected your environment** — OS, Node.js, Python, installed tools
 2. **Created `CLAUDE_CONTEXT.md`** — workspace state (environment, projects found)
@@ -18,10 +18,16 @@ No install. No config. No CLI. Just one file → everything scaffolded.
 ```
 starter/
 │
-├── CLAUDE.md                ← The framework file (your dev standards)
-│                              AI reads this first, every session.
+├── portable-spec-kit.md     ← The framework file (source — edit this one)
 │                              Contains: git rules, security, testing,
 │                              naming conventions, project templates.
+│
+├── CLAUDE.md                ← Symlink → portable-spec-kit.md (Claude Code)
+├── .cursorrules             ← Symlink → portable-spec-kit.md (Cursor)
+├── .windsurfrules           ← Symlink → portable-spec-kit.md (Windsurf)
+├── .clinerules              ← Symlink → portable-spec-kit.md (Cline)
+├── .github/
+│   └── copilot-instructions.md ← Symlink → portable-spec-kit.md (Copilot)
 │
 ├── CLAUDE_CONTEXT.md        ← Auto-created workspace state
 │                              Your environment, tools detected.
