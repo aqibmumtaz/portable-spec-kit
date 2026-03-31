@@ -104,38 +104,80 @@ Edit `portable-spec-kit.md` once — all agents read the update instantly (via s
 
 ---
 
-## Quick Start
+## Complete Flow
 
-### 1. Add to any project
+### Step 1: Install (one command)
 
-See install commands above (macOS/Linux or Windows).
+See setup commands above (macOS/Linux or Windows). Downloads `portable-spec-kit.md` and creates symlinks for all agents.
 
-### 2. Start a conversation with your AI agent
+**Result:**
+```
+your-project/
+├── portable-spec-kit.md                  ← Source (edit this one)
+├── CLAUDE.md → portable-spec-kit.md      ← Claude Code
+├── .cursorrules → portable-spec-kit.md   ← Cursor
+├── .windsurfrules → portable-spec-kit.md ← Windsurf
+├── .clinerules → portable-spec-kit.md    ← Cline
+└── .github/copilot-instructions.md → portable-spec-kit.md ← Copilot
+```
 
-The agent reads the framework file and automatically:
+### Step 2: Open any AI agent — auto-scaffolds your project
+
+The agent reads the framework and automatically creates everything:
 
 ```
 ✓ Detects your environment (OS, Node, Python, tools)
 ✓ Creates WORKSPACE_CONTEXT.md (workspace state)
-✓ Scans for projects → creates agent/ directories
-✓ Creates 6 management files from templates (AGENT, SPECS, PLANNING, TASKS, TRACKER, CONTEXT)
-✓ Creates project directory structure (src/, tests/, docs/, ard/, input/, output/)
-✓ Creates/restructures README.md with standard sections
+✓ Creates agent/ directory with 6 management files:
+    agent/AGENT.md           ← Project rules, stack, brand
+    agent/AGENT_CONTEXT.md   ← Living state (updated every session)
+    agent/SPECS.md           ← Requirements & features
+    agent/PLANNING.md        ← Architecture & phases
+    agent/TASKS.md           ← Task tracking
+    agent/TRACKER.md         ← Version history
+✓ Creates project directories (src/, tests/, docs/, ard/, input/, output/)
+✓ Creates README.md with standard structure
 ✓ Creates .gitignore + .env.example
 ✓ Ready to work — following YOUR standards
 ```
 
-### 3. Start working
+### Step 3: Work however you want
+
+The agent adapts to you — not the other way around:
 
 ```
 You: "Build me a login page"
-Agent: Added to TASKS.md → building → testing → done ✓
+Agent: Added to TASKS.md → builds → tests → done ✓
 
 You: "What should I do next?"
-Agent: Based on SPECS.md, these features are pending...
+Agent: Walks you through SPECS → PLANNING → TASKS flow
+
+You: "Fix this bug"
+Agent: Added to TASKS.md → fixes → marks done ✓
 
 You: "What's the status?"
 Agent: Shows progress from TASKS.md + AGENT_CONTEXT.md
+```
+
+### Step 4: Session ends
+
+```
+✓ Agent updates agent/AGENT_CONTEXT.md — progress, decisions, what's next
+```
+
+### Step 5: Come back later (days, weeks, months)
+
+```
+✓ Agent reads agent/AGENT.md + agent/AGENT_CONTEXT.md
+✓ "Here's where we left off — v0.1 has 8/12 tasks done. Next: payment integration."
+✓ Continues exactly where you stopped
+```
+
+### Step 6: Edit the framework
+
+```
+✓ Edit portable-spec-kit.md — all 5 agent symlinks read the update instantly
+✓ Your standards evolve with you across all projects
 ```
 
 ---

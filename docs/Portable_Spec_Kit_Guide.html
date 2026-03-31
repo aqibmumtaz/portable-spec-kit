@@ -174,32 +174,37 @@
 <p><strong>macOS/Linux:</strong> Uses symlinks — edit <code>portable-spec-kit.md</code>, all agents read the update instantly.</p>
 <p><strong>Windows:</strong> Uses copies — re-run install command after editing, or let the AI agent keep files in sync.</p>
 
-<h2>How It Works</h2>
+<h2>Complete Flow</h2>
 
 <div class="flow">
   <div class="flow-step">
     <div class="flow-num">1</div>
-    <div class="flow-text"><strong>Install portable-spec-kit.md</strong> — one command, all agents configured</div>
+    <div class="flow-text"><strong>Install</strong> — one command downloads <code>portable-spec-kit.md</code> + creates symlinks for all agents (Claude, Copilot, Cursor, Windsurf, Cline)</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">2</div>
-    <div class="flow-text"><strong>Start a session</strong> — AI reads the framework, detects your environment, scans for projects</div>
+    <div class="flow-text"><strong>Open any AI agent — auto-scaffolds</strong> — detects environment, creates WORKSPACE_CONTEXT.md, creates <code>agent/</code> with 6 files (AGENT, SPECS, PLANNING, TASKS, TRACKER, CONTEXT), project dirs (src/, tests/, docs/), README, .gitignore, .env.example</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">3</div>
-    <div class="flow-text"><strong>Auto-creates management files</strong> — <code>agent/</code> directory with AGENT.md, SPECS.md, PLANNING.md, TASKS.md, TRACKER.md, AGENT_CONTEXT.md</div>
+    <div class="flow-text"><strong>Work however you want</strong> — "build me X" → agent adds to TASKS.md, builds, tests. "What should I do next?" → agent walks through spec-driven flow. Never blocks.</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">4</div>
-    <div class="flow-text"><strong>Spec-driven flow begins:</strong> Define specs → plan architecture → track tasks → build + test → log results</div>
+    <div class="flow-text"><strong>Session ends</strong> — agent updates AGENT_CONTEXT.md with progress, decisions, what's next</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">5</div>
-    <div class="flow-text"><strong>Context persists</strong> — AGENT_CONTEXT.md updated every session. Pick up weeks later seamlessly.</div>
+    <div class="flow-text"><strong>Come back later</strong> — days, weeks, months. Agent reads AGENT_CONTEXT.md: "Here's where we left off." Continues exactly where you stopped.</div>
+  </div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-step">
+    <div class="flow-num">6</div>
+    <div class="flow-text"><strong>Edit the framework</strong> — update portable-spec-kit.md, all 5 agent symlinks read the change instantly. Standards evolve with you.</div>
   </div>
 </div>
 
