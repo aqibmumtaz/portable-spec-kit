@@ -7,7 +7,7 @@
 When you installed `portable-spec-kit.md` and started your first AI session, the framework automatically:
 
 1. **Detected your environment** — OS, Node.js, Python, installed tools
-2. **Created `CLAUDE_CONTEXT.md`** — workspace state (environment, projects found)
+2. **Created `WORKSPACE_CONTEXT.md`** — workspace state (environment, projects found)
 3. **Created `agent/` directory** — with 6 project management files
 4. **Created this `README.md`** — structured for your project
 
@@ -29,7 +29,7 @@ starter/
 ├── .github/
 │   └── copilot-instructions.md ← Symlink → portable-spec-kit.md (Copilot)
 │
-├── CLAUDE_CONTEXT.md        ← Auto-created workspace state
+├── WORKSPACE_CONTEXT.md        ← Auto-created workspace state
 │                              Your environment, tools detected.
 │                              Created once, rarely updated.
 │

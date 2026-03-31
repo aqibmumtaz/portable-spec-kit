@@ -110,7 +110,7 @@ The agent reads the framework file and automatically:
 
 ```
 ✓ Detects your environment (OS, Node, Python, tools)
-✓ Creates CLAUDE_CONTEXT.md (workspace state)
+✓ Creates WORKSPACE_CONTEXT.md (workspace state)
 ✓ Scans for projects → creates agent/ directories
 ✓ Creates 6 management files from templates
 ✓ Creates/restructures README.md
@@ -159,7 +159,7 @@ your-project/
 ├── portable-spec-kit.md   ← The framework (source file)
 ├── CLAUDE.md              ← Symlink (Claude Code)
 ├── .cursorrules           ← Symlink (Cursor)
-├── CLAUDE_CONTEXT.md      ← Auto-created (workspace state)
+├── WORKSPACE_CONTEXT.md      ← Auto-created (workspace state)
 ├── README.md              ← Auto-created (standard structure)
 │
 ├── agent/                 ← Auto-created (project management)

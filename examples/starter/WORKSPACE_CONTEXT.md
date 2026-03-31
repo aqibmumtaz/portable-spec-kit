@@ -1,18 +1,17 @@
-# CLAUDE_CONTEXT.md — Workspace State
+# WORKSPACE_CONTEXT.md — Workspace State
 
 > **Purpose:** Tracks the current workspace — projects, environment, tools.
-> **Role:** Auto-created on first session. Not manually edited.
+> **Role:** Auto-created on first session.
 
 ## Workspace Overview
 
 | Project | Location | Status |
 |---------|----------|--------|
-| My App | `.` | v0.1 — Setup complete |
+| Starter | `.` | v0.1 — Setup |
 
 ## Environment & Tools
-- **OS:** macOS (Darwin 24.6.0)
+- **OS:** macOS (Darwin)
 - **Node.js:** 20.x
-- **Python:** 3.12
 - **Git:** Configured
 
 ## Key Conventions
@@ -21,7 +20,6 @@
 |------------|--------|
 | Version Numbering | v0.1, v0.2... v1.0 for production |
 | Project Management Files | `agent/` subdirectory |
-| Dev Server Ports | Start from 3456, auto-increment |
 
 ## Last Updated
 - **Date:** 2026-03-31

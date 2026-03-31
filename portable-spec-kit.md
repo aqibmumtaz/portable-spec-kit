@@ -2,7 +2,7 @@
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
-> **Role:** Portable across all projects. Drop this file into any repo and the AI agent follows these standards immediately. Project-specific rules go in `agent/AGENT.md`. Workspace state goes in `CLAUDE_CONTEXT.md` (auto-created on first session).
+> **Role:** Portable across all projects. Drop this file into any repo and the AI agent follows these standards immediately. Project-specific rules go in `agent/AGENT.md`. Workspace state goes in `WORKSPACE_CONTEXT.md` (auto-created on first session).
 
 ---
 
@@ -242,7 +242,7 @@ Before any deployment:
 
 ### File Creation/Update Rule (applies to ALL auto-managed files)
 
-This rule applies to: `CLAUDE_CONTEXT.md`, `README.md`, and all `agent/` files.
+This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` files.
 
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
@@ -250,14 +250,14 @@ This rule applies to: `CLAUDE_CONTEXT.md`, `README.md`, and all `agent/` files.
 
 ### First Session in New Workspace
 
-If `CLAUDE_CONTEXT.md` does not exist:
-1. Create `CLAUDE_CONTEXT.md` using the File Creation/Update Rule above
+If `WORKSPACE_CONTEXT.md` does not exist:
+1. Create `WORKSPACE_CONTEXT.md` using the File Creation/Update Rule above
 2. Sections: Workspace Overview (table), Environment & Tools, Key Conventions, Last Updated
 3. Auto-detect environment (OS, Node, Python, tools installed) → populate Environment
 4. Scan workspace for existing projects/directories → populate Workspace Overview table
 5. Create `agent/` dirs for any projects found without them
 
-**CLAUDE_CONTEXT.md rules:**
+**WORKSPACE_CONTEXT.md rules:**
 - Only created once on first session — never overwritten unless user explicitly asks
 - Not for project-specific state — that goes in each project's `agent/AGENT_CONTEXT.md`
 - Only update when user explicitly requests it

@@ -208,7 +208,7 @@ your-project/
 ├── portable-spec-kit.md   ← Framework file (source)
 ├── CLAUDE.md              ← Symlink (Claude Code)
 ├── .cursorrules           ← Symlink (Cursor)
-├── CLAUDE_CONTEXT.md      ← Auto-created (workspace state)
+├── WORKSPACE_CONTEXT.md      ← Auto-created (workspace state)
 ├── README.md              ← Auto-created (standard structure)
 │
 ├── agent/                 ← Auto-created (project management)
@@ -395,7 +395,7 @@ Added JD-tailored resume, PDF generation, 604 tests.
 
 <h2>File Creation/Update Rule</h2>
 
-<p>This single rule governs how the agent handles ALL managed files (<code>CLAUDE_CONTEXT.md</code>, <code>README.md</code>, and all <code>agent/</code> files):</p>
+<p>This single rule governs how the agent handles ALL managed files (<code>WORKSPACE_CONTEXT.md</code>, <code>README.md</code>, and all <code>agent/</code> files):</p>
 
 <table>
   <tr><th>Scenario</th><th>Action</th></tr>
@@ -500,7 +500,7 @@ cd ~/dev-framework && git add . && git commit -m "Updated from ProjectX" && git 
 <pre>
 examples/starter/
 ├── CLAUDE.md              ← Framework file (your dev standards)
-├── CLAUDE_CONTEXT.md      ← Auto-created workspace state
+├── WORKSPACE_CONTEXT.md      ← Auto-created workspace state
 ├── README.md              ← Self-documenting (explains everything)
 ├── agent/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
