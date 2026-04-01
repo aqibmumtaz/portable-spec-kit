@@ -429,7 +429,7 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
-- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different:
+- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different, OR if `**Framework:**` field is missing (first time after kit update):
   1. Inform user: "Framework updated from v0.x.x to v0.x.x — restructuring agent files to match new templates. All existing content will be preserved."
   2. Restructure all agent/ files against current templates
   3. Inform user what changed: "Updated: TASKS.md (version-based headings), TRACKER.md (framework range added), etc."
