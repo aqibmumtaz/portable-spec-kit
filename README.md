@@ -2,7 +2,7 @@
 
 **A lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering.**
 
-> Drop one file into any project. Your AI agent detects your GitHub profile, adapts to your expertise and working style, follows your engineering standards, manages specifications, tracks tasks, writes tests, and maintains context across sessions — personalized from the first session.
+> Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, enforces your engineering standards, and maintains context across sessions — never loses progress, never drops quality.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -126,11 +126,12 @@ your-project/
 └── .github/copilot-instructions.md → portable-spec-kit.md ← Copilot
 ```
 
-### Step 2: Open any AI agent — auto-scaffolds your project
+### Step 2: Open any AI agent — personalizes and scaffolds your project
 
-The agent reads the framework and automatically creates everything:
+The agent reads the framework and automatically sets everything up:
 
 ```
+✓ Sets up your profile (.user-profile.md — GitHub auto-detect + preferences)
 ✓ Detects your environment (OS, Node, Python, tools)
 ✓ Creates WORKSPACE_CONTEXT.md (workspace state)
 ✓ Creates agent/ directory with 6 management files:
@@ -211,13 +212,14 @@ What to build      How to build it     Track progress      Log results
 
 ```
 your-project/
-├── portable-spec-kit.md   ← The framework (source file)
-├── CLAUDE.md              ← Symlink (Claude Code)
-├── .cursorrules           ← Symlink (Cursor)
-├── WORKSPACE_CONTEXT.md      ← Auto-created (workspace state)
-├── README.md              ← Auto-created (standard structure)
+├── portable-spec-kit.md    ← The framework (source file)
+├── .user-profile.md        ← Your profile (auto-created, never committed)
+├── CLAUDE.md               ← Symlink (Claude Code)
+├── .cursorrules            ← Symlink (Cursor)
+├── WORKSPACE_CONTEXT.md    ← Auto-created (workspace state)
+├── README.md               ← Auto-created (standard structure)
 │
-├── agent/                 ← Auto-created (project management)
+├── agent/                  ← Auto-created (project management)
 │   ├── AGENT.md
 │   ├── AGENT_CONTEXT.md
 │   ├── SPECS.md
@@ -225,8 +227,8 @@ your-project/
 │   ├── TASKS.md
 │   └── TRACKER.md
 │
-├── src/                   ← Your code
-├── tests/                 ← Your tests
+├── src/                    ← Your code
+├── tests/                  ← Your tests
 └── ...
 ```
 
@@ -400,7 +402,7 @@ One rule governs all auto-managed files:
 
 ---
 
-## Examples
+## Usage Examples
 
 ### New Project Setup
 
@@ -473,7 +475,7 @@ Contributions welcome! This framework improves through real-world usage.
 
 ---
 
-## Examples
+## Example Projects
 
 ### [`examples/starter/`](examples/starter/) — Fresh Project (Start Here)
 
@@ -542,6 +544,6 @@ Research: Multimodal AI, Healthcare AI, Autonomous Surveillance
 ---
 
 <p align="center">
-  <strong>Portable Spec Kit — One file. Any project. Your standards.</strong><br>
-  <em>The lightweight alternative to spec-kit for AI-assisted engineering</em>
+  <strong>Portable Spec Kit — One file. Any project. Your standards. Personalized.</strong><br>
+  <em>The lightweight spec-driven alternative to spec-kit for AI-assisted engineering</em>
 </p>
