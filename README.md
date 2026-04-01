@@ -294,7 +294,7 @@ You do 10% — review and approve.
 | **Error Handling** | Structured errors, logging, error boundaries, user-friendly messages |
 | **Branch & PR** | Feature branches, PR format, squash merge, clean history |
 | **Dependencies** | Bundle size checks, lock files, audit, avoid unnecessary deps |
-| **Project Templates** | 6 agent files + README, all with standard structure |
+| **Project Templates** | 6 agent files + README + 8 source code structures (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document) |
 | **Auto-Scan** | Detects projects, creates/restructures files, preserves existing content |
 | **Agent Behavior** | Guide don't enforce, silent tracking, retroactive spec-filling |
 
