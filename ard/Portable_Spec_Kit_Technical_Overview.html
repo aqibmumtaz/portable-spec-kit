@@ -132,7 +132,7 @@
 
 <h4>Flow Documentation</h4>
 <ul>
-  <li>8 flow documents created in <code>docs/flows/</code></li>
+  <li>8 flow documents created in <code>docs/system-flows/</code></li>
   <li>Each flow: title, trigger condition, step-by-step diagram, edge cases, files involved</li>
   <li>Context Management rule: update flows after implementation/tests</li>
 </ul>
@@ -235,7 +235,7 @@ workspace/
 │   └── TRACKER.md                        ← Version history
 ├── src/                                  ← Source code
 ├── tests/                                ← Test files
-├── docs/flows/                           ← System flow documentation
+├── docs/system-flows/                           ← System flow documentation
 └── ard/                                  ← Architecture Reference Documents
 </pre>
 
@@ -297,7 +297,7 @@ workspace/
 <!-- 3. FLOWS -->
 <h2 id="flows">3. System Flows</h2>
 
-<p>8 documented flows in <code>docs/flows/</code> covering every system interaction:</p>
+<p>8 documented flows in <code>docs/system-flows/</code> covering every system interaction:</p>
 
 <table>
   <tr><th>Flow</th><th>Trigger</th><th>Key Actions</th></tr>
@@ -313,7 +313,7 @@ workspace/
 
 <h3>Context Management Rule</h3>
 <div class="highlight">
-  <strong>After completing implementations or running tests:</strong> update <code>agent/AGENT_CONTEXT.md</code> to reflect current code status. Also update <code>docs/flows/</code> if any system flow changed, and update test files if new behaviors were added. Context, flows, and tests must always match the actual state of the code.
+  <strong>After completing implementations or running tests:</strong> update <code>agent/AGENT_CONTEXT.md</code> to reflect current code status. Also update <code>docs/system-flows/</code> if any system flow changed, and update test files if new behaviors were added. Context, flows, and tests must always match the actual state of the code.
 </div>
 
 <!-- 4. AGENTS -->
@@ -469,7 +469,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>CONTRIBUTING.md</code></td><td>PR guidelines, portability test, review process</td></tr>
   <tr><td><code>LICENSE</code></td><td>MIT License</td></tr>
   <tr><td><code>ard/</code></td><td>Architecture Reference Documents (this file + Quick Guide)</td></tr>
-  <tr><td><code>docs/flows/</code></td><td>8 system flow documents</td></tr>
+  <tr><td><code>docs/system-flows/</code></td><td>8 system flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
   <tr><td><code>tests/</code></td><td>258 automated tests</td></tr>

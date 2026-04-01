@@ -1,5 +1,5 @@
 # Portable Spec Kit — AI Agentic Specification-Driven Development
-<!-- Framework Version: v0.2.1 -->
+<!-- Framework Version: v0.2.2 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -105,7 +105,7 @@ workspace/.portable-spec-kit/user-profile/
 3. If workspace copy found → use directly, no questions
 4. Address user by name
 5. Adapt response depth, language, and autonomy to their preferences
-6. When flow docs (`docs/flows/`) or test files are updated during a session → update `agent/AGENT_CONTEXT.md` to reflect what changed
+6. When flow docs (`docs/system-flows/`) or test files are updated during a session → update `agent/AGENT_CONTEXT.md` to reflect what changed
 
 ### Edge Cases
 - No gh CLI → ask name/expertise manually
@@ -196,16 +196,16 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.1 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.2 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
 ### What Gets Updated at Each Level
 
-**On every publish (framework patch):**
-- Increment `<!-- Framework Version -->` in portable-spec-kit.md (e.g., v0.2.1 → v0.2.2)
+**On every publish (project patch):**
+- Increment project version in `agent/AGENT_CONTEXT.md` and `README.md` version badge
 - Update `agent/TASKS.md` — mark tasks done under current release heading
-- Update `agent/AGENT_CONTEXT.md` — current state, test results
+- **Do NOT modify** `<!-- Framework Version -->` in portable-spec-kit.md — that is the kit version, managed by the kit author only. It is read-only for user projects.
 
 **On release milestone (v0.x):**
 - Update `agent/TRACKER.md` — changelog with categorized changes + framework version range included
@@ -369,7 +369,7 @@ Before any deployment:
 - Read user profile at start of every conversation (lookup: workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt to user's preferences
 - Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
-- **After completing implementations or running tests** — update `agent/AGENT_CONTEXT.md` to reflect current code status: what was built, what changed, current version, test results (count, coverage, pass/fail), benchmarks, and what's next. Also update flow documentation in `docs/flows/` if implementation changed any system flows, and update test files if new flows or behaviors were added. Context, flows, and tests must always match the actual state of the code.
+- **After completing implementations or running tests** — update `agent/AGENT_CONTEXT.md` to reflect current code status: what was built, what changed, current version, test results (count, coverage, pass/fail), benchmarks, and what's next. Also update flow documentation in `docs/system-flows/` if implementation changed any system flows, and update test files if new flows or behaviors were added. Context, flows, and tests must always match the actual state of the code.
 - **Update the root framework file** whenever a new general guideline or development practice decision is made — these are shared across all projects
 - Root framework file = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
 - User preferences stored in agent memory/preference files
@@ -425,11 +425,16 @@ Before any deployment:
 
 ### File Creation/Update Rule (applies to ALL auto-managed files)
 
-This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` files. **Check on every session** — not just first session. When the framework is updated (user pulls new version), existing files may need restructuring to match new templates.
+This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` files. **Check immediately when version change is detected** — don't wait for next session. When the framework is updated (user pulls new version), restructure immediately in the current conversation.
 
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
-- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different → check all agent/ files against current templates, restructure where needed, then update the Framework version in AGENT_CONTEXT.md
+- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different:
+  1. Inform user: "Framework updated from v0.x.x to v0.x.x — restructuring agent files to match new templates. All existing content will be preserved."
+  2. Restructure all agent/ files against current templates
+  3. Inform user what changed: "Updated: TASKS.md (version-based headings), TRACKER.md (framework range added), etc."
+  4. Update Framework version in AGENT_CONTEXT.md
+  5. Continue conversation — don't wait for next session
 - **If file already matches template** → leave as-is
 
 ### First Session in New Workspace

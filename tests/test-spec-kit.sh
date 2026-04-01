@@ -617,8 +617,8 @@ pass "Edge: temp dir cleaned"
 section "19. Flow Documentation — All 8 Flows Present"
 # ═══════════════════════════════════════════════════════════════
 
-FLOWS_DIR="$PROJ/docs/flows"
-[ -d "$FLOWS_DIR" ] && pass "docs/flows/ directory exists" || fail "docs/flows/ MISSING"
+FLOWS_DIR="$PROJ/docs/system-flows"
+[ -d "$FLOWS_DIR" ] && pass "docs/system-flows/ directory exists" || fail "docs/system-flows/ MISSING"
 
 for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-driven-development first-session-workspace file-management; do
   [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
@@ -640,7 +640,7 @@ grep -q "symlink" "$FLOWS_DIR/agent-switching.md" && pass "Flow agent-switching:
 
 # Verify spec-driven flow has context update step
 grep -q "AGENT_CONTEXT" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has context update step" || fail "Flow spec-driven: missing context update"
-grep -q "docs/flows" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has flow update step" || fail "Flow spec-driven: missing flow update"
+grep -q "docs/system-flows" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has flow update step" || fail "Flow spec-driven: missing flow update"
 
 # ═══════════════════════════════════════════════════════════════
 section "20. ARD Directory — Guide Moved"
@@ -663,7 +663,7 @@ section "21. Context Management Rule"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "After completing implementations or running tests" "$PROJ/portable-spec-kit.md" && pass "Context rule: implementation/test trigger" || fail "Context rule: missing trigger"
-grep -q "docs/flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
+grep -q "docs/system-flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
 grep -q "Context, flows, and tests must always match" "$PROJ/portable-spec-kit.md" && pass "Context rule: triad requirement" || fail "Context rule: missing triad"
 
 # ═══════════════════════════════════════════════════════════════

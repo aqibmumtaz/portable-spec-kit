@@ -4,7 +4,7 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, learns and follows your engineering practices, and maintains context across sessions — never loses progress, never drops quality.
 
-[![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.2.2-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-258%20passing-brightgreen.svg)](tests/)
 
@@ -544,21 +544,21 @@ Detailed step-by-step diagrams for every system flow:
 
 | Flow | When It Triggers |
 |------|-----------------|
-| **[User Profile Setup](docs/flows/user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
-| **[New Project Setup](docs/flows/new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
-| **[Returning Session](docs/flows/returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
-| **[Agent Switching](docs/flows/agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
-| **[Profile Customization](docs/flows/profile-customization.md)** | Different preferences per project — local override |
-| **[Spec-Driven Development](docs/flows/spec-driven-development.md)** | SPECS → PLANNING → TASKS → TRACKER pipeline |
-| **[First Session Workspace](docs/flows/first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
-| **[File Management](docs/flows/file-management.md)** | Create/update/restructure rule — never lose content |
+| **[User Profile Setup](docs/system-flows/user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
+| **[New Project Setup](docs/system-flows/new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
+| **[Returning Session](docs/system-flows/returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
+| **[Agent Switching](docs/system-flows/agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
+| **[Profile Customization](docs/system-flows/profile-customization.md)** | Different preferences per project — local override |
+| **[Spec-Driven Development](docs/system-flows/spec-driven-development.md)** | SPECS → PLANNING → TASKS → TRACKER pipeline |
+| **[First Session Workspace](docs/system-flows/first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
+| **[File Management](docs/system-flows/file-management.md)** | Create/update/restructure rule — never lose content |
 
 ---
 
 ## Documentation
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
-- **[Flows](docs/flows/)** — Step-by-step diagrams for every system flow
+- **[Flows](docs/system-flows/)** — Step-by-step diagrams for every system flow
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README
 - **[My App Example](examples/my-app/)** — Mid-development project
 - **[portable-spec-kit.md](portable-spec-kit.md)** — The complete framework file

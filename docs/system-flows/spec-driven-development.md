@@ -54,7 +54,7 @@ Phase 3: Execution
         ▼
     After implementation + tests:
         - Update agent/AGENT_CONTEXT.md (what was built, test results, what's next)
-        - Update docs/flows/ if any system flow changed
+        - Update docs/system-flows/ if any system flow changed
         - Context and flows must always match actual code state
         │
         ▼

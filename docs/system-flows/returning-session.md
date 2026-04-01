@@ -103,4 +103,4 @@ Read project context → greet → summarize → continue working
 
 ## Files Updated (at session end)
 - `agent/AGENT_CONTEXT.md` — progress, decisions, what's next
-- `docs/flows/` — if any system flow changed during implementation
+- `docs/system-flows/` — if any system flow changed during implementation
