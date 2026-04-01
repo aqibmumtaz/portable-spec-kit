@@ -1,5 +1,5 @@
 # Portable Spec Kit — AI Agentic Specification-Driven Development
-<!-- Framework Version: v0.2.2 -->
+<!-- Framework Version: v0.2.3 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -141,6 +141,7 @@ workspace/.portable-spec-kit/user-profile/
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
 - Commit ≠ push. Commit is local and safe. Push is remote and requires explicit instruction.
+- **Before every push** — increment project version in: (1) `agent/AGENT_CONTEXT.md` Framework field, (2) `README.md` version badge. Never push without updating version.
 
 ### Critical Operations (ALWAYS ASK FIRST)
 - Creating or deleting repositories
@@ -196,7 +197,7 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.2 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.3 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
