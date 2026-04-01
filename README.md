@@ -2,7 +2,7 @@
 
 **A lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering.**
 
-> Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, enforces your engineering standards, and maintains context across sessions — never loses progress, never drops quality.
+> Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, learns and follows your engineering practices, and maintains context across sessions — never loses progress, never drops quality.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
