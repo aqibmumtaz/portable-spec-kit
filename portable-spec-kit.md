@@ -1,4 +1,5 @@
 # Portable Spec Kit — AI Agentic Specification-Driven Development
+<!-- Framework Version: v0.0.1 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -182,10 +183,19 @@ workspace/.portable-spec-kit/user-profile/
 
 ## Versioning
 
-- Start at **v0.1** (not v1.0)
-- Increment by **0.1** for each release: v0.1 → v0.2 → v0.3
+### Two-Level Versioning
+| Level | Format | When | Where |
+|-------|--------|------|-------|
+| **Framework** | `v0.0.1, v0.0.2, v0.0.3...` | Each publish/commit | `<!-- Framework Version: v0.0.x -->` in portable-spec-kit.md |
+| **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
+| **Production** | `v1.0` | SaaS/production launch | Reserved |
+
+### Rules
+- **Framework version** — increment patch (`v0.0.x`) with each publish to repo
+- **Release version** — increment minor (`v0.x`) for grouped changes documented in ARD
 - **v1.0** reserved for production/SaaS launch
-- Update changelog in ARD docs at end of each version
+- Update changelog in ARD docs at end of each release version
+- Users pull latest framework with `curl` — always get the latest `v0.0.x`
 
 ---
 
@@ -383,16 +393,62 @@ If `WORKSPACE_CONTEXT.md` does not exist:
 
 ### Auto-Scan (On Entering Any Project)
 
+**Important: Confirm project directory first.** The workspace root may not be the actual project directory. Before creating `agent/` files:
+1. List visible directories and ask: "Which directory is your project? (Enter = current directory)"
+2. If user picks an existing directory → use it as project root
+3. If user types a new path (e.g., `src/my-app` or `projects/new-api`) → create it and use as project root
+4. If user skips (Enter) → use current workspace root
+5. Once confirmed → set up the project inside that directory (agent/ files, README, .gitignore, etc.) and guide through the full project setup flow
+
 When starting work on a project, scan for `<project>/agent/` directory:
-1. If `agent/` directory is missing → create it
+1. If `agent/` directory is missing → create it **in the confirmed project directory**
 2. Check for required files: `AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANNING.md`, `TASKS.md`, `TRACKER.md`
 3. Apply the **File Creation/Update Rule** to each agent file and `README.md`
 4. Read `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` for project context
 5. Update `agent/AGENT_CONTEXT.md` at end of every session
 
+### Existing Project Setup (IMPORTANT — Guide, Don't Force)
+
+When the kit is installed on an **existing project** with established structure:
+
+1. **Scan existing structure first** — understand how the project is already organized before proposing changes
+2. **Never force restructure** — the project may have its own conventions, naming, and directory layout that work well
+3. **Present proposed changes as a checklist** — show what the kit would add/change and let the user pick:
+   ```
+   "I've scanned your project. Here's what I suggest:"
+
+   [x] Create agent/ directory with 6 management files
+   [x] Create WORKSPACE_CONTEXT.md
+   [ ] Rename ARD/ → ard/ (to match kit convention)
+   [ ] Create .env.example from existing .env
+   [ ] Restructure README.md to match template
+
+   "Which changes would you like? Select all, some, or none."
+   ```
+4. **Respect user's choices** — if user says "don't restructure README" or "keep my directory names", follow that
+5. **Only create agent/ files by default** — the 6 management files are always safe to add (they don't touch existing code)
+6. **Fill agent files from existing code** — scan what exists and retroactively fill SPECS.md, PLANNING.md, AGENT.md (stack, structure) from the current codebase
+7. **Never rename, move, or delete existing files** without explicit user approval
+
+### Project Scenarios (handle each appropriately)
+
+**Git rule:** Each project in any directory or subdirectory can be its own git repository. Before committing, check if the project directory has its own `.git/` — if yes, commit there. If the project is inside a parent repo, commit from the parent. Never assume git structure — check first.
+
+| Scenario | How to Handle |
+|----------|--------------|
+| **Brand new project** (empty dir) | Full setup: agent/, README, .gitignore, src/, tests/, docs/ — no questions needed |
+| **Existing project with code** | Guide don't force: scan, show checklist, user picks changes (see Existing Project Setup above) |
+| **Workspace with multiple projects** | List directories, ask user which one, set up inside that directory |
+| **Monorepo** (frontend/, backend/, mobile/) | Each subdirectory can be a separate project with its own agent/ — ask user which to set up |
+| **New project inside existing workspace** | User types new path → create directory + full setup inside it |
+| **Returning to kit-managed project** | agent/ exists → read context, no setup needed |
+| **Partial agent/ files** (some missing) | Create only the missing files from templates — don't overwrite existing |
+| **Cloned repo with kit files** | Has portable-spec-kit.md but may lack user profile → load profile, skip project setup |
+| **User wants to add kit to one subdir only** | Set up agent/ in that subdir only, don't touch other directories |
+
 ### New Project Setup (MANDATORY)
 
-When creating a new project, create with ALL of these files and directories:
+When creating a **brand new** project, create with ALL of these files and directories:
 
 ```
 <project>/
