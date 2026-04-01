@@ -20,7 +20,7 @@
 <td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
 </tr>
 <tr>
-<td width="25%" align="center"><strong>🏗️ Self-Scaffolding</strong><br><sub>Auto-creates 6 agent files<br>README · Workspace context<br>Project structure in seconds</sub></td>
+<td width="25%" align="center"><strong>🏗️ Self-Scaffolding</strong><br><sub>Auto-creates 6 agent files<br>8 stack templates built-in<br>Ready to code in seconds</sub></td>
 <td width="25%" align="center"><strong>✅ Self-Validating</strong><br><sub>Agent tests everything<br>Fixes before presenting<br>98%+ coverage target</sub></td>
 </tr>
 </table>
