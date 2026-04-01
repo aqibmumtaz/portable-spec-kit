@@ -1,5 +1,5 @@
 # Portable Spec Kit — AI Agentic Specification-Driven Development
-<!-- Framework Version: v0.2.3 -->
+<!-- Framework Version: v0.2.4 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -197,7 +197,7 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.3 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.4 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
@@ -431,11 +431,21 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
 - **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different, OR if `**Framework:**` field is missing (first time after kit update):
-  1. Inform user: "Framework updated from v0.x.x to v0.x.x — restructuring agent files to match new templates. All existing content will be preserved."
-  2. Restructure all agent/ files against current templates
-  3. Inform user what changed: "Updated: TASKS.md (version-based headings), TRACKER.md (framework range added), etc."
-  4. Update Framework version in AGENT_CONTEXT.md
-  5. Continue conversation — don't wait for next session
+  1. **Do NOT ask** — kit version updates are automatic, not optional. Restructure immediately.
+  2. Restructure all agent/ files against current templates — preserve all existing content
+  3. Update Framework version in AGENT_CONTEXT.md
+  4. Show user a summary of what was updated:
+     ```
+     "Framework updated to v0.2.x. What's new in this version:
+     - [feature 1]
+     - [feature 2]
+
+     Restructured agent files (all content preserved):
+     - TASKS.md → version-based headings
+     - TRACKER.md → framework version range added
+     - AGENT_CONTEXT.md → Framework field added/updated"
+     ```
+  5. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is
 
 ### First Session in New Workspace

@@ -4,7 +4,7 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, learns and follows your engineering practices, and maintains context across sessions — never loses progress, never drops quality.
 
-[![Version](https://img.shields.io/badge/version-v0.2.3-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.2.4-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-258%20passing-brightgreen.svg)](tests/)
 
