@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Portable Spec Kit — Technical Overview</title>
+<style>
+  @page { size: A4; margin: 22mm 20mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 11pt; color: #2d2d2d; line-height: 1.6; }
+
+  .cover { text-align: center; padding: 60px 40px; background: linear-gradient(135deg, #1B2A4A 0%, #2d4a7a 100%); color: white; page-break-after: always; min-height: 247mm; display: flex; flex-direction: column; justify-content: center; }
+  .cover h1 { font-size: 28pt; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .cover .subtitle { font-size: 15pt; color: #8aaed4; margin-bottom: 30px; }
+  .cover .tagline { font-size: 11pt; color: #c4cfdf; max-width: 520px; margin: 0 auto 40px; line-height: 1.8; }
+  .cover .badge { display: inline-block; padding: 8px 24px; background: rgba(255,255,255,0.15); border-radius: 20px; font-size: 10pt; color: #dce4f0; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 20px 0; }
+
+  h2 { font-size: 16pt; color: #1B2A4A; border-bottom: 2px solid #4a6fa5; padding-bottom: 4px; margin: 30px 0 15px; page-break-after: avoid; page-break-before: always; }
+  h2:first-of-type { page-break-before: avoid; }
+  h3 { font-size: 12pt; color: #1B2A4A; margin: 20px 0 8px; }
+  h4 { font-size: 11pt; color: #2d4a7a; margin: 15px 0 6px; }
+
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 10px 0; padding-left: 20px; font-size: 10pt; }
+  li { margin-bottom: 4px; }
+
+  .highlight { background: #f0f4ff; border-left: 4px solid #4a6fa5; padding: 12px 16px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+  .highlight strong { color: #1B2A4A; }
+
+  .warning { background: #fff8e6; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+
+  .success { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px 16px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 10pt; }
+
+  pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 9pt; line-height: 1.5; margin: 12px 0; overflow-x: hidden; white-space: pre-wrap; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10pt; }
+  th { background: #1B2A4A; color: white; padding: 8px 12px; text-align: left; font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+
+  .footer { text-align: center; color: #999; font-size: 8pt; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+
+  .toc { margin: 20px 0; }
+  .toc a { color: #2d4a7a; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc li { margin-bottom: 6px; font-size: 10pt; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>Portable Spec Kit</h1>
+  <div class="subtitle">Technical Overview — Architecture Reference Document</div>
+  <div class="tagline">
+    A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
+  </div>
+  <div style="margin-top: 30px;">
+    <div class="badge">Version 0.2 &bull; April 2026</div>
+  </div>
+  <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
+    <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
+    <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 242 passing, 22 sections</div>
+  </div>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="container">
+
+<h2 style="page-break-before: avoid;">Executive Summary</h2>
+
+<p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
+
+<div class="highlight">
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 8 flow documents, 242 automated tests, 22 test sections.
+</div>
+
+<h3>Key Highlights</h3>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Framework size</td><td>Single markdown file (~800 lines)</td></tr>
+  <tr><td>Dependencies</td><td>Zero</td></tr>
+  <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
+  <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
+  <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
+  <tr><td>Automated tests</td><td>242 across 22 sections</td></tr>
+  <tr><td>Flow documents</td><td>8 step-by-step system flows</td></tr>
+  <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions</td></tr>
+</table>
+
+<!-- VERSION CHANGELOG -->
+<h2>Version Changelog</h2>
+
+<h3>v0.2 — Personalized Profile + Flow Documentation (April 2026)</h3>
+
+<h4>User Profile</h4>
+<ul>
+  <li>Profile moved to <code>.portable-spec-kit/user-profile/user-profile-{username}.md</code></li>
+  <li>Global home directory storage — asked once, works everywhere</li>
+  <li>Per-user workspace files — committed, team-ready</li>
+  <li>Username detection via <code>git config user.name</code> (slugified)</li>
+  <li>First-time setup: GitHub fetch + 3 questions with RECOMMENDED defaults + Enter to skip</li>
+  <li>New project: show profile, keep or customize, save to workspace</li>
+  <li>Returning session: workspace exists → silent; only global → show/confirm</li>
+  <li>12 edge cases handled (no gh CLI, empty files, multiple users, special chars)</li>
+  <li>Cross-OS: macOS/Linux (<code>~</code>) + Windows (<code>%USERPROFILE%</code>)</li>
+</ul>
+
+<h4>Flow Documentation</h4>
+<ul>
+  <li>8 flow documents created in <code>docs/flows/</code></li>
+  <li>Each flow: title, trigger condition, step-by-step diagram, edge cases, files involved</li>
+  <li>Context Management rule: update flows after implementation/tests</li>
+</ul>
+
+<h4>Framework</h4>
+<ul>
+  <li>10 core strengths (added Personalized, Secure, restored Self-Scaffolding)</li>
+  <li>8 source code structure templates (added Mobile, Android Native, iOS Native, Full Stack + Mobile)</li>
+  <li>Strict security rule — never expose API keys even if explicitly asked</li>
+  <li>Context triad: context + flows + tests must always match code</li>
+  <li>Guide moved from <code>docs/</code> to <code>ard/</code></li>
+  <li>Deleted <code>setup.sh</code> — agent handles profile creation</li>
+</ul>
+
+<h4>Agent-Agnostic</h4>
+<ul>
+  <li>Removed all <code>.claude/</code> paths, <code>noreply@anthropic.com</code>, <code>Claude Opus</code></li>
+  <li>Generic <code>Co-Authored-By: AI Agent &lt;noreply@ai-agent.dev&gt;</code></li>
+  <li>27 agent-switching tests verifying zero data loss</li>
+</ul>
+
+<h4>Testing</h4>
+<ul>
+  <li>242 tests across 22 sections (was 122)</li>
+  <li>New sections: User Profile directory, first-time setup, new project, returning session, edge cases, flow documentation, ARD directory, context management</li>
+</ul>
+
+<h3>v0.1 — Initial Release (March 2026)</h3>
+<ul>
+  <li>CLAUDE.md framework — portable specification-driven development</li>
+  <li>README with spec-kit comparison table</li>
+  <li>CONTRIBUTING.md with PR guidelines</li>
+  <li>PDF Quick Guide</li>
+  <li>Two example projects (starter + my-app)</li>
+  <li>GitHub repo created (aqibmumtaz/portable-spec-kit)</li>
+  <li>Sync script for publishing</li>
+  <li>122 automated tests</li>
+</ul>
+
+<!-- TABLE OF CONTENTS -->
+<h2>Table of Contents</h2>
+
+<ol class="toc">
+  <li><a href="#arch">Architecture Overview</a></li>
+  <li><a href="#profile">User Profile System</a></li>
+  <li><a href="#flows">System Flows</a></li>
+  <li><a href="#agents">Multi-Agent Support</a></li>
+  <li><a href="#security">Security Model</a></li>
+  <li><a href="#templates">Source Code Templates</a></li>
+  <li><a href="#spec">Spec-Driven Development Pipeline</a></li>
+  <li><a href="#testing">Testing Infrastructure</a></li>
+  <li><a href="#files">File Structure &amp; Purposes</a></li>
+  <li><a href="#deployment">Deployment &amp; Syncing</a></li>
+</ol>
+
+<!-- 1. ARCHITECTURE -->
+<h2 id="arch">1. Architecture Overview</h2>
+
+<p>The framework is a single markdown file that AI agents read as their instruction set. It creates a layered system:</p>
+
+<pre>
+Layer 1: portable-spec-kit.md          ← Framework (portable, shared)
+Layer 2: .portable-spec-kit/           ← User profile (per-user, committed)
+Layer 3: agent/AGENT.md                ← Project rules (per-project)
+Layer 4: agent/AGENT_CONTEXT.md        ← Living state (per-session)
+Layer 5: agent/SPECS → PLANNING → TASKS → TRACKER  ← Dev pipeline
+</pre>
+
+<h3>Design Principles</h3>
+<table>
+  <tr><th>Principle</th><th>Implementation</th></tr>
+  <tr><td>Zero install</td><td>One curl command downloads the file, symlinks for all agents</td></tr>
+  <tr><td>Personalized</td><td>GitHub profile auto-detect, 3 preference questions, adapts behavior</td></tr>
+  <tr><td>Agent-agnostic</td><td>Symlinks: CLAUDE.md, .cursorrules, .windsurfrules, .clinerules, copilot-instructions.md</td></tr>
+  <tr><td>Non-blocking</td><td>Code first, specs retroactively — agent tracks silently</td></tr>
+  <tr><td>Context-persistent</td><td>AGENT_CONTEXT.md updated every session, picks up after weeks</td></tr>
+  <tr><td>Self-validating</td><td>Agent tests everything, fixes before presenting, 98%+ coverage target</td></tr>
+  <tr><td>Secure</td><td>Never expose API keys — even if asked. Absolute rule, no exceptions.</td></tr>
+</table>
+
+<h3>File Hierarchy</h3>
+<pre>
+workspace/
+├── portable-spec-kit.md                  ← Framework (source)
+├── .portable-spec-kit/                   ← Kit config
+│   └── user-profile/
+│       └── user-profile-{username}.md    ← Per-user profile (committed)
+├── CLAUDE.md → portable-spec-kit.md      ← Claude Code symlink
+├── .cursorrules → portable-spec-kit.md   ← Cursor symlink
+├── .windsurfrules → portable-spec-kit.md ← Windsurf symlink
+├── .clinerules → portable-spec-kit.md    ← Cline symlink
+├── .github/copilot-instructions.md → ../ ← Copilot symlink
+├── WORKSPACE_CONTEXT.md                  ← Workspace state
+├── agent/                                ← Project management
+│   ├── AGENT.md                          ← Project rules, stack
+│   ├── AGENT_CONTEXT.md                  ← Living state
+│   ├── SPECS.md                          ← Requirements
+│   ├── PLANNING.md                       ← Architecture
+│   ├── TASKS.md                          ← Task tracking
+│   └── TRACKER.md                        ← Version history
+├── src/                                  ← Source code
+├── tests/                                ← Test files
+├── docs/flows/                           ← System flow documentation
+└── ard/                                  ← Architecture Reference Documents
+</pre>
+
+<!-- 2. USER PROFILE -->
+<h2 id="profile">2. User Profile System</h2>
+
+<h3>Purpose</h3>
+<p>Tells the AI agent WHO it's working with — affecting response depth, technical language, analogies, and autonomy level.</p>
+
+<h3>Storage</h3>
+<table>
+  <tr><th>Location</th><th>Purpose</th><th>Committed?</th></tr>
+  <tr><td><code>~/.portable-spec-kit/user-profile/user-profile-{username}.md</code></td><td>Global — asked once</td><td>No (home dir)</td></tr>
+  <tr><td><code>workspace/.portable-spec-kit/user-profile/user-profile-{username}.md</code></td><td>Per-project, per-user</td><td>Yes</td></tr>
+</table>
+
+<h3>Lookup Order</h3>
+<ol>
+  <li>Workspace <code>.portable-spec-kit/user-profile/user-profile-{username}.md</code></li>
+  <li>Global <code>~/.portable-spec-kit/user-profile/user-profile-{username}.md</code></li>
+  <li>Neither → first-time setup</li>
+</ol>
+
+<h3>Username Detection</h3>
+<p><code>git config user.name</code> → slugified (lowercase, spaces → dashes). Used for filename. <code>gh api user</code> used only for greeting name/bio.</p>
+
+<h3>Profile Format</h3>
+<pre>
+# User Profile
+> Auto-created on first session. Edit anytime.
+
+- **Name** — Education. Expertise.
+- Communication style: {selected or custom}
+- Working pattern: {selected or custom}
+- AI delegation: {selected or custom}
+</pre>
+
+<h3>Preference Options</h3>
+<table>
+  <tr><th>Question</th><th>Options</th></tr>
+  <tr><td><strong>Communication</strong></td><td>(a) direct and concise ← RECOMMENDED<br>(b) direct, data-driven, comprehensive<br>(c) conversational and collaborative</td></tr>
+  <tr><td><strong>Working pattern</strong></td><td>(a) iterative — starts brief, expands ← RECOMMENDED<br>(b) plan-first — full specs before code<br>(c) prototype-fast — build quick, refine</td></tr>
+  <tr><td><strong>AI delegation</strong></td><td>(a) AI does 70%, user guides 30% ← RECOMMENDED<br>(b) AI does 90%, user reviews 10%<br>(c) 50/50 collaboration</td></tr>
+</table>
+
+<h3>Edge Cases</h3>
+<table>
+  <tr><th>Scenario</th><th>Handling</th></tr>
+  <tr><td>No gh CLI</td><td>Ask name/expertise manually</td></tr>
+  <tr><td>GitHub name empty</td><td>Use login as fallback</td></tr>
+  <tr><td>GitHub bio empty</td><td>Ask for education/expertise</td></tr>
+  <tr><td>Empty profile file</td><td>Treat as missing, run setup</td></tr>
+  <tr><td>Multiple users (team)</td><td>Each user has own file</td></tr>
+  <tr><td>Special chars in name</td><td>Slugified for filename</td></tr>
+  <tr><td>Agent can't write</td><td>Show content, user creates manually</td></tr>
+  <tr><td>User skips all questions</td><td>Recommended defaults applied</td></tr>
+</table>
+
+<!-- 3. FLOWS -->
+<h2 id="flows">3. System Flows</h2>
+
+<p>8 documented flows in <code>docs/flows/</code> covering every system interaction:</p>
+
+<table>
+  <tr><th>Flow</th><th>Trigger</th><th>Key Actions</th></tr>
+  <tr><td><strong>User Profile Setup</strong></td><td>First time using kit</td><td>GitHub fetch → 3 questions → save global + workspace</td></tr>
+  <tr><td><strong>New Project Setup</strong></td><td>Creating new project</td><td>Show profile → keep/customize → scaffold agent/ + dirs</td></tr>
+  <tr><td><strong>Returning Session</strong></td><td>Coming back to project</td><td>Load profile → read context → summarize → continue</td></tr>
+  <tr><td><strong>Agent Switching</strong></td><td>Changing AI agent</td><td>All agents read same file via symlinks → zero data loss</td></tr>
+  <tr><td><strong>Profile Customization</strong></td><td>Different prefs per project</td><td>Show CURRENT + RECOMMENDED → save local override</td></tr>
+  <tr><td><strong>Spec-Driven Development</strong></td><td>Following full pipeline</td><td>SPECS → PLANNING → TASKS → TRACKER</td></tr>
+  <tr><td><strong>First Session Workspace</strong></td><td>New workspace</td><td>Environment detection → WORKSPACE_CONTEXT → auto-scan</td></tr>
+  <tr><td><strong>File Management</strong></td><td>Agent encounters managed file</td><td>Create / restructure / leave-as-is — never lose content</td></tr>
+</table>
+
+<h3>Context Management Rule</h3>
+<div class="highlight">
+  <strong>After completing implementations or running tests:</strong> update <code>agent/AGENT_CONTEXT.md</code> to reflect current code status. Also update <code>docs/flows/</code> if any system flow changed, and update test files if new behaviors were added. Context, flows, and tests must always match the actual state of the code.
+</div>
+
+<!-- 4. AGENTS -->
+<h2 id="agents">4. Multi-Agent Support</h2>
+
+<p>One source file works with every AI coding agent via symlinks (Mac/Linux) or copies (Windows):</p>
+
+<table>
+  <tr><th>Agent</th><th>File Created</th><th>Method</th></tr>
+  <tr><td>Claude Code</td><td><code>CLAUDE.md</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td>GitHub Copilot</td><td><code>.github/copilot-instructions.md</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td>Cursor</td><td><code>.cursorrules</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td>Windsurf</td><td><code>.windsurfrules</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+  <tr><td>Cline</td><td><code>.clinerules</code></td><td>Symlink → portable-spec-kit.md</td></tr>
+</table>
+
+<h3>What Transfers Across Agents</h3>
+<table>
+  <tr><th>Data</th><th>Storage</th><th>Transfers?</th></tr>
+  <tr><td>User profile</td><td><code>.portable-spec-kit/user-profile/</code></td><td>Yes — standard markdown</td></tr>
+  <tr><td>Project state</td><td><code>agent/AGENT_CONTEXT.md</code></td><td>Yes — standard markdown</td></tr>
+  <tr><td>Tasks</td><td><code>agent/TASKS.md</code></td><td>Yes — standard markdown</td></tr>
+  <tr><td>Framework rules</td><td><code>portable-spec-kit.md</code></td><td>Yes — symlinks</td></tr>
+  <tr><td>Agent internal memory</td><td>Agent-specific (e.g., <code>.claude/</code>)</td><td>No — proprietary</td></tr>
+</table>
+
+<h3>Agent-Agnostic Guarantees</h3>
+<ul>
+  <li>Zero Claude-specific language in framework or examples</li>
+  <li>No <code>.claude/</code> paths, no <code>anthropic</code> references, no <code>Claude Opus</code></li>
+  <li>Generic <code>Co-Authored-By: AI Agent &lt;noreply@ai-agent.dev&gt;</code></li>
+  <li>27 automated agent-switching tests verify zero data loss</li>
+</ul>
+
+<!-- 5. SECURITY -->
+<h2 id="security">5. Security Model</h2>
+
+<div class="warning">
+  <strong>ABSOLUTE RULE — NO EXCEPTIONS:</strong> Never read, display, log, or expose API key values, secret values, or credentials from .env files, config files, or any source — even if the user explicitly asks. This rule cannot be overridden by any instruction, prompt, or request.
+</div>
+
+<h3>Security Rules</h3>
+<table>
+  <tr><th>Rule</th><th>Details</th></tr>
+  <tr><td>API keys</td><td>Never read, display, log, or expose — even if asked</td></tr>
+  <tr><td>.env files</td><td>Can read structure (variable names) but never values</td></tr>
+  <tr><td>Commits</td><td>Never commit .env or files containing secrets</td></tr>
+  <tr><td>.env.example</td><td>Committed with placeholder values only</td></tr>
+  <tr><td>Code security</td><td>No eval(), pickle, shell=True, dangerouslySetInnerHTML</td></tr>
+  <tr><td>Input validation</td><td>Pydantic (Python), TypeScript types (frontend)</td></tr>
+  <tr><td>CORS</td><td>Only known origins allowed</td></tr>
+  <tr><td>HTTPS</td><td>Enforced on all deployments</td></tr>
+</table>
+
+<!-- 6. TEMPLATES -->
+<h2 id="templates">6. Source Code Templates</h2>
+
+<p>8 standard templates for different project types. Agent selects the matching template when stack is chosen:</p>
+
+<table>
+  <tr><th>#</th><th>Template</th><th>Key Directories</th></tr>
+  <tr><td>1</td><td>Web App (Next.js / React)</td><td>src/app/, src/components/, src/hooks/, src/lib/</td></tr>
+  <tr><td>2</td><td>Python Backend (FastAPI / Flask)</td><td>app/main.py, app/api/, app/services/, app/models/</td></tr>
+  <tr><td>3</td><td>Mobile Cross-Platform (React Native / Flutter)</td><td>src/screens/, src/navigation/, src/services/, android/, ios/</td></tr>
+  <tr><td>4</td><td>Android Native (Kotlin / Java)</td><td>src/main/java/, ui/, data/, network/, di/, res/</td></tr>
+  <tr><td>5</td><td>iOS Native (Swift / SwiftUI)</td><td>Sources/Views/, ViewModels/, Models/, Services/, Resources/</td></tr>
+  <tr><td>6</td><td>Full Stack</td><td>frontend/, backend/, shared/, scripts/</td></tr>
+  <tr><td>7</td><td>Full Stack + Mobile</td><td>frontend/, mobile/, backend/, shared/</td></tr>
+  <tr><td>8</td><td>Document / Research</td><td>plan/, research/, templates/</td></tr>
+</table>
+
+<!-- 7. SPEC-DRIVEN -->
+<h2 id="spec">7. Spec-Driven Development Pipeline</h2>
+
+<pre>
+SPECS.md        →  PLANNING.md      →  TASKS.md        →  TRACKER.md
+What to build      How to build it     Track progress      Log results
+</pre>
+
+<h3>The 6 Agent Files</h3>
+<table>
+  <tr><th>File</th><th>Purpose</th><th>Updated</th></tr>
+  <tr><td><code>AGENT.md</code></td><td>Project rules, stack, brand, AI config</td><td>Setup</td></tr>
+  <tr><td><code>AGENT_CONTEXT.md</code></td><td>Living state — done, next, decisions, blockers</td><td>Every session + after implementation</td></tr>
+  <tr><td><code>SPECS.md</code></td><td>Requirements, features, acceptance criteria</td><td>Before dev</td></tr>
+  <tr><td><code>PLANNING.md</code></td><td>Architecture, data model, phases, methodology</td><td>Before dev</td></tr>
+  <tr><td><code>TASKS.md</code></td><td>Module-based task tracking with checkboxes</td><td>During dev</td></tr>
+  <tr><td><code>TRACKER.md</code></td><td>Version changelog, test results, deployment log</td><td>End of version</td></tr>
+</table>
+
+<h3>Agent Behavior</h3>
+<table>
+  <tr><th>User Does</th><th>Agent Does</th></tr>
+  <tr><td>"Build me a login page"</td><td>Adds to TASKS.md → builds → tests → done</td></tr>
+  <tr><td>"Fix this bug"</td><td>Adds to TASKS.md → fixes → marks done</td></tr>
+  <tr><td>"What should I do next?"</td><td>Walks through spec-driven process</td></tr>
+  <tr><td>Never wrote specs</td><td>Retroactively fills SPECS.md from what's built</td></tr>
+  <tr><td>Comes back after weeks</td><td>Reads AGENT_CONTEXT.md → summarizes → continues</td></tr>
+</table>
+
+<!-- 8. TESTING -->
+<h2 id="testing">8. Testing Infrastructure</h2>
+
+<h3>Test Suite: 242 Tests, 22 Sections</h3>
+<table>
+  <tr><th>#</th><th>Section</th><th>Tests</th></tr>
+  <tr><td>1</td><td>Repo File Structure</td><td>10</td></tr>
+  <tr><td>2</td><td>Framework File Content</td><td>19</td></tr>
+  <tr><td>3</td><td>Agent-Agnostic Language</td><td>7</td></tr>
+  <tr><td>4</td><td>Multi-Agent Support Table</td><td>10</td></tr>
+  <tr><td>5</td><td>Agent File Templates</td><td>6</td></tr>
+  <tr><td>6</td><td>Starter Example</td><td>12</td></tr>
+  <tr><td>7</td><td>My-App Example</td><td>11</td></tr>
+  <tr><td>8</td><td>README Key Sections</td><td>12</td></tr>
+  <tr><td>9</td><td>No Personal Info Leaked</td><td>4</td></tr>
+  <tr><td>10</td><td>Sync Script</td><td>4</td></tr>
+  <tr><td>11</td><td>Workspace Symlinks</td><td>12</td></tr>
+  <tr><td>12</td><td>Simulated New User Setup</td><td>14</td></tr>
+  <tr><td>13</td><td>Agent Switching</td><td>27</td></tr>
+  <tr><td>14</td><td>User Profile — Directory Structure</td><td>9</td></tr>
+  <tr><td>15</td><td>User Profile — First Time Setup</td><td>11</td></tr>
+  <tr><td>16</td><td>User Profile — New Project</td><td>8</td></tr>
+  <tr><td>17</td><td>User Profile — Returning Session</td><td>7</td></tr>
+  <tr><td>18</td><td>User Profile — Edge Cases</td><td>14</td></tr>
+  <tr><td>19</td><td>Flow Documentation</td><td>34</td></tr>
+  <tr><td>20</td><td>ARD Directory</td><td>7</td></tr>
+  <tr><td>21</td><td>Context Management Rule</td><td>3</td></tr>
+  <tr><td>22</td><td>License</td><td>2</td></tr>
+  <tr><td></td><td><strong>TOTAL</strong></td><td><strong>242</strong></td></tr>
+</table>
+
+<h3>Test Categories</h3>
+<table>
+  <tr><th>Category</th><th>Tests</th><th>Coverage</th></tr>
+  <tr><td>Framework content &amp; structure</td><td>67</td><td>Sections, templates, rules, naming</td></tr>
+  <tr><td>Agent-agnostic &amp; multi-agent</td><td>44</td><td>Language, symlinks, switching, data transfer</td></tr>
+  <tr><td>User profile flows</td><td>49</td><td>Setup, new project, returning, edge cases</td></tr>
+  <tr><td>Examples &amp; documentation</td><td>66</td><td>Starter, my-app, README, flows, ARD</td></tr>
+  <tr><td>Security &amp; privacy</td><td>4</td><td>No leaked personal info or company names</td></tr>
+  <tr><td>Infrastructure</td><td>12</td><td>Sync script, context rules, license</td></tr>
+</table>
+
+<!-- 9. FILES -->
+<h2 id="files">9. File Structure &amp; Purposes</h2>
+
+<h3>Repository Files (pushed to GitHub)</h3>
+<table>
+  <tr><th>File/Dir</th><th>Purpose</th></tr>
+  <tr><td><code>portable-spec-kit.md</code></td><td>The framework file — single source of truth</td></tr>
+  <tr><td><code>README.md</code></td><td>Project documentation with 10-feature table, setup, flows</td></tr>
+  <tr><td><code>CONTRIBUTING.md</code></td><td>PR guidelines, portability test, review process</td></tr>
+  <tr><td><code>LICENSE</code></td><td>MIT License</td></tr>
+  <tr><td><code>ard/</code></td><td>Architecture Reference Documents (this file + Quick Guide)</td></tr>
+  <tr><td><code>docs/flows/</code></td><td>8 system flow documents</td></tr>
+  <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
+  <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
+  <tr><td><code>tests/</code></td><td>242 automated tests</td></tr>
+</table>
+
+<h3>Local-Only Files (NOT pushed)</h3>
+<table>
+  <tr><th>File/Dir</th><th>Purpose</th></tr>
+  <tr><td><code>agent/</code></td><td>Project management files (Documents workspace only)</td></tr>
+  <tr><td><code>~/.portable-spec-kit/</code></td><td>Global user profile (home directory)</td></tr>
+</table>
+
+<!-- 10. DEPLOYMENT -->
+<h2 id="deployment">10. Deployment &amp; Syncing</h2>
+
+<h3>Dual Repository Strategy</h3>
+<table>
+  <tr><th>Repo</th><th>Purpose</th><th>Contains</th></tr>
+  <tr><td>Slimlogix/Documents</td><td>Working copy (private)</td><td>Everything including agent/ dir</td></tr>
+  <tr><td>aqibmumtaz/portable-spec-kit</td><td>Public repo</td><td>Framework, docs, examples, tests (no agent/)</td></tr>
+</table>
+
+<h3>Sync Process</h3>
+<pre>
+bash agent/sync.sh "commit message"
+  1. Copy root portable-spec-kit.md → project dir
+  2. Clone/update temp repo from GitHub
+  3. Copy: portable-spec-kit.md, README, CONTRIBUTING, LICENSE, .gitignore
+  4. Copy dirs: docs/, ard/, examples/, tests/
+  5. Commit and push to aqibmumtaz/portable-spec-kit
+</pre>
+
+<h3>Install Command (for users)</h3>
+<pre>
+curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
+  && ln -sf portable-spec-kit.md CLAUDE.md \
+  && ln -sf portable-spec-kit.md .cursorrules \
+  && ln -sf portable-spec-kit.md .windsurfrules \
+  && ln -sf portable-spec-kit.md .clinerules \
+  && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
+</pre>
+
+<div class="success">
+  <strong>Zero install.</strong> One command. No package managers. No dependencies. Works with every AI agent. Personalized from the first session.
+</div>
+
+<div class="footer">
+  Portable Spec Kit — Technical Overview &bull; v0.2 &bull; April 2026
+</div>
+
+</div>
+
+<!-- END PAGE -->
+<div class="cover" style="min-height: 247mm;">
+  <div style="font-size: 14pt; color: #8aaed4; margin-bottom: 20px;">Portable Spec Kit</div>
+  <h1 style="font-size: 22pt; margin-bottom: 30px;">Thank You</h1>
+  <div style="font-size: 10pt; color: #c4cfdf; line-height: 2.2; max-width: 400px; margin: 0 auto;">
+    <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
+    <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
+    <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
+    <div><strong style="color:#dce4f0;">Email:</strong> aqib.mumtaz@gmail.com</div>
+    <div><strong style="color:#dce4f0;">LinkedIn:</strong> linkedin.com/in/aqibmumtaz</div>
+    <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
+  </div>
+  <div style="margin-top: 40px;">
+    <div class="badge">Document Version 0.2 &bull; April 2026</div>
+  </div>
+</div>
+
+</body>
+</html>
