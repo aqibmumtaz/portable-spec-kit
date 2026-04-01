@@ -190,12 +190,53 @@ workspace/.portable-spec-kit/user-profile/
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
+### What Gets Updated at Each Level
+
+**On every publish (framework v0.0.x):**
+- Increment `<!-- Framework Version: v0.0.x -->` in portable-spec-kit.md
+- Update `agent/TASKS.md` — mark tasks done under current release heading
+- Update `agent/AGENT_CONTEXT.md` — current state, test results
+
+**On release milestone (v0.x):**
+- Update `agent/TRACKER.md` — changelog with categorized changes + framework version range included
+- Update ARD docs — Technical Overview with new version section
+- Regenerate PDFs
+- Move completed tasks in `agent/TASKS.md` to done, start new version heading
+- Update `agent/AGENT_CONTEXT.md` — version bumped to new release
+
+### TASKS.md Versioning Structure
+```
+## v0.2 — Done
+- [x] Completed task 1
+- [x] Completed task 2
+
+## v0.3 — Current
+- [x] Done task
+- [ ] Pending task
+
+## Backlog
+- [ ] Future task (next release)
+```
+
+### TRACKER.md Versioning Structure
+```
+## v0.2 — Title (Date)
+Framework versions: v0.0.6 — v0.0.15
+
+### Changes
+- **Category:** Change description
+
+### Tests
+- X tests passing, Y% coverage
+```
+
 ### Rules
 - **Framework version** — increment patch (`v0.0.x`) with each publish to repo
 - **Release version** — increment minor (`v0.x`) for grouped changes documented in ARD
 - **v1.0** reserved for production/SaaS launch
-- Update changelog in ARD docs at end of each release version
 - Users pull latest framework with `curl` — always get the latest `v0.0.x`
+- TASKS.md groups work under release version headings
+- TRACKER.md records completed releases with framework version range
 
 ---
 
@@ -205,10 +246,12 @@ workspace/.portable-spec-kit/user-profile/
 - **When user assigns new tasks, add them to TASKS.md FIRST before starting work**
 - **Every task the user requests** must be tracked in the project's `TASKS.md`
 - Add tasks when requested, mark `[x]` as soon as completed
-- Group related tasks under descriptive headings (e.g., "Scoring System", "UI Polish", "Testing")
+- **Organize tasks under release version headings** (e.g., `## v0.1 — Current`, `## v0.2 — Done`) — see Versioning section
+- Future tasks go under `## Backlog (Future Releases)`
 - Design decisions and architectural plans go in `PLANNING.md` — not in separate plan files
 - If a feature needs a detailed plan, add it as a section in `PLANNING.md` (not a new `*_PLAN.md` file)
 - Keep `TASKS.md` and `PLANNING.md` in sync — update both when work is completed
+- Maintain a **Progress Summary** table at the bottom of TASKS.md showing tasks done, tests, and status per version
 - Test UI pages live under `/test-ui/` route with an index page listing all test modules
 
 ### Testing (MANDATORY)
@@ -370,10 +413,11 @@ Before any deployment:
 
 ### File Creation/Update Rule (applies to ALL auto-managed files)
 
-This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` files.
+This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` files. **Check on every session** — not just first session. When the framework is updated (user pulls new version), existing files may need restructuring to match new templates.
 
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
+- **If framework was updated** (version changed) → check all agent/ files against current templates, restructure where needed
 - **If file already matches template** → leave as-is
 
 ### First Session in New Workspace
@@ -921,39 +965,36 @@ src/
 ```markdown
 # TASKS.md — <Project Name>
 
-> **Purpose:** Task tracking — checkboxes for todo/done, organized by module/sprint.
+> **Purpose:** Task tracking — organized by release version.
 > **Role:** Updated during development. Add tasks FIRST, then work.
 
 ## v0.1 — Current
-
-### Module 1: Setup
-| # | Task | Status |
-|---|------|:------:|
-| 1.1 | Project setup | [x] |
-| 1.2 | ... | [ ] |
+- [x] Project setup
+- [ ] Task 1
+- [ ] Task 2
 
 ### Blocked
 <!-- Tasks waiting on external dependencies -->
 
-### Bug Fixes & Polish
-| # | Task | Status | Notes |
-|---|------|:------:|-------|
-| | | | |
+## Backlog (Future Releases)
+- [ ] Future feature 1
+- [ ] Future feature 2
 
 ## Progress Summary
 | Version | Tasks Done | Tests | Status |
 |---------|:----------:|:-----:|--------|
-| v0.1 | 0 | 0 | In Progress |
+| v0.1 | 1 | 0 | In Progress |
 ```
 
 **agent/TRACKER.md:**
 ```markdown
 # TRACKER.md — <Project Name>
 
-> **Purpose:** Version history — changelog, deployments, test results, decisions.
-> **Role:** Updated at end of each version release.
+> **Purpose:** Version history — changelog, deployments, test results.
+> **Role:** Updated at end of each release version.
 
 ## v0.1 — Title (Date)
+Framework versions: v0.0.1 — v0.0.x
 
 ### Summary
 Brief description of what this version delivers.

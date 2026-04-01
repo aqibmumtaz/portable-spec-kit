@@ -82,10 +82,12 @@
 - **When user assigns new tasks, add them to TASKS.md FIRST before starting work**
 - **Every task the user requests** must be tracked in the project's `TASKS.md`
 - Add tasks when requested, mark `[x]` as soon as completed
-- Group related tasks under descriptive headings (e.g., "Scoring System", "UI Polish", "Testing")
+- **Organize tasks under release version headings** (e.g., `## v0.1 — Current`, `## v0.2 — Done`) — see Versioning section
+- Future tasks go under `## Backlog (Future Releases)`
 - Design decisions and architectural plans go in `PLANNING.md` — not in separate plan files
 - If a feature needs a detailed plan, add it as a section in `PLANNING.md` (not a new `*_PLAN.md` file)
 - Keep `TASKS.md` and `PLANNING.md` in sync — update both when work is completed
+- Maintain a **Progress Summary** table at the bottom of TASKS.md showing tasks done, tests, and status per version
 - Test UI pages live under `/test-ui/` route with an index page listing all test modules
 
 ### Testing (MANDATORY)
