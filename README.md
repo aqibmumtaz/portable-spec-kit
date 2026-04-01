@@ -65,7 +65,7 @@ Copy-Item portable-spec-kit.md .github/copilot-instructions.md
 **What happens:** Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent. Edit one file — all agents stay in sync.
 
 Your AI agent reads the framework and on first session:
-- **Sets up your personalized profile** — fetches your GitHub identity, asks your preferences, creates `.user-profile.md`
+- **Sets up your personalized profile** — fetches your GitHub identity, asks your preferences, saves to `.portable-spec-kit/user-profile/`
 - Creates project management files (`agent/` directory with 6 structured files)
 - Follows your coding standards, testing rules, security practices
 - Tracks every task, decision, and version
@@ -131,7 +131,7 @@ your-project/
 The agent reads the framework and automatically sets everything up:
 
 ```
-✓ Sets up your profile (.user-profile.md — GitHub auto-detect + preferences)
+✓ Sets up your profile (.portable-spec-kit/user-profile/ — GitHub auto-detect + preferences)
 ✓ Detects your environment (OS, Node, Python, tools)
 ✓ Creates WORKSPACE_CONTEXT.md (workspace state)
 ✓ Creates agent/ directory with 6 management files:
@@ -213,7 +213,9 @@ What to build      How to build it     Track progress      Log results
 ```
 your-project/
 ├── portable-spec-kit.md    ← The framework (source file)
-├── .user-profile.md        ← Your profile (auto-created, never committed)
+├── .portable-spec-kit/     ← Kit config (user profiles, per-user, committed)
+│   └── user-profile/
+│       └── user-profile-{username}.md
 ├── CLAUDE.md               ← Symlink (Claude Code)
 ├── .cursorrules            ← Symlink (Cursor)
 ├── WORKSPACE_CONTEXT.md    ← Auto-created (workspace state)
@@ -306,34 +308,47 @@ You do 10% — review and approve.
 
 ### User Profile — Personalized AI Experience
 
-On first session, the agent creates `.user-profile.md` by fetching your GitHub profile and asking 3 quick questions:
+On first session, the agent creates your profile by fetching your GitHub identity and asking 3 quick questions. Press Enter to use recommended, or type your own:
 
 ```
-Agent: "Welcome, Jane Smith! Let me set up your profile."
+Agent: "Welcome, Jane Smith! Let me set up your development profile."
 
 Communication style?
-  (a) direct, data-driven, prefers comprehensive analysis with tables and evidence
-  (b) direct and concise, prefers short answers with bullet points
+  (a) direct and concise ← RECOMMENDED
+  (b) direct, data-driven, comprehensive with tables and evidence
   (c) conversational and collaborative
+  (or type your own)
+  Press Enter to use recommended (a)
 
 Working pattern?
-  (a) iterative — starts brief, expands scope, builds ambitiously
+  (a) iterative — starts brief, expands scope, builds ambitiously ← RECOMMENDED
   (b) plan-first — full specs and architecture before writing code
   (c) prototype-fast — get something working, then refine
+  (or type your own)
+  Press Enter to use recommended (a)
 
 AI delegation?
-  (a) AI does 90%, user reviews 10%
-  (b) AI does 70%, user guides 30%
+  (a) AI does 70%, user guides 30% ← RECOMMENDED
+  (b) AI does 90%, user reviews 10%
   (c) 50/50 collaboration
+  (or type your own)
+  Press Enter to use recommended (a)
+
+Your profile:
+┌─────────────────────────────────────┐
+│ Jane Smith — B.S. CS. Full-stack.   │
+│ Communication: direct and concise   │
+│ Working pattern: iterative          │
+│ AI delegation: AI does 70%          │
+└─────────────────────────────────────┘
+Looks good? (Enter = yes, or type changes)
 ```
 
-**Result** — `.user-profile.md` (never committed to git):
-```markdown
-- **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
-- Communication style: direct and concise, prefers short answers with bullet points
-- Working pattern: iterative — starts brief, expands scope, builds ambitiously
-- AI delegation: AI does 90%, user reviews 10%
-```
+**Saved to:**
+- `~/.portable-spec-kit/user-profile/user-profile-janesmith.md` (global — asked once)
+- `workspace/.portable-spec-kit/user-profile/user-profile-janesmith.md` (committed — persists across pulls)
+
+**On new projects:** profile is shown, keep or customize per project. Customized profiles save to workspace only.
 
 | What You Set | How the Agent Adapts |
 |---|---|
@@ -342,7 +357,7 @@ AI delegation?
 | **Working pattern** | Adapts planning granularity |
 | **AI delegation** | Controls autonomy vs. asking for approval |
 
-Skip the questions? Agent writes a sensible default. Edit `.user-profile.md` anytime to change.
+Skip all questions? Press Enter through everything — recommended defaults applied.
 
 ### For Your Projects
 
@@ -483,11 +498,13 @@ What your project looks like right after setup. The README explains every file, 
 
 ```
 examples/starter/
-├── portable-spec-kit.md   ← Framework file (source)
-├── CLAUDE.md              ← Symlink (Claude Code)
-├── .cursorrules           ← Symlink (Cursor)
-├── WORKSPACE_CONTEXT.md   ← Auto-created workspace state
-├── README.md              ← Self-documenting — explains the entire structure
+├── portable-spec-kit.md    ← Framework file (source)
+├── .portable-spec-kit/     ← Kit config (user profiles)
+│   └── user-profile/
+├── CLAUDE.md               ← Symlink (Claude Code)
+├── .cursorrules            ← Symlink (Cursor)
+├── WORKSPACE_CONTEXT.md    ← Auto-created workspace state
+├── README.md               ← Self-documenting — explains the entire structure
 ├── agent/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
 │   ├── AGENT_CONTEXT.md   ← Status: "Setup — waiting for specs"
@@ -503,8 +520,11 @@ A realistic Next.js + Supabase project with 11/16 tasks complete. Shows what the
 
 ```
 examples/my-app/
-├── portable-spec-kit.md   ← Framework file (source)
-├── WORKSPACE_CONTEXT.md   ← Workspace state
+├── portable-spec-kit.md    ← Framework file (source)
+├── .portable-spec-kit/     ← Kit config (user profiles)
+│   └── user-profile/
+│       └── user-profile-alexchen.md
+├── WORKSPACE_CONTEXT.md    ← Workspace state
 ├── agent/
 │   ├── AGENT.md           ← Next.js + Supabase + Vercel configured
 │   ├── AGENT_CONTEXT.md   ← v0.1 with 11/16 tasks, 24 tests at 92%
@@ -516,9 +536,27 @@ examples/my-app/
 
 ---
 
+## Flows
+
+Detailed step-by-step diagrams for every system flow:
+
+| Flow | When It Triggers |
+|------|-----------------|
+| **[User Profile Setup](docs/flows/user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
+| **[New Project Setup](docs/flows/new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
+| **[Returning Session](docs/flows/returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
+| **[Agent Switching](docs/flows/agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
+| **[Profile Customization](docs/flows/profile-customization.md)** | Different preferences per project — local override |
+| **[Spec-Driven Development](docs/flows/spec-driven-development.md)** | SPECS → PLANNING → TASKS → TRACKER pipeline |
+| **[First Session Workspace](docs/flows/first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
+| **[File Management](docs/flows/file-management.md)** | Create/update/restructure rule — never lose content |
+
+---
+
 ## Documentation
 
-- **[Quick Guide (PDF)](docs/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
+- **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
+- **[Flows](docs/flows/)** — Step-by-step diagrams for every system flow
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README
 - **[My App Example](examples/my-app/)** — Mid-development project
 - **[portable-spec-kit.md](portable-spec-kit.md)** — The complete framework file

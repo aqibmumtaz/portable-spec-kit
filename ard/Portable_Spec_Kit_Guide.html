@@ -101,7 +101,7 @@
 
 <h2>The Framework</h2>
 
-<p>The <strong>Spec-Driven Development Framework</strong> is a methodology where every project follows a structured pipeline from requirements to deployment, managed by an AI agent that enforces your personal engineering standards.</p>
+<p>The <strong>Spec-Driven Development Framework</strong> is a methodology where every project follows a structured pipeline from requirements to deployment, managed by an AI agent that learns and follows your engineering practices.</p>
 
 <div class="framework-diagram">
   <p style="font-size: 10pt; color: #666; margin-bottom: 12px;">The Development Pipeline</p>
@@ -215,11 +215,14 @@
 
 <pre>
 your-project/
-├── portable-spec-kit.md   ← Framework file (source)
-├── CLAUDE.md              ← Symlink (Claude Code)
-├── .cursorrules           ← Symlink (Cursor)
-├── WORKSPACE_CONTEXT.md      ← Auto-created (workspace state)
-├── README.md              ← Auto-created (standard structure)
+├── portable-spec-kit.md    ← Framework file (source)
+├── .portable-spec-kit/     ← Kit config (user profiles, per-user)
+│   └── user-profile/
+│       └── user-profile-{username}.md
+├── CLAUDE.md               ← Symlink (Claude Code)
+├── .cursorrules            ← Symlink (Cursor)
+├── WORKSPACE_CONTEXT.md    ← Auto-created (workspace state)
+├── README.md               ← Auto-created (standard structure)
 │
 ├── agent/                 ← Auto-created (project management)
 │   ├── AGENT.md           ← Project rules, stack, brand
@@ -306,7 +309,8 @@ your-project/
   <tr><td>Edge cases</td><td>Empty inputs, boundaries, XSS, unicode, error paths — all tested</td></tr>
   <tr><td>Coverage targets</td><td>Backend 98%+, frontend logic 98%+, UI components 85%+</td></tr>
   <tr><td>No broken features</td><td>User should NEVER discover something doesn't work</td></tr>
-  <tr><td>Context updated</td><td>AGENT_CONTEXT.md updated at end of every session</td></tr>
+  <tr><td>Context updated</td><td>AGENT_CONTEXT.md updated after every implementation + test run, and at session end</td></tr>
+  <tr><td>Flows updated</td><td>docs/flows/ updated if any system flow changed — flows always match code</td></tr>
 </table>
 
 <h3>Phase 4: Tracking</h3>
@@ -421,25 +425,23 @@ Added JD-tailored resume, PDF generation, 604 tests.
 <h2>Customization</h2>
 
 <h3>User Profile — Personalized AI Experience</h3>
-<p>On first session, the agent creates <code>.user-profile.md</code> by fetching your GitHub profile and asking 3 quick questions:</p>
+<p>On first session, the agent fetches your GitHub identity and asks 3 quick questions. Press Enter to use recommended, or type your own:</p>
 
 <table>
   <tr><th>Question</th><th>Options</th></tr>
-  <tr><td><strong>Communication style?</strong></td><td>(a) direct, data-driven, comprehensive with tables<br>(b) direct and concise, bullet points<br>(c) conversational and collaborative</td></tr>
-  <tr><td><strong>Working pattern?</strong></td><td>(a) iterative — start small, expand ambitiously<br>(b) plan-first — full specs before code<br>(c) prototype-fast — build quick, refine later</td></tr>
-  <tr><td><strong>AI delegation?</strong></td><td>(a) AI does 90%, user reviews 10%<br>(b) AI does 70%, user guides 30%<br>(c) 50/50 collaboration</td></tr>
+  <tr><td><strong>Communication style?</strong></td><td>(a) direct and concise ← RECOMMENDED<br>(b) direct, data-driven, comprehensive with tables<br>(c) conversational and collaborative<br>Press Enter to use recommended (a)</td></tr>
+  <tr><td><strong>Working pattern?</strong></td><td>(a) iterative — start small, expand ambitiously ← RECOMMENDED<br>(b) plan-first — full specs before code<br>(c) prototype-fast — build quick, refine later<br>Press Enter to use recommended (a)</td></tr>
+  <tr><td><strong>AI delegation?</strong></td><td>(a) AI does 70%, user guides 30% ← RECOMMENDED<br>(b) AI does 90%, user reviews 10%<br>(c) 50/50 collaboration<br>Press Enter to use recommended (a)</td></tr>
 </table>
 
-<p><strong>Result</strong> — <code>.user-profile.md</code> (never committed to git):</p>
+<p><strong>Saved to:</strong></p>
 <pre>
-- **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
-- Communication style: direct and concise, prefers short answers with bullet points
-- Working pattern: iterative — starts brief, expands scope, builds ambitiously
-- AI delegation: AI does 90%, user reviews 10%
+~/.portable-spec-kit/user-profile/user-profile-janesmith.md         (global — asked once)
+workspace/.portable-spec-kit/user-profile/user-profile-janesmith.md (committed — persists)
 </pre>
 
 <div class="highlight">
-  <strong>Personalized from first session.</strong> The agent addresses you by name, adapts to your expertise, and follows your preferred working style. Skip the questions? A sensible default is applied. Edit <code>.user-profile.md</code> anytime to change.
+  <strong>Personalized from first session.</strong> Profile asked once, saved globally. On new projects: shown and confirmed — keep or customize per project. Customized profiles save to workspace. Press Enter through everything for recommended defaults.
 </div>
 
 <h3>Your Projects</h3>
@@ -564,11 +566,13 @@ cd ~/portable-spec-kit && git add . && git commit -m "Updated from ProjectX" && 
 <h3>Starter Project Structure</h3>
 <pre>
 examples/starter/
-├── portable-spec-kit.md   ← Framework file (source)
-├── CLAUDE.md              ← Symlink (Claude Code)
-├── .cursorrules           ← Symlink (Cursor)
-├── WORKSPACE_CONTEXT.md   ← Auto-created workspace state
-├── README.md              ← Self-documenting (explains everything)
+├── portable-spec-kit.md    ← Framework file (source)
+├── .portable-spec-kit/     ← Kit config (user profiles)
+│   └── user-profile/
+├── CLAUDE.md               ← Symlink (Claude Code)
+├── .cursorrules            ← Symlink (Cursor)
+├── WORKSPACE_CONTEXT.md    ← Auto-created workspace state
+├── README.md               ← Self-documenting (explains everything)
 ├── agent/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
 │   ├── AGENT_CONTEXT.md   ← Status: "Setup — waiting for specs"

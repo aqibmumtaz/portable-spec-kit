@@ -10,9 +10,9 @@
 
 > **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
 >
-> **Location:** `.user-profile.md` (auto-created on first session, never committed to git)
+> **Location:** `.portable-spec-kit/user-profile/user-profile-{username}.md` (workspace → global `~/.portable-spec-kit/user-profile/` lookup)
 
-<!-- Example .user-profile.md for this project:
+<!-- Example user profile for this project:
 - **Alex Chen** — B.S. Computer Science. Full-stack development, React, Node.js.
 - Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
 - Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
@@ -193,7 +193,7 @@ Before any deployment:
 - Avoid adding dependencies for things that can be done in <20 lines of code
 
 ### Context Management
-- Read `.user-profile.md` at start of every conversation — adapt to user's preferences
+- Read user profile at start of every conversation (lookup: workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt to user's preferences
 - Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
 - **Update root `CLAUDE.md`** whenever a new general guideline or development practice decision is made — these are shared across all projects
@@ -581,7 +581,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 `<path>`
 
 ## On Every Session Start:
-1. Read `.user-profile.md` — user preferences (adapt behavior)
+1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences (adapt behavior)
 2. Read `agent/AGENT_CONTEXT.md` — project state
 3. Read `agent/TASKS.md` — current tasks
 4. Read `agent/PLANNING.md` — architecture

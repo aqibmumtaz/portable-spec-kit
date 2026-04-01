@@ -29,8 +29,8 @@ section "1. Repo File Structure"
 [ -f "$PROJ/CONTRIBUTING.md" ] && pass "CONTRIBUTING.md exists" || fail "CONTRIBUTING.md MISSING"
 [ -f "$PROJ/LICENSE" ] && pass "LICENSE exists" || fail "LICENSE MISSING"
 [ -f "$PROJ/.gitignore" ] && pass ".gitignore exists" || fail ".gitignore MISSING"
-[ -f "$PROJ/docs/Portable_Spec_Kit_Guide.html" ] && pass "Guide HTML exists" || fail "Guide HTML MISSING"
-[ -f "$PROJ/docs/Portable_Spec_Kit_Guide.pdf" ] && pass "Guide PDF exists" || fail "Guide PDF MISSING"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.html" ] && pass "Guide HTML exists" || fail "Guide HTML MISSING"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.pdf" ] && pass "Guide PDF exists" || fail "Guide PDF MISSING"
 [ -d "$PROJ/examples/starter" ] && pass "examples/starter/ exists" || fail "examples/starter/ MISSING"
 [ -d "$PROJ/examples/my-app" ] && pass "examples/my-app/ exists" || fail "examples/my-app/ MISSING"
 [ -d "$PROJ/agent" ] && pass "agent/ dir exists (Documents-only)" || fail "agent/ MISSING"
@@ -41,7 +41,7 @@ section "2. Framework File Content"
 
 grep -q "Portable Spec Kit — AI Agentic" "$PROJ/portable-spec-kit.md" && pass "Title correct" || fail "Title wrong"
 grep -q "User Profile" "$PROJ/portable-spec-kit.md" && pass "Has User Profile section" || fail "Missing User Profile"
-grep -q "\.user-profile\.md" "$PROJ/portable-spec-kit.md" && pass "References .user-profile.md" || fail "Missing .user-profile.md reference"
+grep -q "\.portable-spec-kit/user-profile/" "$PROJ/portable-spec-kit.md" && pass "References .portable-spec-kit/user-profile/" || fail "Missing profile directory reference"
 grep -q "Git & GitHub Rules" "$PROJ/portable-spec-kit.md" && pass "Has Git rules" || fail "Missing Git rules"
 grep -q "Security Rules" "$PROJ/portable-spec-kit.md" && pass "Has Security rules" || fail "Missing Security rules"
 grep -q "Versioning" "$PROJ/portable-spec-kit.md" && pass "Has Versioning" || fail "Missing Versioning"
@@ -292,10 +292,11 @@ grep -q "8/12 tasks done" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B
 grep -q "Payment integration" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's next task" || fail "Context next task lost"
 grep -q "PostgreSQL" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's decisions" || fail "Context decisions lost"
 
-# --- Test: Simulate .user-profile.md written by Agent A, read by Agent B ---
-cat > "$SWITCH_TEMP/.user-profile.md" << 'PROFEOF'
+# --- Test: Simulate user profile written by Agent A, read by Agent B ---
+mkdir -p "$SWITCH_TEMP/.portable-spec-kit/user-profile"
+cat > "$SWITCH_TEMP/.portable-spec-kit/user-profile/user-profile-janesmith.md" << 'PROFEOF'
 # User Profile
-> Auto-created on first session. Edit anytime. Never committed to git.
+> Auto-created on first session. Edit anytime.
 
 - **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
 - Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
@@ -303,9 +304,10 @@ cat > "$SWITCH_TEMP/.user-profile.md" << 'PROFEOF'
 - AI delegation: AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
 PROFEOF
 
-grep -q "Jane Smith" "$SWITCH_TEMP/.user-profile.md" && pass "Agent B reads user name from Agent A's profile" || fail "Profile name lost"
-grep -q "direct and concise" "$SWITCH_TEMP/.user-profile.md" && pass "Agent B reads communication style" || fail "Communication style lost"
-grep -q "AI does 90%" "$SWITCH_TEMP/.user-profile.md" && pass "Agent B reads delegation preference" || fail "Delegation lost"
+PROF="$SWITCH_TEMP/.portable-spec-kit/user-profile/user-profile-janesmith.md"
+grep -q "Jane Smith" "$PROF" && pass "Agent B reads user name from Agent A's profile" || fail "Profile name lost"
+grep -q "direct and concise" "$PROF" && pass "Agent B reads communication style" || fail "Communication style lost"
+grep -q "AI does 90%" "$PROF" && pass "Agent B reads delegation preference" || fail "Delegation lost"
 
 # --- Test: Simulate TASKS.md written by Agent A, read by Agent B ---
 cat > "$SWITCH_TEMP/agent/TASKS.md" << 'TASKEOF'
@@ -336,12 +338,12 @@ grep -q "Stripe integration" "$SWITCH_TEMP/agent/TASKS.md" && pass "Agent B sees
 ! grep -qi "prefers claude" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No 'prefers Claude' in framework" || fail "'prefers Claude' found"
 
 # --- Test: All managed files are plain markdown (no proprietary format) ---
-for f in agent/AGENT_CONTEXT.md agent/TASKS.md .user-profile.md; do
+for f in agent/AGENT_CONTEXT.md agent/TASKS.md .portable-spec-kit/user-profile/user-profile-janesmith.md; do
   head -1 "$SWITCH_TEMP/$f" | grep -q "^#" && pass "$f is valid markdown (starts with #)" || fail "$f is not valid markdown"
 done
 
-# --- Test: Framework references .user-profile.md (not embedded profile) ---
-grep -q "\.user-profile\.md" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Framework references .user-profile.md" || fail "Framework missing .user-profile.md reference"
+# --- Test: Framework references .portable-spec-kit/user-profile/ (not embedded profile) ---
+grep -q "\.portable-spec-kit/user-profile/" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Framework references .portable-spec-kit/user-profile/" || fail "Framework missing profile directory reference"
 ! grep -q "^- \*\*Dr\." "$SWITCH_TEMP/portable-spec-kit.md" && pass "No embedded personal profile in framework" || fail "Personal profile still embedded"
 
 # --- Test: Co-Authored-By is agent-agnostic ---
@@ -367,7 +369,305 @@ rm -rf "$SWITCH_TEMP"
 pass "Agent switching: temp dir cleaned"
 
 # ═══════════════════════════════════════════════════════════════
-section "14. License"
+section "14. User Profile — Directory Structure"
+# ═══════════════════════════════════════════════════════════════
+
+# Global profile dir
+[ -d "$HOME/.portable-spec-kit/user-profile" ] && pass "Global profile dir exists (~/.portable-spec-kit/user-profile/)" || fail "Global profile dir MISSING"
+
+# Workspace profile dir
+[ -d "$ROOT/.portable-spec-kit/user-profile" ] && pass "Workspace profile dir exists" || fail "Workspace profile dir MISSING"
+
+# Framework references new path
+grep -q "\.portable-spec-kit/user-profile/" "$PROJ/portable-spec-kit.md" && pass "Framework references .portable-spec-kit/user-profile/" || fail "Framework missing new profile path"
+
+# Framework has lookup order
+grep -q "workspace.*portable-spec-kit/user-profile" "$PROJ/portable-spec-kit.md" && pass "Framework has workspace lookup" || fail "Missing workspace lookup"
+grep -q "~/.portable-spec-kit/user-profile" "$PROJ/portable-spec-kit.md" && pass "Framework has global lookup" || fail "Missing global lookup"
+
+# Username detection uses git config
+grep -q "git config user.name" "$PROJ/portable-spec-kit.md" && pass "Username detection uses git config" || fail "Missing git config detection"
+
+# Cross-OS paths documented
+grep -q "macOS/Linux" "$PROJ/portable-spec-kit.md" && pass "macOS/Linux path documented" || fail "Missing macOS/Linux path"
+grep -q "Windows" "$PROJ/portable-spec-kit.md" && pass "Windows path documented" || fail "Missing Windows path"
+
+# No old .user-profile.md references in framework (except TASKS.md history)
+! grep -q "\.user-profile\.md" "$PROJ/portable-spec-kit.md" && pass "No old .user-profile.md in framework" || fail "Stale .user-profile.md reference in framework"
+
+# ═══════════════════════════════════════════════════════════════
+section "15. User Profile — First Time Setup Simulation"
+# ═══════════════════════════════════════════════════════════════
+
+SETUP_TEMP="/tmp/psk-setup-$(date +%s)"
+SETUP_GLOBAL="/tmp/psk-global-$(date +%s)"
+mkdir -p "$SETUP_TEMP" && cd "$SETUP_TEMP"
+
+# Simulate: no profile anywhere
+cp "$PROJ/portable-spec-kit.md" "$SETUP_TEMP/portable-spec-kit.md"
+
+# No workspace profile
+! [ -d "$SETUP_TEMP/.portable-spec-kit/user-profile" ] && pass "Setup: no workspace profile dir initially" || fail "Setup: workspace profile exists prematurely"
+
+# Simulate first-time setup: create global + workspace
+mkdir -p "$SETUP_GLOBAL/.portable-spec-kit/user-profile"
+mkdir -p "$SETUP_TEMP/.portable-spec-kit/user-profile"
+
+cat > "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+> Auto-created on first session. Edit anytime.
+
+- **Test User** — B.S. Computer Science. Full-stack development.
+- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
+- AI delegation: AI does 70%, user guides 30% — AI proposes approach, user approves before execution
+EOF
+
+cp "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+   "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+
+# Verify global created
+[ -f "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Setup: global profile created" || fail "Setup: global profile MISSING"
+
+# Verify workspace created
+[ -f "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Setup: workspace profile created" || fail "Setup: workspace profile MISSING"
+
+# Verify both have same content
+diff "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+     "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" > /dev/null 2>&1 \
+  && pass "Setup: global and workspace profiles match" || fail "Setup: profiles differ"
+
+# Verify profile content
+grep -q "Test User" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has name" || fail "Setup: name missing"
+grep -q "Communication style:" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has communication" || fail "Setup: communication missing"
+grep -q "Working pattern:" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has working pattern" || fail "Setup: working pattern missing"
+grep -q "AI delegation:" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has delegation" || fail "Setup: delegation missing"
+
+# Verify profile format (starts with #)
+head -1 "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" | grep -q "^#" && pass "Setup: profile is valid markdown" || fail "Setup: not valid markdown"
+
+# Verify defaults are mid-range (not 90% autonomous)
+grep -q "AI does 70%" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: default delegation is mid-range (70%)" || fail "Setup: default not mid-range"
+
+rm -rf "$SETUP_TEMP" "$SETUP_GLOBAL"
+pass "Setup: temp dirs cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "16. User Profile — New Project with Existing Global"
+# ═══════════════════════════════════════════════════════════════
+
+NEWPROJ_TEMP="/tmp/psk-newproj-$(date +%s)"
+NEWPROJ_GLOBAL="/tmp/psk-newproj-global-$(date +%s)"
+mkdir -p "$NEWPROJ_TEMP" && cd "$NEWPROJ_TEMP"
+
+# Simulate: global exists, workspace doesn't
+mkdir -p "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile"
+cat > "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+> Auto-created on first session. Edit anytime.
+
+- **Test User** — M.S. AI. Machine learning, NLP.
+- Communication style: direct, data-driven, prefers comprehensive analysis with tables and evidence
+- Working pattern: plan-first — defines full specs and architecture before writing any code
+- AI delegation: AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
+EOF
+
+# No workspace profile yet
+! [ -d "$NEWPROJ_TEMP/.portable-spec-kit/user-profile" ] && pass "NewProj: no workspace profile initially" || fail "NewProj: workspace exists prematurely"
+
+# Simulate "Keep" flow: copy global to workspace
+mkdir -p "$NEWPROJ_TEMP/.portable-spec-kit/user-profile"
+cp "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+   "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+
+[ -f "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "NewProj: workspace profile created on Keep" || fail "NewProj: workspace profile MISSING after Keep"
+
+# Verify content matches global
+diff "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+     "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" > /dev/null 2>&1 \
+  && pass "NewProj: Keep preserves global content exactly" || fail "NewProj: Keep modified content"
+
+# Simulate "Customize" flow: change one field, save to workspace
+sed 's/plan-first.*/prototype-fast — gets something working quickly, then refines and polishes/' \
+  "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+  > "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+
+grep -q "prototype-fast" "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: Customize changes saved to workspace" || fail "NewProj: Customize not saved"
+
+# Verify global unchanged
+grep -q "plan-first" "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: global profile unchanged after Customize" || fail "NewProj: global was modified"
+
+# Verify other fields preserved
+grep -q "Test User" "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: name preserved after Customize" || fail "NewProj: name lost"
+grep -q "AI does 90%" "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: delegation preserved after Customize" || fail "NewProj: delegation lost"
+
+rm -rf "$NEWPROJ_TEMP" "$NEWPROJ_GLOBAL"
+pass "NewProj: temp dirs cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "17. User Profile — Returning Session Scenarios"
+# ═══════════════════════════════════════════════════════════════
+
+RET_TEMP="/tmp/psk-ret-$(date +%s)"
+RET_GLOBAL="/tmp/psk-ret-global-$(date +%s)"
+mkdir -p "$RET_TEMP" && cd "$RET_TEMP"
+
+# --- Scenario A: Workspace profile exists ---
+mkdir -p "$RET_TEMP/.portable-spec-kit/user-profile"
+cat > "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+- **Test User** — Workspace profile.
+- Communication style: conversational
+- Working pattern: prototype-fast
+- AI delegation: 50/50
+EOF
+
+[ -f "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return A: workspace profile found → use directly" || fail "Return A: workspace profile not found"
+
+# --- Scenario B: Only global exists (no workspace) ---
+rm -rf "$RET_TEMP/.portable-spec-kit"
+mkdir -p "$RET_GLOBAL/.portable-spec-kit/user-profile"
+cat > "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+- **Test User** — Global profile.
+- Communication style: direct and concise
+- Working pattern: iterative
+- AI delegation: AI does 70%
+EOF
+
+! [ -d "$RET_TEMP/.portable-spec-kit/user-profile" ] && pass "Return B: no workspace profile" || fail "Return B: workspace exists unexpectedly"
+[ -f "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return B: global profile found → show to user, ask keep/customize" || fail "Return B: global not found"
+
+# Simulate: user keeps → copy to workspace
+mkdir -p "$RET_TEMP/.portable-spec-kit/user-profile"
+cp "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+   "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+[ -f "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return B: workspace copy created after keep" || fail "Return B: workspace copy not created"
+
+# --- Scenario C: No profile anywhere ---
+rm -rf "$RET_TEMP/.portable-spec-kit" "$RET_GLOBAL/.portable-spec-kit"
+! [ -d "$RET_TEMP/.portable-spec-kit/user-profile" ] && pass "Return C: no workspace profile" || fail "Return C: workspace exists"
+! [ -d "$RET_GLOBAL/.portable-spec-kit/user-profile" ] && pass "Return C: no global profile → triggers first-time setup" || fail "Return C: global exists"
+
+rm -rf "$RET_TEMP" "$RET_GLOBAL"
+pass "Return: temp dirs cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "18. User Profile — Edge Cases"
+# ═══════════════════════════════════════════════════════════════
+
+EDGE_TEMP="/tmp/psk-edge-$(date +%s)"
+mkdir -p "$EDGE_TEMP/.portable-spec-kit/user-profile" && cd "$EDGE_TEMP"
+
+# --- Empty profile file → treat as missing ---
+touch "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Edge: empty file exists" || fail "Edge: empty file not created"
+CONTENT=$(cat "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md")
+[ -z "$CONTENT" ] && pass "Edge: empty file detected → treat as missing" || fail "Edge: empty file has content"
+
+# --- Profile with all 4 required fields ---
+cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" << 'EOF'
+# User Profile
+- **Complete User** — PhD. AI Research.
+- Communication style: direct
+- Working pattern: iterative
+- AI delegation: AI does 90%
+EOF
+
+grep -q "Complete User" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: name field present" || fail "Edge: name missing"
+grep -q "Communication style:" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: communication field present" || fail "Edge: communication missing"
+grep -q "Working pattern:" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: working pattern field present" || fail "Edge: working pattern missing"
+grep -q "AI delegation:" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: delegation field present" || fail "Edge: delegation missing"
+
+# --- Multiple users in same workspace (team scenario) ---
+cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" << 'EOF'
+# User Profile
+- **Alice** — Frontend dev.
+- Communication style: conversational
+- Working pattern: prototype-fast
+- AI delegation: 50/50
+EOF
+
+cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" << 'EOF'
+# User Profile
+- **Bob** — Backend dev.
+- Communication style: direct and concise
+- Working pattern: plan-first
+- AI delegation: AI does 90%
+EOF
+
+[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" ] && pass "Edge: Alice's profile exists" || fail "Edge: Alice missing"
+[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" ] && pass "Edge: Bob's profile exists" || fail "Edge: Bob missing"
+grep -q "Alice" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" && pass "Edge: Alice's profile has correct name" || fail "Edge: Alice wrong name"
+grep -q "Bob" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" && pass "Edge: Bob's profile has correct name" || fail "Edge: Bob wrong name"
+
+# --- Profiles don't contaminate each other ---
+! grep -q "Bob" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" && pass "Edge: Alice's profile doesn't contain Bob" || fail "Edge: profile contamination"
+! grep -q "Alice" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" && pass "Edge: Bob's profile doesn't contain Alice" || fail "Edge: profile contamination"
+
+# --- Username with special chars slugified ---
+# Simulating: "John O'Brien" → "john-o-brien" or similar
+SLUGIFIED=$(echo "John O'Brien" | tr '[:upper:]' '[:lower:]' | tr " '" '-' | tr -cd '[:alnum:]-')
+[ "$SLUGIFIED" = "john-obrien" ] || [ "$SLUGIFIED" = "john-o-brien" ] && pass "Edge: special chars slugified correctly" || fail "Edge: slugification wrong ($SLUGIFIED)"
+
+rm -rf "$EDGE_TEMP"
+pass "Edge: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "19. Flow Documentation — All 8 Flows Present"
+# ═══════════════════════════════════════════════════════════════
+
+FLOWS_DIR="$PROJ/docs/flows"
+[ -d "$FLOWS_DIR" ] && pass "docs/flows/ directory exists" || fail "docs/flows/ MISSING"
+
+for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-driven-development first-session-workspace file-management; do
+  [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
+done
+
+# Verify each flow has required sections
+for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-driven-development first-session-workspace file-management; do
+  grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
+  grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
+done
+
+# Verify profile flows reference .portable-spec-kit/user-profile/
+for flow in user-profile-setup new-project-setup returning-session profile-customization first-session-workspace; do
+  grep -q "portable-spec-kit/user-profile" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: references profile path" || fail "Flow $flow: missing profile path"
+done
+
+# Verify agent-switching flow mentions symlinks
+grep -q "symlink" "$FLOWS_DIR/agent-switching.md" && pass "Flow agent-switching: mentions symlinks" || fail "Flow agent-switching: missing symlinks"
+
+# Verify spec-driven flow has context update step
+grep -q "AGENT_CONTEXT" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has context update step" || fail "Flow spec-driven: missing context update"
+grep -q "docs/flows" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has flow update step" || fail "Flow spec-driven: missing flow update"
+
+# ═══════════════════════════════════════════════════════════════
+section "20. ARD Directory — Guide Moved"
+# ═══════════════════════════════════════════════════════════════
+
+[ -d "$PROJ/ard" ] && pass "ard/ directory exists" || fail "ard/ MISSING"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.html" ] && pass "Guide HTML in ard/" || fail "Guide HTML missing from ard/"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.pdf" ] && pass "Guide PDF in ard/" || fail "Guide PDF missing from ard/"
+! [ -f "$PROJ/docs/Portable_Spec_Kit_Guide.html" ] && pass "No guide in old docs/ location" || fail "Stale guide in docs/"
+! [ -f "$PROJ/docs/Portable_Spec_Kit_Guide.pdf" ] && pass "No PDF in old docs/ location" || fail "Stale PDF in docs/"
+
+# Verify guide has .portable-spec-kit/ in project structure
+grep -q "portable-spec-kit/" "$PROJ/ard/Portable_Spec_Kit_Guide.html" && pass "Guide: has .portable-spec-kit/ in structure" || fail "Guide: missing .portable-spec-kit/"
+
+# Verify guide has 10 strengths
+grep -q "10 Core Strengths" "$PROJ/ard/Portable_Spec_Kit_Guide.html" && pass "Guide: has 10 Core Strengths" || fail "Guide: wrong strength count"
+
+# ═══════════════════════════════════════════════════════════════
+section "21. Context Management Rule"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "After completing implementations or running tests" "$PROJ/portable-spec-kit.md" && pass "Context rule: implementation/test trigger" || fail "Context rule: missing trigger"
+grep -q "docs/flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
+grep -q "Context, flows, and tests must always match" "$PROJ/portable-spec-kit.md" && pass "Context rule: triad requirement" || fail "Context rule: missing triad"
+
+# ═══════════════════════════════════════════════════════════════
+section "22. License"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "License wrong"

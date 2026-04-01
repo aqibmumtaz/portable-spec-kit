@@ -28,56 +28,96 @@ On first session, the agent also auto-creates:
 ## User Profile
 
 > **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
->
-> **Location:** `.user-profile.md` (auto-created on first session, never committed to git)
 
-### First Session — Profile Setup
-If `.user-profile.md` does not exist:
-1. Fetch GitHub profile via `gh api user` (if gh CLI is available and authenticated — if not, ask user manually)
-2. Greet user by full name: "Welcome, {Name}! Let me set up your personalized development profile."
-3. Ask 3 preference questions with options:
+### Profile Storage
+```
+Global (home directory — asked once, works everywhere):
+~/.portable-spec-kit/user-profile/
+└── user-profile-{username}.md
+
+Workspace (committed — persists across pulls, per-user):
+workspace/.portable-spec-kit/user-profile/
+├── user-profile-{username}.md
+├── user-profile-teammate.md
+└── ...
+```
+
+**Cross-OS home directory:**
+- macOS/Linux: `~/.portable-spec-kit/user-profile/`
+- Windows: `%USERPROFILE%\.portable-spec-kit\user-profile\`
+
+**Username detection:** `git config user.name` → slugified (lowercase, spaces → dashes). Use `gh api user` for fetching full name/bio for greeting, not for filename.
+
+### Profile Lookup Order
+1. `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md` → local, per-user, committed
+2. `~/.portable-spec-kit/user-profile/user-profile-{username}.md` → global, per-user
+3. Neither → first-time setup
+
+### First Session — Profile Setup (no profile found anywhere)
+1. Detect username: `git config user.name` → slugified (lowercase, spaces → dashes) — used for filename
+2. Fetch GitHub profile via `gh api user` for full name/bio (if available and authenticated — if not, ask user manually)
+3. Greet user by full name: "Welcome, {Name}! Let me set up your development profile."
+4. Ask 3 preference questions (Enter = use recommended, or type custom):
 
    **Communication style?**
-   - (a) direct, data-driven, prefers comprehensive analysis with tables and evidence
-   - (b) direct and concise, prefers short answers with bullet points and minimal explanation
+   - (a) direct and concise ← RECOMMENDED
+   - (b) direct, data-driven, prefers comprehensive analysis with tables and evidence
    - (c) conversational and collaborative, prefers discussing ideas and thinking through problems together
+   - (or type your own)
+   - Press Enter to use recommended (a)
 
    **Working pattern?**
-   - (a) iterative — starts brief, expands scope, builds ambitiously over time
+   - (a) iterative — starts brief, expands scope, builds ambitiously over time ← RECOMMENDED
    - (b) plan-first — defines full specs and architecture before writing any code
    - (c) prototype-fast — gets something working quickly, then refines and polishes
+   - (or type your own)
+   - Press Enter to use recommended (a)
 
    **AI delegation?**
-   - (a) AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
-   - (b) AI does 70%, user guides 30% — AI proposes approach, user approves before execution
+   - (a) AI does 70%, user guides 30% — AI proposes approach, user approves before execution ← RECOMMENDED
+   - (b) AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
    - (c) 50/50 collaboration — discuss and decide together before each major step
+   - (or type your own)
+   - Press Enter to use recommended (a)
 
-4. Write `.user-profile.md` with results. User can also type custom answers instead of picking a/b/c.
+5. Show profile summary: "Your profile: ... Looks good? (Enter = yes, or type changes)"
+6. Save to `~/.portable-spec-kit/user-profile/user-profile-{username}.md` (global)
+7. Copy to `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md` (committed)
 
-**If user skips** ("skip" / "later" / "default") → write default profile:
-```
-- **{GitHub name or "Developer"}** — {GitHub bio or "Software Developer"}
-- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
-- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
-- AI delegation: AI does 70%, user guides 30% — AI proposes approach, user approves before execution
-```
-
-**Edge cases:**
-- GitHub name empty → use GitHub username as fallback
-- GitHub bio empty → ask user for education and expertise
-- `.user-profile.md` exists but empty → treat as missing, run setup
-- `.user-profile.md` exists with content → read and use, don't recreate
-- Agent can't write files → show profile content, ask user to create file manually
+### New Project Setup (profile exists in global)
+1. Load profile from global `~/.portable-spec-kit/user-profile/user-profile-{username}.md`
+2. Show profile to user: "Using your profile: ..."
+3. "Keep or customize for this project? (Enter = keep)"
+   - **(a) Keep** → copy to `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md` as-is
+   - **(b) Customize** → ask 3 questions with CURRENT answer highlighted + RECOMMENDED:
+     - Each question shows current global answer as CURRENT and framework default as RECOMMENDED
+     - Press Enter to keep current
+     - Or pick a/b/c or type custom
+     - Show summary → confirm
+     - Save to `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md`
 
 ### Every Session
-- Read `.user-profile.md` for user context
-- Address user by name
-- Adapt response depth, language, and autonomy to their preferences
+1. Load profile from `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md`
+2. If workspace copy not found → load from global, show profile to user, ask keep or customize (same as New Project Setup flow) → save to workspace
+3. If workspace copy found → use directly, no questions
+4. Address user by name
+5. Adapt response depth, language, and autonomy to their preferences
+6. When flow docs (`docs/flows/`) or test files are updated during a session → update `agent/AGENT_CONTEXT.md` to reflect what changed
 
-### .user-profile.md Format
+### Edge Cases
+- No gh CLI → ask name/expertise manually
+- GitHub name empty → use GitHub login as fallback
+- GitHub bio empty → ask user for education and expertise
+- Profile file exists but empty → treat as missing, run setup
+- Profile file exists with content → read and use, don't recreate
+- Agent can't write files → show profile content, ask user to create file manually
+- User skips all questions → recommended defaults applied
+- RECOMMENDED and CURRENT are same answer → show as `← RECOMMENDED · CURRENT`
+
+### Profile Format
 ```
 # User Profile
-> Auto-created on first session. Edit anytime. Never committed to git.
+> Auto-created on first session. Edit anytime.
 
 - **Name** — Education. Expertise.
 - Communication style: {selected or custom}
@@ -259,9 +299,10 @@ Before any deployment:
 - Avoid adding dependencies for things that can be done in <20 lines of code
 
 ### Context Management
-- Read `.user-profile.md` at start of every conversation — adapt to user's preferences
+- Read user profile at start of every conversation (lookup: workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt to user's preferences
 - Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
 - Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
+- **After completing implementations or running tests** — update `agent/AGENT_CONTEXT.md` to reflect current code status: what was built, what changed, current version, test results (count, coverage, pass/fail), benchmarks, and what's next. Also update flow documentation in `docs/flows/` if implementation changed any system flows, and update test files if new flows or behaviors were added. Context, flows, and tests must always match the actual state of the code.
 - **Update the root framework file** whenever a new general guideline or development practice decision is made — these are shared across all projects
 - Root framework file = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
 - User preferences stored in agent memory/preference files
@@ -326,7 +367,7 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 ### First Session in New Workspace
 
 If `WORKSPACE_CONTEXT.md` does not exist:
-1. If `.user-profile.md` does not exist → run First Session Profile Setup (see User Profile section above)
+1. If user profile not found (check workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) → run First Session Profile Setup (see User Profile section above)
 2. Create `WORKSPACE_CONTEXT.md` using the File Creation/Update Rule above
 3. Sections: Workspace Overview (table), Environment & Tools, Key Conventions, Last Updated
 4. Auto-detect environment (OS, Node, Python, tools installed) → populate Environment
@@ -650,7 +691,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 `<path>`
 
 ## On Every Session Start:
-1. Read `.user-profile.md` — user preferences (adapt behavior)
+1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences (adapt behavior)
 2. Read `agent/AGENT_CONTEXT.md` — project state
 3. Read `agent/TASKS.md` — current tasks
 4. Read `agent/PLANNING.md` — architecture
