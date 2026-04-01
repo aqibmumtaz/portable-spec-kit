@@ -4,6 +4,31 @@
 >
 > **Role:** Portable across all projects. Drop this file into any repo and the AI agent follows these standards immediately. Project-specific rules go in `agent/AGENT.md`. Workspace state goes in `WORKSPACE_CONTEXT.md` (auto-created on first session).
 
+---
+
+## On Every Conversation Start (MANDATORY)
+
+> **Execute these checks BEFORE responding to the user's first message.** These are not optional guidelines — they are required actions on every new conversation.
+
+### 1. Load User Profile
+- Check `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md`
+- If not found → check `~/.portable-spec-kit/user-profile/user-profile-{username}.md`
+- If found → load and adapt behavior (address user by name)
+- If not found anywhere → run First Session Profile Setup (see User Profile section)
+
+### 2. Check Project State
+- If `agent/AGENT_CONTEXT.md` exists → read it, summarize where user left off
+- If `agent/` directory does not exist → inform user: "I see this project doesn't have agent files yet. Want me to set it up?"
+- If `WORKSPACE_CONTEXT.md` does not exist → create it (environment detection, project scan)
+
+### 3. Greet and Orient
+- Address user by name (from profile)
+- If returning session: "Welcome back, {Name}! Here's where we left off: ..."
+- If new project: "Welcome, {Name}! I'll set up this project for you."
+- If first time ever: run profile setup first, then greet
+
+---
+
 ## How This File Works
 
 This file is the **Portable Spec Kit** framework. It is distributed as `portable-spec-kit.md` and installed into projects as agent-specific filenames via symlinks (Mac/Linux) or copies (Windows):
