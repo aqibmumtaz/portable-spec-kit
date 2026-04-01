@@ -1,5 +1,5 @@
 # Portable Spec Kit — AI Agentic Specification-Driven Development
-<!-- Framework Version: v0.2.4 -->
+<!-- Framework Version: v0.2.5 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -197,7 +197,7 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.4 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.5 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
@@ -436,7 +436,7 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
   3. Update Framework version in AGENT_CONTEXT.md
   4. Show user a summary of what was updated:
      ```
-     "Framework updated to v0.2.x. What's new in this version:
+     "Portable Spec Kit updated to v0.2.x. What's new in this version:
      - [feature 1]
      - [feature 2]
 
