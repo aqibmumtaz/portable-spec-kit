@@ -4,7 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, learns and follows your engineering practices, and maintains context across sessions — never loses progress, never drops quality.
 
+[![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-258%20passing-brightgreen.svg)](tests/)
 
 <table>
 <tr>
@@ -291,7 +293,7 @@ You do 10% — review and approve.
 | **User Profile** | Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation |
 | **Git & GitHub** | Commit rules, push rules, critical ops requiring approval |
 | **Security** | .env handling, secret management, code security practices |
-| **Versioning** | v0.1 → v1.0 numbering, changelog standards |
+| **Versioning** | Two-level: framework v0.2.x (each publish) + release v0.x (milestones), auto-restructure on pull |
 | **Task Tracking** | Tasks-first workflow, module-based organization |
 | **Testing** | Coverage targets, edge case checklist, mock rules, self-validation |
 | **Code Quality** | Review checklist, naming conventions, deployment checklist |

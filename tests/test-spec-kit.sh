@@ -667,7 +667,45 @@ grep -q "docs/flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: refere
 grep -q "Context, flows, and tests must always match" "$PROJ/portable-spec-kit.md" && pass "Context rule: triad requirement" || fail "Context rule: missing triad"
 
 # ═══════════════════════════════════════════════════════════════
-section "22. License"
+section "22. Versioning System"
+# ═══════════════════════════════════════════════════════════════
+
+# Framework version exists in file
+grep -q "<!-- Framework Version:" "$PROJ/portable-spec-kit.md" && pass "Framework version comment exists" || fail "Framework version MISSING"
+
+# Framework version format is v{N}.{N}.{N}
+grep -q "<!-- Framework Version: v[0-9]\+\.[0-9]\+\.[0-9]\+ -->" "$PROJ/portable-spec-kit.md" && pass "Framework version format correct" || fail "Framework version format wrong"
+
+# Two-level versioning table exists
+grep -q "Release.*Framework Range" "$PROJ/portable-spec-kit.md" && pass "Versioning table exists" || fail "Versioning table MISSING"
+
+# Release-to-framework mapping documented
+grep -q "v0\.1.*v0\.0\." "$PROJ/portable-spec-kit.md" && pass "v0.1 → v0.0.x mapping" || fail "v0.1 mapping missing"
+grep -q "v0\.2.*v0\.1\." "$PROJ/portable-spec-kit.md" && pass "v0.2 → v0.1.x mapping" || fail "v0.2 mapping missing"
+grep -q "v0\.3.*v0\.2\." "$PROJ/portable-spec-kit.md" && pass "v0.3 → v0.2.x mapping" || fail "v0.3 mapping missing"
+
+# AGENT_CONTEXT template has Framework field
+grep -q "Framework.*v0\." "$PROJ/portable-spec-kit.md" && pass "AGENT_CONTEXT template has Framework field" || fail "Template missing Framework"
+
+# Framework version comparison rule exists
+grep -q "compare.*Framework Version.*AGENT_CONTEXT" "$PROJ/portable-spec-kit.md" && pass "Version comparison rule exists" || fail "Version comparison rule MISSING"
+
+# TASKS.md has version-based structure
+grep -q "v0\.1 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.1 Done" || fail "TASKS: v0.1 missing"
+grep -q "v0\.2 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.2 Done" || fail "TASKS: v0.2 missing"
+grep -q "v0\.3 — Current" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.3 Current" || fail "TASKS: v0.3 missing"
+grep -q "Backlog" "$PROJ/agent/TASKS.md" && pass "TASKS: Backlog section" || fail "TASKS: Backlog missing"
+grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summary" || fail "TASKS: Progress Summary missing"
+
+# TRACKER.md has framework version ranges
+grep -q "Framework versions: v0\.0\." "$PROJ/agent/TRACKER.md" && pass "TRACKER: v0.1 has framework range" || fail "TRACKER: v0.1 range missing"
+grep -q "Framework versions: v0\.1\." "$PROJ/agent/TRACKER.md" && pass "TRACKER: v0.2 has framework range" || fail "TRACKER: v0.2 range missing"
+
+# AGENT_CONTEXT has current framework version
+grep -q "Framework:" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: has Framework field" || fail "AGENT_CONTEXT: Framework field missing"
+
+# ═══════════════════════════════════════════════════════════════
+section "23. License"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "License wrong"

@@ -59,12 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">Version 0.2 &bull; April 2026</div>
+    <div class="badge">v0.2.1 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 242 passing, 22 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.2.1</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 258 passing, 23 sections</div>
   </div>
 </div>
 
@@ -76,26 +77,45 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 8 flow documents, 242 automated tests, 22 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 8 flow documents, 258 automated tests, 23 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Framework size</td><td>Single markdown file (~800 lines)</td></tr>
+  <tr><td>Current version</td><td>v0.2.1 (release v0.3 in progress)</td></tr>
+  <tr><td>Framework size</td><td>Single markdown file (~900 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
+  <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Driven, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>242 across 22 sections</td></tr>
+  <tr><td>Automated tests</td><td>258 across 23 sections</td></tr>
   <tr><td>Flow documents</td><td>8 step-by-step system flows</td></tr>
-  <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions</td></tr>
+  <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
+  <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
+  <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
 </table>
 
 <!-- VERSION CHANGELOG -->
 <h2>Version Changelog</h2>
 
+<h3>v0.3 — Versioning + Project Scenarios (April 2026) — Current</h3>
+<p>Framework versions: v0.2.1+</p>
+<ul>
+  <li><strong>Two-level versioning:</strong> framework v0.2.x (each publish) + release v0.x (milestones). Framework middle number ties to release (v0.2.x = release v0.3). Auto-restructure agent files when framework version changes on pull.</li>
+  <li><strong>Existing project setup:</strong> guide don't force — scan, show checklist, user picks changes. Never rename/move/delete without approval.</li>
+  <li><strong>9 project scenarios:</strong> new, existing, monorepo, partial, cloned, subdir, multiple projects, returning, kit in one subdir only.</li>
+  <li><strong>Project directory confirmation:</strong> list directories, user picks or types new path before creating agent/ files.</li>
+  <li><strong>Git rule:</strong> check .git/ before committing — each project can be its own repo.</li>
+  <li><strong>Version-based TASKS.md:</strong> tasks grouped under release headings (v0.1 Done, v0.2 Done, v0.3 Current, Backlog).</li>
+  <li><strong>TRACKER.md:</strong> framework version range per release (v0.0.x for v0.1, v0.1.x for v0.2).</li>
+  <li><strong>AGENT_CONTEXT.md:</strong> tracks Framework version — compared on session start to trigger restructure.</li>
+  <li><strong>258 tests</strong> across 23 sections (was 242). Added: Versioning System (16 tests).</li>
+</ul>
+
 <h3>v0.2 — Personalized Profile + Flow Documentation (April 2026)</h3>
+<p>Framework versions: v0.1.1 — v0.1.9</p>
 
 <h4>User Profile</h4>
 <ul>
@@ -397,7 +417,7 @@ What to build      How to build it     Track progress      Log results
 <!-- 8. TESTING -->
 <h2 id="testing">8. Testing Infrastructure</h2>
 
-<h3>Test Suite: 242 Tests, 22 Sections</h3>
+<h3>Test Suite: 258 Tests, 23 Sections</h3>
 <table>
   <tr><th>#</th><th>Section</th><th>Tests</th></tr>
   <tr><td>1</td><td>Repo File Structure</td><td>10</td></tr>
@@ -421,8 +441,9 @@ What to build      How to build it     Track progress      Log results
   <tr><td>19</td><td>Flow Documentation</td><td>34</td></tr>
   <tr><td>20</td><td>ARD Directory</td><td>7</td></tr>
   <tr><td>21</td><td>Context Management Rule</td><td>3</td></tr>
-  <tr><td>22</td><td>License</td><td>2</td></tr>
-  <tr><td></td><td><strong>TOTAL</strong></td><td><strong>242</strong></td></tr>
+  <tr><td>22</td><td>Versioning System</td><td>16</td></tr>
+  <tr><td>23</td><td>License</td><td>2</td></tr>
+  <tr><td></td><td><strong>TOTAL</strong></td><td><strong>258</strong></td></tr>
 </table>
 
 <h3>Test Categories</h3>
@@ -432,6 +453,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td>Agent-agnostic &amp; multi-agent</td><td>44</td><td>Language, symlinks, switching, data transfer</td></tr>
   <tr><td>User profile flows</td><td>49</td><td>Setup, new project, returning, edge cases</td></tr>
   <tr><td>Examples &amp; documentation</td><td>66</td><td>Starter, my-app, README, flows, ARD</td></tr>
+  <tr><td>Versioning system</td><td>16</td><td>Format, mapping, comparison, TASKS/TRACKER structure</td></tr>
   <tr><td>Security &amp; privacy</td><td>4</td><td>No leaked personal info or company names</td></tr>
   <tr><td>Infrastructure</td><td>12</td><td>Sync script, context rules, license</td></tr>
 </table>
@@ -450,7 +472,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>docs/flows/</code></td><td>8 system flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
-  <tr><td><code>tests/</code></td><td>242 automated tests</td></tr>
+  <tr><td><code>tests/</code></td><td>258 automated tests</td></tr>
 </table>
 
 <h3>Local-Only Files (NOT pushed)</h3>
@@ -495,7 +517,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.2 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.2.1 &bull; April 2026
 </div>
 
 </div>
@@ -513,7 +535,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">Document Version 0.2 &bull; April 2026</div>
+    <div class="badge">v0.2.1 &bull; April 2026</div>
   </div>
 </div>
 

@@ -1,5 +1,5 @@
 # Portable Spec Kit — AI Agentic Specification-Driven Development
-<!-- Framework Version: v0.0.1 -->
+<!-- Framework Version: v0.2.1 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -184,16 +184,26 @@ workspace/.portable-spec-kit/user-profile/
 ## Versioning
 
 ### Two-Level Versioning
+
+Framework version mirrors the release it belongs to:
+
+| Release | Framework Range | Pattern |
+|---------|----------------|---------|
+| v0.1 | v0.0.1 — v0.0.9 | v0.0.x |
+| v0.2 | v0.1.1 — v0.1.9 | v0.1.x |
+| v0.3 | v0.2.1 — v0.2.9 | v0.2.x |
+| v1.0 | v1.0.1 — v1.0.9 | v1.0.x (production) |
+
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v0.0.1, v0.0.2, v0.0.3...` | Each publish/commit | `<!-- Framework Version: v0.0.x -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.1 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
 ### What Gets Updated at Each Level
 
-**On every publish (framework v0.0.x):**
-- Increment `<!-- Framework Version: v0.0.x -->` in portable-spec-kit.md
+**On every publish (framework patch):**
+- Increment `<!-- Framework Version -->` in portable-spec-kit.md (e.g., v0.2.1 → v0.2.2)
 - Update `agent/TASKS.md` — mark tasks done under current release heading
 - Update `agent/AGENT_CONTEXT.md` — current state, test results
 
@@ -203,6 +213,7 @@ workspace/.portable-spec-kit/user-profile/
 - Regenerate PDFs
 - Move completed tasks in `agent/TASKS.md` to done, start new version heading
 - Update `agent/AGENT_CONTEXT.md` — version bumped to new release
+- Framework version resets to new range (e.g., v0.2.x → v0.3.1)
 
 ### TASKS.md Versioning Structure
 ```
@@ -221,7 +232,7 @@ workspace/.portable-spec-kit/user-profile/
 ### TRACKER.md Versioning Structure
 ```
 ## v0.2 — Title (Date)
-Framework versions: v0.0.6 — v0.0.15
+Framework versions: v0.1.1 — v0.1.7
 
 ### Changes
 - **Category:** Change description
@@ -231,10 +242,11 @@ Framework versions: v0.0.6 — v0.0.15
 ```
 
 ### Rules
-- **Framework version** — increment patch (`v0.0.x`) with each publish to repo
+- **Framework version** — increment patch with each publish (v0.2.1 → v0.2.2 → v0.2.3)
+- **Framework middle number** ties to release: v0.2.x = release v0.3 work
 - **Release version** — increment minor (`v0.x`) for grouped changes documented in ARD
 - **v1.0** reserved for production/SaaS launch
-- Users pull latest framework with `curl` — always get the latest `v0.0.x`
+- Users pull latest framework with `curl` — always get the latest patch
 - TASKS.md groups work under release version headings
 - TRACKER.md records completed releases with framework version range
 
@@ -417,7 +429,7 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
-- **If framework was updated** (version changed) → check all agent/ files against current templates, restructure where needed
+- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different → check all agent/ files against current templates, restructure where needed, then update the Framework version in AGENT_CONTEXT.md
 - **If file already matches template** → leave as-is
 
 ### First Session in New Workspace
@@ -836,6 +848,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 
 ## Current Status
 - **Version:** v0.1
+- **Framework:** v0.0.1
 - **Phase:** Setup
 - **Status:** Initializing
 

@@ -740,24 +740,20 @@ src/
 ```markdown
 # TASKS.md — <Project Name>
 
-> **Purpose:** Task tracking — checkboxes for todo/done, organized by module/sprint.
+> **Purpose:** Task tracking — organized by release version.
 > **Role:** Updated during development. Add tasks FIRST, then work.
 
 ## v0.1 — Current
-
-### Module 1: Setup
-| # | Task | Status |
-|---|------|:------:|
-| 1.1 | Project setup | [x] |
-| 1.2 | ... | [ ] |
+- [x] Project setup
+- [ ] Task 1
+- [ ] Task 2
 
 ### Blocked
 <!-- Tasks waiting on external dependencies -->
 
-### Bug Fixes & Polish
-| # | Task | Status | Notes |
-|---|------|:------:|-------|
-| | | | |
+## Backlog (Future Releases)
+- [ ] Future feature 1
+- [ ] Future feature 2
 
 ## Progress Summary
 | Version | Tasks Done | Tests | Status |
@@ -769,10 +765,11 @@ src/
 ```markdown
 # TRACKER.md — <Project Name>
 
-> **Purpose:** Version history — changelog, deployments, test results, decisions.
-> **Role:** Updated at end of each version release.
+> **Purpose:** Version history — changelog, deployments, test results.
+> **Role:** Updated at end of each release version.
 
 ## v0.1 — Title (Date)
+Framework versions: v0.0.1 — v0.0.x
 
 ### Summary
 Brief description of what this version delivers.
