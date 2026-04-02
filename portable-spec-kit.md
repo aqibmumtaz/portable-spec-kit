@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.2.7 -->
+<!-- Framework Version: v0.2.8 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -197,7 +197,7 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.7 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.8 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
@@ -812,6 +812,7 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 - User says "fix this bug" → add to TASKS.md, fix it, mark done
 - User says "what's the status?" → show from TASKS.md and AGENT_CONTEXT.md
 - User comes back after weeks → read AGENT_CONTEXT.md, summarize where they left off
+- User says "keep noted" or "note this" → add to the appropriate agent/ file (TASKS.md for future work, PLANS.md for decisions, AGENT_CONTEXT.md for current state) — never to external memory systems
 
 **Fill gaps proactively.** Don't wait for the user to ask — detect and fill:
 - SPECS.md empty after 3+ tasks completed → retroactively fill from what's been built

@@ -1,10 +1,10 @@
-# Portable Spec Kit
+# Portable Spec Kit — Spec-Persistent Development
 
 **Spec-Persistent Development — a lightweight, zero-install, personalized framework for AI-assisted engineering.**
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.2.7-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.2.8-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-258%20passing-brightgreen.svg)](tests/)
 
