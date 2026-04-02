@@ -13,7 +13,7 @@
 <td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
 <td width="25%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
 <td width="25%" align="center"><strong>👤 Personalized</strong><br><sub>GitHub profile auto-detect<br>Adapts to your expertise<br>Tailored AI behavior</sub></td>
-<td width="25%" align="center"><strong>📋 Spec-Persistent</strong><br><sub>SPECS → PLANS → TASKS → RELEASES<br>Specs persist alongside your code<br>Your workflow — waterfall, agile, or mixed</sub></td>
+<td width="25%" align="center"><strong>📋 Spec-Persistent</strong><br><sub>SPECS → PLANS → TASKS → RELEASES<br>Specs persist alongside your code<br>Your workflow, your choice</sub></td>
 </tr>
 <tr>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
