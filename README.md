@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.3.0-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.3.1-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-258%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-403%20passing-brightgreen.svg)](tests/)
 
 <table>
 <tr>
@@ -50,7 +50,7 @@ Traditional approaches force a choice: write specs first (waterfall) or skip the
 
 You choose how you work. The kit adapts:
 
-- **Want waterfall?** Follow SPECS → PLANNING → TASKS → TRACKER sequentially. The kit supports it.
+- **Want waterfall?** Follow SPECS → PLANS → TASKS → RELEASES sequentially. The kit supports it.
 - **Want agile?** Jump into coding. The agent tracks tasks and fills specs retroactively.
 - **Want a mix?** Write rough specs, start coding, refine as you go. The agent keeps everything in sync.
 - **Want to change mid-project?** Started agile but need specs now? The agent fills them from what's built.
@@ -186,7 +186,7 @@ You: "Build me a login page"
 Agent: Added to TASKS.md → builds → tests → done ✓
 
 You: "What should I do next?"
-Agent: Walks you through SPECS → PLANNING → TASKS flow
+Agent: Walks you through SPECS → PLANS → TASKS flow
 
 You: "Fix this bug"
 Agent: Added to TASKS.md → fixes → marks done ✓
@@ -321,7 +321,7 @@ You do 10% — review and approve.
 | **User Profile** | Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation |
 | **Git & GitHub** | Commit rules, push rules, critical ops requiring approval |
 | **Security** | .env handling, secret management, code security practices |
-| **Versioning** | Two-level: framework v0.2.x (each publish) + release v0.x (milestones), auto-restructure on pull |
+| **Versioning** | Two-level: framework patches + release milestones, auto-restructure on pull |
 | **Task Tracking** | Tasks-first workflow, module-based organization |
 | **Testing** | Coverage targets, edge case checklist, mock rules, self-validation |
 | **Code Quality** | Review checklist, naming conventions, deployment checklist |
@@ -586,7 +586,10 @@ Detailed step-by-step diagrams for every system flow:
 ## Documentation
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
-- **[Flows](docs/system-flows/)** — Step-by-step diagrams for every system flow
+- **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
+- **[System Flows](docs/system-flows/)** — 8 step-by-step flow diagrams
+- **[SPD Concept Paper](docs/research/spd-concept-paper-draft.pdf)** — Methodology paper with evaluation
+- **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README
 - **[My App Example](examples/my-app/)** — Mid-development project
 - **[portable-spec-kit.md](portable-spec-kit.md)** — The complete framework file
