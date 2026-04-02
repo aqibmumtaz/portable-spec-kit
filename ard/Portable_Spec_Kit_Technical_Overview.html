@@ -88,7 +88,7 @@
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
-  <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Driven, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
+  <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
   <tr><td>Automated tests</td><td>258 across 23 sections</td></tr>
   <tr><td>Flow documents</td><td>8 step-by-step system flows</td></tr>
@@ -182,7 +182,7 @@
   <li><a href="#agents">Multi-Agent Support</a></li>
   <li><a href="#security">Security Model</a></li>
   <li><a href="#templates">Source Code Templates</a></li>
-  <li><a href="#spec">Spec-Driven Development Pipeline</a></li>
+  <li><a href="#spec">Spec-Persistent Development Pipeline</a></li>
   <li><a href="#testing">Testing Infrastructure</a></li>
   <li><a href="#files">File Structure &amp; Purposes</a></li>
   <li><a href="#deployment">Deployment &amp; Syncing</a></li>
@@ -306,7 +306,7 @@ workspace/
   <tr><td><strong>Returning Session</strong></td><td>Coming back to project</td><td>Load profile → read context → summarize → continue</td></tr>
   <tr><td><strong>Agent Switching</strong></td><td>Changing AI agent</td><td>All agents read same file via symlinks → zero data loss</td></tr>
   <tr><td><strong>Profile Customization</strong></td><td>Different prefs per project</td><td>Show CURRENT + RECOMMENDED → save local override</td></tr>
-  <tr><td><strong>Spec-Driven Development</strong></td><td>Following full pipeline</td><td>SPECS → PLANNING → TASKS → TRACKER</td></tr>
+  <tr><td><strong>Spec-Persistent Development</strong></td><td>Any workflow — specs persist</td><td>SPECS → PLANS → TASKS → RELEASES — living specs, never block</td></tr>
   <tr><td><strong>First Session Workspace</strong></td><td>New workspace</td><td>Environment detection → WORKSPACE_CONTEXT → auto-scan</td></tr>
   <tr><td><strong>File Management</strong></td><td>Agent encounters managed file</td><td>Create / restructure / leave-as-is — never lose content</td></tr>
 </table>
@@ -386,7 +386,7 @@ workspace/
 </table>
 
 <!-- 7. SPEC-DRIVEN -->
-<h2 id="spec">7. Spec-Driven Development Pipeline</h2>
+<h2 id="spec">7. Spec-Persistent Development Pipeline</h2>
 
 <pre>
 SPECS.md        →  PLANS.md      →  TASKS.md        →  RELEASES.md
