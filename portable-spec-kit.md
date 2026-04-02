@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.2.9 -->
+<!-- Framework Version: v0.3.0 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -141,7 +141,7 @@ workspace/.portable-spec-kit/user-profile/
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
 - Commit ≠ push. Commit is local and safe. Push is remote and requires explicit instruction.
-- **Before every push** — increment project version in: (1) `agent/AGENT_CONTEXT.md` Framework field, (2) `README.md` version badge. Never push without updating version.
+- **Version bump on push** — increment version for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Framework field, (2) `README.md` version badge.
 
 ### Critical Operations (ALWAYS ASK FIRST)
 - Creating or deleting repositories
@@ -197,7 +197,7 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.9 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.0 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
