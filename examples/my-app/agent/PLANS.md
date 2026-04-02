@@ -1,7 +1,7 @@
 > **Purpose:** How to build it — architecture, phases, data model, tech decisions, methodology & research.
 > **Role:** Defined before dev starts. Updated when architecture changes or new research informs decisions.
 
-# PLANNING.md — My App
+# PLANS.md — My App
 
 ## Stack
 | Layer | Technology | Why |

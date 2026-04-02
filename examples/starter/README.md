@@ -1,6 +1,6 @@
 # Starter Project
 
-> This project was scaffolded using **[Portable Spec Kit](https://github.com/aqibmumtaz/portable-spec-kit)** — a lightweight, zero-install specification-driven development framework for AI-assisted engineering.
+> This project was scaffolded using **[Portable Spec Kit](https://github.com/aqibmumtaz/portable-spec-kit)** — a lightweight, zero-install spec-persistent development framework for AI-assisted engineering.
 
 ## What Happened When You Set Up This Project
 
@@ -50,7 +50,7 @@ starter/
 │   │                          Requirements, features, acceptance criteria.
 │   │                          Written before coding. Refined as you go.
 │   │
-│   ├── PLANNING.md          ← HOW you're building it
+│   ├── PLANS.md          ← HOW you're building it
 │   │                          Architecture, data model, API endpoints,
 │   │                          build phases, security considerations.
 │   │
@@ -58,7 +58,7 @@ starter/
 │   │                          Module-based checkboxes. Every request
 │   │                          becomes a tracked task. Nothing lost.
 │   │
-│   └── TRACKER.md           ← Version history
+│   └── RELEASES.md           ← Version history
 │                              Changelog per version, test results,
 │                              deployment log. Written at release time.
 │
@@ -77,7 +77,7 @@ starter/
 ## The Development Flow
 
 ```
-SPECS.md  →  PLANNING.md  →  TASKS.md  →  Build + Test  →  TRACKER.md
+SPECS.md  →  PLANS.md  →  TASKS.md  →  Build + Test  →  RELEASES.md
   What         How            Track         Execute           Log
 ```
 
@@ -92,7 +92,7 @@ SPECS.md  →  PLANNING.md  →  TASKS.md  →  Build + Test  →  TRACKER.md
 ### Starting Fresh
 ```
 You: "I want to build a task management app"
-Agent: Writes SPECS.md → recommends stack → writes PLANNING.md → creates TASKS.md → starts building
+Agent: Writes SPECS.md → recommends stack → writes PLANS.md → creates TASKS.md → starts building
 ```
 
 ### Jumping Into Code

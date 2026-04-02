@@ -1,7 +1,7 @@
 > **Purpose:** Version history — changelog, deployments, test results.
 > **Role:** Updated at end of each version release.
 
-# TRACKER.md — My App
+# RELEASES.md — My App
 
 ## v0.1 — Foundation (March 2026)
 

@@ -108,11 +108,11 @@
   <div class="fd-row">
     <div class="fd-box fd-spec">SPECS.md<br><span style="font-weight:400;font-size:8pt;">What to build</span></div>
     <div class="fd-arrow">→</div>
-    <div class="fd-box fd-plan">PLANNING.md<br><span style="font-weight:400;font-size:8pt;">How to build it</span></div>
+    <div class="fd-box fd-plan">PLANS.md<br><span style="font-weight:400;font-size:8pt;">How to build it</span></div>
     <div class="fd-arrow">→</div>
     <div class="fd-box fd-task">TASKS.md<br><span style="font-weight:400;font-size:8pt;">Track progress</span></div>
     <div class="fd-arrow">→</div>
-    <div class="fd-box fd-track">TRACKER.md<br><span style="font-weight:400;font-size:8pt;">Log what happened</span></div>
+    <div class="fd-box fd-track">RELEASES.md<br><span style="font-weight:400;font-size:8pt;">Log what happened</span></div>
   </div>
   <div style="margin: 12px 0; color: #94a3b8; font-size: 10pt;">Managed by</div>
   <div class="fd-row">
@@ -192,7 +192,7 @@
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">3</div>
-    <div class="flow-text"><strong>Work however you want</strong> — "build me X" → agent adds to TASKS.md, builds, tests. "What should I do next?" → agent walks through spec-driven flow. Never blocks.</div>
+    <div class="flow-text"><strong>Work however you want</strong> — "build me X" → agent adds to TASKS.md, builds, tests. "What should I do next?" → agent walks through spec-persistent flow. Never blocks.</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
@@ -228,9 +228,9 @@ your-project/
 │   ├── AGENT.md           ← Project rules, stack, brand
 │   ├── AGENT_CONTEXT.md   ← Living state (updated every session)
 │   ├── SPECS.md           ← Requirements & features
-│   ├── PLANNING.md        ← Architecture, methodology & research
+│   ├── PLANS.md        ← Architecture, methodology & research
 │   ├── TASKS.md           ← Task tracking (module-based)
-│   └── TRACKER.md         ← Version history
+│   └── RELEASES.md         ← Version history
 │
 ├── src/                   ← Your code
 ├── tests/                 ← Your tests
@@ -245,9 +245,9 @@ your-project/
   <tr><td><code>AGENT.md</code></td><td>Project-specific instructions — stack, rules, brand, AI config</td><td>Setup</td></tr>
   <tr><td><code>AGENT_CONTEXT.md</code></td><td>Living state — done, next, decisions, blockers, file structure</td><td>Every session</td></tr>
   <tr><td><code>SPECS.md</code></td><td>What to build — requirements, features, acceptance criteria, scope</td><td>Before dev</td></tr>
-  <tr><td><code>PLANNING.md</code></td><td>How to build — architecture, data model, phases, methodology, research, decision log</td><td>Before dev</td></tr>
+  <tr><td><code>PLANS.md</code></td><td>How to build — architecture, data model, phases, methodology, research, decision log</td><td>Before dev</td></tr>
   <tr><td><code>TASKS.md</code></td><td>Module-based task tracking with progress summary table</td><td>During dev</td></tr>
-  <tr><td><code>TRACKER.md</code></td><td>Version changelog (categorized), test results, deployment log</td><td>End of version</td></tr>
+  <tr><td><code>RELEASES.md</code></td><td>Version changelog (categorized), test results, deployment log</td><td>End of version</td></tr>
 </table>
 
 <h2>How to Work in Spec-Driven Development</h2>
@@ -269,7 +269,7 @@ your-project/
 <div class="highlight">
   <strong>Goal:</strong> Define HOW you're building it — architecture, data model, phases.
 </div>
-<p>AI writes <code>agent/PLANNING.md</code> based on approved specs:</p>
+<p>AI writes <code>agent/PLANS.md</code> based on approved specs:</p>
 <table>
   <tr><th>Section</th><th>What AI Fills In</th></tr>
   <tr><td>Stack</td><td>Recommends tech (frontend, backend, DB, hosting) with trade-offs. You approve.</td></tr>
@@ -317,7 +317,7 @@ your-project/
 <div class="highlight">
   <strong>Goal:</strong> Log what was delivered, tested, and deployed.
 </div>
-<p>At end of each version, AI updates <code>agent/TRACKER.md</code>:</p>
+<p>At end of each version, AI updates <code>agent/RELEASES.md</code>:</p>
 <pre>
 ## v0.2 — AI Features (March 30, 2026)
 
@@ -380,14 +380,14 @@ Added JD-tailored resume, PDF generation, 604 tests.
 <p>The framework is <strong>not rigid</strong>. The AI agent adapts to how you want to work:</p>
 
 <div class="highlight">
-  <strong>Core principle:</strong> The user can start anywhere — jump into coding, give direct tasks, ask questions, or follow the full spec-driven flow. All valid. The agent adapts to the user, not the other way around.
+  <strong>Core principle:</strong> The user can start anywhere — jump into coding, give direct tasks, ask questions, or follow the full spec-persistent flow. All valid. The agent adapts to the user, not the other way around.
 </div>
 
 <table>
   <tr><th>You Do</th><th>Agent Does</th></tr>
   <tr><td>"Build me a login page"</td><td>Adds to TASKS.md → builds it → tests it → shows results</td></tr>
   <tr><td>"Fix this bug"</td><td>Adds to TASKS.md → fixes → marks done</td></tr>
-  <tr><td>"What should I do next?"</td><td>Walks through spec-driven process: define specs → plan → tasks</td></tr>
+  <tr><td>"What should I do next?"</td><td>Walks through spec-persistent process: define specs → plan → tasks</td></tr>
   <tr><td>"What's the status?"</td><td>Shows from TASKS.md + AGENT_CONTEXT.md</td></tr>
   <tr><td>Come back after weeks</td><td>Reads AGENT_CONTEXT.md → summarizes where you left off</td></tr>
   <tr><td>Never wrote specs</td><td>Retroactively fills SPECS.md from what's built — no complaints</td></tr>
@@ -399,7 +399,7 @@ Added JD-tailored resume, PDF generation, 604 tests.
   <li>Adds every task to TASKS.md before starting</li>
   <li>Marks tasks done when complete</li>
   <li>Updates AGENT_CONTEXT.md at session end</li>
-  <li>Fills gaps in SPECS.md and PLANNING.md retroactively</li>
+  <li>Fills gaps in SPECS.md and PLANS.md retroactively</li>
   <li>Surfaces process naturally: "I've added this to TASKS.md", "Based on SPECS.md, we still have..."</li>
 </ul>
 
@@ -577,9 +577,9 @@ examples/starter/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
 │   ├── AGENT_CONTEXT.md   ← Status: "Setup — waiting for specs"
 │   ├── SPECS.md           ← Empty — ready for requirements
-│   ├── PLANNING.md        ← Empty — ready for architecture & methodology
+│   ├── PLANS.md        ← Empty — ready for architecture & methodology
 │   ├── TASKS.md           ← 1/5 tasks (project initialized)
-│   └── TRACKER.md         ← v0.1 placeholder
+│   └── RELEASES.md         ← v0.1 placeholder
 </pre>
 
 <h3>Mid-Development Project</h3>
@@ -589,9 +589,9 @@ examples/my-app/
 │   ├── AGENT.md           ← Next.js + Supabase configured
 │   ├── AGENT_CONTEXT.md   ← v0.1: 11/16 tasks, 24 tests
 │   ├── SPECS.md           ← 8 features, priorities, criteria
-│   ├── PLANNING.md        ← Data model, APIs, 3 phases
+│   ├── PLANS.md        ← Data model, APIs, 3 phases
 │   ├── TASKS.md           ← 5 modules with progress
-│   └── TRACKER.md         ← Categorized changelog
+│   └── RELEASES.md         ← Categorized changelog
 </pre>
 
 <div class="highlight">

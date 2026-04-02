@@ -59,9 +59,9 @@ Does file exist?
 | `agent/AGENT.md` | Framework: Agent File Templates |
 | `agent/AGENT_CONTEXT.md` | Framework: Agent File Templates |
 | `agent/SPECS.md` | Framework: Agent File Templates |
-| `agent/PLANNING.md` | Framework: Agent File Templates |
+| `agent/PLANS.md` | Framework: Agent File Templates |
 | `agent/TASKS.md` | Framework: Agent File Templates |
-| `agent/TRACKER.md` | Framework: Agent File Templates |
+| `agent/RELEASES.md` | Framework: Agent File Templates |
 
 ## Auto-Scan Trigger
 This rule is applied during:

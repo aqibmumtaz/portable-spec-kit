@@ -21,7 +21,7 @@ Read project context:
     agent/AGENT.md — project rules, stack
     agent/AGENT_CONTEXT.md — living state (what's done, next, decisions)
     agent/TASKS.md — current tasks
-    agent/PLANNING.md — architecture
+    agent/PLANS.md — architecture
     │
     ▼
 Greet by name + summarize:
@@ -99,7 +99,7 @@ Read project context → greet → summarize → continue working
 - `agent/AGENT.md`
 - `agent/AGENT_CONTEXT.md`
 - `agent/TASKS.md`
-- `agent/PLANNING.md`
+- `agent/PLANS.md`
 
 ## Files Updated (at session end)
 - `agent/AGENT_CONTEXT.md` — progress, decisions, what's next

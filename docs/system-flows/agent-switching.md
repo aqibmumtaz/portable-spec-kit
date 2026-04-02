@@ -35,7 +35,7 @@ Day 3: User switches to Copilot
 | User profile (name, style, preferences) | `.portable-spec-kit/user-profile/` | Yes — standard markdown |
 | Project state (what's done, next, decisions) | `agent/AGENT_CONTEXT.md` | Yes — standard markdown |
 | Tasks (completed, pending) | `agent/TASKS.md` | Yes — standard markdown |
-| Specs, planning, tracker | `agent/SPECS.md`, `PLANNING.md`, `TRACKER.md` | Yes — standard markdown |
+| Specs, planning, tracker | `agent/SPECS.md`, `PLANS.md`, `RELEASES.md` | Yes — standard markdown |
 | Framework rules | `portable-spec-kit.md` (via symlinks) | Yes — all agents read same file |
 
 ## What Does NOT Transfer

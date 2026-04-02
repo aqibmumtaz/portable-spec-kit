@@ -1,10 +1,10 @@
 # Portable Spec Kit
 
-**A lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering.**
+**Spec-Persistent Development — a lightweight, zero-install, personalized framework for AI-assisted engineering.**
 
-> Drop one file into any project. Your AI agent personalizes to you, drives spec-driven development from requirements to deployment, learns and follows your engineering practices, and maintains context across sessions — never loses progress, never drops quality.
+> Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.2.5-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.2.6-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-258%20passing-brightgreen.svg)](tests/)
 
@@ -13,7 +13,7 @@
 <td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
 <td width="25%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
 <td width="25%" align="center"><strong>👤 Personalized</strong><br><sub>GitHub profile auto-detect<br>Adapts to your expertise<br>Tailored AI behavior</sub></td>
-<td width="25%" align="center"><strong>📋 Spec-Driven</strong><br><sub>SPECS → PLAN → TASKS → TRACK<br>Complete dev pipeline<br>Retroactive spec-filling</sub></td>
+<td width="25%" align="center"><strong>📋 Spec-Persistent</strong><br><sub>SPECS → PLAN → TASKS → TRACK<br>Living specs, never block<br>Fill before, during, or after</sub></td>
 </tr>
 <tr>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
@@ -27,7 +27,35 @@
 </tr>
 </table>
 
-> **The lightweight portable alternative to GitHub's [spec-kit](https://github.com/github/spec-kit).** No CLI install, no Python dependency, no package managers. One file — same spec-driven methodology — zero friction.
+> **Inspired by GitHub's [spec-kit](https://github.com/github/spec-kit).** A different philosophy — specs persist alongside your code, maintained by the agent, never blocking. No CLI install, no Python dependency, no package managers. One file — zero friction.
+
+---
+
+## The Methodology: Spec-Persistent Development
+
+**Specs always exist and stay current, but never block.**
+
+Traditional approaches force a choice: write specs first (waterfall) or skip them (agile). Spec-Persistent Development is a third path — specifications persist throughout development, maintained by the AI agent, evolving with your code, never gating your work.
+
+| | **Waterfall** | **Agile** | **Spec-First** (spec-kit) | **Spec-Persistent** (this kit) |
+|---|:---:|:---:|:---:|:---:|
+| **Specs exist?** | Yes, upfront | Often no | Yes, formal | **Always — living documents** |
+| **Specs block code?** | Yes | No | Yes | **Never** |
+| **When written?** | Before code | Rarely | Before code | **Before, during, or after** |
+| **Who maintains?** | Humans | Humans (skip) | Humans | **Agent (90%)** |
+| **Context persists?** | In docs | In people's heads | Per-session | **Across sessions, weeks, months** |
+| **Your workflow** | Sequential | Iterative | 6-phase | **Your choice — any style** |
+
+### The Framework Doesn't Enforce a Methodology
+
+You choose how you work. The kit adapts:
+
+- **Want waterfall?** Follow SPECS → PLANNING → TASKS → TRACKER sequentially. The kit supports it.
+- **Want agile?** Jump into coding. The agent tracks tasks and fills specs retroactively.
+- **Want a mix?** Write rough specs, start coding, refine as you go. The agent keeps everything in sync.
+- **Want to change mid-project?** Started agile but need specs now? The agent fills them from what's built.
+
+The only constant: **specs persist**. However you work, the agent ensures SPECS.md, PLANS.md, TASKS.md, and RELEASES.md always reflect the current state of your project.
 
 ---
 
@@ -35,7 +63,7 @@
 
 AI coding agents are powerful but inconsistent. Every new conversation starts from zero — no context, no standards, no memory of decisions. You end up repeating yourself: "use TypeScript", "test everything", "don't commit secrets", "track tasks in markdown"...
 
-**Existing solutions are heavy.** GitHub's [spec-kit](https://github.com/github/spec-kit) requires Python 3.11+, a CLI tool, package managers, and generates thousands of lines of specification markdown per feature. It enforces a rigid 6-phase waterfall-like workflow that blocks you from coding until specs are formally complete.
+**Existing approaches vary.** GitHub's [spec-kit](https://github.com/github/spec-kit) is a comprehensive spec-first solution requiring Python 3.11+, a CLI tool, and package managers. It follows a structured 6-phase workflow. Portable Spec Kit takes a different approach — lighter, more flexible, and personalized.
 
 ## The Solution
 
@@ -140,9 +168,9 @@ The agent reads the framework and automatically sets everything up:
     agent/AGENT.md           ← Project rules, stack, brand
     agent/AGENT_CONTEXT.md   ← Living state (updated every session)
     agent/SPECS.md           ← Requirements & features
-    agent/PLANNING.md        ← Architecture, methodology & research
+    agent/PLANS.md        ← Architecture, methodology & research
     agent/TASKS.md           ← Task tracking
-    agent/TRACKER.md         ← Version history
+    agent/RELEASES.md         ← Version history
 ✓ Creates project directories (src/, tests/, docs/, ard/, input/, output/)
 ✓ Creates README.md with standard structure
 ✓ Creates .gitignore + .env.example
@@ -195,7 +223,7 @@ Agent: Shows progress from TASKS.md + AGENT_CONTEXT.md
 ### Development Pipeline
 
 ```
-SPECS.md        →  PLANNING.md      →  TASKS.md        →  TRACKER.md
+SPECS.md        →  PLANS.md      →  TASKS.md        →  RELEASES.md
 What to build      How to build it     Track progress      Log results
 ```
 
@@ -206,9 +234,9 @@ What to build      How to build it     Track progress      Log results
 | `AGENT.md` | Project rules, stack, brand, AI config | Setup |
 | `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers | Every session |
 | `SPECS.md` | Requirements, features, acceptance criteria | Before dev |
-| `PLANNING.md` | Architecture, data model, phases, methodology & research | Before dev |
+| `PLANS.md` | Architecture, data model, phases, methodology & research | Before dev |
 | `TASKS.md` | Module-based task tracking with checkboxes | During dev |
-| `TRACKER.md` | Version changelog, test results, deployment log | End of version |
+| `RELEASES.md` | Version changelog, test results, deployment log | End of version |
 
 ### Project Structure
 
@@ -227,9 +255,9 @@ your-project/
 │   ├── AGENT.md
 │   ├── AGENT_CONTEXT.md
 │   ├── SPECS.md
-│   ├── PLANNING.md
+│   ├── PLANS.md
 │   ├── TASKS.md
-│   └── TRACKER.md
+│   └── RELEASES.md
 │
 ├── src/                    ← Your code
 ├── tests/                  ← Your tests
@@ -244,7 +272,7 @@ your-project/
 
 The agent adapts to how YOU want to work:
 
-- **Want to follow the full spec-driven flow?** Agent walks you through it step by step.
+- **Want to follow the full spec-persistent flow?** Agent walks you through it step by step.
 - **Want to jump straight into coding?** Agent tracks everything in the background.
 - **Want to give direct tasks?** Agent adds to TASKS.md and executes immediately.
 - **Forgot to write specs?** Agent fills them retroactively from what's been built.
@@ -451,24 +479,24 @@ Here's where we left off:
 Want to continue with payment integration?
 ```
 
-### Spec-Driven Flow (When Asked)
+### Spec-Persistent Flow (When Asked)
 
 ```
 You: "How should I approach this project?"
 
 Agent:
-Let's follow the spec-driven process:
+Let's follow the spec-persistent process:
 
 1. First, let's define WHAT you want in SPECS.md
    → What are the key features? Who's the user?
 
-2. Then I'll plan HOW to build it in PLANNING.md
+2. Then I'll plan HOW to build it in PLANS.md
    → Architecture, data model, phases
 
 3. I'll break it into tasks in TASKS.md
    → Module-by-module with checkboxes
 
-4. I'll track everything in TRACKER.md
+4. I'll track everything in RELEASES.md
    → Version history, test results, deployments
 
 Let's start — what's the core problem this project solves?
@@ -511,9 +539,9 @@ examples/starter/
 │   ├── AGENT.md           ← Stack: TBD (waiting for your specs)
 │   ├── AGENT_CONTEXT.md   ← Status: "Setup — waiting for specs"
 │   ├── SPECS.md           ← Empty template — ready for your requirements
-│   ├── PLANNING.md        ← Empty template — ready for architecture
+│   ├── PLANS.md        ← Empty template — ready for architecture
 │   ├── TASKS.md           ← 1/5 tasks done (project initialized)
-│   └── TRACKER.md         ← v0.1 placeholder
+│   └── RELEASES.md         ← v0.1 placeholder
 ```
 
 ### [`examples/my-app/`](examples/my-app/) — Mid-Development Project
@@ -531,9 +559,9 @@ examples/my-app/
 │   ├── AGENT.md           ← Next.js + Supabase + Vercel configured
 │   ├── AGENT_CONTEXT.md   ← v0.1 with 11/16 tasks, 24 tests at 92%
 │   ├── SPECS.md           ← 8 features with priorities + acceptance criteria
-│   ├── PLANNING.md        ← Data model, API endpoints, 3 build phases
+│   ├── PLANS.md        ← Data model, API endpoints, 3 build phases
 │   ├── TASKS.md           ← 5 modules, progress summary table
-│   └── TRACKER.md         ← v0.1 changelog with categorized changes
+│   └── RELEASES.md         ← v0.1 changelog with categorized changes
 ```
 
 ---
@@ -549,7 +577,7 @@ Detailed step-by-step diagrams for every system flow:
 | **[Returning Session](docs/system-flows/returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
 | **[Agent Switching](docs/system-flows/agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
 | **[Profile Customization](docs/system-flows/profile-customization.md)** | Different preferences per project — local override |
-| **[Spec-Driven Development](docs/system-flows/spec-driven-development.md)** | SPECS → PLANNING → TASKS → TRACKER pipeline |
+| **[Spec-Persistent Development](docs/system-flows/spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
 | **[First Session Workspace](docs/system-flows/first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
 | **[File Management](docs/system-flows/file-management.md)** | Create/update/restructure rule — never lose content |
 
@@ -585,5 +613,5 @@ Research: Multimodal AI, Healthcare AI, Autonomous Surveillance
 
 <p align="center">
   <strong>Portable Spec Kit — One file. Any project. Your standards. Personalized.</strong><br>
-  <em>The lightweight spec-driven alternative to spec-kit for AI-assisted engineering</em>
+  <em>Spec-Persistent Development — specs always exist, always current, never block</em>
 </p>

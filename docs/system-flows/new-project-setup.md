@@ -40,7 +40,7 @@ Keep or customize for this project? (Enter = keep)
 Create project structure:
     ✓ agent/ directory with 6 files:
         AGENT.md, AGENT_CONTEXT.md, SPECS.md,
-        PLANNING.md, TASKS.md, TRACKER.md
+        PLANS.md, TASKS.md, RELEASES.md
     ✓ README.md (standard template)
     ✓ .gitignore
     ✓ .env.example
@@ -58,7 +58,7 @@ Report to user:
 ## After Setup (when user is ready)
 1. Specs discussion → write `agent/SPECS.md`
 2. Recommend tech stack → user approves
-3. Write `agent/PLANNING.md` — architecture, phases
+3. Write `agent/PLANS.md` — architecture, phases
 4. Initialize stack → install deps, create source code structure (from 8 templates)
 5. Start development → update `agent/TASKS.md`, begin building
 

@@ -74,7 +74,7 @@
 
 <h2 style="page-break-before: avoid;">Executive Summary</h2>
 
-<p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized specification-driven development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
+<p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
   <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 8 flow documents, 258 automated tests, 23 test sections.
@@ -109,7 +109,7 @@
   <li><strong>Project directory confirmation:</strong> list directories, user picks or types new path before creating agent/ files.</li>
   <li><strong>Git rule:</strong> check .git/ before committing — each project can be its own repo.</li>
   <li><strong>Version-based TASKS.md:</strong> tasks grouped under release headings (v0.1 Done, v0.2 Done, v0.3 Current, Backlog).</li>
-  <li><strong>TRACKER.md:</strong> framework version range per release (v0.0.x for v0.1, v0.1.x for v0.2).</li>
+  <li><strong>RELEASES.md:</strong> framework version range per release (v0.0.x for v0.1, v0.1.x for v0.2).</li>
   <li><strong>AGENT_CONTEXT.md:</strong> tracks Framework version — compared on session start to trigger restructure.</li>
   <li><strong>258 tests</strong> across 23 sections (was 242). Added: Versioning System (16 tests).</li>
 </ul>
@@ -162,7 +162,7 @@
 
 <h3>v0.1 — Initial Release (March 2026)</h3>
 <ul>
-  <li>CLAUDE.md framework — portable specification-driven development</li>
+  <li>CLAUDE.md framework — portable spec-persistent development</li>
   <li>README with spec-kit comparison table</li>
   <li>CONTRIBUTING.md with PR guidelines</li>
   <li>PDF Quick Guide</li>
@@ -230,9 +230,9 @@ workspace/
 │   ├── AGENT.md                          ← Project rules, stack
 │   ├── AGENT_CONTEXT.md                  ← Living state
 │   ├── SPECS.md                          ← Requirements
-│   ├── PLANNING.md                       ← Architecture
+│   ├── PLANS.md                       ← Architecture
 │   ├── TASKS.md                          ← Task tracking
-│   └── TRACKER.md                        ← Version history
+│   └── RELEASES.md                        ← Version history
 ├── src/                                  ← Source code
 ├── tests/                                ← Test files
 ├── docs/system-flows/                           ← System flow documentation
@@ -389,7 +389,7 @@ workspace/
 <h2 id="spec">7. Spec-Driven Development Pipeline</h2>
 
 <pre>
-SPECS.md        →  PLANNING.md      →  TASKS.md        →  TRACKER.md
+SPECS.md        →  PLANS.md      →  TASKS.md        →  RELEASES.md
 What to build      How to build it     Track progress      Log results
 </pre>
 
@@ -399,9 +399,9 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>AGENT.md</code></td><td>Project rules, stack, brand, AI config</td><td>Setup</td></tr>
   <tr><td><code>AGENT_CONTEXT.md</code></td><td>Living state — done, next, decisions, blockers</td><td>Every session + after implementation</td></tr>
   <tr><td><code>SPECS.md</code></td><td>Requirements, features, acceptance criteria</td><td>Before dev</td></tr>
-  <tr><td><code>PLANNING.md</code></td><td>Architecture, data model, phases, methodology</td><td>Before dev</td></tr>
+  <tr><td><code>PLANS.md</code></td><td>Architecture, data model, phases, methodology</td><td>Before dev</td></tr>
   <tr><td><code>TASKS.md</code></td><td>Module-based task tracking with checkboxes</td><td>During dev</td></tr>
-  <tr><td><code>TRACKER.md</code></td><td>Version changelog, test results, deployment log</td><td>End of version</td></tr>
+  <tr><td><code>RELEASES.md</code></td><td>Version changelog, test results, deployment log</td><td>End of version</td></tr>
 </table>
 
 <h3>Agent Behavior</h3>
@@ -409,7 +409,7 @@ What to build      How to build it     Track progress      Log results
   <tr><th>User Does</th><th>Agent Does</th></tr>
   <tr><td>"Build me a login page"</td><td>Adds to TASKS.md → builds → tests → done</td></tr>
   <tr><td>"Fix this bug"</td><td>Adds to TASKS.md → fixes → marks done</td></tr>
-  <tr><td>"What should I do next?"</td><td>Walks through spec-driven process</td></tr>
+  <tr><td>"What should I do next?"</td><td>Walks through spec-persistent process</td></tr>
   <tr><td>Never wrote specs</td><td>Retroactively fills SPECS.md from what's built</td></tr>
   <tr><td>Comes back after weeks</td><td>Reads AGENT_CONTEXT.md → summarizes → continues</td></tr>
 </table>

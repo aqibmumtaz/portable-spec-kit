@@ -1,5 +1,5 @@
-# Portable Spec Kit — AI Agentic Specification-Driven Development
-<!-- Framework Version: v0.2.5 -->
+# Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
+<!-- Framework Version: v0.2.6 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -23,7 +23,7 @@ This file is the **Portable Spec Kit** framework. It is distributed as `portable
 
 On first session, the agent also auto-creates:
 - `WORKSPACE_CONTEXT.md` — workspace environment and project listing
-- `agent/` directory in each project — with 6 management files (AGENT.md, AGENT_CONTEXT.md, SPECS.md, PLANNING.md, TASKS.md, TRACKER.md)
+- `agent/` directory in each project — with 6 management files (AGENT.md, AGENT_CONTEXT.md, SPECS.md, PLANS.md, TASKS.md, RELEASES.md)
 - `README.md` — structured project overview
 
 ---
@@ -197,8 +197,8 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.5 -->` in portable-spec-kit.md |
-| **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, TRACKER.md, changelog |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.2.6 -->` in portable-spec-kit.md |
+| **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
 ### What Gets Updated at Each Level
@@ -209,7 +209,7 @@ Framework version mirrors the release it belongs to:
 - **Do NOT modify** `<!-- Framework Version -->` in portable-spec-kit.md — that is the kit version, managed by the kit author only. It is read-only for user projects.
 
 **On release milestone (v0.x):**
-- Update `agent/TRACKER.md` — changelog with categorized changes + framework version range included
+- Update `agent/RELEASES.md` — changelog with categorized changes + framework version range included
 - Update ARD docs — Technical Overview with new version section
 - Regenerate PDFs
 - Move completed tasks in `agent/TASKS.md` to done, start new version heading
@@ -230,7 +230,7 @@ Framework version mirrors the release it belongs to:
 - [ ] Future task (next release)
 ```
 
-### TRACKER.md Versioning Structure
+### RELEASES.md Versioning Structure
 ```
 ## v0.2 — Title (Date)
 Framework versions: v0.1.1 — v0.1.7
@@ -249,7 +249,7 @@ Framework versions: v0.1.1 — v0.1.7
 - **v1.0** reserved for production/SaaS launch
 - Users pull latest framework with `curl` — always get the latest patch
 - TASKS.md groups work under release version headings
-- TRACKER.md records completed releases with framework version range
+- RELEASES.md records completed releases with framework version range
 
 ---
 
@@ -261,11 +261,31 @@ Framework versions: v0.1.1 — v0.1.7
 - Add tasks when requested, mark `[x]` as soon as completed
 - **Organize tasks under release version headings** (e.g., `## v0.1 — Current`, `## v0.2 — Done`) — see Versioning section
 - Future tasks go under `## Backlog (Future Releases)`
-- Design decisions and architectural plans go in `PLANNING.md` — not in separate plan files
-- If a feature needs a detailed plan, add it as a section in `PLANNING.md` (not a new `*_PLAN.md` file)
-- Keep `TASKS.md` and `PLANNING.md` in sync — update both when work is completed
+- Design decisions and architectural plans go in `PLANS.md` — not in separate plan files
+- If a feature needs a detailed plan, add it as a section in `PLANS.md` (not a new `*_PLAN.md` file)
+- Keep `TASKS.md` and `PLANS.md` in sync — update both when work is completed
 - Maintain a **Progress Summary** table at the bottom of TASKS.md showing tasks done, tests, and status per version
 - Test UI pages live under `/test-ui/` route with an index page listing all test modules
+
+### Spec & Planning Management (MANDATORY)
+- **SPECS.md** — update when scope changes during development:
+  - New feature added → add to features table
+  - Feature removed or descoped → move to "Out of scope (future)"
+  - Acceptance criteria modified → update criteria
+  - If SPECS.md is empty after 3+ tasks completed → retroactively fill from what's been built
+- **PLANS.md** — update when architecture evolves during development:
+  - New technology chosen or replaced → update Stack table with Why
+  - Data model changed (new tables, fields, relationships) → update Data Model section
+  - API endpoints added or modified → update API Endpoints section
+  - Build phases adjusted → update Build Phases section
+  - New methodology or research findings → add to Methodology & Research section
+  - If PLANS.md is empty after stack is chosen → fill architecture from current codebase
+- **AGENT.md** — update when project config changes:
+  - Stack changed → update Stack table
+  - Brand colors or fonts changed → update Brand section
+  - AI provider or model changed → update AI Config
+  - Dev server port changed → update port
+- **Sync rule:** When completing a feature that affects SPECS.md, PLANS.md, and TASKS.md — update all three in the same session. Don't leave them out of sync.
 
 ### Testing (MANDATORY)
 - **Always think about edge cases** when creating test cases — empty data, max data, boundary values, null/undefined, single item vs many
@@ -442,7 +462,7 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 
      Restructured agent files (all content preserved):
      - TASKS.md → version-based headings
-     - TRACKER.md → framework version range added
+     - RELEASES.md → framework version range added
      - AGENT_CONTEXT.md → Framework field added/updated"
      ```
   5. Continue conversation — zero interruption
@@ -474,7 +494,7 @@ If `WORKSPACE_CONTEXT.md` does not exist:
 
 When starting work on a project, scan for `<project>/agent/` directory:
 1. If `agent/` directory is missing → create it **in the confirmed project directory**
-2. Check for required files: `AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANNING.md`, `TASKS.md`, `TRACKER.md`
+2. Check for required files: `AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANS.md`, `TASKS.md`, `RELEASES.md`
 3. Apply the **File Creation/Update Rule** to each agent file and `README.md`
 4. Read `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` for project context
 5. Update `agent/AGENT_CONTEXT.md` at end of every session
@@ -499,7 +519,7 @@ When the kit is installed on an **existing project** with established structure:
    ```
 4. **Respect user's choices** — if user says "don't restructure README" or "keep my directory names", follow that
 5. **Only create agent/ files by default** — the 6 management files are always safe to add (they don't touch existing code)
-6. **Fill agent files from existing code** — scan what exists and retroactively fill SPECS.md, PLANNING.md, AGENT.md (stack, structure) from the current codebase
+6. **Fill agent files from existing code** — scan what exists and retroactively fill SPECS.md, PLANS.md, AGENT.md (stack, structure) from the current codebase
 7. **Never rename, move, or delete existing files** without explicit user approval
 
 ### Project Scenarios (handle each appropriately)
@@ -529,9 +549,9 @@ When creating a **brand new** project, create with ALL of these files and direct
 │   ├── AGENT.md           ← Project-specific AI instructions (stack, rules)
 │   ├── AGENT_CONTEXT.md   ← Living project state (updated every session)
 │   ├── SPECS.md           ← WHAT to build (requirements, features)
-│   ├── PLANNING.md        ← HOW to build it (architecture, phases)
+│   ├── PLANS.md        ← HOW to build it (architecture, phases)
 │   ├── TASKS.md           ← Task tracking (checkboxes)
-│   └── TRACKER.md         ← Version log, deployments, history
+│   └── RELEASES.md         ← Version log, deployments, history
 │
 ├── .gitignore
 ├── .env.example           ← Environment variable template (NO real keys)
@@ -689,13 +709,13 @@ App/
 
 | File | Purpose | When Updated |
 |------|---------|:---:|
-| `agent/AGENT.md` | Project-specific AI instructions — stack, tools, project rules | Setup, rarely changes |
-| `agent/AGENT_CONTEXT.md` | Living state — what's done, what's next, key decisions, blockers | **Every session** |
-| `agent/SPECS.md` | Requirements, features, acceptance criteria | Before dev |
-| `agent/PLANNING.md` | Architecture, tech decisions, data model, phases, methodology & research | Before dev |
-| `agent/TASKS.md` | Task board — `[ ]` todo, `[x]` done | During dev |
-| `agent/TRACKER.md` | Version changelog, deployments, test results | End of version |
-| `ard/` | Generated docs — technical overview (HTML+PDF), presentation (HTML+PDF) | End of each version |
+| `agent/AGENT.md` | Project-specific AI instructions — stack, tools, project rules | Setup, when stack/config changes |
+| `agent/AGENT_CONTEXT.md` | Living state — what's done, what's next, key decisions, blockers | **Every session + after every implementation** |
+| `agent/SPECS.md` | Requirements, features, acceptance criteria | Before dev + **when scope changes** |
+| `agent/PLANS.md` | Architecture, tech decisions, data model, phases, methodology & research | Before dev + **when architecture evolves** |
+| `agent/TASKS.md` | Task board — `[ ]` todo, `[x]` done | **Before and after every task** |
+| `agent/RELEASES.md` | Version changelog, deployments, test results | End of version release |
+| `ard/` | Generated docs — technical overview (HTML+PDF), presentation (HTML+PDF) | End of each version release |
 
 ### README.md Template
 
@@ -769,7 +789,7 @@ Deployment instructions (added at release time).
 ### Development Flow
 
 ```
-SPECS.md (define)  →  PLANNING.md (architect)  →  TASKS.md (execute)  →  TRACKER.md (record)
+SPECS.md (define)  →  PLANS.md (architect)  →  TASKS.md (execute)  →  RELEASES.md (record)
    What to build        How to build it           Track progress          Log what happened
 ```
 
@@ -777,13 +797,13 @@ SPECS.md (define)  →  PLANNING.md (architect)  →  TASKS.md (execute)  →  T
 
 The agent is a **helpful guide, not a strict enforcer**. Follow these principles:
 
-**Don't block the user.** The user can start anywhere — jump into coding, give direct tasks, ask questions, or follow the full spec-driven flow. All valid. The agent adapts to how the user wants to work, not the other way around. Track everything in the background regardless.
+**Don't block the user.** The user can start anywhere — jump into coding, give direct tasks, ask questions, or follow the full spec-persistent flow. All valid. The agent adapts to how the user wants to work, not the other way around. Track everything in the background regardless.
 
-**Guide when asked.** If the user asks "what should I do next?" or "how should I approach this?" — walk them through the spec-driven process:
+**Guide when asked.** If the user asks "what should I do next?" or "how should I approach this?" — walk them through the spec-persistent process:
 1. "Let's start by defining what you want in SPECS.md — what are the key features?"
-2. "Now let's plan the architecture in PLANNING.md — what stack do you want?"
+2. "Now let's plan the architecture in PLANS.md — what stack do you want?"
 3. "I'll break this into tasks in TASKS.md — here's the module breakdown"
-4. "I'll track everything as we go and log it in TRACKER.md at the end"
+4. "I'll track everything as we go and log it in RELEASES.md at the end"
 
 **Always mention project name when reporting.** When confirming tasks, status, or actions — always include which project it applies to (e.g. "Noted in **ProjectName** agent/TASKS.md").
 
@@ -793,16 +813,18 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 - User says "what's the status?" → show from TASKS.md and AGENT_CONTEXT.md
 - User comes back after weeks → read AGENT_CONTEXT.md, summarize where they left off
 
-**Fill gaps proactively.** If SPECS.md is empty but the user has been building for a while:
-- Don't complain — retroactively fill SPECS.md from what's been built
-- Same for PLANNING.md — document the architecture that emerged from the code
-- Keep everything in sync without burdening the user
+**Fill gaps proactively.** Don't wait for the user to ask — detect and fill:
+- SPECS.md empty after 3+ tasks completed → retroactively fill from what's been built
+- PLANS.md empty after stack is chosen → document the architecture that emerged from the code
+- TASKS.md has completed tasks not in SPECS.md → add the features to SPECS.md
+- Architecture changed during development → update PLANS.md to match reality
+- Keep all 4 pipeline files (SPECS → PLANNING → TASKS → TRACKER) in sync without burdening the user
 
 **Surface the process naturally:**
 - "I've added this to TASKS.md" (shows you're tracking)
 - "Updating AGENT_CONTEXT.md so we can pick up here next time" (shows context persistence)
-- "Based on SPECS.md, we still have these features pending" (shows spec-driven awareness)
-- "PLANNING.md shows we planned X — should I update it?" (shows plan awareness)
+- "Based on SPECS.md, we still have these features pending" (shows spec-persistent awareness)
+- "PLANS.md shows we planned X — should I update it?" (shows plan awareness)
 
 **The user's time is sacred.** Agent does 90% of the work. User reviews 10%. Never ask the user to write specs/plans/tasks — the agent writes them, user approves or adjusts.
 
@@ -824,7 +846,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences (adapt behavior)
 2. Read `agent/AGENT_CONTEXT.md` — project state
 3. Read `agent/TASKS.md` — current tasks
-4. Read `agent/PLANNING.md` — architecture
+4. Read `agent/PLANS.md` — architecture
 
 ## On Every Session End:
 1. Update `agent/AGENT_CONTEXT.md` — progress, decisions
@@ -928,9 +950,9 @@ Brief description of what this project does and who it's for.
 - [ ] Criterion 2
 ```
 
-**agent/PLANNING.md:**
+**agent/PLANS.md:**
 ```markdown
-# PLANNING.md — <Project Name>
+# PLANS.md — <Project Name>
 
 > **Purpose:** How to build it — architecture, phases, data model, tech decisions, methodology & research.
 > **Role:** Defined before dev starts. Updated when architecture changes or new research informs decisions.
@@ -1015,9 +1037,9 @@ src/
 | v0.1 | 1 | 0 | In Progress |
 ```
 
-**agent/TRACKER.md:**
+**agent/RELEASES.md:**
 ```markdown
-# TRACKER.md — <Project Name>
+# RELEASES.md — <Project Name>
 
 > **Purpose:** Version history — changelog, deployments, test results.
 > **Role:** Updated at end of each release version.
@@ -1073,7 +1095,7 @@ Create all 6 agent files using the templates above.
 
 **Step 5:** Recommend tech stack → user approves
 
-**Step 6:** Write `agent/PLANNING.md` — architecture, phases. Deployment deferred to release time.
+**Step 6:** Write `agent/PLANS.md` — architecture, phases. Deployment deferred to release time.
 
 **Step 7:** Initialize stack — install deps, update `.gitignore`, assign dev server port automatically
 

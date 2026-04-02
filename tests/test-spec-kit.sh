@@ -39,7 +39,7 @@ section "1. Repo File Structure"
 section "2. Framework File Content"
 # ═══════════════════════════════════════════════════════════════
 
-grep -q "Portable Spec Kit — AI Agentic" "$PROJ/portable-spec-kit.md" && pass "Title correct" || fail "Title wrong"
+grep -q "Portable Spec Kit — Spec-Persistent Development" "$PROJ/portable-spec-kit.md" && pass "Title correct" || fail "Title wrong"
 grep -q "User Profile" "$PROJ/portable-spec-kit.md" && pass "Has User Profile section" || fail "Missing User Profile"
 grep -q "\.portable-spec-kit/user-profile/" "$PROJ/portable-spec-kit.md" && pass "References .portable-spec-kit/user-profile/" || fail "Missing profile directory reference"
 grep -q "Git & GitHub Rules" "$PROJ/portable-spec-kit.md" && pass "Has Git rules" || fail "Missing Git rules"
@@ -93,9 +93,9 @@ section "5. Agent File Templates (all 6 present in framework)"
 grep -q "agent/AGENT.md:" "$PROJ/portable-spec-kit.md" && pass "AGENT.md template" || fail "Missing AGENT.md template"
 grep -q "agent/AGENT_CONTEXT.md:" "$PROJ/portable-spec-kit.md" && pass "AGENT_CONTEXT.md template" || fail "Missing AGENT_CONTEXT.md template"
 grep -q "agent/SPECS.md:" "$PROJ/portable-spec-kit.md" && pass "SPECS.md template" || fail "Missing SPECS.md template"
-grep -q "agent/PLANNING.md:" "$PROJ/portable-spec-kit.md" && pass "PLANNING.md template" || fail "Missing PLANNING.md template"
+grep -q "agent/PLANS.md:" "$PROJ/portable-spec-kit.md" && pass "PLANS.md template" || fail "Missing PLANS.md template"
 grep -q "agent/TASKS.md:" "$PROJ/portable-spec-kit.md" && pass "TASKS.md template" || fail "Missing TASKS.md template"
-grep -q "agent/TRACKER.md:" "$PROJ/portable-spec-kit.md" && pass "TRACKER.md template" || fail "Missing TRACKER.md template"
+grep -q "agent/RELEASES.md:" "$PROJ/portable-spec-kit.md" && pass "RELEASES.md template" || fail "Missing RELEASES.md template"
 
 # ═══════════════════════════════════════════════════════════════
 section "6. Starter Example — Complete"
@@ -109,9 +109,9 @@ S="$PROJ/examples/starter"
 [ -f "$S/agent/AGENT.md" ] && pass "starter: agent/AGENT.md" || fail "starter: AGENT.md MISSING"
 [ -f "$S/agent/AGENT_CONTEXT.md" ] && pass "starter: agent/AGENT_CONTEXT.md" || fail "starter: AGENT_CONTEXT.md MISSING"
 [ -f "$S/agent/SPECS.md" ] && pass "starter: agent/SPECS.md" || fail "starter: SPECS.md MISSING"
-[ -f "$S/agent/PLANNING.md" ] && pass "starter: agent/PLANNING.md" || fail "starter: PLANNING.md MISSING"
+[ -f "$S/agent/PLANS.md" ] && pass "starter: agent/PLANS.md" || fail "starter: PLANS.md MISSING"
 [ -f "$S/agent/TASKS.md" ] && pass "starter: agent/TASKS.md" || fail "starter: TASKS.md MISSING"
-[ -f "$S/agent/TRACKER.md" ] && pass "starter: agent/TRACKER.md" || fail "starter: TRACKER.md MISSING"
+[ -f "$S/agent/RELEASES.md" ] && pass "starter: agent/RELEASES.md" || fail "starter: RELEASES.md MISSING"
 grep -q "portable-spec-kit.md" "$S/README.md" && pass "starter README references portable-spec-kit.md" || fail "starter README still says CLAUDE.md"
 grep -q "Portable Spec Kit" "$S/README.md" && pass "starter README mentions Portable Spec Kit" || fail "starter README missing kit reference"
 
@@ -125,12 +125,12 @@ M="$PROJ/examples/my-app"
 [ -f "$M/agent/AGENT.md" ] && pass "my-app: agent/AGENT.md" || fail "my-app: AGENT.md MISSING"
 [ -f "$M/agent/AGENT_CONTEXT.md" ] && pass "my-app: agent/AGENT_CONTEXT.md" || fail "my-app: AGENT_CONTEXT.md MISSING"
 [ -f "$M/agent/SPECS.md" ] && pass "my-app: agent/SPECS.md" || fail "my-app: SPECS.md MISSING"
-[ -f "$M/agent/PLANNING.md" ] && pass "my-app: agent/PLANNING.md" || fail "my-app: PLANNING.md MISSING"
+[ -f "$M/agent/PLANS.md" ] && pass "my-app: agent/PLANS.md" || fail "my-app: PLANS.md MISSING"
 [ -f "$M/agent/TASKS.md" ] && pass "my-app: agent/TASKS.md" || fail "my-app: TASKS.md MISSING"
-[ -f "$M/agent/TRACKER.md" ] && pass "my-app: agent/TRACKER.md" || fail "my-app: TRACKER.md MISSING"
+[ -f "$M/agent/RELEASES.md" ] && pass "my-app: agent/RELEASES.md" || fail "my-app: RELEASES.md MISSING"
 grep -q "Next.js" "$M/agent/AGENT.md" && pass "my-app: has Next.js stack" || fail "my-app: no stack defined"
 grep -q "11/16\|11 of 16" "$M/agent/TASKS.md" 2>/dev/null || grep -q "\[x\]" "$M/agent/TASKS.md" && pass "my-app: has completed tasks" || fail "my-app: no tasks done"
-grep -q "v0.1" "$M/agent/TRACKER.md" && pass "my-app: has v0.1 changelog" || fail "my-app: no changelog"
+grep -q "v0.1" "$M/agent/RELEASES.md" && pass "my-app: has v0.1 changelog" || fail "my-app: no changelog"
 
 # ═══════════════════════════════════════════════════════════════
 section "8. README — Key Sections Present"
@@ -620,12 +620,12 @@ section "19. Flow Documentation — All 8 Flows Present"
 FLOWS_DIR="$PROJ/docs/system-flows"
 [ -d "$FLOWS_DIR" ] && pass "docs/system-flows/ directory exists" || fail "docs/system-flows/ MISSING"
 
-for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-driven-development first-session-workspace file-management; do
+for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management; do
   [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
 done
 
 # Verify each flow has required sections
-for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-driven-development first-session-workspace file-management; do
+for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management; do
   grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
   grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
 done
@@ -638,9 +638,9 @@ done
 # Verify agent-switching flow mentions symlinks
 grep -q "symlink" "$FLOWS_DIR/agent-switching.md" && pass "Flow agent-switching: mentions symlinks" || fail "Flow agent-switching: missing symlinks"
 
-# Verify spec-driven flow has context update step
-grep -q "AGENT_CONTEXT" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has context update step" || fail "Flow spec-driven: missing context update"
-grep -q "docs/system-flows" "$FLOWS_DIR/spec-driven-development.md" && pass "Flow spec-driven: has flow update step" || fail "Flow spec-driven: missing flow update"
+# Verify spec-persistent flow has context update step
+grep -q "AGENT_CONTEXT" "$FLOWS_DIR/spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
+grep -q "docs/system-flows" "$FLOWS_DIR/spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
 
 # ═══════════════════════════════════════════════════════════════
 section "20. ARD Directory — Guide Moved"
@@ -697,9 +697,9 @@ grep -q "v0\.3 — Current" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.3 Current"
 grep -q "Backlog" "$PROJ/agent/TASKS.md" && pass "TASKS: Backlog section" || fail "TASKS: Backlog missing"
 grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summary" || fail "TASKS: Progress Summary missing"
 
-# TRACKER.md has framework version ranges
-grep -q "Framework versions: v0\.0\." "$PROJ/agent/TRACKER.md" && pass "TRACKER: v0.1 has framework range" || fail "TRACKER: v0.1 range missing"
-grep -q "Framework versions: v0\.1\." "$PROJ/agent/TRACKER.md" && pass "TRACKER: v0.2 has framework range" || fail "TRACKER: v0.2 range missing"
+# RELEASES.md has framework version ranges
+grep -q "Framework versions: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has framework range" || fail "TRACKER: v0.1 range missing"
+grep -q "Framework versions: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.2 has framework range" || fail "TRACKER: v0.2 range missing"
 
 # AGENT_CONTEXT has current framework version
 grep -q "Framework:" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: has Framework field" || fail "AGENT_CONTEXT: Framework field missing"

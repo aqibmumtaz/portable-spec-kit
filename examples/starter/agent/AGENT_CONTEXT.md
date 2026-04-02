@@ -21,7 +21,7 @@
 ## Key Decisions
 | Decision | Choice | Why |
 |----------|--------|-----|
-| Framework | Portable Spec Kit | Zero-install, spec-driven methodology |
+| Framework | Portable Spec Kit | Zero-install, spec-persistent methodology |
 
 ## Blockers
 None — ready to start

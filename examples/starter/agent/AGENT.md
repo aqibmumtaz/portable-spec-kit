@@ -9,7 +9,7 @@
 ## On Every Session Start:
 1. Read `agent/AGENT_CONTEXT.md` — project state
 2. Read `agent/TASKS.md` — current tasks
-3. Read `agent/PLANNING.md` — architecture
+3. Read `agent/PLANS.md` — architecture
 
 ## On Every Session End:
 1. Update `agent/AGENT_CONTEXT.md` — progress, decisions
