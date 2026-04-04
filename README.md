@@ -327,6 +327,7 @@ You do 10% — review and approve.
 | **Code Quality** | Review checklist, naming conventions, deployment checklist |
 | **Error Handling** | Structured errors, logging, error boundaries, user-friendly messages |
 | **Branch & PR** | Feature branches, PR format, squash merge, clean history |
+| **Python Environment** | Conda env per project, environment selection flow, edge case handling, requirements.txt management |
 | **Dependencies** | Bundle size checks, lock files, audit, avoid unnecessary deps |
 | **Project Templates** | 6 agent files + README + 8 source code structures (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document) |
 | **Auto-Scan** | Detects projects, creates/restructures files, preserves existing content |
@@ -579,6 +580,7 @@ Detailed step-by-step diagrams for every system flow:
 | **[Profile Customization](docs/system-flows/profile-customization.md)** | Different preferences per project — local override |
 | **[Spec-Persistent Development](docs/system-flows/spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
 | **[First Session Workspace](docs/system-flows/first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
+| **[Requirements to Delivery](docs/system-flows/requirements-to-delivery.md)** | Full lifecycle — client requirements through handoff |
 | **[File Management](docs/system-flows/file-management.md)** | Create/update/restructure rule — never lose content |
 
 ---
@@ -587,7 +589,7 @@ Detailed step-by-step diagrams for every system flow:
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
-- **[System Flows](docs/system-flows/)** — 8 step-by-step flow diagrams
+- **[System Flows](docs/system-flows/)** — 9 step-by-step flow diagrams
 - **[SPD Concept Paper](docs/research/spd-concept-paper-draft.pdf)** — Methodology paper with evaluation
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README

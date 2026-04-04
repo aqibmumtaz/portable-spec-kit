@@ -614,18 +614,18 @@ rm -rf "$EDGE_TEMP"
 pass "Edge: temp dir cleaned"
 
 # ═══════════════════════════════════════════════════════════════
-section "19. Flow Documentation — All 8 Flows Present"
+section "19. Flow Documentation — All 9 Flows Present"
 # ═══════════════════════════════════════════════════════════════
 
 FLOWS_DIR="$PROJ/docs/system-flows"
 [ -d "$FLOWS_DIR" ] && pass "docs/system-flows/ directory exists" || fail "docs/system-flows/ MISSING"
 
-for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management; do
+for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management requirements-to-delivery; do
   [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
 done
 
 # Verify each flow has required sections
-for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management; do
+for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management requirements-to-delivery; do
   grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
   grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
 done
@@ -641,6 +641,17 @@ grep -q "symlink" "$FLOWS_DIR/agent-switching.md" && pass "Flow agent-switching:
 # Verify spec-persistent flow has context update step
 grep -q "AGENT_CONTEXT" "$FLOWS_DIR/spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
 grep -q "docs/system-flows" "$FLOWS_DIR/spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
+
+# Verify requirements-to-delivery flow content
+grep -q "R1" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has R→F traceability" || fail "Flow requirements-to-delivery: missing R→F traceability"
+grep -q "DROP" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has scope change types" || fail "Flow requirements-to-delivery: missing scope change types"
+grep -q "REPLACE" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has REPLACE type" || fail "Flow requirements-to-delivery: missing REPLACE"
+grep -q "TaskFlow" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has TaskFlow example" || fail "Flow requirements-to-delivery: missing TaskFlow"
+grep -q "Phase 9" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has all 9 phases" || fail "Flow requirements-to-delivery: missing phases"
+grep -q "Traceability Chain" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has traceability chain" || fail "Flow requirements-to-delivery: missing traceability"
+
+# Verify new-project-setup flow mentions conda for Python projects
+grep -q "conda\|Environment Selection" "$FLOWS_DIR/new-project-setup.md" && pass "Flow new-project-setup: references Python env setup" || fail "Flow new-project-setup: missing Python env reference"
 
 # ═══════════════════════════════════════════════════════════════
 section "20. ARD Directory — Guide Moved"
@@ -693,7 +704,8 @@ grep -q "compare.*Framework Version.*AGENT_CONTEXT" "$PROJ/portable-spec-kit.md"
 # TASKS.md has version-based structure
 grep -q "v0\.1 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.1 Done" || fail "TASKS: v0.1 missing"
 grep -q "v0\.2 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.2 Done" || fail "TASKS: v0.2 missing"
-grep -q "v0\.3 — Current" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.3 Current" || fail "TASKS: v0.3 missing"
+grep -q "v0\.3 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.3 section" || fail "TASKS: v0.3 missing"
+grep -q "v0\.4 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.4 section" || fail "TASKS: v0.4 missing"
 grep -q "Backlog" "$PROJ/agent/TASKS.md" && pass "TASKS: Backlog section" || fail "TASKS: Backlog missing"
 grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summary" || fail "TASKS: Progress Summary missing"
 
@@ -705,7 +717,61 @@ grep -q "Framework versions: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER
 grep -q "Framework:" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: has Framework field" || fail "AGENT_CONTEXT: Framework field missing"
 
 # ═══════════════════════════════════════════════════════════════
-section "23. License"
+section "23. Python Environment — Conda Rules"
+# ═══════════════════════════════════════════════════════════════
+
+# Section exists
+grep -q "Python Environment (MANDATORY" "$PROJ/portable-spec-kit.md" && pass "Conda: section exists" || fail "Conda: section MISSING"
+
+# Core rules
+grep -q "conda environment" "$PROJ/portable-spec-kit.md" && pass "Conda: requires conda env per project" || fail "Conda: missing env requirement"
+grep -q "conda env list" "$PROJ/portable-spec-kit.md" && pass "Conda: lists existing envs flow" || fail "Conda: missing env list"
+grep -q "Create new conda env" "$PROJ/portable-spec-kit.md" && pass "Conda: create new option" || fail "Conda: missing create option"
+grep -q "Use an existing env" "$PROJ/portable-spec-kit.md" && pass "Conda: use existing option" || fail "Conda: missing existing option"
+
+# Conda installation
+grep -q "Conda Installation" "$PROJ/portable-spec-kit.md" && pass "Conda: installation section" || fail "Conda: missing installation"
+grep -q "which conda" "$PROJ/portable-spec-kit.md" && pass "Conda: detection check" || fail "Conda: missing detection"
+grep -q "Miniconda" "$PROJ/portable-spec-kit.md" && pass "Conda: Miniconda reference" || fail "Conda: missing Miniconda"
+
+# Environment selection triggers
+grep -q "New project setup" "$PROJ/portable-spec-kit.md" && pass "Conda: triggers on new project" || fail "Conda: missing new project trigger"
+grep -q "Existing project setup" "$PROJ/portable-spec-kit.md" && pass "Conda: triggers on existing project" || fail "Conda: missing existing project trigger"
+
+# requirements.txt handling
+grep -q "requirements.txt" "$PROJ/portable-spec-kit.md" && pass "Conda: requirements.txt management" || fail "Conda: missing requirements.txt"
+grep -q "pip freeze" "$PROJ/portable-spec-kit.md" && pass "Conda: pip freeze rule" || fail "Conda: missing pip freeze"
+
+# Record in AGENT.md
+grep -q "agent/AGENT.md.*Stack" "$PROJ/portable-spec-kit.md" && pass "Conda: record env in AGENT.md" || fail "Conda: missing AGENT.md recording"
+grep -q "Conda Env" "$PROJ/portable-spec-kit.md" && pass "Conda: AGENT.md template has Conda Env row" || fail "Conda: missing Conda Env in template"
+
+# Edge cases
+grep -q "Env name already exists" "$PROJ/portable-spec-kit.md" && pass "Conda edge: env name collision" || fail "Conda edge: missing name collision"
+grep -q "No existing envs" "$PROJ/portable-spec-kit.md" && pass "Conda edge: no existing envs" || fail "Conda edge: missing no envs"
+grep -q "requirements.txt.*install fails" "$PROJ/portable-spec-kit.md" && pass "Conda edge: install failure handling" || fail "Conda edge: missing install failure"
+grep -q "pyproject.toml" "$PROJ/portable-spec-kit.md" && pass "Conda edge: pyproject.toml support" || fail "Conda edge: missing pyproject.toml"
+grep -q "environment.yml" "$PROJ/portable-spec-kit.md" && pass "Conda edge: environment.yml support" || fail "Conda edge: missing environment.yml"
+grep -q "venv\|virtualenv" "$PROJ/portable-spec-kit.md" && pass "Conda edge: existing venv handling" || fail "Conda edge: missing venv handling"
+grep -q "Python version mismatch" "$PROJ/portable-spec-kit.md" && pass "Conda edge: version mismatch warning" || fail "Conda edge: missing version mismatch"
+grep -q "Env recorded.*AGENT.md.*doesn't exist" "$PROJ/portable-spec-kit.md" && pass "Conda edge: env deleted from disk" || fail "Conda edge: missing env deleted"
+grep -q "monorepo\|Multiple Python" "$PROJ/portable-spec-kit.md" && pass "Conda edge: monorepo separate envs" || fail "Conda edge: missing monorepo"
+
+# Session rules
+grep -q "Activate the project" "$PROJ/portable-spec-kit.md" && pass "Conda: activate on every session" || fail "Conda: missing session activation"
+grep -q "Never hardcode.*conda" "$PROJ/portable-spec-kit.md" && pass "Conda: no hardcoded paths" || fail "Conda: missing hardcode rule"
+grep -q "break-system-packages" "$PROJ/portable-spec-kit.md" && pass "Conda: no --break-system-packages" || fail "Conda: missing system-packages rule"
+
+# ═══════════════════════════════════════════════════════════════
+section "24. README — Python Environment Section"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
+grep -q "9 step-by-step flow" "$PROJ/README.md" && pass "README: 9 flows count" || fail "README: wrong flow count"
+grep -q "requirements-to-delivery" "$PROJ/README.md" && pass "README: requirements-to-delivery flow listed" || fail "README: missing requirements-to-delivery"
+
+# ═══════════════════════════════════════════════════════════════
+section "25. License"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "License wrong"

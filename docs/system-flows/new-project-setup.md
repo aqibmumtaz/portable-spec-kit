@@ -60,7 +60,12 @@ Report to user:
 2. Recommend tech stack → user approves
 3. Write `agent/PLANS.md` — architecture, phases
 4. Initialize stack → install deps, create source code structure (from 8 templates)
-5. Start development → update `agent/TASKS.md`, begin building
+5. **If Python project** → run Environment Selection flow:
+   - List existing conda envs
+   - Ask user: create new env `<project-name>` or use existing
+   - Install deps from `requirements.txt` / `pyproject.toml` / `environment.yml` if present
+   - Record env name in `agent/AGENT.md` Stack table
+6. Start development → update `agent/TASKS.md`, begin building
 
 ## Files Created
 - `agent/` — 6 management files

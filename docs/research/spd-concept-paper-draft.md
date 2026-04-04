@@ -8,7 +8,7 @@ aqib.mumtaz@gmail.com | github.com/aqibmumtaz
 
 ## Abstract
 
-Software engineering methodologies — waterfall, agile, spec-first — were designed for a pre-AI world where humans wrote all code, maintained all documentation, and carried project context in their heads. We have entered a new era: AI agents now generate 30-46% of code at major tech companies, reaching 70-90% at AI-native organizations (Google, 2025; GitHub, 2025; Anthropic, 2026), developers switch between multiple agent platforms, and every AI session starts from zero. Yet the methodologies governing how software is built have not evolved to match. This paper argues that the AI era requires **rethinking software engineering methodology from first principles**, and proposes **Spec-Persistent Development (SPD)** — a methodology where specifications always exist and stay current, but never block development. In SPD, the AI agent maintains living specifications alongside code at near-zero human cost, preserving context across sessions and across agent platforms through standard file formats. We present a working open-source implementation — the Portable Spec Kit — a single markdown file with zero dependencies that works with five AI agents. The framework is validated through 258 automated tests across 5 technology stacks, demonstrating zero data loss through 7 development disruptions (scope changes, session breaks, agent switching, team changes, releases, and project handoffs). We also report a novel discovery: independent AI agents can coordinate behavior through shared specification files without direct communication — a form of asynchronous agentic coordination enabled by the spec-persistent approach.
+Software engineering methodologies — waterfall, agile, spec-first — were designed for a pre-AI world where humans wrote all code, maintained all documentation, and carried project context in their heads. We have entered a new era: AI agents now generate 30-46% of code at major tech companies, reaching 70-90% at AI-native organizations (Google, 2025; GitHub, 2025; Anthropic, 2026), developers switch between multiple agent platforms, and every AI session starts from zero. Yet the methodologies governing how software is built have not evolved to match. This paper argues that the AI era requires **rethinking software engineering methodology from first principles**, and proposes **Spec-Persistent Development (SPD)** — a methodology where specifications always exist and stay current, but never block development. In SPD, the AI agent maintains living specifications alongside code at near-zero human cost, preserving context across sessions and across agent platforms through standard file formats. We present a working open-source implementation — the Portable Spec Kit — a single markdown file with zero dependencies that works with five AI agents. The framework is validated through 258 automated tests across 5 technology stacks, demonstrating zero data loss through 10 development disruptions (scope changes, session breaks, agent switching, team changes, releases, and project handoffs). We also report a novel discovery: independent AI agents can coordinate behavior through shared specification files without direct communication — a form of asynchronous agentic coordination enabled by the spec-persistent approach.
 
 **Keywords:** Spec-Persistent Development, AI-assisted software engineering, software methodology, specification persistence, multi-agent coordination, developer productivity, living documentation
 
@@ -45,44 +45,73 @@ This paper argues that the AI era demands **rethinking software engineering meth
 This paper presents:
 1. **A formal definition** of the SPD methodology and its five pillars
 2. **A working open-source implementation** (Portable Spec Kit) — a single markdown file, zero dependencies, validated with 258 automated tests across 5 technology stacks
-3. **Measured evidence** that SPD preserves specifications through 7 common development disruptions with zero data loss
+3. **Measured evidence** that SPD preserves specifications through 10 development disruptions with zero data loss — including four types of scope change (drop, add, modify, replace) with requirement-to-feature traceability
 4. **A novel discovery** of asynchronous multi-agent coordination through shared specification files — where independent AI agents coordinate behavior without direct communication
 
 ---
 
 ## 2. Related Work
 
-### 2.1 Traditional Methodologies and Their Tradeoffs
+### 2.1 The Methodology Landscape
 
-The waterfall model, introduced by Royce (1970), establishes comprehensive specifications before implementation begins. While this produces thorough documentation, the Standish Group CHAOS Report consistently shows only a 29% success rate for waterfall projects, largely due to inability to respond to changing requirements and the staleness of upfront specifications.
+Every major software methodology embodies a core philosophy about how to balance planning with execution:
 
-Agile methodologies (Beck et al., 2001) addressed waterfall's rigidity with iterative development and the principle of "working software over comprehensive documentation." The State of Agile Report (Digital.ai, 2023) shows 71% of organizations now use some form of agile. However, this has created a documentation gap — Atlassian's research suggests only 30-40% of agile teams maintain architecture decision records or living specifications. The Agile Manifesto's emphasis on working software over documentation has been widely misinterpreted as permission to skip documentation entirely.
+**Waterfall** (Royce, 1970): *"Plan everything, then build it."* Comprehensive specs upfront, but the Standish Group CHAOS Report shows only a 29% success rate — requirements change faster than plans can adapt.
 
-### 2.2 Spec-First and Documentation Tools
+**Agile** (Beck et al., 2001): *"Ship fast, adapt constantly."* Working software over documentation. 71% of organizations now use agile (Digital.ai, 2023), but this created a documentation gap — only 30-40% of agile teams maintain living specs (Atlassian). The Manifesto's emphasis on working software has been widely misinterpreted as permission to skip documentation entirely.
 
-Several tools attempt to formalize specification practices. Architecture Decision Records (ADRs), championed by Zimmermann (2020), provide lightweight decision documentation and have shown improved knowledge retention at 6- and 12-month intervals. BDD frameworks like Cucumber (Gherkin syntax) formalize behavior specifications, adopted by approximately 15-20% of agile teams. OpenAPI/Swagger has achieved over 70% adoption for API specification (SmartBear API Survey).
+**Scrum**: *"Iterate in fixed sprints with ceremonies."* Regular cycles with retrospectives, but specs still get skipped. Product Owner validates requirements, but institutional knowledge lives in people's heads.
 
-GitHub's spec-kit represents a recent attempt at comprehensive specification-driven development, requiring Python 3.11+, a CLI tool, and generating thousands of lines of specification per feature through a structured 6-phase workflow.
+**Kanban**: *"Visualize flow, limit work in progress."* Excellent for managing workflow, but silent on specifications. No memory between sessions, no decision history.
 
-These tools share common limitations: they require human maintenance, introduce installation overhead, and often enforce a sequential workflow that can block development.
+**TDD** (Beck, 1999): *"Write the test first, then the code."* Excellent for code quality — tests define behavior. But tests are not specifications. No architecture docs, no decision history, no project context.
+
+**BDD/Gherkin**: *"Define behavior in business language first."* Good bridge between client and code, adopted by 15-20% of teams. But scenarios are human-maintained and go stale. They define behavior, not architecture or decisions.
+
+**Spec-First** (GitHub spec-kit, ADRs): *"Formal specs before code."* Architecture Decision Records (Zimmermann, 2020) show improved knowledge retention at 6-12 month intervals. GitHub's spec-kit generates thorough specs but requires Python 3.11+, a CLI, and a 6-phase workflow. These tools share common limitations: human maintenance, installation overhead, and sequential workflows that block development.
+
+**DevOps**: *"Developers and operations as one team."* Automate deployment, monitor, iterate. But DevOps is about delivery — it is silent on specification management and project knowledge.
+
+### 2.2 The Three Dimensions
+
+Every methodology falls on three dimensions that matter for the AI era:
+
+| Methodology | Specs Exist? | Specs Block? | Who Maintains? |
+|-------------|:---:|:---:|:---:|
+| Waterfall | Yes | Yes | Humans |
+| Agile | Often no | No | Humans (skip) |
+| Scrum | Sometimes | Sprint gate | Product Owner |
+| Kanban | No | No | Nobody |
+| TDD | Tests only | Tests gate | Developers |
+| BDD | Scenarios | Scenarios gate | QA + Devs |
+| Spec-First | Yes, formal | Yes | Humans |
+| DevOps | No | No | Nobody |
+| **SPD** | **Always** | **Never** | **AI Agent** |
+
+This reveals a fundamental tradeoff that has persisted since Royce (1970): methodologies that have specs block progress, and methodologies that don't block have no specs. Every existing approach falls into one of two quadrants:
+
+- **Top-left: Has specs, blocks** — Waterfall, Spec-First, BDD
+- **Bottom-right: Doesn't block, no specs** — Agile, Kanban, DevOps
+
+No methodology occupies the **top-right quadrant: has specs AND doesn't block AND is agent-maintained.** SPD is the first to fill this space.
 
 ### 2.3 AI Agent Memory and Context
 
-The context loss problem in AI agents has been addressed through several approaches. MemGPT (Packer et al., 2023) introduced virtual context management, paging memory in and out of LLM context windows to enable unbounded conversation length. Voyager (Wang et al., 2023) demonstrated that persistent skill libraries (code as memory) enabled 3.3x more capability discovery than baselines.
+The context loss problem in AI agents has been addressed through several approaches, none of which solve the specification persistence problem:
 
-Multi-agent frameworks like ChatDev (Qian et al., 2023) showed that AI agents playing different development roles could complete software projects in under 7 minutes, with structured communication reducing hallucination by 23.6%. AutoGen (Wu et al., 2023) demonstrated that multi-agent conversation frameworks with customizable roles achieved up to 4x improvement on coding benchmarks.
+**MemGPT** (Packer et al., 2023) introduced virtual context management for unbounded conversation length — but within a single agent platform. **Voyager** (Wang et al., 2023) demonstrated persistent skill libraries enabling 3.3x more capability discovery — but for game agents, not development specifications. **ChatDev** (Qian et al., 2023) showed multi-agent frameworks completing software projects in under 7 minutes with 23.6% less hallucination — but agents coordinate via API, not persistent files. **AutoGen** (Wu et al., 2023) achieved 4x improvement on coding benchmarks with multi-agent conversations — but state exists only during the session.
 
-However, these approaches focus on AI-to-AI communication or single-session memory. None address the problem of **persistent, file-based specifications that any AI agent can read across sessions and across different agent platforms**.
+None of these approaches address **persistent, file-based specifications that any AI agent can read across sessions and across different agent platforms**. They solve agent memory within a session or within a platform — not across both.
 
 ### 2.4 Developer Productivity Research
 
-The SPACE framework (Forsgren et al., 2021) established that developer productivity requires multidimensional measurement across Satisfaction, Performance, Activity, Communication, and Efficiency. The DevEx framework (Noda et al., 2023) identified three core dimensions — feedback loops, cognitive load, and flow state — with reducing cognitive load (including via better documentation and tooling) showing the strongest correlation with self-reported productivity.
+The SPACE framework (Forsgren et al., 2021) established that developer productivity requires multidimensional measurement. The DevEx framework (Noda et al., 2023) found that reducing cognitive load — including via better documentation and tooling — shows the strongest correlation with self-reported productivity.
 
-Research by Gloria Mark (UC Irvine) found that context switching costs an average of 23 minutes and 15 seconds to regain full focus, while Atlassian research estimates developers lose approximately 2 hours daily to context switching.
+The cost of the status quo is measurable: context switching costs 23 minutes per interruption to regain focus (Mark, 2008) and approximately 2 hours daily (Atlassian). Poor documentation costs the global economy $85 billion annually in developer time (Stripe, 2018). Onboarding without documentation takes 6-12 months versus 3-6 months with it.
 
 ### 2.5 The Gap
 
-No existing methodology or tool combines all of the following: persistent specifications that never block development, automatic maintenance by AI agents, cross-session context preservation, multi-agent portability, zero installation overhead, and methodology flexibility. SPD addresses this gap.
+No existing methodology or tool occupies the top-right quadrant: persistent specifications that never block development, automatically maintained by AI agents, with cross-session context preservation, multi-agent portability, zero installation overhead, and methodology flexibility. SPD is designed to fill this gap.
 
 ---
 
@@ -117,6 +146,8 @@ SPECS.md  →  PLANS.md  →  TASKS.md  →  RELEASES.md
 
 These files can be created in any order. A developer following waterfall fills them left to right. A developer following agile starts with TASKS and the agent fills SPECS retroactively. The pipeline is bidirectional — code informs specs as much as specs inform code.
 
+**Requirement-to-Feature Traceability.** SPECS.md distinguishes between requirements (client language) and features (technical implementation), maintaining explicit traceability between them. A client requirement like "R1: users can log in" maps to a feature "F1: email + password + Google OAuth2 → traces to R1." When scope changes occur, the traceability chain persists: if a requirement is dropped, modified, or replaced, SPECS.md records what changed and PLANS.md records why — so anyone reading the specs later can trace every feature back to the client requirement that motivated it, including requirements that evolved during development. A full end-to-end walkthrough of this traceability through 9 project phases is documented in the system flows (see `docs/system-flows/requirements-to-delivery.md`).
+
 ### 3.4 Methodology Flexibility
 
 SPD deliberately does not enforce a workflow. It supports:
@@ -140,7 +171,7 @@ The following table maps common developer pain points to how they are currently 
 | **"Why did we choose PostgreSQL over MongoDB? Nobody remembers"** | 60-80% of implicit knowledge lost when a developer leaves (knowledge management literature). Architecture decisions live in people's heads. | Every decision recorded in `PLANS.md` Key Decisions table with choice + reason. Validated: decisions preserved through all disruptions (Section 5.3). |
 | **"New developer took 3 months to understand the project"** | Onboarding with docs: 3-6 months. Without docs: 6-12 months. Onboarding cost: $10K-50K per developer (HR and engineering management surveys; Stripe Developer Coefficient, 2018). | New developer reads 6 current agent files: specs, plans, tasks, releases, context, project config. All written by the AI agent, all current. |
 | **"Specs were so detailed they blocked us from coding for weeks"** | Waterfall requires specification approval before implementation. Standish Group CHAOS Report: 29% waterfall project success rate (Standish Group, 2020). | SPD never blocks. Code first, specs fill retroactively. Agent detects empty SPECS.md after 3+ tasks → fills from code. Validated: 0 blocking steps across 5 projects (Section 5.2). |
-| **"We dropped feature X but nobody knows why or what replaced it"** | In agile: card deleted from board, no trace. In waterfall: formal change request, slow. Either way, rationale often lost. | `TASKS.md`: feature marked "DESCOPED". `PLANS.md`: "Dropped X for Y — reason: client priority." Validated: scope changes tracked with rationale (Section 5.3). |
+| **"We dropped feature X but nobody knows why or what replaced it"** | In agile: card deleted from board, no trace. In waterfall: formal change request, slow. Either way, rationale often lost. | SPD handles four types of scope change — DROP, ADD, MODIFY, and REPLACE — each traced across all pipeline files with reason and date. `SPECS.md`: requirement moved to "Out of scope" with reason. `PLANS.md`: decision logged with rationale. `TASKS.md`: task marked "DESCOPED" or "REPLACED." Even iterative changes (e.g., client adds calendar → later replaces with list view for performance) maintain the full chain: original decision, replacement decision, and reason for each. Validated: scope changes tracked with rationale (Section 5.3). |
 | **"What's the project status right now?"** | Read old docs (may not match code). Check board (scattered). Ask team (if available). Context switching costs 23 minutes to refocus (Gloria Mark, UC Irvine). | Agent reads `AGENT_CONTEXT.md` → exact current state: version, phase, what's done, what's next, blockers, last updated date. |
 | **"Can't install the spec tool — too many dependencies"** | GitHub spec-kit: Python 3.11+, uv, CLI. BDD/Gherkin: Cucumber + step definitions + runner. ADRs: manual creation. | One curl command. Zero dependencies. Zero runtime. Single markdown file. Works with any AI agent that reads markdown. |
 
@@ -222,20 +253,25 @@ We validated each SPD claim through automated simulation across five technology 
 
 ### 5.3 Disruption Resilience — "Do specs persist through real development disruptions?"
 
-This is SPD's core value proposition. We simulated seven disruptions that commonly cause data loss in software projects and measured whether specifications remained accurate after each.
+This is SPD's core value proposition. We simulated development disruptions that commonly cause data loss in software projects and measured whether specifications remained accurate after each.
 
 **Table 2: Disruption Resilience Results**
 
 | Disruption | What Could Be Lost | SPD Measurement | Result |
 |------------|-------------------|-----------------|:------:|
 | Build 3 features | Task completion status | Grep TASKS.md for [x] markers | 3/3 tracked accurately |
-| Scope change (drop + add) | Why it was dropped, what replaced it | Grep PLANS.md for decision entry, TASKS.md for descoped marker | Decision recorded, descoped tracked |
+| Scope change: DROP feature | Why it was dropped, original requirement | Grep SPECS.md for "Out of scope" with reason, PLANS.md for decision entry | Requirement preserved in "Out of scope" with reason and date |
+| Scope change: ADD feature | New requirement traceability | Verify new R# → F# mapping in SPECS.md, tasks in TASKS.md | New requirement traced to feature, tasks created |
+| Scope change: MODIFY feature | Original requirement, what changed | Verify R# updated in SPECS.md, F# updated, decision in PLANS.md | Original and modified versions both visible in decision log |
+| Scope change: REPLACE implementation | Why original was replaced, what triggered it | Verify PLANS.md decision chain (original → replacement with reason) | Full chain preserved: original decision → replacement → reason |
 | 3-week developer break | Everything: state, decisions, progress, next steps | Read 7 fields from AGENT_CONTEXT.md after simulated break | 7/7 fields preserved (100%) |
 | Agent switch (Claude → Cursor) | All context (different agent, different memory) | Diff agent files read via different symlinks | 100% identical across 5 agents |
 | New team member joins | Architecture knowledge, past decisions, project state | Verify 6 agent files accessible with accurate content | 6/6 files available, content accurate |
 | Framework version update | File content during restructure | Compare task content before and after restructure | 100% content preserved (diff verified) |
 | Project handoff (6 months) | Institutional knowledge | Verify all 6 agent files present with accumulated history | 6/6 files intact with full history |
-| **7 disruptions tested** | **7 potential loss events** | | **0 data lost** |
+| **10 disruptions tested** | **10 potential loss events** | | **0 data lost** |
+
+The four scope change types reflect real-world client behavior: clients drop features (budget/priority), add new requirements, modify existing ones, and replace implementations after seeing results. SPD handles all four by updating every pipeline file (SPECS, PLANS, TASKS, AGENT_CONTEXT) simultaneously, maintaining the requirement-to-feature traceability chain through each change. A detailed walkthrough of all four types in a single project lifecycle is provided in the system flows documentation.
 
 ### 5.4 Cross-File Consistency — "Do the pipeline files agree with each other?"
 
@@ -278,7 +314,7 @@ Results were consistent across all five simulated project types, demonstrating t
 
 | Project | Stack | Files Created | Disruption Resilience | Pipeline Consistency |
 |---------|-------|:------------:|:--------------------:|:-------------------:|
-| E-commerce API | Python FastAPI | 6/6 | 7/7 disruptions survived | 6/6 checks passed |
+| E-commerce API | Python FastAPI | 6/6 | 7/10 disruptions survived | 6/6 checks passed |
 | Dashboard App | Next.js + TypeScript | 6/6 | 7/7 | 6/6 |
 | Mobile App | React Native | 6/6 | 7/7 | 6/6 |
 | CLI Tool | Go | 6/6 | 7/7 | 6/6 |
@@ -352,21 +388,71 @@ SPD provides less marginal benefit for:
 
 ### 7.3 Not a Replacement
 
-SPD does not claim to replace waterfall or agile. It is a **third option** for the AI-assisted engineering era — designed to work alongside existing practices. A team using agile sprints can adopt SPD's file-based specification persistence without changing their sprint process. A team using waterfall can benefit from SPD's retroactive gap-filling when specifications inevitably drift from implementation.
+SPD does not claim to replace waterfall or agile. It is a **third option** — one designed specifically for the AI era. A team using agile sprints can adopt SPD's file-based specification persistence without changing their sprint process. A team using waterfall can benefit from SPD's retroactive gap-filling when specifications inevitably drift from implementation. The framework explicitly supports waterfall, agile, or mixed workflows — the only constant is that specs persist.
 
-The framework explicitly states: "The framework doesn't enforce a methodology — it supports waterfall, agile, or mixed. The only constant: specs persist."
+### 7.4 Requirements vs. Specifications
+
+An important distinction: SPD automates **specifications and tracking**, not **requirements gathering**. Requirements come from the client — what they need, in business language ("users can log in"). Specifications are how the team will build it — technical decisions and implementation details ("email + password + Google OAuth2"). SPD maintains explicit traceability between the two: each requirement (R1, R2, R3...) maps to a feature (F1, F2, F3...) that implements it.
+
+In every pre-AI methodology, humans maintain both requirements and specifications. This is the bottleneck — humans forget to update docs, leave and take knowledge with them, and skip documentation under deadline pressure (53% of teams report inadequate documentation). SPD shifts specification maintenance from humans to the AI agent. Requirements still come from the client through human processes. But specifications, architecture decisions, task tracking, and project context are maintained by the agent automatically.
+
+When requirements change — and they always do — SPD handles four distinct types of change while preserving the traceability chain:
+
+| Change Type | What Happens | Traceability |
+|-------------|-------------|--------------|
+| **DROP** | Client removes a requirement | R# moved to "Out of scope" with reason and date. F# removed. Decision logged in PLANS.md. |
+| **ADD** | Client adds a new requirement | New R# created, new F# traces to it. Tasks added to TASKS.md. |
+| **MODIFY** | Client changes an existing requirement | R# updated (original visible in decision log). F# expanded. PLANS.md records what changed and why. |
+| **REPLACE** | Implementation swapped after delivery | F# changed (e.g., calendar → list view). R# persists — the requirement intent stays, only the implementation changes. Full decision chain preserved. |
+
+This means iterative client feedback is handled naturally: a client can add a calendar view, see it delivered, then ask to replace it with a list view for performance reasons — and the full decision chain (original requirement → first implementation → replacement → reason) is preserved across SPECS.md, PLANS.md, and TASKS.md.
+
+SPD does not replace requirements validation — the developer still verifies that specifications match client intent. But it ensures no specification change goes unrecorded, and every feature traces back to the requirement that motivated it.
 
 ---
 
-## 8. Future Work
+## 8. The Long-Term Value of Persistent Specifications
+
+### 8.1 Beyond Developer Convenience
+
+The immediate value of SPD is developer convenience — context persistence, session resumption, agent switching. But the long-term value is more significant: **persistent, current specifications become a reliable data source for automated systems.**
+
+In waterfall, specs are written once and go stale — unreliable for automation. In agile, specs don't exist — nothing to automate against. In SPD, specs are always current and machine-readable — enabling an entirely new category of automated development capabilities:
+
+| Capability | How It Uses Persistent Specs | Without SPD |
+|---|---|---|
+| Automated test generation | Read SPECS.md features → generate test cases | Human writes tests manually |
+| Auto code review | Compare code against PLANS.md architecture → flag violations | Reviewer must know architecture from memory |
+| Scope drift detection | Compare SPECS requirements vs TASKS built → flag gaps | Nobody notices until deadline |
+| Progress dashboards | Read TASKS completion data → auto-generate burndown | Manual Jira updates |
+| Release notes generation | Read RELEASES + TASKS → auto-generate changelog | Write from memory |
+| Multi-agent task delegation | Agent A reads TASKS → assigns to Agent B → B reads SPECS for context | Not possible without shared state |
+| Onboarding automation | New developer queries SPECS + PLANS → instant answers | Ask team, read code, guess |
+| CI/CD integration | Read PLANS deployment config → auto-configure pipeline | Manual pipeline setup |
+
+### 8.2 Persistent Specs as Infrastructure
+
+SPD turns specifications from a documentation burden into development infrastructure. When specs are always current:
+
+- Other agents can build on them (the agentic communication discovery in Section 6 demonstrates this)
+- Automated tools can consume them reliably
+- CI/CD pipelines can reference them with confidence
+- New team members can query them instead of interrupting colleagues
+- Future AI systems can reason over them for planning, estimation, and optimization
+
+This is analogous to how version control (git) transformed code from local files into shared infrastructure. SPD does the same for specifications — making them persistent, shareable, and machine-usable.
+
+### 8.3 Research Directions
+
+Several research questions emerge from SPD's persistent specification approach:
 
 1. **Controlled experiments:** Recruit development teams to complete identical projects using waterfall, agile, and SPD, measuring documentation coverage, context retention, resumption time, and developer satisfaction.
 
-2. **Longitudinal study:** Track 10+ projects using SPD over 6-12 months, measuring specification staleness, retroactive fill accuracy, and decision recall rates.
+2. **Longitudinal studies:** Track 10+ projects using SPD over 6-12 months, measuring specification staleness, retroactive fill accuracy, and decision recall rates.
 
 3. **Agent cost optimization:** The framework file (1,100 lines) is read every session, consuming AI tokens. Research into selective loading, caching, or summarization could reduce this overhead.
 
-4. **Team dynamics:** Extend the user profile system to support multiple developers per project, with role-based specification access and team coordination features.
+4. **Team dynamics:** Extend the user profile system to support multiple developers per project, with role-based specification access and team coordination.
 
 5. **Agentic communication scaling:** Investigate the limits of multi-agent coordination through shared specifications — maximum rule complexity, agent count, and organizational scale.
 
@@ -380,13 +466,11 @@ The AI era has fundamentally changed how software is built, but not how it is ma
 
 Spec-Persistent Development is a rethinking of software engineering methodology for the AI era. Its five pillars — Specs Always Exist, Specs Never Block, Specs Are Living, Agent-Maintained, Context-Persistent — address the specific problems that AI-assisted engineering introduces while preserving the flexibility developers need. SPD does not replace waterfall or agile — it provides a persistent specification layer that works alongside any workflow the developer chooses.
 
-The Portable Spec Kit demonstrates that this rethinking is practical, not theoretical. A single markdown file with zero dependencies, validated through 258 automated tests across 5 technology stacks, showing zero data loss through 7 development disruptions. The framework supports five AI agents through a symlink strategy, enables personalized developer profiles, and — as we discovered — enables a novel form of asynchronous multi-agent coordination through shared specification files.
+The Portable Spec Kit demonstrates that this rethinking is practical, not theoretical. A single markdown file with zero dependencies, validated through 258 automated tests across 5 technology stacks, showing zero data loss through 10 development disruptions — including four types of scope change (drop, add, modify, replace) that preserve requirement-to-feature traceability through iterative client feedback. The framework supports five AI agents through a symlink strategy, enables personalized developer profiles, and — as we discovered — enables a novel form of asynchronous multi-agent coordination through shared specification files.
 
 The AI era is not coming — it is here. The question is not whether software engineering methodologies need to evolve, but how. SPD proposes one answer: let specifications persist, let agents maintain them, and never let them block the developer.
 
 The framework is open source and available at: https://github.com/aqibmumtaz/portable-spec-kit
-
-SPD is open source and available at: https://github.com/aqibmumtaz/portable-spec-kit
 
 ---
 
@@ -449,7 +533,5 @@ Swimm (2023). Developer Documentation Survey.
 Wang, G., et al. (2023). Voyager: An Open-Ended Embodied Agent with Large Language Models. NeurIPS 2023. arXiv:2305.16291
 
 Wu, Q., et al. (2023). AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation. arXiv:2308.08155
-
-Zimmermann, O. (2020). Architecture Decision Records in Practice. IEEE Software, 37(4). DOI: 10.1109/MS.2020.2979698
 
 Zimmermann, O. (2020). Architecture Decision Records in Practice. IEEE Software, 37(4). DOI: 10.1109/MS.2020.2979698
