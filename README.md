@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.3.1-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.3.2-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-403%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-443%20passing-brightgreen.svg)](tests/)
 
 <table>
 <tr>
