@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.3 -->
+<!-- Framework Version: v0.3.4 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -197,7 +197,7 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.3 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.4 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
