@@ -7,6 +7,7 @@
 [![Version](https://img.shields.io/badge/version-v0.3.13-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-587%20passing-brightgreen.svg)](tests/)
+[![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 
 <table>
 <tr>
@@ -86,7 +87,16 @@ AI coding agents are powerful but inconsistent. Every new conversation starts fr
 
 ### Setup
 
-#### macOS / Linux (one command)
+#### Ask your AI agent (no terminal needed)
+Paste this to Claude, Cursor, Copilot, or any AI agent:
+
+```
+Install the Portable Spec Kit: run `curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md && ln -sf portable-spec-kit.md CLAUDE.md && ln -sf portable-spec-kit.md .cursorrules && ln -sf portable-spec-kit.md .windsurfrules && ln -sf portable-spec-kit.md .clinerules && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md` then read portable-spec-kit.md and set up my project.
+```
+
+The agent downloads the kit, creates all symlinks, reads the framework, and starts your project setup — all in one go.
+
+#### macOS / Linux (terminal)
 ```bash
 curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
   && ln -sf portable-spec-kit.md CLAUDE.md \
