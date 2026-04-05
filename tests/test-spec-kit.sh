@@ -687,19 +687,19 @@ grep -q "<!-- Framework Version:" "$PROJ/portable-spec-kit.md" && pass "Framewor
 # Framework version format is v{N}.{N}.{N}
 grep -q "<!-- Framework Version: v[0-9]\+\.[0-9]\+\.[0-9]\+ -->" "$PROJ/portable-spec-kit.md" && pass "Framework version format correct" || fail "Framework version format wrong"
 
-# Two-level versioning table exists
-grep -q "Release.*Framework Range" "$PROJ/portable-spec-kit.md" && pass "Versioning table exists" || fail "Versioning table MISSING"
+# Versioning table exists (release groups with patch ranges)
+grep -q "Release group\|v0\.4.*active\|v0\.4.*v0\.4\." "$PROJ/portable-spec-kit.md" && pass "Versioning table exists" || fail "Versioning table MISSING"
 
-# Release-to-framework mapping documented
-grep -q "v0\.1.*v0\.0\." "$PROJ/portable-spec-kit.md" && pass "v0.1 → v0.0.x mapping" || fail "v0.1 mapping missing"
-grep -q "v0\.2.*v0\.1\." "$PROJ/portable-spec-kit.md" && pass "v0.2 → v0.1.x mapping" || fail "v0.2 mapping missing"
-grep -q "v0\.3.*v0\.2\." "$PROJ/portable-spec-kit.md" && pass "v0.3 → v0.2.x mapping" || fail "v0.3 mapping missing"
+# Release-to-framework mapping documented (aligned: v0.N release uses v0.N.x patches)
+grep -q "v0\.1.*v0\.1\." "$PROJ/portable-spec-kit.md" && pass "v0.1 → v0.1.x mapping" || fail "v0.1 mapping missing"
+grep -q "v0\.2.*v0\.2\." "$PROJ/portable-spec-kit.md" && pass "v0.2 → v0.2.x mapping" || fail "v0.2 mapping missing"
+grep -q "v0\.3.*v0\.3\." "$PROJ/portable-spec-kit.md" && pass "v0.3 → v0.3.x mapping" || fail "v0.3 mapping missing"
 
-# AGENT_CONTEXT template has Framework field
-grep -q "Framework.*v0\." "$PROJ/portable-spec-kit.md" && pass "AGENT_CONTEXT template has Framework field" || fail "Template missing Framework"
+# AGENT_CONTEXT template has Kit field (installed kit version)
+grep -q "\*\*Kit:\*\*" "$PROJ/portable-spec-kit.md" && pass "AGENT_CONTEXT template has Kit field" || fail "Template missing Kit field"
 
-# Framework version comparison rule exists
-grep -q "compare.*Framework Version.*AGENT_CONTEXT" "$PROJ/portable-spec-kit.md" && pass "Version comparison rule exists" || fail "Version comparison rule MISSING"
+# Kit version comparison rule exists (compare Framework Version comment against Kit field)
+grep -q "compare.*Framework Version.*Kit\|Framework Version.*Kit" "$PROJ/portable-spec-kit.md" && pass "Version comparison rule exists" || fail "Version comparison rule MISSING"
 
 # TASKS.md has version-based structure
 grep -q "v0\.1 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.1 Done" || fail "TASKS: v0.1 missing"
@@ -713,8 +713,8 @@ grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summa
 grep -q "Framework versions: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has framework range" || fail "TRACKER: v0.1 range missing"
 grep -q "Framework versions: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.2 has framework range" || fail "TRACKER: v0.2 range missing"
 
-# AGENT_CONTEXT has current framework version
-grep -q "Framework:" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: has Framework field" || fail "AGENT_CONTEXT: Framework field missing"
+# AGENT_CONTEXT has current version with patch number (v0.N.N format)
+grep -q "\*\*Version:\*\* v[0-9]\+\.[0-9]\+\.[0-9]\+" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: Version has patch number (v0.N.N)" || fail "AGENT_CONTEXT: Version missing patch number — expected v0.N.N format"
 
 # ═══════════════════════════════════════════════════════════════
 section "23. Python Environment — Conda Rules"
@@ -782,12 +782,12 @@ section "26. Versioning — v0.4 Row + Current Version"
 # ═══════════════════════════════════════════════════════════════
 
 # v0.4 row must exist in version table
-grep -q "v0\.4.*v0\.3\." "$PROJ/portable-spec-kit.md" && pass "Versioning: v0.4 → v0.3.x row present" || fail "Versioning: v0.4 row MISSING"
+grep -q "v0\.4.*v0\.4\." "$PROJ/portable-spec-kit.md" && pass "Versioning: v0.4 → v0.4.x row present" || fail "Versioning: v0.4 row MISSING"
 
-# Framework version comment must match AGENT_CONTEXT Framework field
+# Framework version comment must match AGENT_CONTEXT Version field
 FW_COMMENT=$(grep "<!-- Framework Version:" "$PROJ/portable-spec-kit.md" | head -1 | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+")
-FW_CONTEXT=$(grep "\*\*Framework:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+")
-[ "$FW_COMMENT" = "$FW_CONTEXT" ] && pass "Versioning: framework comment ($FW_COMMENT) matches AGENT_CONTEXT ($FW_CONTEXT)" || fail "Versioning: MISMATCH — comment=$FW_COMMENT context=$FW_CONTEXT"
+FW_CONTEXT=$(grep "\*\*Version:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+[ "$FW_COMMENT" = "$FW_CONTEXT" ] && pass "Versioning: framework comment ($FW_COMMENT) matches AGENT_CONTEXT Version ($FW_CONTEXT)" || fail "Versioning: MISMATCH — comment=$FW_COMMENT context=$FW_CONTEXT"
 
 # README badge must match framework comment
 README_VER=$(grep "version-v" "$PROJ/README.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
@@ -1065,7 +1065,7 @@ section "35. Version Bump Before Push Rule"
 grep -q "Version bump BEFORE push\|version bump BEFORE push\|bump.*before.*push" "$PROJ/portable-spec-kit.md" && pass "Version bump: rule present in framework" || fail "Version bump: rule MISSING"
 grep -q "bump → commit → push\|bump.*commit.*push" "$PROJ/portable-spec-kit.md" && pass "Version bump: order documented (bump→commit→push)" || fail "Version bump: order MISSING"
 grep -q "Never push then bump after\|never push then bump\|not.*push.*then.*bump" "$PROJ/portable-spec-kit.md" && pass "Version bump: anti-pattern documented" || fail "Version bump: anti-pattern not covered"
-grep -q "AGENT_CONTEXT\.md.*Framework field\|update.*Framework field" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates AGENT_CONTEXT Framework" || fail "Version bump: AGENT_CONTEXT target MISSING"
+grep -q "AGENT_CONTEXT.*Version field\|bump.*Version.*field\|Version.*patch" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates AGENT_CONTEXT Version field" || fail "Version bump: AGENT_CONTEXT target MISSING"
 grep -q "README.*version badge\|version badge" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates README badge" || fail "Version bump: README badge target MISSING"
 
 # ═══════════════════════════════════════════════════════════════
@@ -1410,10 +1410,10 @@ grep -q "| Req" "$PROJ/portable-spec-kit.md" \
   && pass "templates: SPECS.md template has Req column (R→F link)" \
   || fail "templates: SPECS.md template missing Req column — update framework"
 
-# AGENT_CONTEXT.md template must have Framework field
-grep -q "\*\*Framework:\*\*" "$PROJ/portable-spec-kit.md" \
-  && pass "templates: AGENT_CONTEXT template has Framework field" \
-  || fail "templates: AGENT_CONTEXT template missing Framework field — update framework"
+# AGENT_CONTEXT.md template must have Kit field (installed kit version — separate from user's project Version)
+grep -q "\*\*Kit:\*\*" "$PROJ/portable-spec-kit.md" \
+  && pass "templates: AGENT_CONTEXT template has Kit field" \
+  || fail "templates: AGENT_CONTEXT template missing Kit field — update framework"
 
 # Both example CLAUDE.md files must reference the correct user profile path
 grep -q "portable-spec-kit/user-profile" "$PROJ/examples/starter/CLAUDE.md" 2>/dev/null \

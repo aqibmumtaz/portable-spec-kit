@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.13 -->
+<!-- Framework Version: v0.4.13 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -142,7 +142,7 @@ workspace/.portable-spec-kit/user-profile/
 - **Do NOT push** to remote unless user explicitly says "push"
 - Commit ≠ push. Commit is local and safe. Push is remote and requires explicit instruction.
 - **Pre-push gate** — before every push, all test suites must pass. If user says "push" without having run "prepare release" in this session → run tests first, show results, then push. Never push with known failures even if user asks for urgency.
-- **Version bump BEFORE push** — bump version first, commit it, then push. Never push then bump after. Increment for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Framework field, (2) `README.md` version badge + test badge. Order: bump → commit → push.
+- **Version bump BEFORE push** — bump version first, commit it, then push. Never push then bump after. Increment for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Version field (bump patch number e.g. v0.4.12 → v0.4.13), (2) `README.md` version badge + test badge. Order: bump → commit → push.
 
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
@@ -237,38 +237,40 @@ Batch all changes first, then trigger the release process once when the user is 
 
 ## Versioning
 
-### Two-Level Versioning
+### Version Format
 
-Framework version mirrors the release it belongs to:
+`v{release}.{patch}` — patches belong to the release they're part of.
 
-| Release | Framework Range | Pattern |
-|---------|----------------|---------|
-| v0.1 | v0.0.1 — v0.0.9 | v0.0.x |
-| v0.2 | v0.1.1 — v0.1.9 | v0.1.x |
-| v0.3 | v0.2.1 — v0.2.9 | v0.2.x |
-| v0.4 | v0.3.1 — v0.3.9 | v0.3.x |
-| v1.0 | v1.0.1 — v1.0.9 | v1.0.x (production) |
+| Release group | Patches | Current example |
+|--------------|---------|----------------|
+| v0.1 | v0.1.1, v0.1.2… | v0.1.9 |
+| v0.2 | v0.2.1, v0.2.2… | v0.2.9 |
+| v0.3 | v0.3.1, v0.3.2… | v0.3.9 |
+| v0.4 | v0.4.1, v0.4.2… | v0.4.13 (active) |
+| v1.0 | v1.0.1, v1.0.2… | production |
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.13 -->` in portable-spec-kit.md |
-| **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
+| **Version** | `v0.4.13` | Each publish/commit | `**Version:**` in `agent/AGENT_CONTEXT.md`, `README.md` badge |
+| **Release group** | `v0.4` | Milestone (derived from Version by dropping patch) | GitHub tag, `RELEASES.md` heading, CHANGELOG grouping |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
+
+**GitHub release grouping:** one release tag per minor version (`v0.4`). Tag is updated on each patch push. Title shows current patch (`v0.4.13 — ...`). Completed releases show minor only (`v0.3`, `v0.2`, `v0.1`).
 
 ### What Gets Updated at Each Level
 
 **On every publish (project patch):**
-- Increment project version in `agent/AGENT_CONTEXT.md`, `README.md` version badge, and test badge (when test count changes)
+- Bump `**Version:**` in `agent/AGENT_CONTEXT.md` (e.g. v0.4.12 → v0.4.13)
+- Update `README.md` version badge and test badge (when test count changes)
 - Update `agent/TASKS.md` — mark tasks done under current release heading
 - **Do NOT modify** `<!-- Framework Version -->` in portable-spec-kit.md — that is the kit version, managed by the kit author only. It is read-only for user projects.
 
 **On release milestone (v0.x):**
-- Update `agent/RELEASES.md` — changelog with categorized changes + framework version range included
+- Update `agent/RELEASES.md` — changelog with categorized changes + patch range
 - Update ARD docs — Technical Overview with new version section
 - Regenerate PDFs
 - Move completed tasks in `agent/TASKS.md` to done, start new version heading
-- Update `agent/AGENT_CONTEXT.md` — version bumped to new release
-- Framework version resets to new range (e.g., v0.2.x → v0.3.1)
+- Update `agent/AGENT_CONTEXT.md` — version starts new patch series (e.g., v0.4.13 → v0.5.1)
 
 ### TASKS.md Versioning Structure
 ```
@@ -1057,7 +1059,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 
 ## Current Status
 - **Version:** v0.1
-- **Framework:** v0.0.1
+- **Kit:** v0.4.13
 - **Phase:** Setup
 - **Status:** Initializing
 

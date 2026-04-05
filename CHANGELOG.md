@@ -2,13 +2,13 @@
 
 All notable changes to the Portable Spec Kit are documented here.
 
-> **Versioning:** Each release (v0.N) is built from a series of incremental patches (v0.N-1.x).
-> v0.4 = patches v0.3.1 — v0.3.13 · v0.3 = patches v0.2.1 — v0.2.9 · v0.2 = patches v0.1.1 — v0.1.9 · v0.1 = patches v0.0.1 — v0.0.9
+> **Versioning:** Each release (v0.N) is built from a series of incremental patches (v0.N.x).
+> `v0.4.13` = release v0.4, patch 13 — current active release shows full patch version; completed releases show minor only.
 
 ---
 
-## v0.4 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.13 (13 patches leading to this release) · **Tests:** 587 (442 framework + 145 benchmarking)
+## v0.4.13 — Framework Hardening + R→F→T Traceability (April 2026)
+**Built over:** v0.4.1 — v0.4.13 (13 patches) · **Tests:** 587 (442 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
