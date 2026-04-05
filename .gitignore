@@ -1,4 +1,5 @@
 .DS_Store
+docs/research/
 .env
 .env.*
 node_modules/

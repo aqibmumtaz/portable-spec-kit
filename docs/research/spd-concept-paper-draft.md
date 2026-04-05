@@ -8,7 +8,7 @@ aqib.mumtaz@gmail.com | github.com/aqibmumtaz
 
 ## Abstract
 
-Software engineering methodologies — waterfall, agile, spec-first — were designed for a pre-AI world where humans wrote all code, maintained all documentation, and carried project context in their heads. We have entered a new era: AI agents now generate 30-46% of code at major tech companies, reaching 70-90% at AI-native organizations (Google, 2025; GitHub, 2025; Anthropic, 2026), developers switch between multiple agent platforms, and every AI session starts from zero. Yet the methodologies governing how software is built have not evolved to match. This paper argues that the AI era requires **rethinking software engineering methodology from first principles**, and proposes **Spec-Persistent Development (SPD)** — a methodology where specifications always exist and stay current, but never block development. In SPD, the AI agent maintains living specifications alongside code at near-zero human cost, preserving context across sessions and across agent platforms through standard file formats. We present a working open-source implementation — the Portable Spec Kit — a single markdown file with zero dependencies that works with five AI agents. The framework is validated through 258 automated tests across 5 technology stacks, demonstrating zero data loss through 10 development disruptions (scope changes, session breaks, agent switching, team changes, releases, and project handoffs). We also report a novel discovery: independent AI agents can coordinate behavior through shared specification files without direct communication — a form of asynchronous agentic coordination enabled by the spec-persistent approach.
+Software engineering methodologies — waterfall, agile, spec-first — were designed for a pre-AI world where humans wrote all code, maintained all documentation, and carried project context in their heads. We have entered a new era: AI agents now generate 30-46% of code at major tech companies, reaching 70-90% at AI-native organizations (Google, 2025; GitHub, 2025; Anthropic, 2026), developers switch between multiple agent platforms, and every AI session starts from zero. Yet the methodologies governing how software is built have not evolved to match. This paper argues that the AI era requires **rethinking software engineering methodology from first principles**, and proposes **Spec-Persistent Development (SPD)** — a methodology where specifications always exist and stay current, but never block development. In SPD, the AI agent maintains living specifications alongside code at near-zero human cost, preserving context across sessions and across agent platforms through standard file formats. We present a working open-source implementation — the Portable Spec Kit — a single markdown file with zero dependencies that works with five AI agents. The framework is validated through 443 automated tests (298 framework tests across 25 sections + 145 benchmarking tests across 5 technology stacks), demonstrating zero data loss through 10 development disruptions (scope changes, session breaks, agent switching, team changes, releases, and project handoffs). We also report a novel discovery: independent AI agents can coordinate behavior through shared specification files without direct communication — a form of asynchronous agentic coordination enabled by the spec-persistent approach.
 
 **Keywords:** Spec-Persistent Development, AI-assisted software engineering, software methodology, specification persistence, multi-agent coordination, developer productivity, living documentation
 
@@ -44,7 +44,7 @@ This paper argues that the AI era demands **rethinking software engineering meth
 
 This paper presents:
 1. **A formal definition** of the SPD methodology and its five pillars
-2. **A working open-source implementation** (Portable Spec Kit) — a single markdown file, zero dependencies, validated with 258 automated tests across 5 technology stacks
+2. **A working open-source implementation** (Portable Spec Kit) — a single markdown file, zero dependencies, validated with 443 automated tests (298 framework + 145 benchmarking) across 5 technology stacks
 3. **Measured evidence** that SPD preserves specifications through 10 development disruptions with zero data loss — including four types of scope change (drop, add, modify, replace) with requirement-to-feature traceability
 4. **A novel discovery** of asynchronous multi-agent coordination through shared specification files — where independent AI agents coordinate behavior without direct communication
 
@@ -235,7 +235,7 @@ The framework includes eight standard source code structure templates:
 
 ### 5.1 Framework Validation
 
-The Portable Spec Kit includes 258 automated tests across 23 sections validating framework integrity, agent-agnostic design, user profile flows, documentation quality, versioning, security, and infrastructure. All 258 tests pass with zero failures.
+The Portable Spec Kit includes 443 automated tests: 298 framework tests across 25 sections validating framework integrity, agent-agnostic design, user profile flows, documentation quality, versioning, security, and infrastructure; plus 145 benchmarking tests across 5 technology stacks validating SPD claims. All 443 tests pass with zero failures.
 
 ### 5.2 SPD Claims Validation
 
@@ -450,7 +450,7 @@ Several research questions emerge from SPD's persistent specification approach:
 
 2. **Longitudinal studies:** Track 10+ projects using SPD over 6-12 months, measuring specification staleness, retroactive fill accuracy, and decision recall rates.
 
-3. **Agent cost optimization:** The framework file (1,100 lines) is read every session, consuming AI tokens. Research into selective loading, caching, or summarization could reduce this overhead.
+3. **Agent cost optimization:** The framework file (1,180 lines) is read every session, consuming AI tokens. Research into selective loading, caching, or summarization could reduce this overhead.
 
 4. **Team dynamics:** Extend the user profile system to support multiple developers per project, with role-based specification access and team coordination.
 
@@ -466,7 +466,7 @@ The AI era has fundamentally changed how software is built, but not how it is ma
 
 Spec-Persistent Development is a rethinking of software engineering methodology for the AI era. Its five pillars — Specs Always Exist, Specs Never Block, Specs Are Living, Agent-Maintained, Context-Persistent — address the specific problems that AI-assisted engineering introduces while preserving the flexibility developers need. SPD does not replace waterfall or agile — it provides a persistent specification layer that works alongside any workflow the developer chooses.
 
-The Portable Spec Kit demonstrates that this rethinking is practical, not theoretical. A single markdown file with zero dependencies, validated through 258 automated tests across 5 technology stacks, showing zero data loss through 10 development disruptions — including four types of scope change (drop, add, modify, replace) that preserve requirement-to-feature traceability through iterative client feedback. The framework supports five AI agents through a symlink strategy, enables personalized developer profiles, and — as we discovered — enables a novel form of asynchronous multi-agent coordination through shared specification files.
+The Portable Spec Kit demonstrates that this rethinking is practical, not theoretical. A single markdown file with zero dependencies, validated through 443 automated tests across 5 technology stacks, showing zero data loss through 10 development disruptions — including four types of scope change (drop, add, modify, replace) that preserve requirement-to-feature traceability through iterative client feedback. The framework supports five AI agents through a symlink strategy, enables personalized developer profiles, and — as we discovered — enables a novel form of asynchronous multi-agent coordination through shared specification files.
 
 The AI era is not coming — it is here. The question is not whether software engineering methodologies need to evolve, but how. SPD proposes one answer: let specifications persist, let agents maintain them, and never let them block the developer.
 

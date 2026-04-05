@@ -4,7 +4,7 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.3.4-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.3.5-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-443%20passing-brightgreen.svg)](tests/)
 
@@ -590,7 +590,7 @@ Detailed step-by-step diagrams for every system flow:
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
 - **[System Flows](docs/system-flows/)** — 9 step-by-step flow diagrams
-- **[SPD Concept Paper](docs/research/spd-concept-paper-draft.pdf)** — Methodology paper with evaluation
+- **SPD Concept Paper** — Methodology paper with evaluation *(coming soon)*
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README
 - **[My App Example](examples/my-app/)** — Mid-development project

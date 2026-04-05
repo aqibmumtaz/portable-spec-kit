@@ -160,6 +160,8 @@ workspace/.portable-spec-kit/user-profile/
 - **NEVER commit** `.env` files or any file containing secrets to git
 - **NEVER include** real keys in any output, file, or terminal command
 - **NEVER echo, cat, print, or pipe** the contents of files containing secrets
+- **NEVER use ANY tool to copy, move, or transfer key/secret values** — directly or indirectly, by any means. This includes grep, cat, shutil, file copy commands, piping, redirection, or any other mechanism. There are no safe technical workarounds — all are forbidden.
+- **Copying keys between projects:** always ask the user to do it manually. Point them to the source file path and destination file path. You may read the `.env` file to identify key names only — never read or handle the values yourself.
 - Create `.env` files with **placeholder values only** (e.g., `paste-your-key-here`)
 - User pastes real keys themselves
 - Always verify `.gitignore` includes `.env*` before any commit
