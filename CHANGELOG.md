@@ -3,12 +3,12 @@
 All notable changes to the Portable Spec Kit are documented here.
 
 > **Versioning:** Each release (v0.N) is built from a series of incremental patches (v0.N.x).
-> `v0.4.13` = release v0.4, patch 13 — current active release shows full patch version; completed releases show minor only.
+> `v0.4.14` = release v0.4, patch 14 — current active release shows full patch version; completed releases show minor only.
 
 ---
 
-## v0.4.13 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.4.1 — v0.4.13 (13 patches) · **Tests:** 587 (442 framework + 145 benchmarking)
+## v0.4.14 — Framework Hardening + R→F→T Traceability (April 2026)
+**Built over:** v0.4.1 — v0.4.14 (14 patches) · **Tests:** 587 (442 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -17,6 +17,7 @@ All notable changes to the Portable Spec Kit are documented here.
 - **Release Process rule** — explicit signals only (`run tests` / `prepare release` / `commit` / `push`)
 - **Section 41: Pre-Release Consistency Gate** — 23 tests checking cross-file sync before every push
 - **Agent-agnostic examples** — `portable-spec-kit.md` + symlinks for all 5 agents in `examples/`
+- **Simplified versioning** — aligned patches (`v0.N.x` for release `v0.N`), single `**Version:**` field, `**Kit:**` field for installed kit version
 
 ### Framework Changes
 - `SPECS.md` staleness check — non-empty SPECS.md can still be stale; agent checks count vs TASKS.md
@@ -25,11 +26,17 @@ All notable changes to the Portable Spec Kit are documented here.
 - No-slip task rule — scan every message for implied tasks, session-end verification sweep
 - Session-start unified 5-step read order
 - Release Process rule — agent never auto-runs tests, auto-bumps versions, or auto-commits
+- **Release Notes Publishing** — CHANGELOG.md always updated; GitHub Releases optional (asks user per release: `gh release create/edit` if authenticated)
+- **Versioning simplified** — dropped offset convention; `v0.N.x` patches align with release `v0.N`. Removed redundant `**Framework:**` field; renamed to `**Kit:**` in AGENT_CONTEXT templates. GitHub tag = minor (`v0.N`), title = full patch version
+- **test-release-check.sh caching** — each test file runs once; result cached per file to prevent false failures when multiple features share a test
 
 ### README / Docs
 - Critical Scenarios table — 8 real-world situations (new machine, agent switch, crash/wipe, team handoff…)
 - Development Guidelines section — pipeline, file update triggers, core commands, key principles
 - "First methodology native to the AI era" framing
+- Terminal install commands now single-line (horizontally scrollable), consistent with AI agent section
+- Flow docs updated: `**Framework:**` → `**Kit:**` references in file-management.md + returning-session.md
+- Example AGENT_CONTEXT files updated: `**Kit:** v0.4.14` field added, version uses 3-part semver
 
 ### Tests
 | Suite | Count | Notes |

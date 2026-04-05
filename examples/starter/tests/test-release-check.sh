@@ -33,6 +33,10 @@ MISSING_REFS=0
 MISSING_FILES=0
 TESTS_FAILED=0
 
+# Cache: each unique test file is run only once — result reused for all features referencing it
+TEST_CACHE_FILE=$(mktemp)
+trap "rm -f $TEST_CACHE_FILE" EXIT
+
 # Detect test runner from project root
 detect_runner() {
   local test_file="$1"
@@ -55,31 +59,41 @@ detect_runner() {
 
 run_test() {
   local test_ref="$1"
-  local runner
+
+  # Return cached result if this file was already run
+  local cached
+  cached=$(grep "^${test_ref}:" "$TEST_CACHE_FILE" 2>/dev/null | tail -1 | cut -d: -f2)
+  if [ -n "$cached" ]; then return "$cached"; fi
+
+  local runner result
   runner=$(detect_runner "$test_ref")
 
   case "$runner" in
     jest)
       if command -v npx >/dev/null 2>&1; then
-        npx jest "$test_ref" --passWithNoTests 2>/dev/null && return 0 || return 1
-      fi ;;
+        npx jest "$test_ref" --passWithNoTests 2>/dev/null && result=0 || result=1
+      else result=2; fi ;;
     pytest)
       if command -v pytest >/dev/null 2>&1; then
-        pytest "$test_ref" -q 2>/dev/null && return 0 || return 1
+        pytest "$test_ref" -q 2>/dev/null && result=0 || result=1
       elif command -v python3 >/dev/null 2>&1; then
-        python3 -m pytest "$test_ref" -q 2>/dev/null && return 0 || return 1
-      fi ;;
+        python3 -m pytest "$test_ref" -q 2>/dev/null && result=0 || result=1
+      else result=2; fi ;;
     go)
       if command -v go >/dev/null 2>&1; then
-        go test "./$test_ref/..." 2>/dev/null && return 0 || return 1
-      fi ;;
+        go test "./$test_ref/..." 2>/dev/null && result=0 || result=1
+      else result=2; fi ;;
     bash)
-      bash "$test_ref" >/dev/null 2>&1 && return 0 || return 1 ;;
+      bash "$test_ref" >/dev/null 2>&1 && result=0 || result=1 ;;
     python)
-      python3 "$test_ref" 2>/dev/null && return 0 || return 1 ;;
+      python3 "$test_ref" 2>/dev/null && result=0 || result=1 ;;
+    *)
+      result=2 ;;
   esac
-  # Can't run — return 2 (file exists, runner unknown/unavailable)
-  return 2
+
+  # Store in cache
+  echo "${test_ref}:${result}" >> "$TEST_CACHE_FILE"
+  return $result
 }
 
 echo ""

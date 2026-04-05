@@ -92,7 +92,7 @@ Read project context → greet → summarize → continue working
 - **Workspace profile exists** → loaded silently, zero friction
 - **Only global exists** → shown to user, keep or customize, then saved to workspace
 - **No profile anywhere** → full first-time setup
-- **Framework version changed** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in AGENT_CONTEXT.md → if different, restructure agent/ files to match new templates, retain all content, update Framework in AGENT_CONTEXT.md
+- **Kit version changed** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Kit:**` in AGENT_CONTEXT.md → if different, restructure agent/ files to match new templates, retain all content, update Kit version in AGENT_CONTEXT.md
 
 ## Files Read
 - `.portable-spec-kit/user-profile/user-profile-{username}.md`

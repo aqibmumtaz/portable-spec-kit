@@ -4,7 +4,8 @@
 > **Role:** Read at session start. Updated after significant work, after commits, and before any push.
 
 ## Current Status
-- **Version:** v0.1
+- **Version:** v0.1.0
+- **Kit:** v0.4.14
 - **Phase:** Setup
 - **Status:** Project initialized, waiting for specs
 
