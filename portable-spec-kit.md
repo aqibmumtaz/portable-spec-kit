@@ -617,20 +617,20 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
 
 - **If file does not exist** → create it using the standard template, fill in known details
 - **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
-- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Framework:**` in agent/AGENT_CONTEXT.md. If different, OR if `**Framework:**` field is missing (first time after kit update):
+- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Kit:**` in agent/AGENT_CONTEXT.md. If different, OR if `**Kit:**` field is missing (first time after kit update):
   1. **Do NOT ask** — kit version updates are automatic, not optional. Restructure immediately.
   2. Restructure all agent/ files against current templates — preserve all existing content
-  3. Update Framework version in AGENT_CONTEXT.md
+  3. Update `**Kit:**` version in AGENT_CONTEXT.md to match `<!-- Framework Version -->`
   4. Show user a summary of what was updated:
      ```
-     "Portable Spec Kit updated to v0.2.x. What's new in this version:
+     "Portable Spec Kit updated to v0.4.x. What's new in this version:
      - [feature 1]
      - [feature 2]
 
      Restructured agent files (all content preserved):
      - TASKS.md → version-based headings
-     - RELEASES.md → framework version range added
-     - AGENT_CONTEXT.md → Framework field added/updated"
+     - RELEASES.md → patch range added
+     - AGENT_CONTEXT.md → Kit field added/updated"
      ```
   5. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is
@@ -1058,7 +1058,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 > **Role:** Read at session start. Updated after significant work, after commits, and before any push.
 
 ## Current Status
-- **Version:** v0.1
+- **Version:** v0.1.0
 - **Kit:** v0.4.13
 - **Phase:** Setup
 - **Status:** Initializing
