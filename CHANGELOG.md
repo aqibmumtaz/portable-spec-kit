@@ -2,10 +2,13 @@
 
 All notable changes to the Portable Spec Kit are documented here.
 
+> **Versioning:** Each release (v0.N) is built from a series of incremental patches (v0.N-1.x).
+> v0.4 = patches v0.3.1 — v0.3.13 · v0.3 = patches v0.2.1 — v0.2.9 · v0.2 = patches v0.1.1 — v0.1.9 · v0.1 = patches v0.0.1 — v0.0.9
+
 ---
 
 ## v0.4 — Framework Hardening + R→F→T Traceability (April 2026)
-**Framework versions:** v0.3.1 — v0.3.13 · **Tests:** 587 (442 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.13 (13 patches leading to this release) · **Tests:** 587 (442 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -39,7 +42,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — SPD Methodology + Research (April 2026)
-**Framework versions:** v0.2.1 — v0.2.9 · **Tests:** 443 (298 framework + 145 benchmarking)
+**Built over:** v0.2.1 — v0.2.9 (9 patches leading to this release) · **Tests:** 443 (298 framework + 145 benchmarking)
 
 ### Highlights
 - **SPD concept paper** — 9 sections, 27+ references, 5 SVG diagrams, 31-page A4 PDF
@@ -58,7 +61,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.2 — Personalized Profile + Flow Documentation (April 2026)
-**Framework versions:** v0.1.1 — v0.1.9 · **Tests:** 242 (22 sections)
+**Built over:** v0.1.1 — v0.1.9 (9 patches leading to this release) · **Tests:** 242 (22 sections)
 
 ### Highlights
 - **User Profile system** — global (`~/.portable-spec-kit/`) + workspace (committed, per-user)
@@ -71,7 +74,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.1 — Initial Release (March 2026)
-**Framework versions:** v0.0.1 — v0.0.9 · **Tests:** 122 (13 sections)
+**Built over:** v0.0.1 — v0.0.9 (9 patches leading to this release) · **Tests:** 122 (13 sections)
 
 ### Highlights
 - `portable-spec-kit.md` — single framework file, zero dependencies, zero install
