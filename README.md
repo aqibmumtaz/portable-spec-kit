@@ -90,11 +90,17 @@ AI coding agents are powerful but inconsistent. Every new conversation starts fr
 #### Ask your AI agent (no terminal needed)
 Paste this to Claude, Cursor, Copilot, or any AI agent:
 
+**macOS / Linux:**
 ```
 Install the Portable Spec Kit: run `curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md && ln -sf portable-spec-kit.md CLAUDE.md && ln -sf portable-spec-kit.md .cursorrules && ln -sf portable-spec-kit.md .windsurfrules && ln -sf portable-spec-kit.md .clinerules && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md` then read portable-spec-kit.md and set up my project.
 ```
 
-The agent downloads the kit, creates all symlinks, reads the framework, and starts your project setup — all in one go.
+**Windows:**
+```
+Install the Portable Spec Kit: run `Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md" -OutFile "portable-spec-kit.md"; Copy-Item portable-spec-kit.md CLAUDE.md; Copy-Item portable-spec-kit.md .cursorrules; Copy-Item portable-spec-kit.md .windsurfrules; Copy-Item portable-spec-kit.md .clinerules; New-Item -ItemType Directory -Force -Path .github | Out-Null; Copy-Item portable-spec-kit.md .github/copilot-instructions.md` then read portable-spec-kit.md and set up my project.
+```
+
+The agent downloads the kit, creates all agent files, reads the framework, and starts your project setup — all in one go.
 
 #### macOS / Linux (one command)
 ```bash
