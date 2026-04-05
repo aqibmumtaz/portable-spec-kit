@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.3.6-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.3.13-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-443%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-587%20passing-brightgreen.svg)](tests/)
 
 <table>
 <tr>
@@ -35,7 +35,7 @@
 
 **Specs always exist and stay current, but never block.**
 
-Traditional approaches force a choice: write specs first (waterfall) or skip them (agile). Spec-Persistent Development is a third path — specifications persist throughout development, maintained by the AI agent, evolving with your code, never gating your work.
+Traditional approaches force a choice: write specs first (waterfall) or skip them (agile). Spec-Persistent Development is the first methodology native to the AI era — specifications persist throughout development, maintained by the AI agent, evolving with your code, never gating your work.
 
 | | **Waterfall** | **Agile** | **Spec-First** (spec-kit) | **Spec-Persistent** (this kit) |
 |---|:---:|:---:|:---:|:---:|
@@ -56,6 +56,21 @@ You choose how you work. The kit adapts:
 - **Want to change mid-project?** Started agile but need specs now? The agent fills them from what's built.
 
 The only constant: **specs persist**. However you work, the agent ensures SPECS.md, PLANS.md, TASKS.md, and RELEASES.md always reflect the current state of your project.
+
+### Critical Scenarios Where This Changes Everything
+
+**New machine, same project.** Clone the repo, open a new AI chat, ask: *"What's the project status?"* The agent reads your spec files and delivers a full briefing — what's built, what's pending, every architectural decision and why. Zero re-explaining. Zero context reconstruction.
+
+| Scenario | Without Kit | With Kit |
+|----------|------------|---------|
+| New machine / fresh install | Re-explain entire project from scratch | Clone repo → agent reads context → continue instantly |
+| Returning after weeks | "Wait, where were we?" — rebuild context manually | Agent reads AGENT_CONTEXT.md → full picture in seconds |
+| Forced agent switch | Context lost — Claude → Copilot means starting over | All agents read same files → zero loss |
+| Computer crash or wipe | Project context gone | Push to git → pull → fully restored |
+| Team member leaves | Knowledge walks out the door | All decisions, reasoning, scope changes preserved in PLANS.md |
+| New developer onboards | Weeks of code archaeology | Clone → read agent files → full history understood in minutes |
+| Client hands off project | New team guesses at intent | R→F traceability: every requirement → feature → decision recorded |
+| Context window fills | Start new chat, lose all context | New chat → agent reads files → continues seamlessly |
 
 ---
 
@@ -172,6 +187,7 @@ The agent reads the framework and automatically sets everything up:
     agent/TASKS.md           ← Task tracking
     agent/RELEASES.md         ← Version history
 ✓ Creates project directories (src/, tests/, docs/, ard/, input/, output/)
+✓ Creates tests/test-release-check.sh ← R→F→T validation — every done feature must have a passing test before release
 ✓ Creates README.md with standard structure
 ✓ Creates .gitignore + .env.example
 ✓ Ready to work — following YOUR standards
@@ -195,10 +211,14 @@ You: "What's the status?"
 Agent: Shows progress from TASKS.md + AGENT_CONTEXT.md
 ```
 
-### Step 4: Session ends
+### Step 4: Context stays current
+
+The agent updates `agent/AGENT_CONTEXT.md` at three natural checkpoints — not on a timer:
 
 ```
-✓ Agent updates agent/AGENT_CONTEXT.md — progress, decisions, what's next
+✓ After significant work (feature built, tests passing)
+✓ After committing — commit is a natural checkpoint
+✓ Before any push — context must be current before code reaches remote
 ```
 
 ### Step 5: Come back later (days, weeks, months)
@@ -220,23 +240,16 @@ Agent: Shows progress from TASKS.md + AGENT_CONTEXT.md
 
 ## The Framework
 
-### Development Pipeline
-
-```
-SPECS.md        →  PLANS.md      →  TASKS.md        →  RELEASES.md
-What to build      How to build it     Track progress      Log results
-```
-
 ### The 6 Agent Files (auto-created in `agent/`)
 
-| File | Purpose | Updated |
-|------|---------|:-------:|
-| `AGENT.md` | Project rules, stack, brand, AI config | Setup |
-| `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers | Every session |
-| `SPECS.md` | Requirements, features, acceptance criteria | Before dev |
-| `PLANS.md` | Architecture, data model, phases, methodology & research | Before dev |
-| `TASKS.md` | Module-based task tracking with checkboxes | During dev |
-| `RELEASES.md` | Version changelog, test results, deployment log | End of version |
+| File | Purpose | Updated When |
+|------|---------|-------------|
+| `AGENT.md` | Project rules, stack, brand, AI config | Stack or config changes |
+| `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers | After significant work, after commit, before push |
+| `SPECS.md` | Requirements, features, acceptance criteria | Feature added, scope change, feature marked done |
+| `PLANS.md` | Architecture, data model, phases, methodology & research | Architecture or tech decision changes |
+| `TASKS.md` | Version-based task tracking with checkboxes | Before every task (add) + after every task (mark done) |
+| `RELEASES.md` | Version changelog, test results, deployment log | When all tasks under a version are done |
 
 ### Project Structure
 
@@ -260,57 +273,89 @@ your-project/
 │   └── RELEASES.md
 │
 ├── src/                    ← Your code
-├── tests/                  ← Your tests
+├── tests/
+│   ├── test-release-check.sh ← R→F→T validator (auto-created by kit)
+│   └── ...                 ← Your tests
 └── ...
 ```
 
 ---
 
-## Core Principles
+## Development Guidelines
 
-### 1. Never Block the Developer
+### The Pipeline
 
-The agent adapts to how YOU want to work:
+```
+SPECS.md  →  PLANS.md  →  TASKS.md  →  [build + test]  →  RELEASES.md
+ What        How           Track          Execute             Record
+```
 
-- **Want to follow the full spec-persistent flow?** Agent walks you through it step by step.
-- **Want to jump straight into coding?** Agent tracks everything in the background.
-- **Want to give direct tasks?** Agent adds to TASKS.md and executes immediately.
-- **Forgot to write specs?** Agent fills them retroactively from what's been built.
+Enter at any point. Start from specs, start from code, or start mid-project — the agent fills whatever's missing.
 
-### 2. Context Never Lost
+### Which Agent File Updates When
 
-`AGENT_CONTEXT.md` is updated every session with:
-- What was done
-- What's next
-- Key decisions and why
-- Current blockers
+| File | Updates When |
+|------|-------------|
+| `agent/AGENT.md` | Stack changes, new project rules, config changes (port, API provider, brand) |
+| `agent/AGENT_CONTEXT.md` | After significant work, after committing, before any push |
+| `agent/SPECS.md` | New feature added, scope change (DROP/ADD/MODIFY/REPLACE), feature marked done (fill Tests column) |
+| `agent/PLANS.md` | Architecture changes — new tech chosen, data model updated, API endpoints added/modified |
+| `agent/TASKS.md` | Before every task (add it first), after every task (mark [x] when done) |
+| `agent/RELEASES.md` | When all tasks under a version heading are [x] — entry added immediately, same session |
 
-Come back weeks later — the agent reads this and picks up exactly where you left off.
+### Core Commands
 
-### 3. Self-Validating
+**Development:**
+| Command | What happens |
+|---------|-------------|
+| `"build X"` / `"add feature X"` | Added to TASKS.md first → built → tested → marked done |
+| `"fix X"` | Added to TASKS.md → fixed → marked done |
+| `"what's the status?"` | Reads TASKS.md + AGENT_CONTEXT.md → full progress report |
+| `"keep noted"` / `"note this"` | Saved to correct agent/ file — never lost |
 
-The agent doesn't just build — it validates:
-- Writes tests for every feature
-- Runs tests, shows coverage (backend 98%+, frontend 98%+, UI 85%+)
-- Fixes failures before presenting results
-- You should **never** discover a broken feature
+**Release process (explicit only — never automatic):**
+| Command | What happens |
+|---------|-------------|
+| `"run tests"` | Test suite runs, results shown |
+| `"prepare release"` | Counts updated, version bumped, all docs synced, PDFs regenerated (if any) — **then runs all test suites and shows coverage summary** |
+| `"commit"` | Changes committed with descriptive message |
+| `"push"` | Pushed to remote after confirmation |
 
-### 4. One File, All Projects
+The agent never auto-runs tests, auto-bumps versions, or auto-commits. Batch your changes, then trigger the release process once.
 
-`portable-spec-kit.md` is project-agnostic. It contains:
-- Git/GitHub rules
-- Security practices
-- Testing standards
-- Naming conventions
-- Project templates
-- Code review checklist
+**Every "prepare release" ends with a test summary:**
+```
+══════════════════════════════════════════════
+  RELEASE TEST SUMMARY
+══════════════════════════════════════════════
+  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
+  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
 
-Project-specific details (stack, brand, API endpoints) go in `agent/AGENT.md`.
+  Total: X/X passing — RELEASE READY ✅
+══════════════════════════════════════════════
+```
+The release is only finalized (version bumped, commit ready) if all suites pass. Any failure → fix first, then re-run.
 
-### 5. 90/10 Work Split
+### Key Principles
 
-Agent does 90% — writes specs, plans, tasks, tests, docs.
-You do 10% — review and approve.
+| Principle | What it means |
+|-----------|--------------|
+| **Never blocks** | Start coding immediately — specs can be written before, during, or filled retroactively |
+| **Context never lost** | `AGENT_CONTEXT.md` tracks what's done, what's next, and every decision. Come back after weeks and pick up instantly |
+| **Tasks first** | Every task gets added to TASKS.md before work starts — nothing slips |
+| **Self-validating** | Agent writes tests, runs them, fixes failures before presenting results. You should never discover a broken feature |
+| **90/10 split** | Agent does 90% — specs, plans, tasks, tests, docs. You review and approve |
+| **One file, all projects** | `portable-spec-kit.md` carries your standards across every project. Project-specific rules go in `agent/AGENT.md` |
+
+### File Management Rule
+
+| Scenario | Action |
+|----------|--------|
+| Agent file doesn't exist | Created from template, known details filled in |
+| Agent file exists but wrong structure | Restructured to match template — **all content preserved** |
+| Agent file matches template | Left as-is |
+
+Content is never lost. Existing files are reorganized, not overwritten.
 
 ---
 
@@ -322,7 +367,7 @@ You do 10% — review and approve.
 | **Git & GitHub** | Commit rules, push rules, critical ops requiring approval |
 | **Security** | .env handling, secret management, code security practices |
 | **Versioning** | Two-level: framework patches + release milestones, auto-restructure on pull |
-| **Task Tracking** | Tasks-first workflow, module-based organization |
+| **Task Tracking** | Tasks-first workflow, version-based organization (v0.x headings + backlog) |
 | **Testing** | Coverage targets, edge case checklist, mock rules, self-validation |
 | **Code Quality** | Review checklist, naming conventions, deployment checklist |
 | **Error Handling** | Structured errors, logging, error boundaries, user-friendly messages |
@@ -434,20 +479,6 @@ Fork this repo → customize portable-spec-kit.md for your team → everyone pul
 
 ---
 
-## File Management Rule
-
-One rule governs all auto-managed files:
-
-| Scenario | Action |
-|----------|--------|
-| File doesn't exist | Create from template, fill in known details |
-| File exists but wrong structure | Restructure to match template — **retain all content** |
-| File matches template | Leave as-is |
-
-**Content is never lost.** Existing files are reorganized, not overwritten.
-
----
-
 ## Usage Examples
 
 ### New Project Setup
@@ -460,7 +491,6 @@ Agent:
 ✓ Created my-app/README.md
 ✓ Created my-app/.gitignore + .env.example
 ✓ Created directories: src/, tests/, ard/, docs/
-✓ Committed: "Initialize my-app — v0.1 setup"
 
 What would you like to build?
 ```

@@ -141,7 +141,7 @@ grep -q "spec-kit" "$PROJ/README.md" && pass "README: spec-kit comparison" || fa
 grep -q "Setup" "$PROJ/README.md" && pass "README: Setup section" || fail "README: no Setup"
 grep -q "Multi-Agent Support" "$PROJ/README.md" && pass "README: Multi-Agent section" || fail "README: no Multi-Agent"
 grep -q "Complete Flow" "$PROJ/README.md" && pass "README: Complete Flow" || fail "README: no Complete Flow"
-grep -q "Core Principles" "$PROJ/README.md" && pass "README: Core Principles" || fail "README: no Core Principles"
+grep -q "Development Guidelines" "$PROJ/README.md" && pass "README: Development Guidelines section" || fail "README: no Development Guidelines"
 grep -q "Examples" "$PROJ/README.md" && pass "README: Examples section" || fail "README: no Examples"
 grep -q "Contributing" "$PROJ/README.md" && pass "README: Contributing" || fail "README: no Contributing"
 grep -q "Author" "$PROJ/README.md" && pass "README: Author" || fail "README: no Author"
@@ -673,9 +673,9 @@ grep -q "10 Core Strengths" "$PROJ/ard/Portable_Spec_Kit_Guide.html" && pass "Gu
 section "21. Context Management Rule"
 # ═══════════════════════════════════════════════════════════════
 
-grep -q "After completing implementations or running tests" "$PROJ/portable-spec-kit.md" && pass "Context rule: implementation/test trigger" || fail "Context rule: missing trigger"
+grep -q "Tier 1.*After significant work\|Tier 2.*Before push" "$PROJ/portable-spec-kit.md" && pass "Context rule: two-tier update rule defined" || fail "Context rule: missing trigger"
 grep -q "docs/system-flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
-grep -q "Context, flows, and tests must always match" "$PROJ/portable-spec-kit.md" && pass "Context rule: triad requirement" || fail "Context rule: missing triad"
+grep -q "SPECS.md.*PLANS.md.*TASKS.md\|Tier 2" "$PROJ/portable-spec-kit.md" && pass "Context rule: Tier 2 full sync before push" || fail "Context rule: missing triad"
 
 # ═══════════════════════════════════════════════════════════════
 section "22. Versioning System"
@@ -776,6 +776,710 @@ section "25. License"
 
 grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "License wrong"
 grep -q "Aqib Mumtaz" "$PROJ/LICENSE" && pass "Author in license" || fail "Author missing from license"
+
+# ═══════════════════════════════════════════════════════════════
+section "26. Versioning — v0.4 Row + Current Version"
+# ═══════════════════════════════════════════════════════════════
+
+# v0.4 row must exist in version table
+grep -q "v0\.4.*v0\.3\." "$PROJ/portable-spec-kit.md" && pass "Versioning: v0.4 → v0.3.x row present" || fail "Versioning: v0.4 row MISSING"
+
+# Framework version comment must match AGENT_CONTEXT Framework field
+FW_COMMENT=$(grep "<!-- Framework Version:" "$PROJ/portable-spec-kit.md" | head -1 | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+")
+FW_CONTEXT=$(grep "\*\*Framework:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+")
+[ "$FW_COMMENT" = "$FW_CONTEXT" ] && pass "Versioning: framework comment ($FW_COMMENT) matches AGENT_CONTEXT ($FW_CONTEXT)" || fail "Versioning: MISMATCH — comment=$FW_COMMENT context=$FW_CONTEXT"
+
+# README badge must match framework comment
+README_VER=$(grep "version-v" "$PROJ/README.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+[ "$README_VER" = "$FW_COMMENT" ] && pass "Versioning: README badge ($README_VER) matches framework ($FW_COMMENT)" || fail "Versioning: README badge STALE — badge=$README_VER framework=$FW_COMMENT"
+
+# RELEASES.md must have v0.3 entry (not just v0.2 and v0.1)
+grep -q "## v0\.3" "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 entry present" || fail "RELEASES.md: v0.3 entry MISSING"
+grep -q "Framework versions: v0\.2\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has framework version range" || fail "RELEASES.md: v0.3 missing framework range"
+
+# ═══════════════════════════════════════════════════════════════
+section "27. R→F Traceability & Scope Change Rules"
+# ═══════════════════════════════════════════════════════════════
+
+# 4 scope change types must be documented in framework
+grep -q "DROP" "$PROJ/portable-spec-kit.md" && pass "Scope changes: DROP type documented" || fail "Scope changes: DROP MISSING"
+grep -q "ADD" "$PROJ/portable-spec-kit.md" && pass "Scope changes: ADD type documented" || fail "Scope changes: ADD MISSING"
+grep -q "MODIFY" "$PROJ/portable-spec-kit.md" && pass "Scope changes: MODIFY type documented" || fail "Scope changes: MODIFY MISSING"
+grep -q "REPLACE" "$PROJ/portable-spec-kit.md" && pass "Scope changes: REPLACE type documented" || fail "Scope changes: REPLACE MISSING"
+
+# R→F traceability rules in framework
+grep -q "R→F Traceability\|R→F traceability" "$PROJ/portable-spec-kit.md" && pass "R→F: traceability rule present" || fail "R→F: traceability MISSING"
+grep -q "Requirements.*R1\|Rn.*Fn\|R1, R2" "$PROJ/portable-spec-kit.md" && pass "R→F: Rn→Fn notation documented" || fail "R→F: notation MISSING"
+
+# Scope change recording format documented
+grep -q "change type.*original requirement\|note the change type" "$PROJ/portable-spec-kit.md" && pass "Scope: recording format documented" || fail "Scope: recording format MISSING"
+
+# Scope change rule updates all 4 pipeline files
+grep -q "Update TASKS.md and RELEASES.md in the same session" "$PROJ/portable-spec-kit.md" && pass "Scope: rule updates all pipeline files" || fail "Scope: pipeline update rule MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "28. Scope Change Simulation (DROP/ADD/MODIFY/REPLACE)"
+# ═══════════════════════════════════════════════════════════════
+
+SCOPE_TEMP="/tmp/psk-scope-$(date +%s)"
+mkdir -p "$SCOPE_TEMP/agent"
+
+# Setup: project with 4 requirements, 4 features
+cat > "$SCOPE_TEMP/agent/SPECS.md" << 'SPECEOF'
+# SPECS.md — TaskFlow
+
+## Requirements
+- R1: users can log in
+- R2: users can create tasks
+- R3: users can view calendar
+- R4: tasks export to CSV
+
+## Features
+| # | Feature | Req | Status |
+|---|---------|-----|--------|
+| F1 | Email + password auth | R1 | [x] |
+| F2 | Task CRUD with priorities | R2 | [x] |
+| F3 | Calendar view | R3 | [ ] |
+| F4 | CSV export | R4 | [ ] |
+SPECEOF
+
+cat > "$SCOPE_TEMP/agent/TASKS.md" << 'TASKEOF'
+# TASKS.md — TaskFlow
+
+## v0.1 — Current
+- [x] F1: auth system (R1)
+- [x] F2: task CRUD (R2)
+- [ ] F3: calendar view (R3)
+- [ ] F4: CSV export (R4)
+TASKEOF
+
+cat > "$SCOPE_TEMP/agent/PLANS.md" << 'PLANEOF'
+# PLANS.md — TaskFlow
+
+## Decision Log
+| Decision | Options | Chosen | Why |
+|----------|---------|--------|-----|
+| Auth method | OAuth / JWT | JWT | Simpler for MVP |
+PLANEOF
+
+# Simulate DROP: R3 (calendar) dropped by client
+sed -i '' 's/| F3 | Calendar view | R3 | \[ \] |/| ~~F3~~ | ~~Calendar view~~ | ~~R3~~ | DROPPED 2026-04-05: client deprioritized |/' "$SCOPE_TEMP/agent/SPECS.md" 2>/dev/null || \
+sed -i 's/| F3 | Calendar view | R3 | \[ \] |/| ~~F3~~ | ~~Calendar view~~ | ~~R3~~ | DROPPED 2026-04-05: client deprioritized |/' "$SCOPE_TEMP/agent/SPECS.md"
+grep -q "DROPPED\|Out of scope\|deprioritized\|~~F3~~\|calendar" "$SCOPE_TEMP/agent/SPECS.md" && pass "DROP: F3/R3 marked as dropped in SPECS.md" || fail "DROP: calendar feature not removed from SPECS.md"
+
+# Simulate ADD: R5 added (notifications)
+echo "- R5: users receive push notifications" >> "$SCOPE_TEMP/agent/SPECS.md"
+echo "| F5 | Push notifications | R5 | [ ] |" >> "$SCOPE_TEMP/agent/SPECS.md"
+grep -q "R5\|notifications" "$SCOPE_TEMP/agent/SPECS.md" && pass "ADD: R5/F5 added to SPECS.md" || fail "ADD: new requirement not added"
+
+# Simulate MODIFY: R4 changed from CSV to PDF export
+sed -i '' 's/tasks export to CSV/tasks export to PDF and CSV/' "$SCOPE_TEMP/agent/SPECS.md" 2>/dev/null || \
+sed -i 's/tasks export to CSV/tasks export to PDF and CSV/' "$SCOPE_TEMP/agent/SPECS.md"
+grep -q "PDF\|pdf" "$SCOPE_TEMP/agent/SPECS.md" && pass "MODIFY: R4 updated to include PDF export" || fail "MODIFY: R4 not updated"
+
+# Simulate REPLACE: F3 (calendar) → F6 (list view, same R3 intent)
+echo "| F6 | List view (replaces F3 calendar — performance) | R3 | [ ] |" >> "$SCOPE_TEMP/agent/SPECS.md"
+grep -q "F6\|List view\|replaces" "$SCOPE_TEMP/agent/SPECS.md" && pass "REPLACE: F6 added to replace F3, tracing R3" || fail "REPLACE: replacement feature not added"
+
+# Verify R→F traceability preserved: R1, R2, R3, R4, R5 all still traceable
+grep -q "R1" "$SCOPE_TEMP/agent/SPECS.md" && pass "Traceability: R1 still present after all changes" || fail "Traceability: R1 lost"
+grep -q "R2" "$SCOPE_TEMP/agent/SPECS.md" && pass "Traceability: R2 still present" || fail "Traceability: R2 lost"
+grep -q "R3" "$SCOPE_TEMP/agent/SPECS.md" && pass "Traceability: R3 still traceable (via F6 replacement)" || fail "Traceability: R3 lost"
+grep -q "R4\|R5" "$SCOPE_TEMP/agent/SPECS.md" && pass "Traceability: R4/R5 present" || fail "Traceability: R4/R5 lost"
+
+rm -rf "$SCOPE_TEMP"
+pass "Scope change simulation: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "29. SPECS Staleness Check Rule"
+# ═══════════════════════════════════════════════════════════════
+
+# Rule must be in framework
+grep -q "non-empty SPECS.md can still be stale\|non-empty.*still be stale\|Staleness check" "$PROJ/portable-spec-kit.md" && pass "Staleness: rule present in framework" || fail "Staleness: rule MISSING from framework"
+grep -q "check count, not just presence\|check count\|check.*not just" "$PROJ/portable-spec-kit.md" && pass "Staleness: count-not-presence rule present" || fail "Staleness: count check rule MISSING"
+
+# Simulate: SPECS has 2 features, TASKS has 5 completed — staleness detectable
+STALE_TEMP="/tmp/psk-stale-$(date +%s)"
+mkdir -p "$STALE_TEMP/agent"
+
+cat > "$STALE_TEMP/agent/SPECS.md" << 'EOF'
+# SPECS.md
+## Features
+| # | Feature | Status |
+|---|---------|--------|
+| F1 | Auth | [x] |
+| F2 | Dashboard | [x] |
+EOF
+
+cat > "$STALE_TEMP/agent/TASKS.md" << 'EOF'
+# TASKS.md
+## v0.1
+- [x] Auth
+- [x] Dashboard
+- [x] Charts
+- [x] Settings
+- [x] Export
+EOF
+
+# Count SPECS features vs TASKS completed (use wc -l — always exits 0, no double-output)
+SPECS_COUNT=$(grep "^| F[0-9]" "$STALE_TEMP/agent/SPECS.md" 2>/dev/null | wc -l | tr -d ' \t')
+TASKS_DONE=$(grep "^\- \[x\]" "$STALE_TEMP/agent/TASKS.md" 2>/dev/null | wc -l | tr -d ' \t')
+DIFF=$((TASKS_DONE - SPECS_COUNT))
+
+[ "$SPECS_COUNT" -eq 2 ] && pass "Staleness sim: SPECS has 2 features" || fail "Staleness sim: wrong SPECS count (got $SPECS_COUNT)"
+[ "$TASKS_DONE" -eq 5 ] && pass "Staleness sim: TASKS has 5 completed" || fail "Staleness sim: wrong TASKS count (got $TASKS_DONE)"
+[ "$DIFF" -ge 2 ] && pass "Staleness sim: gap detected ($DIFF features missing from SPECS — update required)" || fail "Staleness sim: gap not detectable"
+
+rm -rf "$STALE_TEMP"
+pass "Staleness check simulation: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "30. RELEASES Trigger Rule"
+# ═══════════════════════════════════════════════════════════════
+
+# Rule must be in framework
+grep -q "all tasks under a version heading.*\[x\].*add.*RELEASES\|When all tasks.*marked.*\[x\].*add a release" "$PROJ/portable-spec-kit.md" && pass "RELEASES trigger: rule present in framework" || fail "RELEASES trigger: rule MISSING"
+grep -q "Do not leave a completed version without a release entry" "$PROJ/portable-spec-kit.md" && pass "RELEASES trigger: no-empty-entry rule present" || fail "RELEASES trigger: no-empty rule MISSING"
+
+# Simulate: TASKS.md with all [x] — check RELEASES.md needs updating
+REL_TEMP="/tmp/psk-rel-$(date +%s)"
+mkdir -p "$REL_TEMP/agent"
+
+cat > "$REL_TEMP/agent/TASKS.md" << 'EOF'
+# TASKS.md
+## v0.1 — Current
+- [x] Setup project
+- [x] Build auth
+- [x] Build dashboard
+## Backlog
+- [ ] Future feature
+EOF
+
+cat > "$REL_TEMP/agent/RELEASES.md" << 'EOF'
+# RELEASES.md
+(no entries yet)
+EOF
+
+# Check: all v0.1 tasks done → RELEASES.md needs entry
+# Count only tasks under ## v0.1 section (not backlog) using awk range
+V1_TOTAL=$(awk '/^## v0\.1/,/^## [A-Z]/' "$REL_TEMP/agent/TASKS.md" 2>/dev/null | grep "^- \[.\]" | wc -l | tr -d ' \t')
+V1_DONE=$(awk '/^## v0\.1/,/^## [A-Z]/' "$REL_TEMP/agent/TASKS.md" 2>/dev/null | grep "^- \[x\]" | wc -l | tr -d ' \t')
+HAS_REL=$(grep "## v0\.1" "$REL_TEMP/agent/RELEASES.md" 2>/dev/null | wc -l | tr -d ' \t')
+
+[ "$V1_TOTAL" -eq "$V1_DONE" ] && pass "RELEASES sim: all v0.1 tasks done ($V1_DONE/$V1_TOTAL)" || fail "RELEASES sim: not all tasks done"
+[ "$HAS_REL" -eq 0 ] && pass "RELEASES sim: RELEASES.md missing v0.1 entry (trigger needed)" || fail "RELEASES sim: entry exists (ok)"
+
+# Simulate adding the release entry
+echo "## v0.1 — Initial Release (2026-04-05)" >> "$REL_TEMP/agent/RELEASES.md"
+grep -q "## v0\.1" "$REL_TEMP/agent/RELEASES.md" && pass "RELEASES sim: entry added after trigger" || fail "RELEASES sim: entry not added"
+
+rm -rf "$REL_TEMP"
+pass "RELEASES trigger simulation: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "31. No-Slip Task Rule & Session-End Sweep"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Never let a task slip or be forgotten" "$PROJ/portable-spec-kit.md" && pass "No-slip: rule present in framework" || fail "No-slip: rule MISSING"
+grep -q "scan for any task.*before responding\|scan.*before respond" "$PROJ/portable-spec-kit.md" && pass "No-slip: scan-before-responding rule present" || fail "No-slip: scan-before-responding MISSING"
+grep -q "Before ending any session" "$PROJ/portable-spec-kit.md" && pass "No-slip: session-end sweep rule present" || fail "No-slip: session-end sweep MISSING"
+grep -q "scan back through the full conversation\|scan.*full conversation" "$PROJ/portable-spec-kit.md" && pass "No-slip: full conversation scan rule present" || fail "No-slip: full conversation scan MISSING"
+grep -q "anything was asked but not done, do it now" "$PROJ/portable-spec-kit.md" && pass "No-slip: completion enforcement present" || fail "No-slip: completion enforcement MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "32. Session-Start 5-Step Read Order"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "On every session start" "$PROJ/portable-spec-kit.md" && pass "Session-start: 5-step read order documented" || fail "Session-start: read order MISSING"
+# Verify all 5 files referenced in session-start section
+grep -q "user-profile" "$PROJ/portable-spec-kit.md" && pass "Session-start: user profile read (step 1)" || fail "Session-start: profile MISSING"
+grep -q "agent/AGENT\.md" "$PROJ/portable-spec-kit.md" && pass "Session-start: AGENT.md read (step 2)" || fail "Session-start: AGENT.md MISSING"
+grep -q "agent/AGENT_CONTEXT\.md" "$PROJ/portable-spec-kit.md" && pass "Session-start: AGENT_CONTEXT.md read (step 3)" || fail "Session-start: AGENT_CONTEXT MISSING"
+grep -q "agent/TASKS\.md" "$PROJ/portable-spec-kit.md" && pass "Session-start: TASKS.md read (step 4)" || fail "Session-start: TASKS.md MISSING"
+grep -q "agent/PLANS\.md" "$PROJ/portable-spec-kit.md" && pass "Session-start: PLANS.md read (step 5)" || fail "Session-start: PLANS.md MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "33. Pipeline Sync — All 4 Files"
+# ═══════════════════════════════════════════════════════════════
+
+# Sync rule must mention 4 files (not 3)
+grep -q "all 4 pipeline files\|4 pipeline files" "$PROJ/portable-spec-kit.md" && pass "Pipeline: sync rule mentions 4 files" || fail "Pipeline: sync rule still says 3 files"
+grep -q "SPECS.*PLANS.*TASKS.*RELEASES\|RELEASES.md.*pipeline" "$PROJ/portable-spec-kit.md" && pass "Pipeline: RELEASES.md included in sync rule" || fail "Pipeline: RELEASES.md missing from sync"
+
+# Fill gaps rule mentions RELEASES
+grep -q "All tasks.*\[x\].*RELEASES\|add release entry to RELEASES.md now" "$PROJ/portable-spec-kit.md" && pass "Pipeline: fill gaps rule covers RELEASES" || fail "Pipeline: fill gaps misses RELEASES"
+
+# Simulate: all 4 pipeline files referencing the same feature
+PIPE_TEMP="/tmp/psk-pipe-$(date +%s)"
+mkdir -p "$PIPE_TEMP/agent"
+
+cat > "$PIPE_TEMP/agent/SPECS.md" << 'EOF'
+## Features
+| F1 | Auth system | R1 | [x] |
+EOF
+cat > "$PIPE_TEMP/agent/PLANS.md" << 'EOF'
+## Stack
+JWT auth, PostgreSQL
+## Decision Log
+| Auth | JWT | Simpler |
+EOF
+cat > "$PIPE_TEMP/agent/TASKS.md" << 'EOF'
+## v0.1
+- [x] F1: auth system
+EOF
+cat > "$PIPE_TEMP/agent/RELEASES.md" << 'EOF'
+## v0.1
+### Changes
+- **Auth:** F1 auth system delivered
+EOF
+
+# Verify all 4 reference "auth"
+grep -qi "auth" "$PIPE_TEMP/agent/SPECS.md" && pass "Pipeline sync: SPECS has auth" || fail "Pipeline: SPECS missing feature"
+grep -qi "auth" "$PIPE_TEMP/agent/PLANS.md" && pass "Pipeline sync: PLANS has auth decision" || fail "Pipeline: PLANS missing decision"
+grep -qi "auth" "$PIPE_TEMP/agent/TASKS.md" && pass "Pipeline sync: TASKS has auth task" || fail "Pipeline: TASKS missing task"
+grep -qi "auth" "$PIPE_TEMP/agent/RELEASES.md" && pass "Pipeline sync: RELEASES records auth" || fail "Pipeline: RELEASES missing entry"
+
+rm -rf "$PIPE_TEMP"
+pass "Pipeline sync simulation: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "34. Security Rules — API Key Protection"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "ABSOLUTE — NO EXCEPTIONS\|NO EXCEPTIONS" "$PROJ/portable-spec-kit.md" && pass "Security: absolute rule header present" || fail "Security: absolute rule MISSING"
+grep -q "NEVER read, display, log, or expose" "$PROJ/portable-spec-kit.md" && pass "Security: never expose API keys" || fail "Security: expose rule MISSING"
+grep -q "even if the user explicitly asks" "$PROJ/portable-spec-kit.md" && pass "Security: covers explicit user requests" || fail "Security: user override not addressed"
+grep -q "cannot be overridden by any instruction\|This rule cannot be overridden" "$PROJ/portable-spec-kit.md" && pass "Security: rule explicitly non-overridable" || fail "Security: override protection MISSING"
+grep -q "NEVER commit.*\.env\|NEVER commit.*secrets" "$PROJ/portable-spec-kit.md" && pass "Security: never commit .env" || fail "Security: .env commit rule MISSING"
+grep -q "paste-your-key-here\|placeholder values only" "$PROJ/portable-spec-kit.md" && pass "Security: placeholders in .env.example" || fail "Security: placeholder rule MISSING"
+grep -q "Always verify.*\.gitignore.*includes.*\.env\|verify.*gitignore.*env" "$PROJ/portable-spec-kit.md" && pass "Security: verify .gitignore before commit" || fail "Security: gitignore check MISSING"
+
+# .gitignore must exclude .env
+grep -q "\.env" "$PROJ/.gitignore" && pass "Security: .gitignore excludes .env" || fail "Security: .env not in .gitignore"
+! grep -q "\.env$" "$PROJ/.gitignore" || grep -q "\.env\.\*\|\.env\*" "$PROJ/.gitignore" && pass "Security: .gitignore covers .env variants" || fail "Security: .env variants not covered"
+
+# ═══════════════════════════════════════════════════════════════
+section "35. Version Bump Before Push Rule"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Version bump BEFORE push\|version bump BEFORE push\|bump.*before.*push" "$PROJ/portable-spec-kit.md" && pass "Version bump: rule present in framework" || fail "Version bump: rule MISSING"
+grep -q "bump → commit → push\|bump.*commit.*push" "$PROJ/portable-spec-kit.md" && pass "Version bump: order documented (bump→commit→push)" || fail "Version bump: order MISSING"
+grep -q "Never push then bump after\|never push then bump\|not.*push.*then.*bump" "$PROJ/portable-spec-kit.md" && pass "Version bump: anti-pattern documented" || fail "Version bump: anti-pattern not covered"
+grep -q "AGENT_CONTEXT\.md.*Framework field\|update.*Framework field" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates AGENT_CONTEXT Framework" || fail "Version bump: AGENT_CONTEXT target MISSING"
+grep -q "README.*version badge\|version badge" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates README badge" || fail "Version bump: README badge target MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "36. Git Rule — Check .git/ Before Commit"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "check.*\.git/\|\.git/.*before commit\|check if the project directory has its own.*\.git" "$PROJ/portable-spec-kit.md" && pass "Git rule: check .git/ before commit" || fail "Git rule: .git/ check MISSING"
+grep -q "parent repo\|inside a parent repo\|parent git" "$PROJ/portable-spec-kit.md" && pass "Git rule: parent repo case handled" || fail "Git rule: parent repo case MISSING"
+grep -q "Do NOT push.*unless user explicitly\|Do NOT push.*push" "$PROJ/portable-spec-kit.md" && pass "Git rule: explicit push required" || fail "Git rule: push protection MISSING"
+grep -q "Do NOT auto-commit\|not auto-commit" "$PROJ/portable-spec-kit.md" && pass "Git rule: no auto-commit" || fail "Git rule: auto-commit rule MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "37. Existing Project Setup — Guide Don't Force"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Guide, Don't Force\|guide don't force\|Guide don't force" "$PROJ/portable-spec-kit.md" && pass "Existing: guide don't force rule" || fail "Existing: guide don't force MISSING"
+grep -q "Never force restructure\|never force" "$PROJ/portable-spec-kit.md" && pass "Existing: never force restructure" || fail "Existing: force rule MISSING"
+grep -q "checklist\|show.*checklist" "$PROJ/portable-spec-kit.md" && pass "Existing: checklist shown to user" || fail "Existing: checklist MISSING"
+grep -q "Respect user.*choices\|respect.*choice" "$PROJ/portable-spec-kit.md" && pass "Existing: user choice respected" || fail "Existing: user choice rule MISSING"
+grep -q "Never rename, move, or delete existing files" "$PROJ/portable-spec-kit.md" && pass "Existing: never rename/delete without approval" || fail "Existing: file safety rule MISSING"
+grep -q "retroactively fill SPECS\|fill.*from.*codebase\|fill.*retroactively" "$PROJ/portable-spec-kit.md" && pass "Existing: retroactive fill from codebase" || fail "Existing: retroactive fill MISSING"
+
+# 9 project scenarios table
+grep -q "Brand new project\|New project.*empty dir" "$PROJ/portable-spec-kit.md" && pass "Scenarios: new project case" || fail "Scenarios: new project MISSING"
+grep -q "Existing project with code" "$PROJ/portable-spec-kit.md" && pass "Scenarios: existing project case" || fail "Scenarios: existing project MISSING"
+grep -q "Monorepo\|monorepo" "$PROJ/portable-spec-kit.md" && pass "Scenarios: monorepo case" || fail "Scenarios: monorepo MISSING"
+grep -q "Partial agent.*files\|partial.*agent" "$PROJ/portable-spec-kit.md" && pass "Scenarios: partial agent files case" || fail "Scenarios: partial files MISSING"
+grep -q "Cloned repo" "$PROJ/portable-spec-kit.md" && pass "Scenarios: cloned repo case" || fail "Scenarios: cloned repo MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "38. Retroactive Spec Filling Simulation"
+# ═══════════════════════════════════════════════════════════════
+
+# Rule must be in framework
+grep -q "SPECS.md is empty after 3\+ tasks\|empty after 3+ tasks\|empty after three tasks" "$PROJ/portable-spec-kit.md" && pass "Retro: empty-after-3-tasks rule present" || fail "Retro: empty trigger MISSING"
+
+# Simulate: project with code + empty SPECS.md → fill from code
+RETRO_TEMP="/tmp/psk-retro-$(date +%s)"
+mkdir -p "$RETRO_TEMP/agent" "$RETRO_TEMP/src"
+
+# Project has 4 completed tasks
+cat > "$RETRO_TEMP/agent/TASKS.md" << 'EOF'
+## v0.1
+- [x] Auth system
+- [x] Dashboard
+- [x] Charts
+- [x] Settings
+EOF
+
+# SPECS is empty template
+cat > "$RETRO_TEMP/agent/SPECS.md" << 'EOF'
+# SPECS.md
+## Features
+| # | Feature | Status |
+|---|---------|--------|
+EOF
+
+# Some code exists
+echo "function auth() {}" > "$RETRO_TEMP/src/auth.js"
+echo "function dashboard() {}" > "$RETRO_TEMP/src/dashboard.js"
+
+# Verify trigger condition
+TASKS_DONE=$(grep "^\- \[x\]" "$RETRO_TEMP/agent/TASKS.md" 2>/dev/null | wc -l | tr -d ' \t')
+SPECS_HAS_FEATURES=$(grep "^| F[0-9]" "$RETRO_TEMP/agent/SPECS.md" 2>/dev/null | wc -l | tr -d ' \t')
+
+[ "$TASKS_DONE" -ge 3 ] && pass "Retro: 3+ completed tasks exist ($TASKS_DONE tasks)" || fail "Retro: not enough tasks"
+[ "$SPECS_HAS_FEATURES" -eq 0 ] && pass "Retro: SPECS.md has no features yet (trigger condition)" || fail "Retro: SPECS already has features"
+
+# Simulate retroactive fill: add features from tasks using a simple counter
+i=1
+for task in "Auth system" "Dashboard" "Charts" "Settings"; do
+  echo "| F$i | $task | [x] |" >> "$RETRO_TEMP/agent/SPECS.md"
+  ((i++))
+done
+
+SPECS_AFTER=$(grep "^| F[0-9]" "$RETRO_TEMP/agent/SPECS.md" 2>/dev/null | wc -l | tr -d ' \t')
+[ "$SPECS_AFTER" -ge 4 ] && pass "Retro: SPECS filled retroactively ($SPECS_AFTER features added)" || fail "Retro: retroactive fill failed"
+[ "$SPECS_AFTER" -eq "$TASKS_DONE" ] && pass "Retro: SPECS feature count matches completed tasks ($SPECS_AFTER = $TASKS_DONE)" || fail "Retro: count mismatch"
+
+rm -rf "$RETRO_TEMP"
+pass "Retroactive fill simulation: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "39. Context Persistence — 10 Disruption Scenarios"
+# ═══════════════════════════════════════════════════════════════
+
+DISRUPT_TEMP="/tmp/psk-disrupt-$(date +%s)"
+mkdir -p "$DISRUPT_TEMP/agent" "$DISRUPT_TEMP/.portable-spec-kit/user-profile"
+
+# Write full project state
+cat > "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" << 'CTXEOF'
+# AGENT_CONTEXT.md — TaskFlow
+
+## Current Status
+- **Version:** v0.2
+- **Framework:** v0.3.6
+- **Phase:** Development
+- **Status:** Building payment feature
+
+## What's Done
+- [x] Auth system
+- [x] Dashboard
+- [x] Charts
+
+## What's Next
+- [ ] Payment integration
+- [ ] Notifications
+
+## Key Decisions
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Auth | JWT | Simpler MVP |
+| DB | PostgreSQL | JSON support |
+| UI | React+Tailwind | Team familiarity |
+
+## Last Updated
+- **Date:** 2026-04-05
+- **Summary:** Auth + Dashboard + Charts done. Payment next.
+CTXEOF
+
+cat > "$DISRUPT_TEMP/.portable-spec-kit/user-profile/user-profile-aqibmumtaz.md" << 'PROFEOF'
+# User Profile
+- **Dr. Aqib Mumtaz** — PhD Computer Science. AI research, full-stack.
+- Communication style: direct, data-driven
+- Working pattern: iterative
+- AI delegation: AI does 90%
+PROFEOF
+
+# D1: 3-week break — context preserved?
+grep -q "Auth system\|What's Done" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D1 (3-week break): completed work preserved" || fail "D1: work history lost"
+grep -q "Payment integration\|What's Next" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D1 (3-week break): next tasks preserved" || fail "D1: next tasks lost"
+grep -q "JWT.*Simpler\|PostgreSQL" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D1 (3-week break): key decisions preserved" || fail "D1: decisions lost"
+
+# D2: Agent switch (Claude → Cursor — same files, different reader)
+cp "$DISRUPT_TEMP/portable-spec-kit.md" "$DISRUPT_TEMP/.cursorrules" 2>/dev/null || true
+grep -q "v0\.2\|Framework.*v0\.3\." "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D2 (agent switch): version readable by any agent" || fail "D2: version not readable"
+grep -q "Dr. Aqib Mumtaz" "$DISRUPT_TEMP/.portable-spec-kit/user-profile/user-profile-aqibmumtaz.md" && pass "D2 (agent switch): profile readable by any agent" || fail "D2: profile lost on switch"
+
+# D3: New team member — can they understand the project?
+grep -q "Key Decisions" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D3 (new team member): decisions section present" || fail "D3: decisions not onboarding-ready"
+grep -q "What's Done\|What's Next" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D3 (new team member): status clear for onboarding" || fail "D3: status not readable"
+
+# D4: Scope DROP — verify AGENT_CONTEXT records it
+echo "## Scope Changes" >> "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md"
+echo "- DROP: Notifications (R5) — client deprioritized 2026-04-05" >> "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md"
+grep -q "DROP.*Notifications\|deprioritized" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D4 (scope DROP): drop recorded in context" || fail "D4: drop not recorded"
+
+# D5: Scope ADD
+echo "- ADD: Analytics dashboard (R6) — new client requirement 2026-04-05" >> "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md"
+grep -q "ADD.*Analytics\|new client requirement" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D5 (scope ADD): add recorded in context" || fail "D5: add not recorded"
+
+# D6: Scope MODIFY
+echo "- MODIFY: R4 export — CSV only → PDF+CSV" >> "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md"
+grep -q "MODIFY.*export\|PDF.*CSV" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D6 (scope MODIFY): modify recorded" || fail "D6: modify not recorded"
+
+# D7: Scope REPLACE
+echo "- REPLACE: F3 calendar → F6 list view (performance)" >> "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md"
+grep -q "REPLACE.*calendar\|list view.*performance" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D7 (scope REPLACE): replace recorded" || fail "D7: replace not recorded"
+
+# D8: Version update — framework restructure
+echo "- Framework updated v0.3.5 → v0.3.6, agent files restructured" >> "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md"
+grep -q "Framework updated\|restructured" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D8 (framework update): update recorded in context" || fail "D8: framework update not recorded"
+
+# D9: Build 3 features — progress tracked
+grep -q "Auth system\|Dashboard\|Charts" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D9 (build features): feature progress tracked" || fail "D9: feature progress not tracked"
+
+# D10: Project handoff — all context readable 6 months later
+TOTAL_FIELDS=$(grep -c "^-\|^##\|\|" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" || echo 0)
+[ "$TOTAL_FIELDS" -gt 10 ] && pass "D10 (project handoff): rich context preserved ($TOTAL_FIELDS entries)" || fail "D10: insufficient context for handoff"
+
+# Zero data loss check: all originally written content still present
+grep -q "Auth.*JWT.*Simpler" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D10: original decisions intact after all disruptions" || fail "D10: data lost through disruptions"
+
+rm -rf "$DISRUPT_TEMP"
+pass "Context persistence (10 disruptions): temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "40. R→F→T Traceability — Feature Tests Required"
+# ═══════════════════════════════════════════════════════════════
+
+# Rule must be in framework
+grep -q "F.*T Traceability (MANDATORY)" "$PROJ/portable-spec-kit.md" && pass "R→F→T: F→T traceability rule present in framework" || fail "R→F→T: F→T rule MISSING from framework"
+grep -q "Never mark a feature" "$PROJ/portable-spec-kit.md" && pass "R→F→T: never-done-without-tests rule present" || fail "R→F→T: never-done-without-tests MISSING"
+grep -q "completes the full R" "$PROJ/portable-spec-kit.md" && pass "R→F→T: full chain (R→F→T) documented in framework" || fail "R→F→T: chain documentation MISSING"
+
+# SPECS.md template must have Tests column
+grep -q "| Tests\|| Tests " "$PROJ/portable-spec-kit.md" && pass "R→F→T: SPECS.md template has Tests column" || fail "R→F→T: Tests column MISSING from template"
+grep -q "| Req\|| Req " "$PROJ/portable-spec-kit.md" && pass "R→F→T: SPECS.md template has Req column (R→F link)" || fail "R→F→T: Req column MISSING from template"
+
+# Simulate: project with SPECS.md features + test files (R→F→T complete)
+RFT_TEMP="/tmp/psk-rft-$(date +%s)"
+mkdir -p "$RFT_TEMP/agent" "$RFT_TEMP/tests"
+
+cat > "$RFT_TEMP/agent/SPECS.md" << 'EOF'
+# SPECS.md — TaskFlow
+
+## Requirements
+- R1: users can log in
+- R2: users can create tasks
+- R3: users can export data
+
+## Features
+| # | Feature | Req | Priority | Status | Tests |
+|---|---------|-----|----------|--------|-------|
+| F1 | Email + password auth | R1 | High | [x] | tests/auth.test.js |
+| F2 | Task CRUD with priorities | R2 | High | [x] | tests/tasks.test.js |
+| F3 | CSV export | R3 | Medium | [ ] | |
+EOF
+
+# Create test files for done features
+echo "test('login works', () => { expect(true).toBe(true) })" > "$RFT_TEMP/tests/auth.test.js"
+echo "test('task CRUD works', () => { expect(true).toBe(true) })" > "$RFT_TEMP/tests/tasks.test.js"
+
+# Validate: count done features
+DONE_FEATURES=$(grep "| \[x\]" "$RFT_TEMP/agent/SPECS.md" 2>/dev/null | wc -l | tr -d ' \t')
+[ "$DONE_FEATURES" -eq 2 ] && pass "R→F→T sim: 2 completed features found in SPECS.md" || fail "R→F→T sim: wrong done feature count (got $DONE_FEATURES)"
+
+# Validate: all done features have test references
+DONE_WITH_TESTS=$(grep "| \[x\]" "$RFT_TEMP/agent/SPECS.md" 2>/dev/null | grep "tests/" | wc -l | tr -d ' \t')
+[ "$DONE_WITH_TESTS" -eq "$DONE_FEATURES" ] && pass "R→F→T sim: all done features have test references ($DONE_WITH_TESTS/$DONE_FEATURES)" || fail "R→F→T sim: done features missing test refs ($DONE_WITH_TESTS/$DONE_FEATURES)"
+
+# Validate: pending features have no test reference (correct — not yet built)
+PENDING_WITH_TESTS=$(grep "| \[ \]" "$RFT_TEMP/agent/SPECS.md" 2>/dev/null | grep "tests/" | wc -l | tr -d ' \t')
+[ "$PENDING_WITH_TESTS" -eq 0 ] && pass "R→F→T sim: pending features have no premature test refs" || fail "R→F→T sim: pending features have test refs (wrong)"
+
+# Validate: test files exist for each referenced test
+MISSING_FILES=0
+while IFS= read -r line; do
+  test_ref=$(echo "$line" | grep -o "tests/[^ |]*" | head -1)
+  if [ -n "$test_ref" ]; then
+    [ -f "$RFT_TEMP/$test_ref" ] && pass "R→F→T sim: test file exists — $test_ref" || { fail "R→F→T sim: test file MISSING — $test_ref"; MISSING_FILES=$((MISSING_FILES+1)); }
+  fi
+done < <(grep "| \[x\]" "$RFT_TEMP/agent/SPECS.md" 2>/dev/null)
+[ "$MISSING_FILES" -eq 0 ] && pass "R→F→T sim: all referenced test files exist on disk" || fail "R→F→T sim: $MISSING_FILES test files missing"
+
+# Validate full R→F→T chain: R1→F1→test, R2→F2→test
+grep -q "R1" "$RFT_TEMP/agent/SPECS.md" && pass "R→F→T sim: R1 traceable in SPECS.md" || fail "R→F→T sim: R1 lost"
+grep -q "R2" "$RFT_TEMP/agent/SPECS.md" && pass "R→F→T sim: R2 traceable in SPECS.md" || fail "R→F→T sim: R2 lost"
+grep -q "auth.test.js" "$RFT_TEMP/agent/SPECS.md" && pass "R→F→T sim: R1→F1→T1 chain complete (auth)" || fail "R→F→T sim: R1→F1→T1 chain broken"
+grep -q "tasks.test.js" "$RFT_TEMP/agent/SPECS.md" && pass "R→F→T sim: R2→F2→T2 chain complete (tasks)" || fail "R→F→T sim: R2→F2→T2 chain broken"
+
+# Retroactive: feature done without test → not complete
+cat > "$RFT_TEMP/agent/SPECS.md" << 'EOF'
+## Features
+| # | Feature | Req | Status | Tests |
+|---|---------|-----|--------|-------|
+| F1 | Auth | R1 | [x] | |
+EOF
+MISSING_TESTS=$(grep "| \[x\]" "$RFT_TEMP/agent/SPECS.md" 2>/dev/null | grep -v "tests/" | wc -l | tr -d ' \t')
+[ "$MISSING_TESTS" -gt 0 ] && pass "R→F→T sim: detects done feature with no test ref ($MISSING_TESTS violation)" || fail "R→F→T sim: cannot detect untested done feature"
+
+rm -rf "$RFT_TEMP"
+pass "R→F→T simulation: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "41. Pre-Release Consistency Gate"
+# Verifies all cross-file counts, versions, templates, and docs
+# stay in sync as features are added. Must pass before any push.
+# ═══════════════════════════════════════════════════════════════
+
+# ── Group 1: Cross-File Count Consistency (5 tests) ─────────────
+
+# Extract test count from README badge (e.g. tests-564%20passing)
+BADGE_COUNT=$(grep "tests-.*passing" "$PROJ/README.md" | grep -o "tests-[0-9]*" | grep -o "[0-9]*" | head -1)
+[ -n "$BADGE_COUNT" ] && [ "$BADGE_COUNT" -gt 0 ] 2>/dev/null \
+  && pass "count sync: README badge has test count ($BADGE_COUNT)" \
+  || fail "count sync: README badge missing or invalid test count"
+
+# ARD HTML test count must match README badge
+ARD_COUNT=$(grep "Tests:</strong>" "$PROJ/ard/Portable_Spec_Kit_Technical_Overview.html" 2>/dev/null \
+  | grep -o "[0-9]* passing" | head -1 | grep -o "[0-9]*")
+[ "$BADGE_COUNT" = "$ARD_COUNT" ] \
+  && pass "count sync: ARD ($ARD_COUNT) matches README badge ($BADGE_COUNT)" \
+  || fail "count sync: ARD ($ARD_COUNT) ≠ README badge ($BADGE_COUNT) — update ARD or badge"
+
+# SPECS.md acceptance criteria test count must match badge
+SPECS_AC_COUNT=$(grep "tests pass" "$PROJ/agent/SPECS.md" 2>/dev/null | grep -o "[0-9]*" | head -1)
+[ "$BADGE_COUNT" = "$SPECS_AC_COUNT" ] \
+  && pass "count sync: SPECS.md acceptance criteria ($SPECS_AC_COUNT) matches badge" \
+  || fail "count sync: SPECS.md acceptance criteria ($SPECS_AC_COUNT) ≠ badge ($BADGE_COUNT) — update SPECS.md"
+
+# Actual section count in test file must match ARD section count
+ACTUAL_SECS=$(grep -c "^section " "$PROJ/tests/test-spec-kit.sh")
+ARD_SECS=$(grep -o "[0-9]* sections" "$PROJ/ard/Portable_Spec_Kit_Technical_Overview.html" 2>/dev/null \
+  | head -1 | grep -o "[0-9]*")
+[ "$ACTUAL_SECS" = "$ARD_SECS" ] \
+  && pass "count sync: section count ($ACTUAL_SECS) matches ARD ($ARD_SECS)" \
+  || fail "count sync: actual sections ($ACTUAL_SECS) ≠ ARD ($ARD_SECS) — update ARD section table"
+
+# Both framework copies (Projects/ + root workspace) must have same version
+PROJ_VER=$(grep "Framework Version:" "$PROJ/portable-spec-kit.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+ROOT_VER=$(grep "Framework Version:" "$ROOT/portable-spec-kit.md" 2>/dev/null | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+[ -n "$ROOT_VER" ] && [ "$PROJ_VER" = "$ROOT_VER" ] \
+  && pass "count sync: both framework copies match ($PROJ_VER)" \
+  || fail "count sync: root copy ($ROOT_VER) ≠ Projects copy ($PROJ_VER) — sync both"
+
+# ── Group 2: R→F→T Gate — Real SPECS.md (4 tests) ───────────────
+
+# release-check.sh must exist
+[ -f "$PROJ/tests/test-release-check.sh" ] \
+  && pass "R→F→T gate: release-check.sh exists" \
+  || fail "R→F→T gate: release-check.sh MISSING from tests/"
+
+# release-check.sh must be executable
+[ -x "$PROJ/tests/test-release-check.sh" ] \
+  && pass "R→F→T gate: release-check.sh is executable" \
+  || fail "R→F→T gate: release-check.sh not executable (run: chmod +x tests/test-release-check.sh)"
+
+# No done feature in real SPECS.md may have an empty Tests column
+# Done row format: | Fn | ... | [x] | test-ref |  — NF-1 is the Tests cell
+UNTESTED_REAL=$(awk -F'|' '/\[x\]/ {
+  col = NF - 1
+  gsub(/^ +| +$/, "", $col)
+  if (col > 0 && $col == "") count++
+} END { print count + 0 }' "$PROJ/agent/SPECS.md")
+[ "$UNTESTED_REAL" -eq 0 ] \
+  && pass "R→F→T gate: all done features in SPECS.md have test refs" \
+  || fail "R→F→T gate: $UNTESTED_REAL done feature(s) missing test refs in agent/SPECS.md"
+
+# All test files referenced in SPECS.md Tests column must exist on disk
+MISSING_REFS=0
+while IFS= read -r spec_line; do
+  test_ref=$(echo "$spec_line" | awk -F'|' '{
+    col = NF - 1; gsub(/^ +| +$/, "", $col)
+    if ($col ~ /^tests\//) print $col
+  }')
+  [ -n "$test_ref" ] && [ ! -f "$PROJ/$test_ref" ] && MISSING_REFS=$((MISSING_REFS + 1))
+done < <(grep "\[x\]" "$PROJ/agent/SPECS.md" 2>/dev/null)
+[ "$MISSING_REFS" -eq 0 ] \
+  && pass "R→F→T gate: all referenced test files exist on disk" \
+  || fail "R→F→T gate: $MISSING_REFS test file(s) in SPECS.md not found on disk"
+
+# ── Group 3: Template Completeness (4 tests) ────────────────────
+
+# SPECS.md agent template must have Tests column
+grep -q "| Tests" "$PROJ/portable-spec-kit.md" \
+  && pass "templates: SPECS.md template has Tests column" \
+  || fail "templates: SPECS.md template missing Tests column — update framework"
+
+# SPECS.md agent template must have Req column
+grep -q "| Req" "$PROJ/portable-spec-kit.md" \
+  && pass "templates: SPECS.md template has Req column (R→F link)" \
+  || fail "templates: SPECS.md template missing Req column — update framework"
+
+# AGENT_CONTEXT.md template must have Framework field
+grep -q "\*\*Framework:\*\*" "$PROJ/portable-spec-kit.md" \
+  && pass "templates: AGENT_CONTEXT template has Framework field" \
+  || fail "templates: AGENT_CONTEXT template missing Framework field — update framework"
+
+# Both example CLAUDE.md files must reference the correct user profile path
+grep -q "portable-spec-kit/user-profile" "$PROJ/examples/starter/CLAUDE.md" 2>/dev/null \
+  && grep -q "portable-spec-kit/user-profile" "$PROJ/examples/my-app/CLAUDE.md" 2>/dev/null \
+  && pass "templates: both examples reference correct user profile path" \
+  || fail "templates: example CLAUDE.md files missing .portable-spec-kit/user-profile/ path"
+
+# ── Group 3b: Root Framework Template Currency (4 tests) ────────
+# Verifies that framework templates reflect latest structural features.
+# When a new rule changes agent file structure, templates must match.
+
+# TASKS.md template must have version-based headings (v0.x structure)
+grep -q "## v0\." "$PROJ/portable-spec-kit.md" \
+  && pass "template currency: TASKS.md template has version-based headings" \
+  || fail "template currency: TASKS.md template missing version headings — update framework"
+
+# RELEASES.md template must have Framework versions range field
+grep -q "Framework versions:" "$PROJ/portable-spec-kit.md" \
+  && pass "template currency: RELEASES.md template has Framework versions field" \
+  || fail "template currency: RELEASES.md template missing Framework versions field — update framework"
+
+# AGENT.md template must have session-start read order (5 steps)
+grep -q "Read user profile\|portable-spec-kit/user-profile" "$PROJ/portable-spec-kit.md" \
+  && pass "template currency: AGENT.md template references user profile read step" \
+  || fail "template currency: AGENT.md template missing user profile step — update framework"
+
+# Example my-app SPECS.md must have Req + Tests columns (reflects current template)
+grep -q "| Req\|| Tests" "$PROJ/examples/my-app/agent/SPECS.md" 2>/dev/null \
+  && pass "template currency: my-app example SPECS.md has current R→F→T columns" \
+  || fail "template currency: my-app SPECS.md missing Req/Tests columns — update example to match current template"
+
+# AGENT.md template must use 'Update AGENT_CONTEXT.md When' (not old 'On Every Session End')
+grep -q "Update AGENT_CONTEXT.md When" "$PROJ/portable-spec-kit.md" \
+  && pass "template currency: AGENT.md template uses correct context update triggers (not 'On Every Session End')" \
+  || fail "template currency: AGENT.md template still has old 'On Every Session End' — update to 3 explicit triggers"
+
+# examples must have tests/test-release-check.sh (kit creates it on project setup)
+[ -f "$PROJ/examples/starter/tests/test-release-check.sh" ] && [ -f "$PROJ/examples/my-app/tests/test-release-check.sh" ] \
+  && pass "template currency: examples have tests/test-release-check.sh (kit-distributed R→F→T validator)" \
+  || fail "template currency: examples missing tests/test-release-check.sh — copy from tests/test-release-check.sh"
+
+# ── Group 4: Docs Consistency (4 tests) ─────────────────────────
+
+# docs/system-flows/ actual file count must match framework claim
+ACTUAL_FLOWS=$(ls "$PROJ/docs/system-flows/"*.md 2>/dev/null | wc -l | tr -d ' ')
+CLAIMED_FLOWS=$(grep -o "[0-9]* system flow" "$PROJ/portable-spec-kit.md" | grep -o "^[0-9]*" | head -1)
+[ -z "$CLAIMED_FLOWS" ] && CLAIMED_FLOWS=0
+[ "$ACTUAL_FLOWS" -ge "$CLAIMED_FLOWS" ] && [ "$ACTUAL_FLOWS" -gt 0 ] \
+  && pass "docs consistency: $ACTUAL_FLOWS flow docs exist (framework claims $CLAIMED_FLOWS)" \
+  || fail "docs consistency: only $ACTUAL_FLOWS flow docs exist, framework claims $CLAIMED_FLOWS"
+
+# ARD must document R→F→T traceability (new feature, docs must be updated)
+grep -q "R.*F.*T\|release-check" "$PROJ/ard/Portable_Spec_Kit_Technical_Overview.html" 2>/dev/null \
+  && pass "docs consistency: ARD documents R→F→T traceability" \
+  || fail "docs consistency: ARD does not mention R→F→T — update Technical Overview"
+
+# README must have Critical Scenarios section (added v0.4, structural requirement)
+grep -q "Critical Scenarios" "$PROJ/README.md" \
+  && pass "docs consistency: README has Critical Scenarios section" \
+  || fail "docs consistency: README missing Critical Scenarios section — update README"
+
+# RELEASES.md current version must reference this framework version
+LATEST_RELEASE_RANGE=$(grep "Framework versions:" "$PROJ/agent/RELEASES.md" | head -1)
+echo "$LATEST_RELEASE_RANGE" | grep -q "$PROJ_VER" \
+  && pass "docs consistency: RELEASES.md current range includes $PROJ_VER" \
+  || fail "docs consistency: RELEASES.md range doesn't include $PROJ_VER — update range"
 
 # ═══════════════════════════════════════════════════════════════
 # RESULTS

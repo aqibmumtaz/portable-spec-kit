@@ -1,7 +1,7 @@
 # AGENT_CONTEXT.md — My App
 
 > **Purpose:** Living project state — what's done, what's next, key decisions, blockers.
-> **Role:** Read at session start. Updated at session end.
+> **Role:** Read at session start. Updated after significant work, after commits, and before any push.
 
 ## Current Status
 - **Version:** v0.1

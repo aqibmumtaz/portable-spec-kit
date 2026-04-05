@@ -65,7 +65,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Version:</strong> v0.2.1</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 443 passing (298 framework + 145 benchmarking), 25 sections</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 587 passing (442 framework + 145 benchmarking), 41 sections</div>
   </div>
 </div>
 
@@ -77,7 +77,7 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 9 flow documents, 443 automated tests (298 framework + 145 benchmarking), 25 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 9 flow documents, 587 automated tests (442 framework + 145 benchmarking), 41 test sections.
 </div>
 
 <h3>Key Highlights</h3>
@@ -90,7 +90,7 @@
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>443 (298 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>586 (441 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
   <tr><td>Flow documents</td><td>9 step-by-step system flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
@@ -112,7 +112,7 @@
   <li><strong>Version-based TASKS.md:</strong> tasks grouped under release headings (v0.1 Done, v0.2 Done, v0.3 Current, Backlog).</li>
   <li><strong>RELEASES.md:</strong> framework version range per release (v0.0.x for v0.1, v0.1.x for v0.2).</li>
   <li><strong>AGENT_CONTEXT.md:</strong> tracks Framework version — compared on session start to trigger restructure.</li>
-  <li><strong>298 framework tests</strong> across 25 sections + 145 benchmarking tests (443 total). Added: Python/Conda env rules (27 tests), README validation (3 tests), requirements-to-delivery flow checks.</li>
+  <li><strong>442 framework tests across 41 sections + 145 benchmarking tests (587 total). Added: Python/Conda env rules (27 tests), README validation (3 tests), requirements-to-delivery flow checks, 15 enforcement sections (staleness, RELEASES trigger, scope changes, no-slip, pipeline sync, security, push rules, git, existing projects, scenarios, retro fill, context persistence across 10 disruptions, R→F→T traceability chain).</li>
 </ul>
 
 <h3>v0.2 — Personalized Profile + Flow Documentation (April 2026)</h3>
@@ -235,7 +235,8 @@ workspace/
 │   ├── TASKS.md                          ← Task tracking
 │   └── RELEASES.md                        ← Version history
 ├── src/                                  ← Source code
-├── tests/                                ← Test files
+├── tests/
+│   └── test-release-check.sh             ← R→F→T validator (auto-created by kit)
 ├── docs/system-flows/                           ← System flow documentation
 └── ard/                                  ← Architecture Reference Documents
 </pre>
@@ -418,7 +419,7 @@ What to build      How to build it     Track progress      Log results
 <!-- 8. TESTING -->
 <h2 id="testing">8. Testing Infrastructure</h2>
 
-<h3>Test Suite: 443 Tests (298 Framework + 145 Benchmarking), 25 Sections</h3>
+<h3>Test Suite: 586 Tests (441 Framework + 145 Benchmarking), 41 Sections</h3>
 <table>
   <tr><th>#</th><th>Section</th><th>Tests</th></tr>
   <tr><td>1</td><td>Repo File Structure</td><td>10</td></tr>
@@ -446,7 +447,23 @@ What to build      How to build it     Track progress      Log results
   <tr><td>23</td><td>Python Environment — Conda Rules</td><td>27</td></tr>
   <tr><td>24</td><td>README — Python Environment Section</td><td>3</td></tr>
   <tr><td>25</td><td>License</td><td>2</td></tr>
-  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>298</strong></td></tr>
+  <tr><td>26</td><td>Versioning — v0.4 Row + Current Version</td><td>5</td></tr>
+  <tr><td>27</td><td>R→F Traceability &amp; Scope Change Rules</td><td>8</td></tr>
+  <tr><td>28</td><td>Scope Change Simulation (DROP/ADD/MODIFY/REPLACE)</td><td>9</td></tr>
+  <tr><td>29</td><td>SPECS Staleness Check Rule</td><td>6</td></tr>
+  <tr><td>30</td><td>RELEASES Trigger Rule</td><td>6</td></tr>
+  <tr><td>31</td><td>No-Slip Task Rule &amp; Session-End Sweep</td><td>5</td></tr>
+  <tr><td>32</td><td>Session-Start 5-Step Read Order</td><td>6</td></tr>
+  <tr><td>33</td><td>Pipeline Sync — All 4 Files</td><td>8</td></tr>
+  <tr><td>34</td><td>Security Rules — API Key Protection</td><td>9</td></tr>
+  <tr><td>35</td><td>Version Bump Before Push Rule</td><td>5</td></tr>
+  <tr><td>36</td><td>Git Rule — Check .git/ Before Commit</td><td>4</td></tr>
+  <tr><td>37</td><td>Existing Project Setup — Guide Don't Force</td><td>11</td></tr>
+  <tr><td>38</td><td>Retroactive Spec Filling Simulation</td><td>6</td></tr>
+  <tr><td>39</td><td>Context Persistence — 10 Disruption Scenarios</td><td>16</td></tr>
+  <tr><td>40</td><td>R→F→T Traceability — Feature Tests Required</td><td>17</td></tr>
+  <tr><td>41</td><td>Pre-Release Consistency Gate — cross-file count, version, template, docs sync</td><td>23</td></tr>
+  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>442</strong></td></tr>
 </table>
 
 <h3>Test Categories</h3>
@@ -460,8 +477,9 @@ What to build      How to build it     Track progress      Log results
   <tr><td>Versioning system</td><td>17</td><td>Format, mapping, comparison, TASKS/RELEASES structure</td></tr>
   <tr><td>Security &amp; privacy</td><td>4</td><td>No leaked personal info or company names</td></tr>
   <tr><td>Infrastructure</td><td>12</td><td>Sync script, context rules, license</td></tr>
-  <tr><td><strong>Benchmarking (separate suite)</strong></td><td><strong>145</strong></td><td>5 projects × 3 methodologies × 8 phases</td></tr>
-  <tr><td><strong>TOTAL</strong></td><td><strong>443</strong></td><td></td></tr>
+  <tr><td>Spec-persistence &amp; enforcement rules (§§26–41)</td><td>143</td><td>R→F traceability, R→F→T chain, scope changes, staleness, RELEASES trigger, no-slip, pipeline sync, security rules, version bump, git rules, existing project setup, retro fill, context persistence (10 disruptions), feature test coverage enforcement</td></tr>
+  <tr><td><strong>Benchmarking (separate suite)</strong></td><td><strong>145</strong></td><td>5 projects × 8 lifecycle phases × SPD validation</td></tr>
+  <tr><td><strong>TOTAL</strong></td><td><strong>587</strong></td><td></td></tr>
 </table>
 
 <!-- 9. FILES -->
@@ -478,7 +496,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>docs/system-flows/</code></td><td>9 system flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
-  <tr><td><code>tests/</code></td><td>443 automated tests (298 framework + 145 benchmarking)</td></tr>
+  <tr><td><code>tests/</code></td><td>587 automated tests (442 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
 </table>
 
 <h3>Local-Only Files (NOT pushed)</h3>

@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.6 -->
+<!-- Framework Version: v0.3.13 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -141,7 +141,36 @@ workspace/.portable-spec-kit/user-profile/
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
 - Commit ≠ push. Commit is local and safe. Push is remote and requires explicit instruction.
+- **Pre-push gate** — before every push, all test suites must pass. If user says "push" without having run "prepare release" in this session → run tests first, show results, then push. Never push with known failures even if user asks for urgency.
 - **Version bump BEFORE push** — bump version first, commit it, then push. Never push then bump after. Increment for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Framework field, (2) `README.md` version badge + test badge. Order: bump → commit → push.
+
+### Release Process (EXPLICIT SIGNALS ONLY)
+Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
+- **"run tests"** → run test suite only
+- **"prepare release"** → update all counts, docs, version bump, regenerate PDFs, run all project test suites, show pass/fail count and coverage % for each suite
+- **"commit"** → commit staged changes
+- **"push"** → push to remote
+
+**"prepare release" test summary (required):** After running all test suites, show a summary block before finalizing the release:
+```
+══════════════════════════════════════════════
+  RELEASE TEST SUMMARY
+══════════════════════════════════════════════
+  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
+  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
+
+  Total: X/X passing — RELEASE READY ✅
+══════════════════════════════════════════════
+```
+Do not finalize the release (version bump, commit) if any suite has failures.
+
+**Edge cases:**
+- **No test suites exist** → show `No test suites configured — skipping test run` in summary block and proceed. Tests are required before v1.0.
+- **New suite added this session** → include it in the summary automatically
+- **release-check.sh shows untested features** → **do not finalize the release**. Add test references to the SPECS.md Tests column, ensure those tests pass, then re-run prepare release. A feature is not done until it has a test ref.
+- **PDFs don't need regeneration** → skip regeneration, note it. "PDFs regenerated (if any)" means only if HTML source changed.
+
+Batch all changes first, then trigger the release process once when the user is ready.
 
 ### Critical Operations (ALWAYS ASK FIRST)
 - Creating or deleting repositories
@@ -200,14 +229,14 @@ Framework version mirrors the release it belongs to:
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.6 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.13 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
 ### What Gets Updated at Each Level
 
 **On every publish (project patch):**
-- Increment project version in `agent/AGENT_CONTEXT.md` and `README.md` version badge
+- Increment project version in `agent/AGENT_CONTEXT.md`, `README.md` version badge, and test badge (when test count changes)
 - Update `agent/TASKS.md` — mark tasks done under current release heading
 - **Do NOT modify** `<!-- Framework Version -->` in portable-spec-kit.md — that is the kit version, managed by the kit author only. It is read-only for user projects.
 
@@ -261,9 +290,9 @@ Framework versions: v0.1.1 — v0.1.7
 ### Task Tracking (MANDATORY)
 - **When user assigns new tasks, add them to TASKS.md FIRST before starting work**
 - **Every task the user requests** must be tracked in the project's `TASKS.md`
-- **Detect implied tasks** — if the user raises a problem, asks a question that implies work needed, or discusses a feature/fix/review to do later, add it to TASKS.md immediately. Don't wait for the user to explicitly say "add this task."
-- **Never let a task slip or be forgotten** — on every user message, scan for any task, fix, update, check, or request mentioned (explicit or implied) and add it to TASKS.md before responding. If it was said in the conversation, it must be in TASKS.md and it must be completed. Do not move on without finishing what was asked.
-- **Before ending any session** — scan back through the full conversation and verify every task mentioned is in TASKS.md and marked `[x]`. If anything was asked but not done, do it now before closing.
+- **Detect implied tasks** *(no-slip rule)* — if the user raises a problem, asks a question that implies work needed, or discusses a feature/fix/review to do later, add it to TASKS.md immediately. Don't wait for the user to explicitly say "add this task."
+- **Never let a task slip or be forgotten** *(no-slip rule)* — on every user message, scan for any task, fix, update, check, or request mentioned (explicit or implied) and add it to TASKS.md before responding. If it was said in the conversation, it must be in TASKS.md and it must be completed. Do not move on without finishing what was asked.
+- **Before ending any session** *(no-slip rule)* — scan back through the full conversation and verify every task mentioned is in TASKS.md and marked `[x]`. If anything was asked but not done, do it now before closing.
 - Add tasks when requested, mark `[x]` as soon as completed
 - **Organize tasks under release version headings** (e.g., `## v0.1 — Current`, `## v0.2 — Done`) — see Versioning section
 - Future tasks go under `## Backlog (Future Releases)`
@@ -288,6 +317,12 @@ Framework versions: v0.1.1 — v0.1.7
   - `REPLACE` — feature replaced by a different one (R4→R5 substitution)
   - **Format:** In SPECS.md, note the change type, original requirement ref (Rn), date, and reason. Update TASKS.md and RELEASES.md in the same session.
   - **R→F Traceability:** Requirements (R1, R2…) map to Features (F1, F2…). When a scope change occurs, trace it: the original Rn, what changed, and which Fn it now maps to. This keeps client language (requirements) aligned with technical implementation (features) through all changes.
+- **F→T Traceability (MANDATORY):** Every feature (Fn) must have corresponding test cases. This completes the full R→F→T chain: client requirement → feature implementation → test coverage.
+  - When marking a feature done (`[x]`) in SPECS.md → add the test file or test function reference in the Tests column
+  - **Never mark a feature `[x]` in SPECS.md without test coverage** — untested features are not done
+  - **Format:** `tests/auth.test.js` or `tests/auth.test.js::login_flow` in the Tests column of the features table
+  - If a feature was built without tests → retroactively write tests before marking done
+  - The Tests column in SPECS.md is the single source of truth for what's covered
 - **PLANS.md** — update when architecture evolves during development:
   - New technology chosen or replaced → update Stack table with Why
   - Data model changed (new tables, fields, relationships) → update Data Model section
@@ -482,9 +517,23 @@ In both cases, **always confirm with the user** before creating or selecting an 
 4. `agent/TASKS.md` — pending and completed tasks
 5. `agent/PLANS.md` — architecture decisions
 
-**On every session end:**
-- Update `agent/AGENT_CONTEXT.md` — version, progress, decisions, session summary
-- **After completing implementations or running tests** — update `agent/AGENT_CONTEXT.md` to reflect current code status: what was built, what changed, current version, test results (count, coverage, pass/fail), benchmarks, and what's next. Also update flow documentation in `docs/system-flows/` if implementation changed any system flows, and update test files if new flows or behaviors were added. Context, flows, and tests must always match the actual state of the code.
+**Two-tier update rule:**
+
+**Tier 1 — After significant work** (lightweight, keeps context current):
+- Update `agent/AGENT_CONTEXT.md` — version, progress, decisions, what's done, what's next, blockers
+- Update `agent/AGENT.md` only if project config changed (stack, rules, ports)
+- No need to touch SPECS, PLANS, TASKS, RELEASES, README, or docs yet
+
+**Tier 2 — Before push / on release** (full sync, everything must be consistent):
+- `agent/SPECS.md` — features current, Tests column filled, no stale done items
+- `agent/PLANS.md` — architecture matches what was actually built
+- `agent/TASKS.md` — all completed work marked [x], new tasks added
+- `agent/RELEASES.md` — entry added if all version tasks are [x]
+- `README.md` — counts, badges, features current
+- `docs/` and `ard/` — counts, section tables, any new capabilities documented
+- Run `bash tests/test-release-check.sh` — all done features must have passing tests before push
+
+**On framework changes:**
 - **Update the root framework file** whenever a new general guideline or development practice decision is made — these are shared across all projects
 - Root framework file = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
 - User preferences stored in agent memory/preference files
@@ -945,8 +994,10 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 3. Read `agent/TASKS.md` — current tasks
 4. Read `agent/PLANS.md` — architecture
 
-## On Every Session End:
-1. Update `agent/AGENT_CONTEXT.md` — progress, decisions
+## Update AGENT_CONTEXT.md When:
+1. After completing a significant batch of work (feature built, tests passing)
+2. After committing — commit is a natural checkpoint
+3. Before any push — context must be current before code reaches remote
 
 ## Stack
 | Layer | Technology |
@@ -980,7 +1031,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 # AGENT_CONTEXT.md — <Project Name>
 
 > **Purpose:** Living project state — what's done, what's next, key decisions, blockers.
-> **Role:** Read at session start. Updated at session end.
+> **Role:** Read at session start. Updated after significant work, after commits, and before any push.
 
 ## Current Status
 - **Version:** v0.1
@@ -1034,10 +1085,12 @@ Brief description of what this project does and who it's for.
 - Requirement 2
 
 ## Features
-| # | Feature | Priority | Status |
-|---|---------|----------|--------|
-| 1 | | High | [ ] |
-| 2 | | Medium | [ ] |
+| # | Feature | Req | Priority | Status | Tests |
+|---|---------|-----|----------|--------|-------|
+| F1 | | R1 | High | [ ] | — |
+| F2 | | R2 | Medium | [x] | tests/feature.test.js |
+
+<!-- Tests column: leave — when pending. Add test file path when done: tests/auth.test.js or tests/auth.test.js::login_flow -->
 
 ## Scope
 - **In scope:**
@@ -1165,6 +1218,148 @@ Brief description of what this version delivers.
 <!-- Any known issues in this version -->
 ```
 
+**tests/test-release-check.sh:**
+```bash
+#!/bin/bash
+# =============================================================
+# release-check.sh — Pre-Release R→F→T Validation
+#
+# Reads SPECS.md → for every done feature (Fn marked [x]):
+#   1. Checks a test reference exists in the Tests column
+#   2. Checks the referenced test file exists on disk
+#   3. Attempts to run the tests (auto-detects runner)
+#   4. Reports: feature → test coverage + pass/fail
+#
+# Usage:
+#   bash tests/test-release-check.sh                  # uses agent/SPECS.md
+#   bash tests/test-release-check.sh path/to/SPECS.md # custom path
+#
+# Exit codes:
+#   0 = all done features have passing tests (release ready)
+#   1 = missing test refs, missing files, or test failures
+# =============================================================
+
+SPECS="${1:-agent/SPECS.md}"
+
+if [ ! -f "$SPECS" ]; then
+  echo "Error: SPECS.md not found at $SPECS"
+  echo "Usage: bash tests/test-release-check.sh [path/to/SPECS.md]"
+  exit 1
+fi
+
+TOTAL_DONE=0
+REF_PRESENT=0
+FILE_EXISTS=0
+TESTS_PASSED=0
+MISSING_REFS=0
+MISSING_FILES=0
+TESTS_FAILED=0
+
+detect_runner() {
+  local test_file="$1"
+  if [ -f "package.json" ] && grep -q "jest\|vitest" "package.json" 2>/dev/null; then
+    echo "jest"
+  elif [ -f "pytest.ini" ] || [ -f "pyproject.toml" ] || [ -f "setup.cfg" ]; then
+    echo "pytest"
+  elif [ -f "go.mod" ]; then
+    echo "go"
+  elif echo "$test_file" | grep -q "\.sh$"; then
+    echo "bash"
+  elif echo "$test_file" | grep -q "\.py$"; then
+    echo "python"
+  elif echo "$test_file" | grep -q "\.test\.js$\|\.spec\.js$\|\.test\.ts$\|\.spec\.ts$"; then
+    echo "jest"
+  else
+    echo "unknown"
+  fi
+}
+
+run_test() {
+  local test_ref="$1"
+  local runner
+  runner=$(detect_runner "$test_ref")
+  case "$runner" in
+    jest)    command -v npx >/dev/null 2>&1 && npx jest "$test_ref" --passWithNoTests 2>/dev/null && return 0 || return 1 ;;
+    pytest)  command -v pytest >/dev/null 2>&1 && pytest "$test_ref" -q 2>/dev/null && return 0 || python3 -m pytest "$test_ref" -q 2>/dev/null && return 0 || return 1 ;;
+    go)      command -v go >/dev/null 2>&1 && go test "./$test_ref/..." 2>/dev/null && return 0 || return 1 ;;
+    bash)    bash "$test_ref" >/dev/null 2>&1 && return 0 || return 1 ;;
+    python)  python3 "$test_ref" 2>/dev/null && return 0 || return 1 ;;
+  esac
+  return 2
+}
+
+echo ""
+echo "════════════════════════════════════════════════════════════"
+echo "  RELEASE READINESS — R→F→T Coverage Check"
+echo "  Specs: $SPECS"
+echo "════════════════════════════════════════════════════════════"
+echo ""
+printf "  %-5s %-32s %-8s %s\n" "Fn" "Feature" "Status" "Tests"
+printf "  %-5s %-32s %-8s %s\n" "-----" "--------------------------------" "--------" "-------"
+
+while IFS= read -r line; do
+  if echo "$line" | grep -q "^| F[0-9]" && echo "$line" | grep -q "\[x\]"; then
+    fn=$(echo "$line" | awk -F'|' '{gsub(/ /,"",$2); print $2}')
+    feature=$(echo "$line" | awk -F'|' '{gsub(/^ +| +$/,"",$3); print $3}' | cut -c1-30)
+    test_ref=$(echo "$line" | awk -F'|' '{
+      for (i=NF; i>1; i--) {
+        gsub(/^ +| +$/, "", $i)
+        if ($i !~ / / && length($i) > 0 && ($i ~ /^tests\// || $i ~ /\.test\.|\.spec\.|\.sh$|\.py$|\.ts$|\.js$/)) {
+          print $i; exit
+        }
+      }
+    }')
+    TOTAL_DONE=$((TOTAL_DONE + 1))
+    if [ -z "$test_ref" ]; then
+      printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "⚠  NO TEST REFERENCE"
+      MISSING_REFS=$((MISSING_REFS + 1))
+    elif [ ! -f "$test_ref" ] && [ ! -d "$test_ref" ]; then
+      printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FILE NOT FOUND: $test_ref"
+      REF_PRESENT=$((REF_PRESENT + 1))
+      MISSING_FILES=$((MISSING_FILES + 1))
+    else
+      REF_PRESENT=$((REF_PRESENT + 1))
+      FILE_EXISTS=$((FILE_EXISTS + 1))
+      run_test "$test_ref"; run_result=$?
+      if [ "$run_result" -eq 0 ]; then
+        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✓  $test_ref"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+      elif [ "$run_result" -eq 2 ]; then
+        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "~  $test_ref (exists, run manually)"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+      else
+        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FAILED: $test_ref"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+      fi
+    fi
+  fi
+done < "$SPECS"
+
+echo ""
+echo "────────────────────────────────────────────────────────────"
+printf "  Features complete:       %d\n" "$TOTAL_DONE"
+printf "  With test references:    %d / %d\n" "$REF_PRESENT" "$TOTAL_DONE"
+printf "  Test files found:        %d / %d\n" "$FILE_EXISTS" "$TOTAL_DONE"
+printf "  Tests passing:           %d\n" "$TESTS_PASSED"
+printf "  Tests failing:           %d\n" "$TESTS_FAILED"
+printf "  Missing test refs:       %d\n" "$MISSING_REFS"
+printf "  Missing test files:      %d\n" "$MISSING_FILES"
+echo "────────────────────────────────────────────────────────────"
+ISSUES=$((MISSING_REFS + MISSING_FILES + TESTS_FAILED))
+if [ "$TOTAL_DONE" -eq 0 ]; then
+  echo "  ⚠  No completed features found in SPECS.md"; echo ""; exit 1
+elif [ "$ISSUES" -eq 0 ]; then
+  echo "  ✅ RELEASE READY — $TOTAL_DONE features, 100% test coverage"; echo ""; exit 0
+else
+  COVERAGE=$(( (FILE_EXISTS * 100) / TOTAL_DONE ))
+  echo "  ❌ NOT READY — $ISSUES issue(s) found ($COVERAGE% coverage)"
+  [ "$MISSING_REFS" -gt 0 ] && echo "     → Add test references in SPECS.md Tests column for $MISSING_REFS feature(s)"
+  [ "$MISSING_FILES" -gt 0 ] && echo "     → Create missing test files for $MISSING_FILES reference(s)"
+  [ "$TESTS_FAILED" -gt 0 ]  && echo "     → Fix $TESTS_FAILED failing test(s) before release"
+  echo ""; exit 1
+fi
+```
+
 ### New Project Setup Procedure
 
 When user asks to create a new project, follow these steps IN ORDER:
@@ -1174,6 +1369,7 @@ When user asks to create a new project, follow these steps IN ORDER:
 mkdir -p <project>/{agent,ard,input,output,cache,src,tests,docs}
 ```
 Create all 6 agent files using the templates above.
+- `tests/test-release-check.sh` — R→F→T validation script (use template above), then `chmod +x tests/test-release-check.sh`
 - `README.md` — project overview (see README template below)
 - `.gitignore` — general ignores (node_modules, .env, cache/, __pycache__, .next, etc.)
 - `.env.example` — empty placeholder

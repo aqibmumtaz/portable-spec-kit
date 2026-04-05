@@ -117,4 +117,4 @@ Agent: "Here's where we left off — v0.1 has 8/12 tasks done. Next up: payment 
 
 - **[Portable Spec Kit](https://github.com/aqibmumtaz/portable-spec-kit)** — The framework
 - **[Quick Guide (PDF)](https://github.com/aqibmumtaz/portable-spec-kit/blob/main/ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview
-- **[CLAUDE.md](CLAUDE.md)** — The complete framework file
+- **[portable-spec-kit.md](portable-spec-kit.md)** — The complete framework file (CLAUDE.md, .cursorrules, .windsurfrules, .clinerules → all symlink here)

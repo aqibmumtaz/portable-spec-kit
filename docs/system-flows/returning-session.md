@@ -101,6 +101,6 @@ Read project context → greet → summarize → continue working
 - `agent/TASKS.md`
 - `agent/PLANS.md`
 
-## Files Updated (at session end)
+## Files Updated (after significant work, after commits, before push)
 - `agent/AGENT_CONTEXT.md` — progress, decisions, what's next
 - `docs/system-flows/` — if any system flow changed during implementation
