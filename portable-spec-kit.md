@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.4 -->
+<!-- Framework Version: v0.3.6 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -195,11 +195,12 @@ Framework version mirrors the release it belongs to:
 | v0.1 | v0.0.1 — v0.0.9 | v0.0.x |
 | v0.2 | v0.1.1 — v0.1.9 | v0.1.x |
 | v0.3 | v0.2.1 — v0.2.9 | v0.2.x |
+| v0.4 | v0.3.1 — v0.3.9 | v0.3.x |
 | v1.0 | v1.0.1 — v1.0.9 | v1.0.x (production) |
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.4 -->` in portable-spec-kit.md |
+| **Framework** | `v{release-1}.{patch}` | Each publish/commit | `<!-- Framework Version: v0.3.6 -->` in portable-spec-kit.md |
 | **Release** | `v0.1, v0.2, v0.3...` | Significant milestones | ARD docs, RELEASES.md, changelog |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
@@ -261,6 +262,8 @@ Framework versions: v0.1.1 — v0.1.7
 - **When user assigns new tasks, add them to TASKS.md FIRST before starting work**
 - **Every task the user requests** must be tracked in the project's `TASKS.md`
 - **Detect implied tasks** — if the user raises a problem, asks a question that implies work needed, or discusses a feature/fix/review to do later, add it to TASKS.md immediately. Don't wait for the user to explicitly say "add this task."
+- **Never let a task slip or be forgotten** — on every user message, scan for any task, fix, update, check, or request mentioned (explicit or implied) and add it to TASKS.md before responding. If it was said in the conversation, it must be in TASKS.md and it must be completed. Do not move on without finishing what was asked.
+- **Before ending any session** — scan back through the full conversation and verify every task mentioned is in TASKS.md and marked `[x]`. If anything was asked but not done, do it now before closing.
 - Add tasks when requested, mark `[x]` as soon as completed
 - **Organize tasks under release version headings** (e.g., `## v0.1 — Current`, `## v0.2 — Done`) — see Versioning section
 - Future tasks go under `## Backlog (Future Releases)`
@@ -268,7 +271,6 @@ Framework versions: v0.1.1 — v0.1.7
 - If a feature needs a detailed plan, add it as a section in `PLANS.md` (not a new `*_PLAN.md` file)
 - Keep `TASKS.md` and `PLANS.md` in sync — update both when work is completed
 - Maintain a **Progress Summary** table at the bottom of TASKS.md showing tasks done, tests, and status per version
-- Test UI pages live under `/test-ui/` route with an index page listing all test modules
 
 ### Spec & Planning Management (MANDATORY)
 - **SPECS.md** — update when scope changes during development:
@@ -276,6 +278,16 @@ Framework versions: v0.1.1 — v0.1.7
   - Feature removed or descoped → move to "Out of scope (future)"
   - Acceptance criteria modified → update criteria
   - If SPECS.md is empty after 3+ tasks completed → retroactively fill from what's been built
+  - **Staleness check:** If TASKS.md has 2+ completed tasks (`[x]`) not represented in SPECS.md features → update SPECS.md immediately. A non-empty SPECS.md can still be stale — check count, not just presence.
+- **RELEASES.md** — update when a version's tasks are done:
+  - When all tasks under a version heading in TASKS.md are marked `[x]` → add a release entry to RELEASES.md immediately in the same session. Do not leave a completed version without a release entry.
+- **Scope Change Recording** — when any requirement or feature changes mid-project, record the change in SPECS.md using one of 4 types:
+  - `DROP` — feature removed from scope (client deprioritized, budget cut)
+  - `ADD` — new feature added mid-project (client request, new requirement)
+  - `MODIFY` — feature requirement changed (same feature, different spec)
+  - `REPLACE` — feature replaced by a different one (R4→R5 substitution)
+  - **Format:** In SPECS.md, note the change type, original requirement ref (Rn), date, and reason. Update TASKS.md and RELEASES.md in the same session.
+  - **R→F Traceability:** Requirements (R1, R2…) map to Features (F1, F2…). When a scope change occurs, trace it: the original Rn, what changed, and which Fn it now maps to. This keeps client language (requirements) aligned with technical implementation (features) through all changes.
 - **PLANS.md** — update when architecture evolves during development:
   - New technology chosen or replaced → update Stack table with Why
   - Data model changed (new tables, fields, relationships) → update Data Model section
@@ -288,7 +300,7 @@ Framework versions: v0.1.1 — v0.1.7
   - Brand colors or fonts changed → update Brand section
   - AI provider or model changed → update AI Config
   - Dev server port changed → update port
-- **Sync rule:** When completing a feature that affects SPECS.md, PLANS.md, and TASKS.md — update all three in the same session. Don't leave them out of sync.
+- **Sync rule:** When completing a feature, update all 4 pipeline files in the same session: SPECS.md, PLANS.md, TASKS.md, and RELEASES.md (if version completed). Don't leave them out of sync.
 
 ### Testing (MANDATORY)
 - **Always think about edge cases** when creating test cases — empty data, max data, boundary values, null/undefined, single item vs many
@@ -301,9 +313,8 @@ Framework versions: v0.1.1 — v0.1.7
 - **Automated testing for UI** — test each button, view, modal, expected behaviors
 - **PDF generation tests** — validate layout, structure, and content in generated output
 - **Mock external APIs** (OpenAI, fetch) in tests — never make real API calls during testing
-- **Self-validate before presenting to user** — run tests yourself, fix failures, only present stable results
+- **Self-validate before presenting to user** — run full test suite after any change, fix all failures, only present stable results. User should NEVER discover broken features — that's your job.
 - **Comprehensive test suite** — unit tests for all pure functions, integration tests for API routes, component tests for UI
-- **Self-validate before presenting** — run full test suite after any change, fix all failures, only present stable results to user. User should NEVER discover broken features — that's your job
 - **Test every new feature** — when building a feature, write tests for it in the same session. Don't ship untested code
 - **Test what matters** — input validation, error handling, data flow, edge cases. Don't test implementation details
 - **Edge case checklist for EVERY test suite:**
@@ -464,9 +475,15 @@ In both cases, **always confirm with the user** before creating or selecting an 
 - Avoid adding dependencies for things that can be done in <20 lines of code
 
 ### Context Management
-- Read user profile at start of every conversation (lookup: workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt to user's preferences
-- Read project's `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` at start of every conversation
-- Update project's `agent/AGENT_CONTEXT.md` at end of every conversation
+**On every session start — read in this order:**
+1. User profile (workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt behavior to preferences
+2. `agent/AGENT.md` — project-specific rules and stack
+3. `agent/AGENT_CONTEXT.md` — current project state
+4. `agent/TASKS.md` — pending and completed tasks
+5. `agent/PLANS.md` — architecture decisions
+
+**On every session end:**
+- Update `agent/AGENT_CONTEXT.md` — version, progress, decisions, session summary
 - **After completing implementations or running tests** — update `agent/AGENT_CONTEXT.md` to reflect current code status: what was built, what changed, current version, test results (count, coverage, pass/fail), benchmarks, and what's next. Also update flow documentation in `docs/system-flows/` if implementation changed any system flows, and update test files if new flows or behaviors were added. Context, flows, and tests must always match the actual state of the code.
 - **Update the root framework file** whenever a new general guideline or development practice decision is made — these are shared across all projects
 - Root framework file = development practices (portable). Project `agent/AGENT.md` = project-specific rules.
@@ -893,10 +910,12 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 
 **Fill gaps proactively.** Don't wait for the user to ask — detect and fill:
 - SPECS.md empty after 3+ tasks completed → retroactively fill from what's been built
+- SPECS.md has fewer features than TASKS.md has completed `[x]` tasks → SPECS.md is stale, update it (non-empty ≠ current)
 - PLANS.md empty after stack is chosen → document the architecture that emerged from the code
 - TASKS.md has completed tasks not in SPECS.md → add the features to SPECS.md
+- All tasks under a version heading in TASKS.md are `[x]` done → add release entry to RELEASES.md now
 - Architecture changed during development → update PLANS.md to match reality
-- Keep all 4 pipeline files (SPECS → PLANNING → TASKS → TRACKER) in sync without burdening the user
+- Keep all 4 pipeline files (SPECS → PLANS → TASKS → RELEASES) in sync without burdening the user
 
 **Surface the process naturally:**
 - "I've added this to TASKS.md" (shows you're tracking)
@@ -1159,10 +1178,11 @@ Create all 6 agent files using the templates above.
 - `.gitignore` — general ignores (node_modules, .env, cache/, __pycache__, .next, etc.)
 - `.env.example` — empty placeholder
 
-**Step 2: First Commit**
+**Step 2: First Commit (only if user has said "commit" or "initialize git")**
 - Stage all files
 - Commit with message: "Initialize <project-name> — v0.1 setup"
 - Do NOT push (wait for user to say "push")
+- If user has not mentioned committing → skip this step, show files created and wait
 
 **Step 3: Report to User**
 - Show: directory structure created, files list
