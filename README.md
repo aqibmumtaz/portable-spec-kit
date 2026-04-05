@@ -103,24 +103,13 @@ Install the Portable Spec Kit: run `Invoke-WebRequest -Uri "https://raw.githubus
 The agent downloads the kit, creates all agent files, reads the framework, and starts your project setup — all in one go.
 
 #### macOS / Linux (one command)
-```bash
-curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
-  && ln -sf portable-spec-kit.md CLAUDE.md \
-  && ln -sf portable-spec-kit.md .cursorrules \
-  && ln -sf portable-spec-kit.md .windsurfrules \
-  && ln -sf portable-spec-kit.md .clinerules \
-  && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
+```
+curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md && ln -sf portable-spec-kit.md CLAUDE.md && ln -sf portable-spec-kit.md .cursorrules && ln -sf portable-spec-kit.md .windsurfrules && ln -sf portable-spec-kit.md .clinerules && mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
 ```
 
 #### Windows (PowerShell)
-```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md" -OutFile "portable-spec-kit.md"
-Copy-Item portable-spec-kit.md CLAUDE.md
-Copy-Item portable-spec-kit.md .cursorrules
-Copy-Item portable-spec-kit.md .windsurfrules
-Copy-Item portable-spec-kit.md .clinerules
-New-Item -ItemType Directory -Force -Path .github | Out-Null
-Copy-Item portable-spec-kit.md .github/copilot-instructions.md
+```
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md" -OutFile "portable-spec-kit.md"; Copy-Item portable-spec-kit.md CLAUDE.md; Copy-Item portable-spec-kit.md .cursorrules; Copy-Item portable-spec-kit.md .windsurfrules; Copy-Item portable-spec-kit.md .clinerules; New-Item -ItemType Directory -Force -Path .github | Out-Null; Copy-Item portable-spec-kit.md .github/copilot-instructions.md
 ```
 
 **What happens:** Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent. Edit one file — all agents stay in sync.

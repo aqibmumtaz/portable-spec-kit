@@ -147,7 +147,7 @@ workspace/.portable-spec-kit/user-profile/
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
 - **"run tests"** → run test suite only
-- **"prepare release"** → update all counts, docs, version bump, regenerate PDFs, run all project test suites, show pass/fail count and coverage % for each suite
+- **"prepare release"** → update all counts, docs, version bump, regenerate PDFs, run all project test suites, show pass/fail count and coverage % for each suite, update CHANGELOG.md, ask about GitHub release publishing
 - **"commit"** → commit staged changes
 - **"push"** → push to remote
 
@@ -164,11 +164,33 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 ```
 Do not finalize the release (version bump, commit) if any suite has failures.
 
+**Release notes publishing (ask on every prepare release):**
+
+CHANGELOG.md is always updated — it is the universal fallback visible to all users in the repo. GitHub Releases are the additional layer when `gh` is authenticated.
+
+After tests pass, check `gh auth status` and ask:
+
+```
+Release notes for vX.X:
+| Option | What happens |
+|--------|-------------|
+| a | GitHub Releases + CHANGELOG.md (recommended) |
+| b | CHANGELOG.md only |
+```
+
+- **If `gh` authenticated** → show option a/b, default to a
+- **If `gh` not authenticated** → skip prompt, note: "gh CLI not authenticated — publishing to CHANGELOG.md only. To enable GitHub Releases: `gh auth login`"
+- **Option a chosen** → update CHANGELOG.md + create/update GitHub release (`gh release create/edit`) with CHANGELOG.md notes for this version
+- **Option b chosen** → update CHANGELOG.md only
+- Both options always update CHANGELOG.md — never skip it
+
 **Edge cases:**
 - **No test suites exist** → show `No test suites configured — skipping test run` in summary block and proceed. Tests are required before v1.0.
 - **New suite added this session** → include it in the summary automatically
 - **release-check.sh shows untested features** → **do not finalize the release**. Add test references to the SPECS.md Tests column, ensure those tests pass, then re-run prepare release. A feature is not done until it has a test ref.
 - **PDFs don't need regeneration** → skip regeneration, note it. "PDFs regenerated (if any)" means only if HTML source changed.
+- **GitHub release already exists for this version** → update it (not create new) — use `gh release edit`
+- **CHANGELOG.md missing entry for this version** → add it before publishing
 
 Batch all changes first, then trigger the release process once when the user is ready.
 
