@@ -7,12 +7,15 @@
 `my-app/`
 
 ## On Every Session Start:
-1. Read `agent/AGENT_CONTEXT.md` — project state
-2. Read `agent/TASKS.md` — current tasks
-3. Read `agent/PLANS.md` — architecture
+1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences (adapt behavior)
+2. Read `agent/AGENT_CONTEXT.md` — project state
+3. Read `agent/TASKS.md` — current tasks
+4. Read `agent/PLANS.md` — architecture
 
-## On Every Session End:
-1. Update `agent/AGENT_CONTEXT.md` — progress, decisions
+## Update AGENT_CONTEXT.md When:
+1. After completing a significant batch of work (feature built, tests passing)
+2. After committing — commit is a natural checkpoint
+3. Before any push — context must be current before code reaches remote
 
 ## Stack
 | Layer | Technology | Why |

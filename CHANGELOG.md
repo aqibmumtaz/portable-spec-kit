@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.4.14 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.4.1 — v0.4.14 (14 patches) · **Tests:** 587 (442 framework + 145 benchmarking)
+**Built over:** v0.4.1 — v0.4.14 (14 patches) · **Tests:** 589 (444 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -41,10 +41,10 @@ All notable changes to the Portable Spec Kit are documented here.
 ### Tests
 | Suite | Count | Notes |
 |-------|------:|-------|
-| Framework (`test-spec-kit.sh`) | 442 | 41 sections |
+| Framework (`test-spec-kit.sh`) | 444 | 41 sections |
 | Benchmarking (`test-spd-benchmarking.sh`) | 145 | 5 projects × 8 lifecycle phases |
 | Release gate (`test-release-check.sh`) | 53/53 features | R→F→T coverage validator |
-| **Total** | **587** | All passing |
+| **Total** | **589** | All passing |
 
 ---
 

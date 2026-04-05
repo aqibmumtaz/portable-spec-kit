@@ -289,7 +289,7 @@ Batch all changes first, then trigger the release process once when the user is 
 ### RELEASES.md Versioning Structure
 ```
 ## v0.2 — Title (Date)
-Framework versions: v0.1.1 — v0.1.7
+Kit: v0.1.1 — v0.1.7
 
 ### Changes
 - **Category:** Change description
@@ -413,6 +413,7 @@ Framework versions: v0.1.1 — v0.1.7
 - No hardcoded secrets, URLs, or credentials — use environment variables
 - No unused imports or variables
 - All functions have clear, self-evident names — add comments only where logic isn't obvious
+- **Rename/refactor completeness** — when renaming a term, field name, or keyword: before marking the task done, `grep -r` the entire repo for the old term. Every instance in every file (docs, examples, tests, templates, flow docs) must be updated in the same session. No stragglers allowed. This rule applies to code, markdown, config, and embedded template strings.
 
 ### Naming Conventions
 - **Files/Folders:** kebab-case (`ai-config.ts`, `resume-editor/`)
@@ -1059,7 +1060,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 
 ## Current Status
 - **Version:** v0.1.0
-- **Kit:** v0.4.13
+- **Kit:** v0.4.14
 - **Phase:** Setup
 - **Status:** Initializing
 
@@ -1220,7 +1221,7 @@ src/
 > **Role:** Updated at end of each release version.
 
 ## v0.1 — Title (Date)
-Framework versions: v0.0.1 — v0.0.x
+Kit: vX.X.X
 
 ### Summary
 Brief description of what this version delivers.

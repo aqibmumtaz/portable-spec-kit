@@ -10,9 +10,11 @@
 <!-- AI will add requirements based on your description -->
 
 ## Features
-| # | Feature | Priority | Status |
-|---|---------|----------|:------:|
-| | | | |
+| # | Feature | Req | Priority | Status | Tests |
+|---|---------|-----|----------|--------|-------|
+| F1 | | R1 | High | [ ] | — |
+
+<!-- Tests column: leave — when pending. Add test file path when done: tests/feature.test.js -->
 
 ## Scope
 - **In scope:**

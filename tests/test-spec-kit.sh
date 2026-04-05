@@ -709,9 +709,9 @@ grep -q "v0\.4 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.4 section" || fai
 grep -q "Backlog" "$PROJ/agent/TASKS.md" && pass "TASKS: Backlog section" || fail "TASKS: Backlog missing"
 grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summary" || fail "TASKS: Progress Summary missing"
 
-# RELEASES.md has framework version ranges
-grep -q "Framework versions: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has framework range" || fail "TRACKER: v0.1 range missing"
-grep -q "Framework versions: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.2 has framework range" || fail "TRACKER: v0.2 range missing"
+# RELEASES.md has kit version ranges
+grep -q "Kit: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has kit range" || fail "TRACKER: v0.1 range missing"
+grep -q "Kit: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.2 has kit range" || fail "TRACKER: v0.2 range missing"
 
 # AGENT_CONTEXT has current version with patch number (v0.N.N format)
 grep -q "\*\*Version:\*\* v[0-9]\+\.[0-9]\+\.[0-9]\+" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: Version has patch number (v0.N.N)" || fail "AGENT_CONTEXT: Version missing patch number — expected v0.N.N format"
@@ -795,7 +795,7 @@ README_VER=$(grep "version-v" "$PROJ/README.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0
 
 # RELEASES.md must have v0.3 entry (not just v0.2 and v0.1)
 grep -q "## v0\.3" "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 entry present" || fail "RELEASES.md: v0.3 entry MISSING"
-grep -q "Framework versions: v0\.2\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has framework version range" || fail "RELEASES.md: v0.3 missing framework range"
+grep -q "Kit: v0\.2\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has kit version range" || fail "RELEASES.md: v0.3 missing kit range"
 
 # ═══════════════════════════════════════════════════════════════
 section "27. R→F Traceability & Scope Change Rules"
@@ -1430,10 +1430,10 @@ grep -q "## v0\." "$PROJ/portable-spec-kit.md" \
   && pass "template currency: TASKS.md template has version-based headings" \
   || fail "template currency: TASKS.md template missing version headings — update framework"
 
-# RELEASES.md template must have Framework versions range field
-grep -q "Framework versions:" "$PROJ/portable-spec-kit.md" \
-  && pass "template currency: RELEASES.md template has Framework versions field" \
-  || fail "template currency: RELEASES.md template missing Framework versions field — update framework"
+# RELEASES.md template must have Kit: field (kit version used during release)
+grep -q "^Kit: " "$PROJ/portable-spec-kit.md" \
+  && pass "template currency: RELEASES.md template has Kit field" \
+  || fail "template currency: RELEASES.md template missing Kit field — update framework"
 
 # AGENT.md template must have session-start read order (5 steps)
 grep -q "Read user profile\|portable-spec-kit/user-profile" "$PROJ/portable-spec-kit.md" \
@@ -1454,6 +1454,18 @@ grep -q "Update AGENT_CONTEXT.md When" "$PROJ/portable-spec-kit.md" \
 [ -f "$PROJ/examples/starter/tests/test-release-check.sh" ] && [ -f "$PROJ/examples/my-app/tests/test-release-check.sh" ] \
   && pass "template currency: examples have tests/test-release-check.sh (kit-distributed R→F→T validator)" \
   || fail "template currency: examples missing tests/test-release-check.sh — copy from tests/test-release-check.sh"
+
+# Example AGENT_CONTEXT.md files must have **Kit:** field (not stale **Framework:** naming)
+grep -q "\*\*Kit:\*\*" "$PROJ/examples/starter/agent/AGENT_CONTEXT.md" 2>/dev/null \
+  && grep -q "\*\*Kit:\*\*" "$PROJ/examples/my-app/agent/AGENT_CONTEXT.md" 2>/dev/null \
+  && pass "template currency: example AGENT_CONTEXT.md files have Kit field" \
+  || fail "template currency: example AGENT_CONTEXT.md missing Kit field — add '- **Kit:** vX.X.X' under Version"
+
+# Flow docs must not reference stale **Framework:** field (rename completeness check)
+! grep -rq "against \*\*Framework:\*\*\|update Framework in AGENT_CONTEXT\|update Framework version in AGENT_CONTEXT" \
+    "$PROJ/docs/system-flows/" 2>/dev/null \
+  && pass "template currency: flow docs use Kit field references (no stale Framework)" \
+  || fail "template currency: flow docs have stale **Framework:** references — update to **Kit:**"
 
 # ── Group 4: Docs Consistency (4 tests) ─────────────────────────
 
@@ -1476,7 +1488,7 @@ grep -q "Critical Scenarios" "$PROJ/README.md" \
   || fail "docs consistency: README missing Critical Scenarios section — update README"
 
 # RELEASES.md current version must reference this framework version
-LATEST_RELEASE_RANGE=$(grep "Framework versions:" "$PROJ/agent/RELEASES.md" | head -1)
+LATEST_RELEASE_RANGE=$(grep "^Kit:" "$PROJ/agent/RELEASES.md" | head -1)
 echo "$LATEST_RELEASE_RANGE" | grep -q "$PROJ_VER" \
   && pass "docs consistency: RELEASES.md current range includes $PROJ_VER" \
   || fail "docs consistency: RELEASES.md range doesn't include $PROJ_VER — update range"

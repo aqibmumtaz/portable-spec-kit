@@ -168,7 +168,7 @@ EOF
 # RELEASES.md — $PROJECT
 > **Purpose:** Version history.
 ## v0.1 — Current (In Progress)
-Framework versions: v0.3.0
+Kit: v0.3.0
 EOF
   cat > "$S_DIR/agent/AGENT.md" << EOF
 # AGENT.md — $PROJECT
