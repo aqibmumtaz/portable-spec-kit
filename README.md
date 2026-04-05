@@ -96,7 +96,7 @@ Install the Portable Spec Kit: run `curl -sO https://raw.githubusercontent.com/a
 
 The agent downloads the kit, creates all symlinks, reads the framework, and starts your project setup — all in one go.
 
-#### macOS / Linux (terminal)
+#### macOS / Linux (one command)
 ```bash
 curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/portable-spec-kit.md \
   && ln -sf portable-spec-kit.md CLAUDE.md \
