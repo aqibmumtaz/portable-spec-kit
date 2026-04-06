@@ -147,11 +147,21 @@ workspace/.portable-spec-kit/user-profile/
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
 - **"run tests"** → run test suite only
-- **"prepare release"** → update all counts, docs, version bump, regenerate PDFs, run all project test suites, show pass/fail count and coverage % for each suite, update CHANGELOG.md, ask about GitHub release publishing
+- **"prepare release"** → full release sequence (see below)
 - **"commit"** → commit staged changes
 - **"push"** → push to remote
 
-**"prepare release" test summary (required):** After running all test suites, show a summary block before finalizing the release:
+**"prepare release" full sequence:**
+1. Run all project test suites — show summary block (see format below). Stop if any suite fails.
+2. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts or version
+3. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge
+4. Regenerate PDFs — only if HTML source changed; skip and note if not
+5. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
+6. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
+7. Ask about GitHub release publishing (see prompt below)
+8. After push — update the minor version tag to HEAD: delete `refs/tags/v0.N` and recreate pointing to latest commit
+
+**"prepare release" test summary (required):**
 ```
 ══════════════════════════════════════════════
   RELEASE TEST SUMMARY
@@ -180,7 +190,7 @@ Release notes for vX.X:
 
 - **If `gh` authenticated** → show option a/b, default to a
 - **If `gh` not authenticated** → skip prompt, note: "gh CLI not authenticated — publishing to CHANGELOG.md only. To enable GitHub Releases: `gh auth login`"
-- **Option a chosen** → update CHANGELOG.md + create/update GitHub release (`gh release create/edit`) with CHANGELOG.md notes for this version
+- **Option a chosen** → update CHANGELOG.md + create/update GitHub release (`gh release create/edit`) with CHANGELOG.md notes for this version. Mark latest release as `--latest`
 - **Option b chosen** → update CHANGELOG.md only
 - Both options always update CHANGELOG.md — never skip it
 
@@ -191,6 +201,7 @@ Release notes for vX.X:
 - **PDFs don't need regeneration** → skip regeneration, note it. "PDFs regenerated (if any)" means only if HTML source changed.
 - **GitHub release already exists for this version** → update it (not create new) — use `gh release edit`
 - **CHANGELOG.md missing entry for this version** → add it before publishing
+- **No git tags in use** → skip the tag update step; note it
 
 Batch all changes first, then trigger the release process once when the user is ready.
 
