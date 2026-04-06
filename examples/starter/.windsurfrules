@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.16 -->
+<!-- Framework Version: v0.3.18 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -632,14 +632,11 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
   3. Update `**Kit:**` version in AGENT_CONTEXT.md to match `<!-- Framework Version -->`
   4. Show user a summary of what was updated:
      ```
-     "Portable Spec Kit updated to v0.3.x. What's new in this version:
-     - [feature 1]
-     - [feature 2]
+     "Portable Spec Kit updated to vX.X. What's new in this version:
+     - [list changes from CHANGELOG.md for this version]
 
      Restructured agent files (all content preserved):
-     - TASKS.md → version-based headings
-     - RELEASES.md → patch range added
-     - AGENT_CONTEXT.md → Kit field added/updated"
+     - [list each file that was changed and what changed]"
      ```
   5. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is

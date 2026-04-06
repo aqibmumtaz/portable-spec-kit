@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.16 (16 patches) · **Tests:** 590 (445 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.18 (18 patches) · **Tests:** 590 (445 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -36,6 +36,7 @@ All notable changes to the Portable Spec Kit are documented here.
 - **GitHub release title format** — minor version (`v0.N — Title`) matching CHANGELOG headings; patch number visible via commit history
 - **sync.sh fixes** — CHANGELOG-based title/notes extraction (RELEASE_VER lookup); `--draft=false --latest` flags; commit message from last commit subject; release tags re-pointed to semantically correct commits
 - **Release notes publishing smart flow** — if `gh` authenticated → GitHub Releases + CHANGELOG.md automatically; if not authenticated → prompt user to connect (`gh auth login`) or skip to CHANGELOG.md only
+- **Kit update summary template** — generic format: lists changes from CHANGELOG.md + each file changed; no hardcoded field names or file names that go stale
 
 ### README / Docs
 - Critical Scenarios table — 8 real-world situations (new machine, agent switch, crash/wipe, team handoff, context window…)
