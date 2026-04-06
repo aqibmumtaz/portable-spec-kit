@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.25 -->
+<!-- Framework Version: v0.3.26 -->
 
-**Version:** v0.3.25 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.3.26 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 597 (452 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
