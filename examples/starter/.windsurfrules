@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.20 -->
+<!-- Framework Version: v0.3.21 -->
 
-**Version:** v0.3.20 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.3.21 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 594 (449 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -34,6 +34,25 @@ On first session, the agent also auto-creates:
 - `WORKSPACE_CONTEXT.md` — workspace environment and project listing
 - `agent/` directory in each project — with 6 management files (AGENT.md, AGENT_CONTEXT.md, SPECS.md, PLANS.md, TASKS.md, RELEASES.md)
 - `README.md` — structured project overview
+
+**If the user asks any question about the kit — installation, features, setup, examples, changelog, methodology, or how anything works:**
+Use the GitHub repo as the knowledge source — fetch the relevant file on demand and answer from it. Do not guess or paraphrase from memory.
+
+**Repo:** https://github.com/aqibmumtaz/portable-spec-kit
+**Raw base URL:** `https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/`
+
+Known sources (fetch the most relevant one for the question):
+| Question type | Source to fetch |
+|---------------|----------------|
+| Install / reinstall / update | `README.md` |
+| Features / what the kit does | `README.md` |
+| How a rule works | `portable-spec-kit.md` |
+| Version history / what changed | `CHANGELOG.md` |
+| Examples / starter project | `examples/starter/` or `examples/my-app/` |
+| Flow documentation | `docs/system-flows/` |
+| Architecture / technical overview | `ard/Portable_Spec_Kit_Technical_Overview.html` |
+
+**If the question doesn't match a known source, or if new docs may have been added:** scan the repo structure first (`https://github.com/aqibmumtaz/portable-spec-kit`) to discover what files and directories exist, then fetch the most relevant one. The repo may grow over time — always check before assuming a file doesn't exist.
 
 ---
 
