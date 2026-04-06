@@ -201,6 +201,7 @@ Release notes for vX.X:
 - **PDFs don't need regeneration** → skip regeneration, note it. "PDFs regenerated (if any)" means only if HTML source changed.
 - **GitHub release already exists for this version** → update it (not create new) — use `gh release edit`
 - **CHANGELOG.md missing entry for this version** → add it before publishing
+- **Release notes scope** — only include changes that are committed and visible in the repo. Never mention files, features, or work that is excluded from the public repo (e.g. private docs/, research papers, local-only scripts)
 - **No git tags in use** → skip the tag update step; note it
 
 Batch all changes first, then trigger the release process once when the user is ready.
