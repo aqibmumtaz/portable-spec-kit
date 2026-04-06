@@ -142,7 +142,7 @@ workspace/.portable-spec-kit/user-profile/
 - **Do NOT push** to remote unless user explicitly says "push"
 - Commit ≠ push. Commit is local and safe. Push is remote and requires explicit instruction.
 - **Pre-push gate** — before every push, all test suites must pass. If user says "push" without having run "prepare release" in this session → run tests first, show results, then push. Never push with known failures even if user asks for urgency.
-- **Version bump BEFORE push** — bump version first, commit it, then push. Never push then bump after. Increment for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Version field (bump patch number e.g. v0.3.12 → v0.3.13), (2) `README.md` version badge + test badge. Order: bump → commit → push.
+- **Version bump BEFORE push** — bump version first, commit it, then push. Never push then bump after. Increment for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Version field (bump patch number e.g. v0.1.4 → v0.1.5), (2) `README.md` version badge + test badge. Order: bump → commit → push.
 
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
@@ -246,21 +246,21 @@ Batch all changes first, then trigger the release process once when the user is 
 | v0.0 | v0.0.1, v0.0.2… | v0.0.9 |
 | v0.1 | v0.1.1, v0.1.2… | v0.1.9 |
 | v0.2 | v0.2.1, v0.2.2… | v0.2.9 |
-| v0.3 | v0.3.1, v0.3.2… | v0.3.14 (active) |
+| v0.3 | v0.3.1, v0.3.2… | v0.3.x (active) |
 | v1.0 | v1.0.1, v1.0.2… | production |
 
 | Level | Format | When | Where |
 |-------|--------|------|-------|
-| **Version** | `v0.3.14` | Each publish/commit | `**Version:**` in `agent/AGENT_CONTEXT.md`, `README.md` badge |
+| **Version** | `v0.N.x` | Each publish/commit | `**Version:**` in `agent/AGENT_CONTEXT.md`, `README.md` badge |
 | **Release group** | `v0.3` | Milestone (derived from Version by dropping patch) | GitHub tag, `RELEASES.md` heading, CHANGELOG grouping |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
-**GitHub release grouping:** one release tag per minor version (`v0.3`). Tag is updated on each patch push. Title shows current patch (`v0.3.14 — ...`). Completed releases show minor only (`v0.2`, `v0.1`, `v0.0`).
+**GitHub release grouping:** one release tag per minor version (`v0.3`). Tag is updated on each patch push. Title shows current patch (`v0.N.x — ...`). Completed releases show minor only (`v0.2`, `v0.1`, `v0.0`).
 
 ### What Gets Updated at Each Level
 
 **On every publish (project patch):**
-- Bump `**Version:**` in `agent/AGENT_CONTEXT.md` (e.g. v0.3.12 → v0.3.13)
+- Bump `**Version:**` in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5)
 - Update `README.md` version badge and test badge (when test count changes)
 - Update `agent/TASKS.md` — mark tasks done under current release heading
 - **Do NOT modify** `<!-- Framework Version -->` in portable-spec-kit.md — that is the kit version, managed by the kit author only. It is read-only for user projects.
@@ -270,7 +270,7 @@ Batch all changes first, then trigger the release process once when the user is 
 - Update ARD docs — Technical Overview with new version section
 - Regenerate PDFs
 - Move completed tasks in `agent/TASKS.md` to done, start new version heading
-- Update `agent/AGENT_CONTEXT.md` — version starts new patch series (e.g., v0.3.14 → v0.4.1)
+- Update `agent/AGENT_CONTEXT.md` — version starts new patch series (e.g., v0.1.9 → v0.2.1)
 
 ### TASKS.md Versioning Structure
 ```
@@ -299,8 +299,8 @@ Kit: v0.2.1 — v0.2.7
 ```
 
 ### Rules
-- **Framework version** — increment patch with each publish (v0.3.1 → v0.3.2 → v0.3.3)
-- **Patch prefix = release prefix** — v0.3.x patches belong to release v0.3 (aligned numbering)
+- **Framework version** — increment patch with each publish (v0.1.1 → v0.1.2 → v0.1.3)
+- **Patch prefix = release prefix** — v0.N.x patches belong to release v0.N (aligned numbering)
 - **Release version** — increment minor (`v0.x`) for grouped changes documented in ARD
 - **v1.0** reserved for production/SaaS launch
 - Users pull latest framework with `curl` — always get the latest patch
@@ -1060,7 +1060,7 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 
 ## Current Status
 - **Version:** v0.1.0
-- **Kit:** v0.3.14
+- **Kit:** vX.X.X
 - **Phase:** Setup
 - **Status:** Initializing
 
