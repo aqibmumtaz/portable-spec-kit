@@ -3,12 +3,37 @@
 All notable changes to the Portable Spec Kit are documented here.
 
 > **Versioning:** Each release (v0.N) is built from a series of incremental patches (v0.N.x).
-> `v0.4.14` = release v0.4, patch 14 — current active release shows full patch version; completed releases show minor only.
+> `v0.3.15` = release v0.3, patch 15 — current active release shows full patch version; completed releases show minor only.
 
 ---
 
-## v0.4.14 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.4.1 — v0.4.14 (14 patches) · **Tests:** 589 (444 framework + 145 benchmarking)
+## v0.3.15 — Version Alignment Completeness Sweep (April 2026)
+**Built over:** v0.3.1 — v0.3.15 (15 patches) · **Tests:** 589 (444 framework + 145 benchmarking)
+
+### Changes
+- **Versioning:** Fixed all remaining stale v0.4 references — SPECS.md release headings corrected to v0.0/v0.1/v0.2/v0.3 (was v0.1/v0.2/v0.3/v0.3 with a duplicate)
+- **ARD HTML:** Added missing v0.3 changelog section; fixed v0.2 Kit range (`v0.1.1+` → `v0.2.1 — v0.2.9`)
+- **Tests:** Updated test fixtures from stale `**Framework:** vX` → `**Kit:** vX` (test-spec-kit.sh + test-spd-benchmarking.sh); updated D2 grep pattern to match Kit field
+- **Docs:** Fixed `Framework: v0.3.1` → `Kit: v0.3.1` in requirements-to-delivery.md; `Framework: v0.2.4` → `Kit: v0.2.4` in agentic-communication-discovery.md
+- **sync.sh:** Updated 3 comment examples from v0.4.x → v0.3.x
+
+### Tests
+- **Framework:** 444 passing (41 sections)
+- **Benchmarking:** 145 passing
+- **Total:** 589 passing
+
+### GitHub Tags Fixed
+- **v0.3** → `d7d7885` (April 5 — v0.3.15 latest commit ✓)
+- **v0.2** → `a3a2d56` (April 2 — v0.2.9 last commit ✓)
+- **v0.1** → `6a95aa9` (April 1 — v0.1 era last commit ✓)
+- **v0.0** → `79a15f3` (March 30 — initial release last commit ✓)
+- Stale `v0.4` tag removed
+- Tags page and Releases page now show v0.3 first, v0.0 last
+
+---
+
+## v0.3.14 — Framework Hardening + R→F→T Traceability (April 2026)
+**Built over:** v0.3.1 — v0.3.14 (14 patches) · **Tests:** 589 (444 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -36,7 +61,7 @@ All notable changes to the Portable Spec Kit are documented here.
 - "First methodology native to the AI era" framing
 - Terminal install commands now single-line (horizontally scrollable), consistent with AI agent section
 - Flow docs updated: `**Framework:**` → `**Kit:**` references in file-management.md + returning-session.md
-- Example AGENT_CONTEXT files updated: `**Kit:** v0.4.14` field added, version uses 3-part semver
+- Example AGENT_CONTEXT files updated: `**Kit:** v0.3.14` field added, version uses 3-part semver
 
 ### Tests
 | Suite | Count | Notes |
@@ -48,7 +73,7 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
-## v0.3 — SPD Methodology + Research (April 2026)
+## v0.2 — SPD Methodology + Research (April 2026)
 **Built over:** v0.2.1 — v0.2.9 (9 patches leading to this release) · **Tests:** 443 (298 framework + 145 benchmarking)
 
 ### Highlights
@@ -67,7 +92,7 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
-## v0.2 — Personalized Profile + Flow Documentation (April 2026)
+## v0.1 — Personalized Profile + Flow Documentation (April 2026)
 **Built over:** v0.1.1 — v0.1.9 (9 patches leading to this release) · **Tests:** 242 (22 sections)
 
 ### Highlights
@@ -80,7 +105,7 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
-## v0.1 — Initial Release (March 2026)
+## v0.0 — Initial Release (March 2026)
 **Built over:** v0.0.1 — v0.0.9 (9 patches leading to this release) · **Tests:** 122 (13 sections)
 
 ### Highlights

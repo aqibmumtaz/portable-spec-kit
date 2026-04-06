@@ -181,7 +181,7 @@ EOF
 # AGENT_CONTEXT.md — $PROJECT
 ## Current Status
 - **Version:** v0.1
-- **Framework:** v0.3.0
+- **Kit:** v0.3.0
 - **Phase:** Setup
 - **Status:** Project initialized
 ## What's Done

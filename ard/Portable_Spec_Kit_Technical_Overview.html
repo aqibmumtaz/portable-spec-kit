@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.2.1 &bull; April 2026</div>
+    <div class="badge">v0.1.1 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.2.1</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 587 passing (442 framework + 145 benchmarking), 41 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.1.1</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 589 passing (444 framework + 145 benchmarking), 41 sections</div>
   </div>
 </div>
 
@@ -83,14 +83,14 @@
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.4.13</td></tr>
+  <tr><td>Current version</td><td>v0.3.14</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (~1,180 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>586 (441 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>589 (444 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
   <tr><td>Flow documents</td><td>9 step-by-step system flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
@@ -101,21 +101,33 @@
 <!-- VERSION CHANGELOG -->
 <h2>Version Changelog</h2>
 
-<h3>v0.3 — Versioning + Project Scenarios (April 2026) — Current</h3>
-<p>Kit: v0.2.1+</p>
+<h3>v0.3 — Paper Finalization + Framework Hardening (April 2026)</h3>
+<p>Kit: v0.3.1 — v0.3.14</p>
 <ul>
-  <li><strong>Two-level versioning:</strong> framework v0.2.x (each publish) + release v0.x (milestones). Framework middle number ties to release (v0.2.x = release v0.3). Auto-restructure agent files when framework version changes on pull.</li>
+  <li><strong>R→F→T traceability chain:</strong> every done feature requires test reference in SPECS.md before release. <code>tests/test-release-check.sh</code> distributed as kit template, auto-created on project setup.</li>
+  <li><strong>15 new enforcement sections:</strong> SPECS.md staleness check, RELEASES.md trigger rule, scope change recording (DROP/ADD/MODIFY/REPLACE), no-slip task rule, pipeline sync, pre-release consistency gate (Section 41).</li>
+  <li><strong>Release Process rule:</strong> explicit signals only — <code>run tests</code> / <code>prepare release</code> / <code>commit</code> / <code>push</code>. Agent never auto-runs tests or auto-bumps versions.</li>
+  <li><strong>Simplified versioning:</strong> aligned patches (v0.N.x = release v0.N). Removed offset convention. <code>**Framework:**</code> renamed to <code>**Kit:**</code>. GitHub tag = minor (v0.N), title = full patch version.</li>
+  <li><strong>SPD concept paper:</strong> publication-ready PDF (31 pages, A4, 5 SVG diagrams). Publication path: TOSEM New Frontiers → arXiv cs.SE → IEEE Software.</li>
+  <li><strong>README hardening:</strong> Critical Scenarios table (8 situations), Development Guidelines section, "first methodology native to the AI era" framing.</li>
+  <li><strong>589 tests</strong> (444 framework across 41 sections + 145 benchmarking). All passing.</li>
+</ul>
+
+<h3>v0.2 — Versioning + Project Scenarios (April 2026)</h3>
+<p>Kit: v0.2.1 — v0.2.9</p>
+<ul>
+  <li><strong>Aligned versioning:</strong> v0.N.x patches belong to release v0.N (e.g. v0.2.x = release v0.2). Auto-restructure agent files when framework version changes on pull.</li>
   <li><strong>Existing project setup:</strong> guide don't force — scan, show checklist, user picks changes. Never rename/move/delete without approval.</li>
   <li><strong>9 project scenarios:</strong> new, existing, monorepo, partial, cloned, subdir, multiple projects, returning, kit in one subdir only.</li>
   <li><strong>Project directory confirmation:</strong> list directories, user picks or types new path before creating agent/ files.</li>
   <li><strong>Git rule:</strong> check .git/ before committing — each project can be its own repo.</li>
-  <li><strong>Version-based TASKS.md:</strong> tasks grouped under release headings (v0.1 Done, v0.2 Done, v0.3 Current, Backlog).</li>
-  <li><strong>RELEASES.md:</strong> framework version range per release (v0.0.x for v0.1, v0.1.x for v0.2).</li>
+  <li><strong>Version-based TASKS.md:</strong> tasks grouped under release headings (v0.0 Done, v0.1 Done, v0.2 Done, v0.3 Current, Backlog).</li>
+  <li><strong>RELEASES.md:</strong> kit version range per release (v0.0.x for v0.0, v0.1.x for v0.1).</li>
   <li><strong>AGENT_CONTEXT.md:</strong> tracks Kit version — compared on session start to trigger restructure.</li>
   <li><strong>442 framework tests across 41 sections + 145 benchmarking tests (587 total). Added: Python/Conda env rules (27 tests), README validation (3 tests), requirements-to-delivery flow checks, 15 enforcement sections (staleness, RELEASES trigger, scope changes, no-slip, pipeline sync, security, push rules, git, existing projects, scenarios, retro fill, context persistence across 10 disruptions, R→F→T traceability chain).</li>
 </ul>
 
-<h3>v0.2 — Personalized Profile + Flow Documentation (April 2026)</h3>
+<h3>v0.1 — Personalized Profile + Flow Documentation (April 2026)</h3>
 <p>Kit: v0.1.1 — v0.1.9</p>
 
 <h4>User Profile</h4>
@@ -161,7 +173,7 @@
   <li>New sections: User Profile directory, first-time setup, new project, returning session, edge cases, flow documentation, ARD directory, context management</li>
 </ul>
 
-<h3>v0.1 — Initial Release (March 2026)</h3>
+<h3>v0.0 — Initial Release (March 2026)</h3>
 <ul>
   <li>CLAUDE.md framework — portable spec-persistent development</li>
   <li>README with spec-kit comparison table</li>
@@ -447,7 +459,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td>23</td><td>Python Environment — Conda Rules</td><td>27</td></tr>
   <tr><td>24</td><td>README — Python Environment Section</td><td>3</td></tr>
   <tr><td>25</td><td>License</td><td>2</td></tr>
-  <tr><td>26</td><td>Versioning — v0.4 Row + Current Version</td><td>5</td></tr>
+  <tr><td>26</td><td>Versioning — v0.3 Row + Current Version</td><td>5</td></tr>
   <tr><td>27</td><td>R→F Traceability &amp; Scope Change Rules</td><td>8</td></tr>
   <tr><td>28</td><td>Scope Change Simulation (DROP/ADD/MODIFY/REPLACE)</td><td>9</td></tr>
   <tr><td>29</td><td>SPECS Staleness Check Rule</td><td>6</td></tr>
@@ -541,7 +553,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.2.1 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.1.1 &bull; April 2026
 </div>
 
 </div>
@@ -559,7 +571,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.2.1 &bull; April 2026</div>
+    <div class="badge">v0.1.1 &bull; April 2026</div>
   </div>
 </div>
 

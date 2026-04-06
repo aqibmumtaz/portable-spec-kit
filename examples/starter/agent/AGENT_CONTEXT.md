@@ -5,7 +5,7 @@
 
 ## Current Status
 - **Version:** v0.1.0
-- **Kit:** v0.4.14
+- **Kit:** v0.3.14
 - **Phase:** Setup
 - **Status:** Project initialized, waiting for specs
 

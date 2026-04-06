@@ -702,16 +702,16 @@ grep -q "\*\*Kit:\*\*" "$PROJ/portable-spec-kit.md" && pass "AGENT_CONTEXT templ
 grep -q "compare.*Framework Version.*Kit\|Framework Version.*Kit" "$PROJ/portable-spec-kit.md" && pass "Version comparison rule exists" || fail "Version comparison rule MISSING"
 
 # TASKS.md has version-based structure
+grep -q "v0\.0 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.0 Done" || fail "TASKS: v0.0 missing"
 grep -q "v0\.1 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.1 Done" || fail "TASKS: v0.1 missing"
-grep -q "v0\.2 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.2 Done" || fail "TASKS: v0.2 missing"
+grep -q "v0\.2 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.2 section" || fail "TASKS: v0.2 missing"
 grep -q "v0\.3 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.3 section" || fail "TASKS: v0.3 missing"
-grep -q "v0\.4 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.4 section" || fail "TASKS: v0.4 missing"
 grep -q "Backlog" "$PROJ/agent/TASKS.md" && pass "TASKS: Backlog section" || fail "TASKS: Backlog missing"
 grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summary" || fail "TASKS: Progress Summary missing"
 
 # RELEASES.md has kit version ranges
-grep -q "Kit: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has kit range" || fail "TRACKER: v0.1 range missing"
-grep -q "Kit: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.2 has kit range" || fail "TRACKER: v0.2 range missing"
+grep -q "Kit: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.0 has kit range (v0.0.x)" || fail "TRACKER: v0.0 range missing"
+grep -q "Kit: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has kit range (v0.1.x)" || fail "TRACKER: v0.1 range missing"
 
 # AGENT_CONTEXT has current version with patch number (v0.N.N format)
 grep -q "\*\*Version:\*\* v[0-9]\+\.[0-9]\+\.[0-9]\+" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: Version has patch number (v0.N.N)" || fail "AGENT_CONTEXT: Version missing patch number — expected v0.N.N format"
@@ -778,11 +778,11 @@ grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "Lic
 grep -q "Aqib Mumtaz" "$PROJ/LICENSE" && pass "Author in license" || fail "Author missing from license"
 
 # ═══════════════════════════════════════════════════════════════
-section "26. Versioning — v0.4 Row + Current Version"
+section "26. Versioning — v0.3 Row + Current Version"
 # ═══════════════════════════════════════════════════════════════
 
-# v0.4 row must exist in version table
-grep -q "v0\.4.*v0\.4\." "$PROJ/portable-spec-kit.md" && pass "Versioning: v0.4 → v0.4.x row present" || fail "Versioning: v0.4 row MISSING"
+# v0.3 row must exist in version table
+grep -q "v0\.3.*v0\.3\." "$PROJ/portable-spec-kit.md" && pass "Versioning: v0.3 → v0.3.x row present" || fail "Versioning: v0.3 row MISSING"
 
 # Framework version comment must match AGENT_CONTEXT Version field
 FW_COMMENT=$(grep "<!-- Framework Version:" "$PROJ/portable-spec-kit.md" | head -1 | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+")
@@ -793,9 +793,9 @@ FW_CONTEXT=$(grep "\*\*Version:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" | grep -o "v
 README_VER=$(grep "version-v" "$PROJ/README.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
 [ "$README_VER" = "$FW_COMMENT" ] && pass "Versioning: README badge ($README_VER) matches framework ($FW_COMMENT)" || fail "Versioning: README badge STALE — badge=$README_VER framework=$FW_COMMENT"
 
-# RELEASES.md must have v0.3 entry (not just v0.2 and v0.1)
+# RELEASES.md must have v0.3 entry (current release)
 grep -q "## v0\.3" "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 entry present" || fail "RELEASES.md: v0.3 entry MISSING"
-grep -q "Kit: v0\.2\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has kit version range" || fail "RELEASES.md: v0.3 missing kit range"
+grep -q "Kit: v0\.3\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has kit version range (v0.3.x)" || fail "RELEASES.md: v0.3 missing kit range"
 
 # ═══════════════════════════════════════════════════════════════
 section "27. R→F Traceability & Scope Change Rules"
@@ -1161,7 +1161,7 @@ cat > "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" << 'CTXEOF'
 
 ## Current Status
 - **Version:** v0.2
-- **Framework:** v0.3.6
+- **Kit:** v0.3.6
 - **Phase:** Development
 - **Status:** Building payment feature
 
@@ -1201,7 +1201,7 @@ grep -q "JWT.*Simpler\|PostgreSQL" "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pas
 
 # D2: Agent switch (Claude → Cursor — same files, different reader)
 cp "$DISRUPT_TEMP/portable-spec-kit.md" "$DISRUPT_TEMP/.cursorrules" 2>/dev/null || true
-grep -q "v0\.2\|Framework.*v0\.3\." "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D2 (agent switch): version readable by any agent" || fail "D2: version not readable"
+grep -q "v0\.2\|Kit.*v0\.3\." "$DISRUPT_TEMP/agent/AGENT_CONTEXT.md" && pass "D2 (agent switch): version readable by any agent" || fail "D2: version not readable"
 grep -q "Dr. Aqib Mumtaz" "$DISRUPT_TEMP/.portable-spec-kit/user-profile/user-profile-aqibmumtaz.md" && pass "D2 (agent switch): profile readable by any agent" || fail "D2: profile lost on switch"
 
 # D3: New team member — can they understand the project?
@@ -1482,7 +1482,7 @@ grep -q "R.*F.*T\|release-check" "$PROJ/ard/Portable_Spec_Kit_Technical_Overview
   && pass "docs consistency: ARD documents R→F→T traceability" \
   || fail "docs consistency: ARD does not mention R→F→T — update Technical Overview"
 
-# README must have Critical Scenarios section (added v0.4, structural requirement)
+# README must have Critical Scenarios section (added v0.3, structural requirement)
 grep -q "Critical Scenarios" "$PROJ/README.md" \
   && pass "docs consistency: README has Critical Scenarios section" \
   || fail "docs consistency: README missing Critical Scenarios section — update README"

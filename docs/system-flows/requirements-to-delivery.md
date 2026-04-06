@@ -491,7 +491,7 @@ Agent updates all pipeline files:
     RELEASES.md:
     ┌──────────────────────────────────────────────────────┐
     │ ## v0.1 — TaskFlow MVP (2026-04-20)                   │
-    │ Framework: v0.3.1                                     │
+    │ Kit: v0.3.1                                           │
     │                                                       │
     │ ### Delivered (meets client requirements)              │
     │ - R1: Login with email + Google SSO ✓ (F1)            │
