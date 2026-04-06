@@ -1102,7 +1102,7 @@ grep -q "Cloned repo" "$PROJ/portable-spec-kit.md" && pass "Scenarios: cloned re
 
 grep -q "once at session start\|session start.*not on every message\|first loads.*not on every" "$PROJ/portable-spec-kit.md" && pass "Existing: kit status shown once at session start (not every message)" || fail "Existing: session-start status display rule MISSING"
 grep -q "Profile setup and project scan are independent\|profile setup.*independent" "$PROJ/portable-spec-kit.md" && pass "Existing: kit triggers even if profile setup skipped" || fail "Existing: profile-independence rule MISSING"
-grep -q "always scan the user.*project\|scan.*user.*project.*not the kit\|Re-scanning your project" "$PROJ/portable-spec-kit.md" && pass "Existing: kit update scans user's project (not the kit itself)" || fail "Existing: kit-update re-scan rule MISSING"
+grep -q "Scan the user.*project immediately\|scan.*before showing.*summary\|mandatory.*must complete before the user" "$PROJ/portable-spec-kit.md" && pass "Existing: kit update scans user's project before showing summary" || fail "Existing: kit-update re-scan rule MISSING"
 
 # ═══════════════════════════════════════════════════════════════
 section "38. Retroactive Spec Filling Simulation"

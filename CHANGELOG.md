@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.24 (24 patches) · **Tests:** 597 (452 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.25 (25 patches) · **Tests:** 597 (452 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release

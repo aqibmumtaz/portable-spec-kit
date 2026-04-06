@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.24 -->
+<!-- Framework Version: v0.3.25 -->
 
-**Version:** v0.3.24 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.3.25 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 597 (452 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -677,21 +677,23 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
   1. **Do NOT ask** — kit version updates are automatic, not optional. Restructure immediately.
   2. Restructure all agent/ files against current templates — preserve all existing content
   3. Update `**Kit:**` version in AGENT_CONTEXT.md to match `<!-- Framework Version -->`
-  4. Show user a summary of what was updated:
-     ```
-     "Portable Spec Kit updated to vX.X. What's new in this version:
-     - [list changes from CHANGELOG.md for this version]
-
-     Restructured agent files (all content preserved):
-     - [list each file that was changed and what changed]"
-     ```
-  5. After restructure — **always scan the user's project** (not the kit). Read the project's own source code, config files (`package.json`, `requirements.txt`, `Dockerfile`, etc.), and directory structure. Update the project's `agent/AGENT.md` (stack, tech, ports) and `agent/AGENT_CONTEXT.md` (current state, phase, what's done) from the actual codebase — not from kit changelog. Announce before scanning: *"Re-scanning your project to refresh context..."*
+  4. **Scan the user's project immediately** — before showing any summary to the user. Read the project's own source code, config files (`package.json`, `requirements.txt`, `Dockerfile`, etc.), and directory structure. Update the project's `agent/AGENT.md` (stack, tech, ports) and `agent/AGENT_CONTEXT.md` (current state, phase, what's done) from the actual codebase. This step is mandatory and must complete before the user sees any output.
      - **Edge cases:**
-       - Project has no source files (new/empty project) → skip scan, note "No source files found — will populate context when development starts"
+       - Project has no source files (new/empty project) → skip deep scan, note in summary "No source files found — context will populate when development starts"
        - Very large project (100+ files) → scan config files and top-level dirs, sample src/ — don't read every file
-       - agent/AGENT.md already accurate (no TBD fields) → still update AGENT_CONTEXT.md phase/status; skip deep source re-read if stack is unchanged
+       - agent/AGENT.md already accurate (no TBD fields) → still refresh AGENT_CONTEXT.md phase/status
        - Document/research project (no code) → scan plan/, docs/, research/ for current state instead
        - Kit updated but no project directory confirmed yet → skip scan, run on next project entry
+  5. Show user a single combined summary (scan results + kit changes together):
+     ```
+     "Portable Spec Kit updated to vX.X.
+
+     Your project: [stack detected] · [phase] · [X tasks pending]
+     Agent files updated: AGENT.md (stack refreshed), AGENT_CONTEXT.md (state refreshed)
+
+     What's new in vX.X:
+     - [list changes from CHANGELOG.md for this version]"
+     ```
   6. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is
 
