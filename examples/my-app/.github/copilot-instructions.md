@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.18 -->
+<!-- Framework Version: v0.3.19 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -147,29 +147,48 @@ workspace/.portable-spec-kit/user-profile/
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
 - **"run tests"** → run test suite only
-- **"prepare release"** → full release sequence (see below)
+- **"prepare release"** / **"update release"** → full release sequence (see below)
+- **"refresh release"** → re-test and sync current release without bumping version (see below)
 - **"commit"** → commit staged changes
 - **"push"** → push to remote
 
-**"prepare release" full sequence:**
-1. Run all project test suites — show summary block (see format below). Stop if any suite fails.
+**"prepare release" / "update release" full sequence:**
+1. Run all project test suites — stop if any fail.
 2. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts or version
 3. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge
 4. Regenerate PDFs — only if HTML source changed; skip and note if not
 5. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
 6. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
-7. Ask about GitHub release publishing (see prompt below)
-8. After push — update the minor version tag to HEAD: delete `refs/tags/v0.N` and recreate pointing to latest commit
+7. Publish release notes — auto GitHub Releases + CHANGELOG.md if `gh` authenticated; prompt to connect or skip if not
+8. After push — update the minor version tag to HEAD
+9. **Show the release summary block** (see format below)
 
-**"prepare release" test summary (required):**
+**"refresh release" sequence (same version, no bump):**
+1. Run all project test suites — stop if any fail.
+2. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts
+3. **No version bump** — version stays the same
+4. Regenerate PDFs — only if HTML source changed
+5. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
+6. Update `CHANGELOG.md` — update the current version entry (same patch range, updated content)
+7. Publish release notes — auto GitHub Releases + CHANGELOG.md if `gh` authenticated; prompt to connect or skip if not
+8. After push — update the minor version tag to HEAD
+9. **Show the release summary block** (see format below)
+
+**Release summary (shown after all steps complete — required for prepare/update/refresh release):**
 ```
 ══════════════════════════════════════════════
-  RELEASE TEST SUMMARY
+  RELEASE SUMMARY — v0.N.x
 ══════════════════════════════════════════════
-  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
-  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
-
-  Total: X/X passing — RELEASE READY ✅
+  1. Tests        <Suite>: X passed ✅  <Suite>: X passed ✅
+                  Total: X/X passing ✅
+  2. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
+  3. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
+                  unchanged — v0.N.x —             (refresh only)
+  4. PDFs         regenerated ✅ / skipped (no HTML changes) ⚠
+  5. RELEASES.md  updated ✅
+  6. CHANGELOG.md updated ✅
+  7. GitHub       published ✅ / pending push ⏳
+  8. Tag          pending push ⏳
 ══════════════════════════════════════════════
 ```
 Do not finalize the release (version bump, commit) if any suite has failures.

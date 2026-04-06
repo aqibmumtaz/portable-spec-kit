@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.3.18-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.3.19-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-590%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-594%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 
 <table>
@@ -318,28 +318,34 @@ Enter at any point. Start from specs, start from code, or start mid-project — 
 | `"what's the status?"` | Reads TASKS.md + AGENT_CONTEXT.md → full progress report |
 | `"keep noted"` / `"note this"` | Saved to correct agent/ file — never lost |
 
-**Release process (explicit only — never automatic):**
-| Command | What happens |
-|---------|-------------|
-| `"run tests"` | Test suite runs, results shown |
-| `"prepare release"` | Counts updated, version bumped, all docs synced, PDFs regenerated (if any) — **then runs all test suites and shows coverage summary** |
-| `"commit"` | Changes committed with descriptive message |
-| `"push"` | Pushed to remote after confirmation |
+**Commands (explicit only — the agent never runs these automatically):**
 
-The agent never auto-runs tests, auto-bumps versions, or auto-commits. Batch your changes, then trigger the release process once.
+| Command | Flow |
+|---------|------|
+| `"run tests"` | Runs all test suites, shows results |
+| `"prepare release"` / `"update release"` | 1 → Tests · 2 → Counts & docs · 3 → Version bump · 4 → PDFs · 5 → RELEASES.md · 6 → CHANGELOG.md · 7 → GitHub release · 8 → Tag (on push) · **9 → Release summary** |
+| `"refresh release"` | Same as above but **skips step 3** — no version bump. Use when counts or wording changed but version should stay the same. |
+| `"commit"` | Stages files, commits with descriptive message + `Co-Authored-By` |
+| `"push"` | Runs tests first if `prepare release` not done this session, then pushes and updates version tag |
 
-**Every "prepare release" ends with a test summary:**
+**Every `prepare release`, `update release`, and `refresh release` ends with this summary:**
 ```
 ══════════════════════════════════════════════
-  RELEASE TEST SUMMARY
+  RELEASE SUMMARY — v0.N.x
 ══════════════════════════════════════════════
-  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
-  <Suite name>:   X passed, Y failed  (Z%) ✅/❌
-
-  Total: X/X passing — RELEASE READY ✅
+  1. Tests        <Suite>: X passed ✅  <Suite>: X passed ✅
+                  Total: X/X passing ✅
+  2. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
+  3. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update)
+                  unchanged — v0.N.x —             (refresh)
+  4. PDFs         regenerated ✅ / skipped (no HTML changes) ⚠
+  5. RELEASES.md  updated ✅
+  6. CHANGELOG.md updated ✅
+  7. GitHub       published ✅ / pending push ⏳
+  8. Tag          pending push ⏳
 ══════════════════════════════════════════════
 ```
-The release is only finalized (version bumped, commit ready) if all suites pass. Any failure → fix first, then re-run.
+The release is only finalized if all test suites pass. Any failure → fix first, then re-run.
 
 ### Key Principles
 

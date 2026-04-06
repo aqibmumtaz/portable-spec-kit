@@ -8,13 +8,14 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.18 (18 patches) · **Tests:** 590 (445 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.19 (19 patches) · **Tests:** 594 (449 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
 - **`tests/test-release-check.sh`** — R→F→T validator distributed as a kit template, created on every project setup
 - **15 new enforcement sections** (26–41) — staleness checks, release triggers, scope change recording, no-slip task rule, pre-release gate
 - **Release Process rule** — full 8-step sequence: tests → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md → GitHub release → tag update
+- **`update release` / `refresh release`** — `update release` is alias for `prepare release`; `refresh release` re-tests + syncs current release without bumping version
 - **Section 41: Pre-Release Consistency Gate** — 23 tests checking cross-file sync before every push
 - **Agent-agnostic examples** — `portable-spec-kit.md` + symlinks for all 5 agents in `examples/`
 - **Simplified versioning** — aligned patches (`v0.N.x` for release `v0.N`), single `**Version:**` field, `**Kit:**` field in AGENT_CONTEXT
@@ -26,16 +27,17 @@ All notable changes to the Portable Spec Kit are documented here.
 - **4 scope change types** (DROP/ADD/MODIFY/REPLACE) with R→F traceability format — tracked across all 4 pipeline files
 - **No-slip task rule** — scan every message for implied tasks; session-end verification sweep
 - **Session-start unified 5-step read order** — user profile → AGENT.md → AGENT_CONTEXT.md → TASKS.md → PLANS.md
-- **Release Notes Publishing** — CHANGELOG.md always updated; GitHub Releases optional per release via `gh`
+- **Release Notes Publishing** — CHANGELOG.md always updated; GitHub Releases auto-published if `gh` authenticated; prompt to connect or skip if not
 - **test-release-check.sh caching** — each test file runs once; result cached to prevent false failures
 - **Rename/refactor completeness rule** — grep entire repo before marking a rename done; no stragglers
 - **What Goes Where rule** — universal user rules in `portable-spec-kit.md`; author-only rules in `agent/AGENT.md`
 - **Versioning examples** — all specific patch numbers replaced with generic `v0.N.x` / `v0.1.4 → v0.1.5` so rules never go stale
 - **prepare release 8-step sequence** — tests → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md → GitHub release → tag update to HEAD
+- **`update release`** — alias for `prepare release` (same full 8-step sequence including version bump)
+- **`refresh release`** — re-test and sync current release without bumping version; same 8-step sequence with step 3 skipped
 - **Release notes scope rule** — only include changes committed and visible in public repo; never mention excluded files (private docs/, research papers)
 - **GitHub release title format** — minor version (`v0.N — Title`) matching CHANGELOG headings; patch number visible via commit history
 - **sync.sh fixes** — CHANGELOG-based title/notes extraction (RELEASE_VER lookup); `--draft=false --latest` flags; commit message from last commit subject; release tags re-pointed to semantically correct commits
-- **Release notes publishing smart flow** — if `gh` authenticated → GitHub Releases + CHANGELOG.md automatically; if not authenticated → prompt user to connect (`gh auth login`) or skip to CHANGELOG.md only
 - **Kit update summary template** — generic format: lists changes from CHANGELOG.md + each file changed; no hardcoded field names or file names that go stale
 
 ### README / Docs
@@ -49,10 +51,10 @@ All notable changes to the Portable Spec Kit are documented here.
 ### Tests
 | Suite | Count | Notes |
 |-------|------:|-------|
-| Framework (`test-spec-kit.sh`) | 445 | 41 sections |
+| Framework (`test-spec-kit.sh`) | 449 | 41 sections |
 | Benchmarking (`test-spd-benchmarking.sh`) | 145 | 5 projects × 8 lifecycle phases |
-| Release gate (`test-release-check.sh`) | 54/54 features | R→F→T coverage validator |
-| **Total** | **590** | All passing |
+| Release gate (`test-release-check.sh`) | 55/55 features | R→F→T coverage validator |
+| **Total** | **594** | All passing |
 
 ---
 

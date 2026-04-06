@@ -1068,6 +1068,10 @@ grep -q "Never push then bump after\|never push then bump\|not.*push.*then.*bump
 grep -q "AGENT_CONTEXT.*Version field\|bump.*Version.*field\|Version.*patch" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates AGENT_CONTEXT Version field" || fail "Version bump: AGENT_CONTEXT target MISSING"
 grep -q "README.*version badge\|version badge" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates README badge" || fail "Version bump: README badge target MISSING"
 grep -q "Release notes scope\|release notes scope" "$PROJ/portable-spec-kit.md" && pass "Release notes: scope rule — only committed/visible content" || fail "Release notes: scope rule MISSING"
+grep -q '"update release"\|update release.*alias\|update release.*same as prepare release\|prepare release.*update release' "$PROJ/portable-spec-kit.md" && pass "Release commands: 'update release' defined as alias for prepare release" || fail "Release commands: 'update release' alias MISSING"
+grep -q '"refresh release"\|refresh release' "$PROJ/portable-spec-kit.md" && pass "Release commands: 'refresh release' command defined" || fail "Release commands: 'refresh release' MISSING"
+grep -q "refresh release.*no.*bump\|refresh release.*without.*bump\|No version bump\|no version bump\|version stays the same" "$PROJ/portable-spec-kit.md" && pass "Release commands: 'refresh release' skips version bump" || fail "Release commands: 'refresh release' no-bump rule MISSING"
+grep -q "Release summary.*shown after all steps\|release summary.*required.*prepare\|Show the release summary" "$PROJ/portable-spec-kit.md" && pass "Release commands: release summary shown after every prepare/refresh release" || fail "Release commands: release summary rule MISSING"
 
 # ═══════════════════════════════════════════════════════════════
 section "36. Git Rule — Check .git/ Before Commit"
