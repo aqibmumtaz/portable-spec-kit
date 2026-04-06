@@ -7,18 +7,17 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
-## v0.3 — Paper Finalization + Framework Hardening (April 2026)
+## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
 **Built over:** v0.3.1 — v0.3.15 (15 patches) · **Tests:** 589 (444 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
 - **`tests/test-release-check.sh`** — R→F→T validator distributed as a kit template, created on every project setup
 - **15 new enforcement sections** (26–41) — staleness checks, release triggers, scope change recording, no-slip task rule, pre-release gate
-- **Release Process rule** — explicit signals only (`run tests` / `prepare release` / `commit` / `push`). Agent never auto-runs, auto-bumps, or auto-commits
+- **Release Process rule** — full 8-step sequence: tests → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md → GitHub release → tag update
 - **Section 41: Pre-Release Consistency Gate** — 23 tests checking cross-file sync before every push
 - **Agent-agnostic examples** — `portable-spec-kit.md` + symlinks for all 5 agents in `examples/`
 - **Simplified versioning** — aligned patches (`v0.N.x` for release `v0.N`), single `**Version:**` field, `**Kit:**` field in AGENT_CONTEXT
-- **SPD paper** finalized to publication-ready state — 9 sections, 31 pages, 5 SVG diagrams, 31+ references
 
 ### Framework Changes
 - **R→F→T traceability** — mandatory Tests column in SPECS.md; never mark a feature `[x]` without a test reference
