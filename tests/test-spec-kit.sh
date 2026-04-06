@@ -1067,6 +1067,7 @@ grep -q "bump → commit → push\|bump.*commit.*push" "$PROJ/portable-spec-kit.
 grep -q "Never push then bump after\|never push then bump\|not.*push.*then.*bump" "$PROJ/portable-spec-kit.md" && pass "Version bump: anti-pattern documented" || fail "Version bump: anti-pattern not covered"
 grep -q "AGENT_CONTEXT.*Version field\|bump.*Version.*field\|Version.*patch" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates AGENT_CONTEXT Version field" || fail "Version bump: AGENT_CONTEXT target MISSING"
 grep -q "README.*version badge\|version badge" "$PROJ/portable-spec-kit.md" && pass "Version bump: updates README badge" || fail "Version bump: README badge target MISSING"
+grep -q "Release notes scope\|release notes scope" "$PROJ/portable-spec-kit.md" && pass "Release notes: scope rule — only committed/visible content" || fail "Release notes: scope rule MISSING"
 
 # ═══════════════════════════════════════════════════════════════
 section "36. Git Rule — Check .git/ Before Commit"

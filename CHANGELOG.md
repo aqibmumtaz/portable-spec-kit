@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.15 (15 patches) · **Tests:** 589 (444 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.16 (16 patches) · **Tests:** 590 (445 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -31,6 +31,11 @@ All notable changes to the Portable Spec Kit are documented here.
 - **Rename/refactor completeness rule** — grep entire repo before marking a rename done; no stragglers
 - **What Goes Where rule** — universal user rules in `portable-spec-kit.md`; author-only rules in `agent/AGENT.md`
 - **Versioning examples** — all specific patch numbers replaced with generic `v0.N.x` / `v0.1.4 → v0.1.5` so rules never go stale
+- **prepare release 8-step sequence** — tests → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md → GitHub release → tag update to HEAD
+- **Release notes scope rule** — only include changes committed and visible in public repo; never mention excluded files (private docs/, research papers)
+- **GitHub release title format** — minor version (`v0.N — Title`) matching CHANGELOG headings; patch number visible via commit history
+- **sync.sh fixes** — CHANGELOG-based title/notes extraction (RELEASE_VER lookup); `--draft=false --latest` flags; commit message from last commit subject; release tags re-pointed to semantically correct commits
+- **Release notes publishing smart flow** — if `gh` authenticated → GitHub Releases + CHANGELOG.md automatically; if not authenticated → prompt user to connect (`gh auth login`) or skip to CHANGELOG.md only
 
 ### README / Docs
 - Critical Scenarios table — 8 real-world situations (new machine, agent switch, crash/wipe, team handoff, context window…)
@@ -43,10 +48,10 @@ All notable changes to the Portable Spec Kit are documented here.
 ### Tests
 | Suite | Count | Notes |
 |-------|------:|-------|
-| Framework (`test-spec-kit.sh`) | 444 | 41 sections |
+| Framework (`test-spec-kit.sh`) | 445 | 41 sections |
 | Benchmarking (`test-spd-benchmarking.sh`) | 145 | 5 projects × 8 lifecycle phases |
-| Release gate (`test-release-check.sh`) | 53/53 features | R→F→T coverage validator |
-| **Total** | **589** | All passing |
+| Release gate (`test-release-check.sh`) | 54/54 features | R→F→T coverage validator |
+| **Total** | **590** | All passing |
 
 ---
 

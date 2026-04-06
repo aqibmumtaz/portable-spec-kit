@@ -65,7 +65,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Version:</strong> v0.1.1</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 589 passing (444 framework + 145 benchmarking), 41 sections</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 590 passing (445 framework + 145 benchmarking), 41 sections</div>
   </div>
 </div>
 
@@ -77,20 +77,20 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 9 flow documents, 587 automated tests (442 framework + 145 benchmarking), 41 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 9 flow documents, 590 automated tests (445 framework + 145 benchmarking), 41 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.3.14</td></tr>
+  <tr><td>Current version</td><td>v0.3.16</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (~1,180 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>589 (444 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>590 (445 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
   <tr><td>Flow documents</td><td>9 step-by-step system flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
@@ -101,16 +101,16 @@
 <!-- VERSION CHANGELOG -->
 <h2>Version Changelog</h2>
 
-<h3>v0.3 — Paper Finalization + Framework Hardening (April 2026)</h3>
-<p>Kit: v0.3.1 — v0.3.14</p>
+<h3>v0.3 — Framework Hardening + R→F→T Traceability (April 2026)</h3>
+<p>Kit: v0.3.1 — v0.3.16</p>
 <ul>
   <li><strong>R→F→T traceability chain:</strong> every done feature requires test reference in SPECS.md before release. <code>tests/test-release-check.sh</code> distributed as kit template, auto-created on project setup.</li>
   <li><strong>15 new enforcement sections:</strong> SPECS.md staleness check, RELEASES.md trigger rule, scope change recording (DROP/ADD/MODIFY/REPLACE), no-slip task rule, pipeline sync, pre-release consistency gate (Section 41).</li>
-  <li><strong>Release Process rule:</strong> explicit signals only — <code>run tests</code> / <code>prepare release</code> / <code>commit</code> / <code>push</code>. Agent never auto-runs tests or auto-bumps versions.</li>
-  <li><strong>Simplified versioning:</strong> aligned patches (v0.N.x = release v0.N). Removed offset convention. <code>**Framework:**</code> renamed to <code>**Kit:**</code>. GitHub tag = minor (v0.N), title = full patch version.</li>
-  <li><strong>SPD concept paper:</strong> publication-ready PDF (31 pages, A4, 5 SVG diagrams). Publication path: TOSEM New Frontiers → arXiv cs.SE → IEEE Software.</li>
+  <li><strong>Release Process rule — full 8-step sequence:</strong> tests → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md → GitHub release → tag update. Explicit signals only.</li>
+  <li><strong>Release notes scope rule:</strong> only include changes committed and visible in public repo; never mention excluded files (private docs, research papers).</li>
+  <li><strong>Simplified versioning:</strong> aligned patches (v0.N.x = release v0.N). All specific version examples replaced with generic <code>v0.N.x</code>/<code>v0.1.4→v0.1.5</code> so rules never go stale. GitHub release title = minor version (v0.N — Title) matching CHANGELOG.</li>
   <li><strong>README hardening:</strong> Critical Scenarios table (8 situations), Development Guidelines section, "first methodology native to the AI era" framing.</li>
-  <li><strong>589 tests</strong> (444 framework across 41 sections + 145 benchmarking). All passing.</li>
+  <li><strong>590 tests</strong> (445 framework across 41 sections + 145 benchmarking). All passing.</li>
 </ul>
 
 <h3>v0.2 — Versioning + Project Scenarios (April 2026)</h3>
@@ -431,7 +431,7 @@ What to build      How to build it     Track progress      Log results
 <!-- 8. TESTING -->
 <h2 id="testing">8. Testing Infrastructure</h2>
 
-<h3>Test Suite: 586 Tests (441 Framework + 145 Benchmarking), 41 Sections</h3>
+<h3>Test Suite: 590 Tests (445 Framework + 145 Benchmarking), 41 Sections</h3>
 <table>
   <tr><th>#</th><th>Section</th><th>Tests</th></tr>
   <tr><td>1</td><td>Repo File Structure</td><td>10</td></tr>
@@ -468,14 +468,14 @@ What to build      How to build it     Track progress      Log results
   <tr><td>32</td><td>Session-Start 5-Step Read Order</td><td>6</td></tr>
   <tr><td>33</td><td>Pipeline Sync — All 4 Files</td><td>8</td></tr>
   <tr><td>34</td><td>Security Rules — API Key Protection</td><td>9</td></tr>
-  <tr><td>35</td><td>Version Bump Before Push Rule</td><td>5</td></tr>
+  <tr><td>35</td><td>Version Bump Before Push Rule</td><td>6</td></tr>
   <tr><td>36</td><td>Git Rule — Check .git/ Before Commit</td><td>4</td></tr>
   <tr><td>37</td><td>Existing Project Setup — Guide Don't Force</td><td>11</td></tr>
   <tr><td>38</td><td>Retroactive Spec Filling Simulation</td><td>6</td></tr>
   <tr><td>39</td><td>Context Persistence — 10 Disruption Scenarios</td><td>16</td></tr>
   <tr><td>40</td><td>R→F→T Traceability — Feature Tests Required</td><td>17</td></tr>
   <tr><td>41</td><td>Pre-Release Consistency Gate — cross-file count, version, template, docs sync</td><td>23</td></tr>
-  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>442</strong></td></tr>
+  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>445</strong></td></tr>
 </table>
 
 <h3>Test Categories</h3>

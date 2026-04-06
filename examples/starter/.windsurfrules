@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.15 -->
+<!-- Framework Version: v0.3.16 -->
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -174,25 +174,21 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 ```
 Do not finalize the release (version bump, commit) if any suite has failures.
 
-**Release notes publishing (ask on every prepare release):**
+**Release notes publishing (automatic on every prepare release):**
 
 CHANGELOG.md is always updated — it is the universal fallback visible to all users in the repo. GitHub Releases are the additional layer when `gh` is authenticated.
 
-After tests pass, check `gh auth status` and ask:
-
-```
-Release notes for vX.X:
-| Option | What happens |
-|--------|-------------|
-| a | GitHub Releases + CHANGELOG.md (recommended) |
-| b | CHANGELOG.md only |
-```
-
-- **If `gh` authenticated** → show option a/b, default to a
-- **If `gh` not authenticated** → skip prompt, note: "gh CLI not authenticated — publishing to CHANGELOG.md only. To enable GitHub Releases: `gh auth login`"
-- **Option a chosen** → update CHANGELOG.md + create/update GitHub release (`gh release create/edit`) with CHANGELOG.md notes for this version. Mark latest release as `--latest`
-- **Option b chosen** → update CHANGELOG.md only
-- Both options always update CHANGELOG.md — never skip it
+After tests pass, check `gh auth status` and proceed:
+- **If `gh` authenticated** → do option a automatically: update CHANGELOG.md + create/update GitHub release (`gh release create/edit`) with CHANGELOG.md notes for this version. Mark as `--latest`. No prompt needed.
+- **If `gh` not authenticated** → ask user:
+  ```
+  gh CLI not authenticated. GitHub Releases require auth.
+  (a) Connect now — run `gh auth login` then continue
+  (b) Skip — CHANGELOG.md only this release
+  ```
+  - User picks (a) → run `gh auth login`, re-check auth, then proceed with GitHub release
+  - User picks (b) or skips → CHANGELOG.md only
+- Both paths always update CHANGELOG.md — never skip it
 
 **Edge cases:**
 - **No test suites exist** → show `No test suites configured — skipping test run` in summary block and proceed. Tests are required before v1.0.
@@ -267,7 +263,7 @@ Batch all changes first, then trigger the release process once when the user is 
 | **Release group** | `v0.3` | Milestone (derived from Version by dropping patch) | GitHub tag, `RELEASES.md` heading, CHANGELOG grouping |
 | **Production** | `v1.0` | SaaS/production launch | Reserved |
 
-**GitHub release grouping:** one release tag per minor version (`v0.3`). Tag is updated on each patch push. Title shows current patch (`v0.N.x — ...`). Completed releases show minor only (`v0.2`, `v0.1`, `v0.0`).
+**GitHub release grouping:** one release tag per minor version (`v0.3`). Tag is updated on each patch push. Title shows minor version and theme (`v0.N — Title`) to stay in sync with CHANGELOG headings — patch number visible via commit history. Completed releases show minor only (`v0.2`, `v0.1`, `v0.0`).
 
 ### What Gets Updated at Each Level
 
