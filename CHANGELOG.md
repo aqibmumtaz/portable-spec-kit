@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.19 (19 patches) · **Tests:** 594 (449 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.20 (20 patches) · **Tests:** 594 (449 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -39,6 +39,8 @@ All notable changes to the Portable Spec Kit are documented here.
 - **GitHub release title format** — minor version (`v0.N — Title`) matching CHANGELOG headings; patch number visible via commit history
 - **sync.sh fixes** — CHANGELOG-based title/notes extraction (RELEASE_VER lookup); `--draft=false --latest` flags; commit message from last commit subject; release tags re-pointed to semantically correct commits
 - **Kit update summary template** — generic format: lists changes from CHANGELOG.md + each file changed; no hardcoded field names or file names that go stale
+- **Author/kit header** — version, license, author, GitHub link, test count at top of all framework copies; visible to humans and AI agents
+- **Existing project setup — scan announcement** — agent tells user *"Spec Kit is understanding your project..."* before scanning; Step 0 checks if project already scanned (skip / partial / full); 7 scan edge cases handled (no stack detected, monorepo, conflicting signals, .env values, large project, team-committed agent/ files)
 
 ### README / Docs
 - Critical Scenarios table — 8 real-world situations (new machine, agent switch, crash/wipe, team handoff, context window…)

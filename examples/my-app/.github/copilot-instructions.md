@@ -1,5 +1,14 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.19 -->
+<!-- Framework Version: v0.3.20 -->
+
+**Version:** v0.3.20 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 594 (449 framework + 145 benchmarking)
+
+> A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
+>
+> **For full documentation, setup instructions, and examples — see [README.md](README.md).**
+
+---
 
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
@@ -695,13 +704,35 @@ When starting work on a project, scan for `<project>/agent/` directory:
 
 When the kit is installed on an **existing project** with established structure:
 
-1. **Scan existing structure first** — understand how the project is already organized before proposing changes
-2. **Never force restructure** — the project may have its own conventions, naming, and directory layout that work well
-3. **Present proposed changes as a checklist** — show what the kit would add/change and let the user pick:
-   ```
-   "I've scanned your project. Here's what I suggest:"
+**Step 0 — Check if already scanned:**
+- If `agent/AGENT_CONTEXT.md` exists and has real content (not template placeholders) → **skip scan**, tell user:
+  ```
+  "Spec Kit has already mapped this project. Reading existing context..."
+  ```
+  Then read agent/ files and continue the session normally. Do not re-scan or overwrite.
+- If `agent/` exists but files are empty or mostly TBD → **partial scan** — fill only the missing fields, tell user:
+  ```
+  "Spec Kit is filling in the gaps — scanning for missing details..."
+  ```
+- If `agent/` does not exist or files are all template placeholders → **full scan** (proceed to step 1)
 
-   [x] Create agent/ directory with 6 management files
+**Full scan flow:**
+
+1. **Announce the scan immediately** — before doing anything else, tell the user:
+   ```
+   "Spec Kit is understanding your project — scanning structure, stack, files, and dependencies..."
+   ```
+2. **Scan the full project thoroughly** — read every directory, all key source files, and config files: `package.json`, `requirements.txt`, `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `tsconfig.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `*.xcodeproj`, `pubspec.yaml`, `README.md`. Build a complete picture before touching anything.
+3. **Fill AGENT.md from what you found** — stack, technologies, dev server port, key scripts, env vars, project type. Never leave fields as TBD if the answer is visible in the code.
+4. **Fill AGENT_CONTEXT.md from what you found** — current state, what appears to be done, directory structure, key decisions visible in the code, phase estimate.
+5. **Never force restructure** — the project may have its own conventions that work well
+6. **Present proposed changes as a checklist with scan summary** — show what was detected and what the kit would add:
+   ```
+   "Scan complete. Here's what I found and what I suggest:"
+
+   Detected: Next.js 14 + TypeScript + Supabase · Node 20 · Port 3000
+
+   [x] Create agent/ directory with 6 management files (pre-filled from scan)
    [x] Create WORKSPACE_CONTEXT.md
    [ ] Rename ARD/ → ard/ (to match kit convention)
    [ ] Create .env.example from existing .env
@@ -709,10 +740,18 @@ When the kit is installed on an **existing project** with established structure:
 
    "Which changes would you like? Select all, some, or none."
    ```
-4. **Respect user's choices** — if user says "don't restructure README" or "keep my directory names", follow that
-5. **Only create agent/ files by default** — the 6 management files are always safe to add (they don't touch existing code)
-6. **Fill agent files from existing code** — scan what exists and retroactively fill SPECS.md, PLANS.md, AGENT.md (stack, structure) from the current codebase
-7. **Never rename, move, or delete existing files** without explicit user approval
+7. **Respect user's choices** — if user says "don't restructure README" or "keep my directory names", follow that
+8. **Only create agent/ files by default** — the 6 management files are always safe to add
+9. **Never rename, move, or delete existing files** without explicit user approval
+
+**Scan edge cases:**
+- **No recognizable stack** (no config files found) → ask: "What stack is this project using?"
+- **Multiple stacks detected** (monorepo) → ask which subdirectory to set up first, handle each separately
+- **Conflicting signals** (e.g. package.json says React, tsconfig suggests Angular) → flag to user before filling AGENT.md
+- **.env file present** → read variable names only to document in AGENT.md; never read or expose values
+- **Existing README.md** → read it to supplement scan findings; never overwrite without user approval
+- **Very large project** (100+ files) → scan config files and top-level dirs first, then sample src/ structure; don't read every file
+- **Team project — agent/ files committed by someone else** → treat as already scanned; read and use existing context, don't overwrite
 
 ### Project Scenarios (handle each appropriately)
 
