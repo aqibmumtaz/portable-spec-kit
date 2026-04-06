@@ -54,7 +54,6 @@ All notable changes to the Portable Spec Kit are documented here.
 **Built over:** v0.2.1 — v0.2.9 (9 patches leading to this release) · **Tests:** 443 (298 framework + 145 benchmarking)
 
 ### Highlights
-- **SPD concept paper** — 9 sections, 27+ references, 5 SVG diagrams, 31-page A4 PDF
 - **Benchmarking suite** — 145 tests across 5 projects × 8 development lifecycle phases
 - **Requirements-to-delivery flow** — 9-phase lifecycle with R→F traceability and 4 scope change types
 - **Two-level versioning** — framework v0.0.x patches + release v0.x milestones
