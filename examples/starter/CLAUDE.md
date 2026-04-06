@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.21 -->
+<!-- Framework Version: v0.3.22 -->
 
-**Version:** v0.3.21 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 594 (449 framework + 145 benchmarking)
+**Version:** v0.3.22 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 596 (451 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -685,7 +685,8 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
      Restructured agent files (all content preserved):
      - [list each file that was changed and what changed]"
      ```
-  5. Continue conversation — zero interruption
+  5. After restructure — run Step 0 status check (see Auto-Scan below) so user sees the updated version in the status output (e.g. `✅ Spec Kit: Project mapped (vX.X.X) — reading context...`)
+  6. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is
 
 ### First Session in New Workspace
@@ -697,6 +698,9 @@ If `WORKSPACE_CONTEXT.md` does not exist:
 4. Auto-detect environment (OS, Node, Python, tools installed) → populate Environment
 5. Scan workspace for existing projects/directories → populate Workspace Overview table
 6. Create `agent/` dirs for any projects found without them
+
+**Profile setup and project scan are independent:**
+If the user skips or defers profile setup ("skip", "later", "not now") → apply default profile and continue. **Never pause or block project scan waiting for profile completion.** Kit status display (Step 0) and project setup always run regardless of whether profile setup was completed or skipped.
 
 **WORKSPACE_CONTEXT.md rules:**
 - Only created once on first session — never overwritten unless user explicitly asks
@@ -713,6 +717,9 @@ If `WORKSPACE_CONTEXT.md` does not exist:
 5. Once confirmed → set up the project inside that directory (agent/ files, README, .gitignore, etc.) and guide through the full project setup flow
 
 When starting work on a project, scan for `<project>/agent/` directory:
+
+**First — check scan state and show kit status** (see Step 0 in Existing Project Setup below). This runs **once at session start** (when the agent first loads), not on every message.
+
 1. If `agent/` directory is missing → create it **in the confirmed project directory**
 2. Check for required files: `AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANS.md`, `TASKS.md`, `RELEASES.md`
 3. Apply the **File Creation/Update Rule** to each agent file and `README.md`
@@ -723,17 +730,15 @@ When starting work on a project, scan for `<project>/agent/` directory:
 
 When the kit is installed on an **existing project** with established structure:
 
-**Step 0 — Check if already scanned:**
-- If `agent/AGENT_CONTEXT.md` exists and has real content (not template placeholders) → **skip scan**, tell user:
-  ```
-  "Spec Kit has already mapped this project. Reading existing context..."
-  ```
-  Then read agent/ files and continue the session normally. Do not re-scan or overwrite.
-- If `agent/` exists but files are empty or mostly TBD → **partial scan** — fill only the missing fields, tell user:
-  ```
-  "Spec Kit is filling in the gaps — scanning for missing details..."
-  ```
-- If `agent/` does not exist or files are all template placeholders → **full scan** (proceed to step 1)
+**Step 0 — Show kit status (once at session start, not on every message):**
+
+Check the project's scan state and display the status once when the agent first loads:
+
+| State | Condition | Status to show | Action |
+|-------|-----------|----------------|--------|
+| Mapped | `agent/AGENT_CONTEXT.md` exists with real content (not placeholders) | `✅ Spec Kit: Project mapped (vX.X.X) — reading context...` | Read agent/ files, continue normally. Do not re-scan or overwrite. |
+| Partial | `agent/` exists but files are mostly empty or TBD | `⚠ Spec Kit: Partial context — filling in gaps...` | Fill missing fields only. |
+| New | `agent/` missing or all files are template placeholders | `🔍 Spec Kit: Understanding your project — scanning stack, files, and dependencies...` | Full scan (proceed to step 1 below). |
 
 **Full scan flow:**
 

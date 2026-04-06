@@ -1100,6 +1100,9 @@ grep -q "Monorepo\|monorepo" "$PROJ/portable-spec-kit.md" && pass "Scenarios: mo
 grep -q "Partial agent.*files\|partial.*agent" "$PROJ/portable-spec-kit.md" && pass "Scenarios: partial agent files case" || fail "Scenarios: partial files MISSING"
 grep -q "Cloned repo" "$PROJ/portable-spec-kit.md" && pass "Scenarios: cloned repo case" || fail "Scenarios: cloned repo MISSING"
 
+grep -q "once at session start\|session start.*not on every message\|first loads.*not on every" "$PROJ/portable-spec-kit.md" && pass "Existing: kit status shown once at session start (not every message)" || fail "Existing: session-start status display rule MISSING"
+grep -q "Profile setup and project scan are independent\|profile setup.*independent" "$PROJ/portable-spec-kit.md" && pass "Existing: kit triggers even if profile setup skipped" || fail "Existing: profile-independence rule MISSING"
+
 # ═══════════════════════════════════════════════════════════════
 section "38. Retroactive Spec Filling Simulation"
 # ═══════════════════════════════════════════════════════════════
