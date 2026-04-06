@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.23 -->
+<!-- Framework Version: v0.3.24 -->
 
-**Version:** v0.3.23 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.3.24 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 597 (452 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -685,7 +685,13 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
      Restructured agent files (all content preserved):
      - [list each file that was changed and what changed]"
      ```
-  5. After restructure — **always run a fresh project scan** (even if `agent/AGENT_CONTEXT.md` already has content). Kit updates may introduce new fields or rules that need current project data. Announce: *"Spec Kit updated to vX.X.X — re-scanning project to update context..."*, then scan project files and refresh AGENT.md + AGENT_CONTEXT.md with any new or changed information.
+  5. After restructure — **always scan the user's project** (not the kit). Read the project's own source code, config files (`package.json`, `requirements.txt`, `Dockerfile`, etc.), and directory structure. Update the project's `agent/AGENT.md` (stack, tech, ports) and `agent/AGENT_CONTEXT.md` (current state, phase, what's done) from the actual codebase — not from kit changelog. Announce before scanning: *"Re-scanning your project to refresh context..."*
+     - **Edge cases:**
+       - Project has no source files (new/empty project) → skip scan, note "No source files found — will populate context when development starts"
+       - Very large project (100+ files) → scan config files and top-level dirs, sample src/ — don't read every file
+       - agent/AGENT.md already accurate (no TBD fields) → still update AGENT_CONTEXT.md phase/status; skip deep source re-read if stack is unchanged
+       - Document/research project (no code) → scan plan/, docs/, research/ for current state instead
+       - Kit updated but no project directory confirmed yet → skip scan, run on next project entry
   6. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is
 
