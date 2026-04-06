@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.22 (22 patches) · **Tests:** 596 (451 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.23 (23 patches) · **Tests:** 597 (452 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release
@@ -44,6 +44,7 @@ All notable changes to the Portable Spec Kit are documented here.
 - **GitHub repo as knowledge source** — agent fetches from repo on demand for any kit question; known source table maps question types to files; open-ended repo scan catches new docs added in the future
 - **Session-start kit status display** — Step 0 shows status once when agent first loads: ✅ mapped / ⚠ partial / 🔍 new. Also runs after kit version update so user sees updated version in status.
 - **Profile setup and project scan decoupled** — kit always proceeds to scan and setup even if user skips profile questions
+- **Kit update always re-scans project** — after a version update, agent runs a fresh project scan (not just reads old context); announces *"Spec Kit updated — re-scanning project..."*
 
 ### README / Docs
 - Critical Scenarios table — 8 real-world situations (new machine, agent switch, crash/wipe, team handoff, context window…)
@@ -56,10 +57,10 @@ All notable changes to the Portable Spec Kit are documented here.
 ### Tests
 | Suite | Count | Notes |
 |-------|------:|-------|
-| Framework (`test-spec-kit.sh`) | 451 | 41 sections |
+| Framework (`test-spec-kit.sh`) | 452 | 41 sections |
 | Benchmarking (`test-spd-benchmarking.sh`) | 145 | 5 projects × 8 lifecycle phases |
 | Release gate (`test-release-check.sh`) | 55/55 features | R→F→T coverage validator |
-| **Total** | **596** | All passing |
+| **Total** | **597** | All passing |
 
 ---
 

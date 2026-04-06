@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.22 -->
+<!-- Framework Version: v0.3.23 -->
 
-**Version:** v0.3.22 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 596 (451 framework + 145 benchmarking)
+**Version:** v0.3.23 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 597 (452 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -685,7 +685,7 @@ This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` file
      Restructured agent files (all content preserved):
      - [list each file that was changed and what changed]"
      ```
-  5. After restructure — run Step 0 status check (see Auto-Scan below) so user sees the updated version in the status output (e.g. `✅ Spec Kit: Project mapped (vX.X.X) — reading context...`)
+  5. After restructure — **always run a fresh project scan** (even if `agent/AGENT_CONTEXT.md` already has content). Kit updates may introduce new fields or rules that need current project data. Announce: *"Spec Kit updated to vX.X.X — re-scanning project to update context..."*, then scan project files and refresh AGENT.md + AGENT_CONTEXT.md with any new or changed information.
   6. Continue conversation — zero interruption
 - **If file already matches template** → leave as-is
 
