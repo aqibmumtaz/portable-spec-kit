@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.4.5 -->
+<!-- Framework Version: v0.4.6 -->
 
-**Version:** v0.4.5 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 673 (528 framework + 145 benchmarking)
+**Version:** v0.4.6 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 676 (531 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -459,6 +459,7 @@ Kit: v0.2.1 — v0.2.7
 - **Patch prefix = release prefix** — v0.N.x patches belong to release v0.N (aligned numbering)
 - **Release version** — increment minor (`v0.x`) for grouped changes documented in ARD
 - **v1.0** reserved for production/SaaS launch
+- **Version bump BEFORE push** — always bump → commit → push in that order. Never push then bump after — the remote tag must always point to the version-bumped commit.
 - Users pull latest framework with `curl` — always get the latest patch
 - TASKS.md groups work under release version headings
 - RELEASES.md records completed releases with framework version range

@@ -1,4 +1,4 @@
-# Flow: Development Release
+# Flow: Release Workflow
 
 > **When:** User says "prepare release", "update release", or "refresh release". Agent runs the full gate sequence — tests, flow docs, counts, version bump, PDFs, publish.
 

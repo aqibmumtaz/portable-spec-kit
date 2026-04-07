@@ -644,7 +644,7 @@ Detailed step-by-step diagrams for every work flow:
 
 | # | Flow | When It Triggers |
 |---|------|-----------------|
-| 01 | **[First Session Workspace](docs/work-flows/01-first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
+| 01 | **[First Session in New Workspace](docs/work-flows/01-first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
 | 02 | **[User Profile Setup](docs/work-flows/02-user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
 | 03 | **[New Project Setup](docs/work-flows/03-new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
 | 04 | **[Existing Project Setup](docs/work-flows/04-existing-project-setup.md)** | First-time kit onboarding on a codebase that already exists |
@@ -655,8 +655,8 @@ Detailed step-by-step diagrams for every work flow:
 | 09 | **[Profile Customization](docs/work-flows/09-profile-customization.md)** | Different preferences per project — local override |
 | 10 | **[File Management](docs/work-flows/10-file-management.md)** | Create/update/restructure rule — never lose content |
 | 11 | **[Spec-Persistent Development](docs/work-flows/11-spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
-| 12 | **[Requirements to Delivery](docs/work-flows/12-project-lifecycle.md)** | Full lifecycle — client requirements through handoff |
-| 13 | **[Development Release](docs/work-flows/13-release-workflow.md)** | prepare release — tests, counts, version bump, publish |
+| 12 | **[Project Lifecycle](docs/work-flows/12-project-lifecycle.md)** | Full lifecycle — client requirements through handoff |
+| 13 | **[Release Workflow](docs/work-flows/13-release-workflow.md)** | prepare release — tests, counts, version bump, publish |
 
 ---
 

@@ -59,12 +59,12 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.4.5 &bull; April 2026</div>
+    <div class="badge">v0.4.6 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.5</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.6</div>
     <div><strong style="color:#dce4f0;">Tests:</strong> 676 passing (531 framework + 145 benchmarking), 43 sections</div>
   </div>
 </div>
@@ -83,7 +83,7 @@
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.4.5</td></tr>
+  <tr><td>Current version</td><td>v0.4.6</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (~1,180 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
@@ -326,22 +326,23 @@ workspace/
 <!-- 3. FLOWS -->
 <h2 id="flows">3. Work Flows</h2>
 
-<p>12 documented flows in <code>docs/work-flows/</code> covering every system interaction:</p>
+<p>13 documented flows in <code>docs/work-flows/</code> covering every system interaction:</p>
 
 <table>
   <tr><th>#</th><th>Flow</th><th>Trigger</th><th>Key Actions</th></tr>
-  <tr><td>01</td><td><strong>First Session Workspace</strong></td><td>New workspace</td><td>Environment detection → WORKSPACE_CONTEXT → auto-scan</td></tr>
+  <tr><td>01</td><td><strong>First Session in New Workspace</strong></td><td>New workspace</td><td>Environment detection → WORKSPACE_CONTEXT → auto-scan</td></tr>
   <tr><td>02</td><td><strong>User Profile Setup</strong></td><td>First time using kit</td><td>GitHub fetch → 3 questions → save global + workspace</td></tr>
   <tr><td>03</td><td><strong>New Project Setup</strong></td><td>Creating new project</td><td>Show profile → keep/customize → scaffold agent/ + dirs</td></tr>
-  <tr><td>04</td><td><strong>File Management</strong></td><td>Agent encounters managed file</td><td>Create / restructure / leave-as-is — never lose content</td></tr>
-  <tr><td>05</td><td><strong>Profile Customization</strong></td><td>Different prefs per project</td><td>Show CURRENT + RECOMMENDED → save local override</td></tr>
-  <tr><td>06</td><td><strong>Returning Session</strong></td><td>Coming back to project</td><td>Load profile → read context → summarize → continue</td></tr>
-  <tr><td>07</td><td><strong>Spec-Persistent Development</strong></td><td>Any workflow — specs persist</td><td>SPECS → PLANS → TASKS → RELEASES — living specs, never block</td></tr>
-  <tr><td>08</td><td><strong>Requirements to Delivery</strong></td><td>Client requirements received</td><td>R→F traceability → scope changes → F→T coverage → handoff</td></tr>
-  <tr><td>09</td><td><strong>Development Release</strong></td><td>prepare release command</td><td>Tests → counts → version bump → PDFs → publish → tag</td></tr>
-  <tr><td>10</td><td><strong>Agent Switching</strong></td><td>Changing AI agent</td><td>All agents read same file via symlinks → zero data loss</td></tr>
-  <tr><td>11</td><td><strong>Existing Project Setup</strong></td><td>First-time kit onboarding</td><td>Detect state → scan → fill agent/ → checklist → apply selected</td></tr>
-  <tr><td>12</td><td><strong>CI/CD Setup</strong></td><td>New/existing project setup</td><td>Stack detect → ci.yml template → badge → branch protection</td></tr>
+  <tr><td>04</td><td><strong>Existing Project Setup</strong></td><td>First-time kit onboarding</td><td>Detect state → scan → fill agent/ → checklist → apply selected</td></tr>
+  <tr><td>05</td><td><strong>Project Init &amp; Reinit</strong></td><td><code>init</code> / <code>reinit</code> commands</td><td>Confirm dir → deep scan → create/update agent/ files → show summary</td></tr>
+  <tr><td>06</td><td><strong>CI/CD Setup</strong></td><td>New/existing project setup</td><td>Stack detect → ci.yml template → badge → branch protection</td></tr>
+  <tr><td>07</td><td><strong>Returning Session</strong></td><td>Coming back to project</td><td>Load profile → read context → summarize → continue</td></tr>
+  <tr><td>08</td><td><strong>Agent Switching</strong></td><td>Changing AI agent</td><td>All agents read same file via symlinks → zero data loss</td></tr>
+  <tr><td>09</td><td><strong>Profile Customization</strong></td><td>Different prefs per project</td><td>Show CURRENT + RECOMMENDED → save local override</td></tr>
+  <tr><td>10</td><td><strong>File Management</strong></td><td>Agent encounters managed file</td><td>Create / restructure / leave-as-is — never lose content</td></tr>
+  <tr><td>11</td><td><strong>Spec-Persistent Development</strong></td><td>Any workflow — specs persist</td><td>SPECS → PLANS → TASKS → RELEASES — living specs, never block</td></tr>
+  <tr><td>12</td><td><strong>Project Lifecycle</strong></td><td>Client requirements received</td><td>R→F traceability → scope changes → F→T coverage → handoff</td></tr>
+  <tr><td>13</td><td><strong>Release Workflow</strong></td><td>prepare release command</td><td>Tests → counts → version bump → PDFs → publish → tag</td></tr>
 </table>
 
 <h3>Context Management Rule</h3>
@@ -520,7 +521,31 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>04 — File Management</h4>
+<h4>05 — Project Init &amp; Reinit</h4>
+<p><em>When: User says "init" (full project scan, any kit status) or "reinit" (re-scan to sync stale agent files). Agent never auto-triggers either command.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  "init" — Full Scan (New / Partial / Mapped)                │
+│     Confirm project directory                               │
+│     Deep scan — config files, src/, top-level dirs          │
+│     Create / update all 6 agent/ files from scan            │
+│     Present optional changes checklist                      │
+│     Apply selected → show init summary ✅                   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│  "reinit" — Re-scan (already Mapped)                        │
+│     Read agent/AGENT.md + AGENT_CONTEXT.md as baseline      │
+│     Deep scan — source files, config, directory structure   │
+│     Update AGENT.md — only fields that changed              │
+│     Rebuild AGENT_CONTEXT.md from current codebase          │
+│     SPECS.md staleness check (completed tasks vs features)  │
+│     PLANS.md vs code check — flag stale architecture        │
+│     Show reinit summary ✅                                  │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>10 — File Management</h4>
 <p><em>When: Agent encounters any auto-managed file (WORKSPACE_CONTEXT.md, README.md, agent/ files) and needs to decide whether to create, update, or leave it.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -575,7 +600,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>05 — Profile Customization</h4>
+<h4>09 — Profile Customization</h4>
 <p><em>When: User wants different preferences for a specific project.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -612,7 +637,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>06 — Returning Session</h4>
+<h4>07 — Returning Session</h4>
 <p><em>When: User opens an AI agent in an existing project — coming back after hours, days, weeks, or months.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -671,7 +696,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>07 — Spec-Persistent Development</h4>
+<h4>11 — Spec-Persistent Development</h4>
 <p><em>When: User follows any development workflow — structured, agile, or mixed. The framework adapts to the user's style, not the other way around.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -717,7 +742,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>08 — Requirements to Delivery</h4>
+<h4>12 — Project Lifecycle</h4>
 <p><em>When: A project goes through its full lifecycle — client requirements through delivery. Shows R→F→T traceability at every phase.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -762,7 +787,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>09 — Development Release</h4>
+<h4>13 — Release Workflow</h4>
 <p><em>When: User says "prepare release", "update release", or "refresh release". Runs the 10-step gate.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -818,7 +843,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>10 — Agent Switching</h4>
+<h4>08 — Agent Switching</h4>
 <p><em>When: User switches from one AI agent to another (e.g., Claude → Cursor → Copilot).</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -847,7 +872,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>11 — Existing Project Setup</h4>
+<h4>04 — Existing Project Setup</h4>
 <p><em>When: User installs the spec kit on a project that already has code — first-time onboarding, not returning.</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -918,7 +943,7 @@ workspace/
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
-<h4>12 — CI/CD Setup</h4>
+<h4>06 — CI/CD Setup</h4>
 <p><em>When: Agent creates a CI/CD pipeline — during new project setup (Step 7.5), existing project onboarding, or when user says "add CI".</em></p>
 <pre>
 ┌─────────────────────────────────────────────────────────────┐
@@ -1198,7 +1223,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.4.5 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.4.6 &bull; April 2026
 </div>
 
 </div>
@@ -1216,7 +1241,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.4.5 &bull; April 2026</div>
+    <div class="badge">v0.4.6 &bull; April 2026</div>
   </div>
 </div>
 

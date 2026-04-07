@@ -614,7 +614,7 @@ rm -rf "$EDGE_TEMP"
 pass "Edge: temp dir cleaned"
 
 # ═══════════════════════════════════════════════════════════════
-section "19. Flow Documentation — All 12 Flows + Diagram Integrity"
+section "19. Flow Documentation — All 13 Flows + Diagram Integrity"
 # ═══════════════════════════════════════════════════════════════
 
 FLOWS_DIR="$PROJ/docs/work-flows"

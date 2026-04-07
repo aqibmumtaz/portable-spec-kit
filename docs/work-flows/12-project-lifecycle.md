@@ -1,4 +1,4 @@
-# Flow: Requirements to Delivery
+# Flow: Project Lifecycle
 
 > **When:** A project goes through its full lifecycle — from client requirements through specification, development, scope changes, context breaks, and final delivery. Shows how SPD handles every phase and what happens to specifications at each transition.
 
