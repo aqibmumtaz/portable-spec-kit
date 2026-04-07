@@ -620,57 +620,57 @@ section "19. Flow Documentation — All 12 Flows + Diagram Integrity"
 FLOWS_DIR="$PROJ/docs/work-flows"
 [ -d "$FLOWS_DIR" ] && pass "docs/work-flows/ directory exists" || fail "docs/work-flows/ MISSING"
 
-for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-file-management 05-profile-customization 06-returning-session 07-spec-persistent-development 08-requirements-to-delivery 09-development-release 10-agent-switching 11-existing-project-setup 12-cicd-setup; do
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow; do
   [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
 done
 
 # Verify each flow has required sections
-for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-file-management 05-profile-customization 06-returning-session 07-spec-persistent-development 08-requirements-to-delivery 09-development-release 10-agent-switching 11-existing-project-setup 12-cicd-setup; do
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow; do
   grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
   grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
 done
 
 # Verify profile flows reference .portable-spec-kit/user-profile/
-for flow in 02-user-profile-setup 03-new-project-setup 06-returning-session 05-profile-customization 01-first-session-workspace; do
+for flow in 02-user-profile-setup 03-new-project-setup 07-returning-session 09-profile-customization 01-first-session-workspace; do
   grep -q "portable-spec-kit/user-profile" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: references profile path" || fail "Flow $flow: missing profile path"
 done
 
-# Verify 10-agent-switching flow mentions symlinks
-grep -q "symlink" "$FLOWS_DIR/10-agent-switching.md" && pass "Flow 10-agent-switching: mentions symlinks" || fail "Flow 10-agent-switching: missing symlinks"
+# Verify 08-agent-switching flow mentions symlinks
+grep -q "symlink" "$FLOWS_DIR/08-agent-switching.md" && pass "Flow 08-agent-switching: mentions symlinks" || fail "Flow 08-agent-switching: missing symlinks"
 
 # Verify spec-persistent flow has context update step
-grep -q "AGENT_CONTEXT" "$FLOWS_DIR/07-spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
-grep -q "docs/work-flows" "$FLOWS_DIR/07-spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
+grep -q "AGENT_CONTEXT" "$FLOWS_DIR/11-spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
+grep -q "docs/work-flows" "$FLOWS_DIR/11-spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
 
-# Verify 08-requirements-to-delivery flow content
-grep -q "R1" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has R→F traceability" || fail "Flow 08-requirements-to-delivery: missing R→F traceability"
-grep -q "DROP" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has scope change types" || fail "Flow 08-requirements-to-delivery: missing scope change types"
-grep -q "REPLACE" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has REPLACE type" || fail "Flow 08-requirements-to-delivery: missing REPLACE"
-grep -q "TaskFlow" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has TaskFlow example" || fail "Flow 08-requirements-to-delivery: missing TaskFlow"
-grep -q "Phase 9" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has all 9 phases" || fail "Flow 08-requirements-to-delivery: missing phases"
-grep -q "Traceability Chain" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has traceability chain" || fail "Flow 08-requirements-to-delivery: missing traceability"
+# Verify 12-project-lifecycle flow content
+grep -q "R1" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has R→F traceability" || fail "Flow 12-project-lifecycle: missing R→F traceability"
+grep -q "DROP" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has scope change types" || fail "Flow 12-project-lifecycle: missing scope change types"
+grep -q "REPLACE" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has REPLACE type" || fail "Flow 12-project-lifecycle: missing REPLACE"
+grep -q "TaskFlow" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has TaskFlow example" || fail "Flow 12-project-lifecycle: missing TaskFlow"
+grep -q "Phase 9" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has all 9 phases" || fail "Flow 12-project-lifecycle: missing phases"
+grep -q "Traceability Chain" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has traceability chain" || fail "Flow 12-project-lifecycle: missing traceability"
 
 # Verify 03-new-project-setup flow mentions conda for Python projects
 grep -q "conda\|Environment Selection" "$FLOWS_DIR/03-new-project-setup.md" && pass "Flow 03-new-project-setup: references Python env setup" || fail "Flow 03-new-project-setup: missing Python env reference"
 
-# Verify 09-development-release flow content
-grep -q "prepare release\|8-Step\|Prepare Release" "$FLOWS_DIR/09-development-release.md" && pass "Flow 09-development-release: has prepare release sequence" || fail "Flow 09-development-release: missing prepare release"
-grep -q "Pre-Push Gate\|pre-push\|pre_push" "$FLOWS_DIR/09-development-release.md" && pass "Flow 09-development-release: has pre-push gate" || fail "Flow 09-development-release: missing pre-push gate"
-grep -q "Stub Completion\|stub.*complete\|check_stub_complete" "$FLOWS_DIR/09-development-release.md" && pass "Flow 09-development-release: has stub completion gate" || fail "Flow 09-development-release: missing stub completion gate"
+# Verify 13-release-workflow flow content
+grep -q "prepare release\|8-Step\|Prepare Release" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has prepare release sequence" || fail "Flow 13-release-workflow: missing prepare release"
+grep -q "Pre-Push Gate\|pre-push\|pre_push" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has pre-push gate" || fail "Flow 13-release-workflow: missing pre-push gate"
+grep -q "Stub Completion\|stub.*complete\|check_stub_complete" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has stub completion gate" || fail "Flow 13-release-workflow: missing stub completion gate"
 
-# Verify 11-existing-project-setup flow content
-grep -q "Mapped\|Partial\|New" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has kit status states" || fail "Flow 11-existing-project-setup: missing kit status states"
-grep -q "DETECT PROJECT STATE\|Detect.*State\|Step 0" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has Step 0 state detection" || fail "Flow 11-existing-project-setup: missing Step 0 state detection"
-grep -q "SCAN\|scan.*thoroughly\|Scan" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has scan step" || fail "Flow 11-existing-project-setup: missing scan step"
-grep -q "PRESENT CHECKLIST\|checklist\|suggest" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has checklist step" || fail "Flow 11-existing-project-setup: missing checklist step"
-grep -q "Returning Session\|returning.*session\|vs.*return" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: contrasts with returning session" || fail "Flow 11-existing-project-setup: missing returning session comparison"
+# Verify 04-existing-project-setup flow content
+grep -q "Mapped\|Partial\|New" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has kit status states" || fail "Flow 04-existing-project-setup: missing kit status states"
+grep -q "DETECT PROJECT STATE\|Detect.*State\|Step 0" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has Step 0 state detection" || fail "Flow 04-existing-project-setup: missing Step 0 state detection"
+grep -q "SCAN\|scan.*thoroughly\|Scan" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has scan step" || fail "Flow 04-existing-project-setup: missing scan step"
+grep -q "PRESENT CHECKLIST\|checklist\|suggest" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has checklist step" || fail "Flow 04-existing-project-setup: missing checklist step"
+grep -q "Returning Session\|returning.*session\|vs.*return" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: contrasts with returning session" || fail "Flow 04-existing-project-setup: missing returning session comparison"
 
-# Verify 12-cicd-setup flow content
-grep -q "ci\.yml\|ci_yml\|CI workflow" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: references ci.yml" || fail "Flow 12-cicd-setup: missing ci.yml reference"
-grep -q "stack\|Stack\|STACK" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: has stack detection step" || fail "Flow 12-cicd-setup: missing stack detection"
-grep -q "test-release-check\|R.*F.*T\|release-check" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: includes test-release-check.sh in CI" || fail "Flow 12-cicd-setup: missing test-release-check.sh"
-grep -q "badge\|Badge" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: has CI badge step" || fail "Flow 12-cicd-setup: missing CI badge step"
-grep -qi "branch protection\|branch_protection" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: has branch protection guidance" || fail "Flow 12-cicd-setup: missing branch protection"
+# Verify 06-cicd-setup flow content
+grep -q "ci\.yml\|ci_yml\|CI workflow" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: references ci.yml" || fail "Flow 06-cicd-setup: missing ci.yml reference"
+grep -q "stack\|Stack\|STACK" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: has stack detection step" || fail "Flow 06-cicd-setup: missing stack detection"
+grep -q "test-release-check\|R.*F.*T\|release-check" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: includes test-release-check.sh in CI" || fail "Flow 06-cicd-setup: missing test-release-check.sh"
+grep -q "badge\|Badge" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: has CI badge step" || fail "Flow 06-cicd-setup: missing CI badge step"
+grep -qi "branch protection\|branch_protection" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: has branch protection guidance" || fail "Flow 06-cicd-setup: missing branch protection"
 
 # ── Diagram integrity checks (run on every prepare release) ──────
 
@@ -813,8 +813,8 @@ section "24. README — Python Environment Section"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
-grep -q "12 step-by-step flow" "$PROJ/README.md" && pass "README: 12 flows count" || fail "README: wrong flow count"
-grep -q "08-requirements-to-delivery" "$PROJ/README.md" && pass "README: 08-requirements-to-delivery flow listed" || fail "README: missing 08-requirements-to-delivery"
+grep -q "13 step-by-step flow" "$PROJ/README.md" && pass "README: 13 flows count" || fail "README: wrong flow count"
+grep -q "12-project-lifecycle" "$PROJ/README.md" && pass "README: 12-project-lifecycle flow listed" || fail "README: missing 12-project-lifecycle"
 
 # ═══════════════════════════════════════════════════════════════
 section "25. License"

@@ -5,9 +5,9 @@
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-v0.4.5-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.4.6-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-673%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-676%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 
 <table>
@@ -344,30 +344,36 @@ Enter at any point. Start from specs, start from code, or start mid-project — 
 
 | Command | Flow |
 |---------|------|
-| `"run tests"` | Runs all test suites, shows results |
-| `"prepare release"` / `"update release"` | 1 → Tests · 2 → Counts & docs · 3 → Version bump · 4 → PDFs · 5 → RELEASES.md · 6 → CHANGELOG.md · 7 → GitHub release · 8 → Tag (on push) · **9 → Release summary** |
-| `"refresh release"` | Same as above but **skips step 3** — no version bump. Use when counts or wording changed but version should stay the same. |
+| `"init"` | Deep scan → create/fill all agent/ files from codebase → optional changes checklist (CI workflow, .env.example, README) |
+| `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check → show delta |
+| `"run tests"` | Run all 3 suites to completion — show failure summary + fix plan if any fail. No commits, no version changes. |
+| `"prepare release"` / `"update release"` | 1 → Tests · 2 → Flow docs · 3 → Counts & ARD · 4 → Version bump · 5 → PDFs · 6 → RELEASES.md · 7 → CHANGELOG.md · 8 → Publish · 9 → Verify · **10 → Release summary** |
+| `"prepare release and push"` / `"prepare release, commit and push"` | Full prepare release → commit → push via sync.sh. No confirmation between steps. |
+| `"refresh release"` | Same 10 steps — **no version bump** (step 4 skipped) |
+| `"refresh release and push"` / `"refresh release, commit and push"` | Same as above → commit → push via sync.sh |
 | `"commit"` | Stages files, commits with descriptive message + `Co-Authored-By` |
-| `"push"` | Runs tests first if `prepare release` not done this session, then pushes and updates version tag |
+| `"push"` | Pre-push gate (check if files changed since last prepare release) → push via `bash agent/sync.sh` |
 
 **Every `prepare release`, `update release`, and `refresh release` ends with this summary:**
 ```
 ══════════════════════════════════════════════
   RELEASE SUMMARY — v0.N.x
 ══════════════════════════════════════════════
-  1. Tests        <Suite>: X passed ✅  <Suite>: X passed ✅
+  1. Tests        Framework: X passed ✅  Benchmarking: X passed ✅
+                  R→F→T: X/X features release-ready ✅
                   Total: X/X passing ✅
-  2. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
-  3. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update)
-                  unchanged — v0.N.x —             (refresh)
-  4. PDFs         regenerated ✅ / skipped (no HTML changes) ⚠
-  5. RELEASES.md  updated ✅
-  6. CHANGELOG.md updated ✅
-  7. GitHub       published ✅ / pending push ⏳
-  8. Tag          pending push ⏳
+  2. Flows        docs/work-flows/ current ✅
+  3. Counts       README, ARD, RELEASES, CHANGELOG ✅
+  4. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
+                  unchanged — v0.N.x —             (refresh only)
+  5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
+  6. RELEASES.md  updated ✅
+  7. CHANGELOG.md updated ✅
+  8. GitHub       published ✅ / pending push ⏳
+  9. Tag          pending push ⏳
 ══════════════════════════════════════════════
 ```
-The release is only finalized if all test suites pass. Any failure → fix first, then re-run.
+The release is only finalized if all test suites pass. Any failure → show failure summary + fix plan → fix → re-run.
 
 ### Key Principles
 
@@ -641,15 +647,16 @@ Detailed step-by-step diagrams for every work flow:
 | 01 | **[First Session Workspace](docs/work-flows/01-first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
 | 02 | **[User Profile Setup](docs/work-flows/02-user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
 | 03 | **[New Project Setup](docs/work-flows/03-new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
-| 04 | **[File Management](docs/work-flows/04-file-management.md)** | Create/update/restructure rule — never lose content |
-| 05 | **[Profile Customization](docs/work-flows/05-profile-customization.md)** | Different preferences per project — local override |
-| 06 | **[Returning Session](docs/work-flows/06-returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
-| 07 | **[Spec-Persistent Development](docs/work-flows/07-spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
-| 08 | **[Requirements to Delivery](docs/work-flows/08-requirements-to-delivery.md)** | Full lifecycle — client requirements through handoff |
-| 09 | **[Development Release](docs/work-flows/09-development-release.md)** | prepare release — tests, counts, version bump, publish |
-| 10 | **[Agent Switching](docs/work-flows/10-agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
-| 11 | **[Existing Project Setup](docs/work-flows/11-existing-project-setup.md)** | First-time kit onboarding on a codebase that already exists |
-| 12 | **[CI/CD Setup](docs/work-flows/12-cicd-setup.md)** | ci.yml generation — stack detection, badge, branch protection |
+| 04 | **[Existing Project Setup](docs/work-flows/04-existing-project-setup.md)** | First-time kit onboarding on a codebase that already exists |
+| 05 | **[Project Init & Reinit](docs/work-flows/05-project-init.md)** | `init` / `reinit` commands — explicit scan, agent file sync, staleness check |
+| 06 | **[CI/CD Setup](docs/work-flows/06-cicd-setup.md)** | ci.yml generation — stack detection, badge, branch protection |
+| 07 | **[Returning Session](docs/work-flows/07-returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
+| 08 | **[Agent Switching](docs/work-flows/08-agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
+| 09 | **[Profile Customization](docs/work-flows/09-profile-customization.md)** | Different preferences per project — local override |
+| 10 | **[File Management](docs/work-flows/10-file-management.md)** | Create/update/restructure rule — never lose content |
+| 11 | **[Spec-Persistent Development](docs/work-flows/11-spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
+| 12 | **[Requirements to Delivery](docs/work-flows/12-project-lifecycle.md)** | Full lifecycle — client requirements through handoff |
+| 13 | **[Development Release](docs/work-flows/13-release-workflow.md)** | prepare release — tests, counts, version bump, publish |
 
 ---
 
@@ -657,7 +664,7 @@ Detailed step-by-step diagrams for every work flow:
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
-- **[Work Flows](docs/work-flows/)** — 12 step-by-step flow diagrams
+- **[Work Flows](docs/work-flows/)** — 13 step-by-step flow diagrams
 - **SPD Concept Paper** — Methodology paper with evaluation *(coming soon)*
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README

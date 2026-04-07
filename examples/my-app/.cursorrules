@@ -178,7 +178,7 @@ workspace/.portable-spec-kit/user-profile/
 
 ### Test Execution Flow (used by all commands that run tests)
 
-Whenever any command triggers a test run (run tests, prepare release, push gate), always follow this flow:
+Whenever any command triggers a test run (run tests, prepare release, update release, refresh release, push gate), always follow this flow:
 
 1. Run ALL 3 suites to completion — never stop on first failure, collect all results:
    - `bash tests/test-spec-kit.sh`
@@ -201,6 +201,8 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 - **"push"** → push to remote (pre-push gate applies)
 - **"prepare release and push"** / **"prepare release, commit and push"** → run full prepare release sequence, then commit all release changes, then push via `bash agent/sync.sh`. No additional confirmation needed between steps — user has already given the full instruction.
 - **"refresh release and push"** / **"refresh release, commit and push"** → same as above but with refresh release sequence (no version bump)
+- **"init"** → scan project thoroughly, create/fill all agent/ files from codebase
+- **"reinit"** → re-scan project, sync all agent files to current codebase state
 
 **"prepare release" / "update release" full sequence:**
 1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop release.
@@ -293,6 +295,60 @@ After tests pass, check `gh auth status` and proceed:
 - **No git tags in use** → skip the tag update step; note it
 
 Batch all changes first, then trigger the release process once when the user is ready.
+
+**"init" — Project initialization:**
+Explicit trigger for full project scan and agent file setup. Handles any kit status (New, Partial, or already Mapped).
+
+1. Confirm project directory — list visible dirs, ask: "Which directory is your project? (Enter = current)"
+2. Show current kit status (✅ Mapped / ⚠ Partial / 🔍 New)
+3. If already Mapped → show: "Project already initialized (vX.X.X). Running full re-scan to refresh agent files." then continue.
+4. Announce: "Scanning project — stack, source files, config, dependencies..."
+5. **Deep scan** — read all config files (`package.json`, `requirements.txt`, `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tsconfig.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `*.xcodeproj`, `pubspec.yaml`, `README.md`) + all top-level dirs + sample `src/` files. Build a complete picture before touching anything.
+6. Create `agent/` dir + all 6 agent files if missing — fill every field from scan. Never leave TBD if the answer is visible in the code.
+7. Create `README.md`, `.gitignore`, `.env.example` if missing.
+8. Present scan summary + optional changes checklist:
+   ```
+   Scan complete. Detected: <stack> · Port <X>
+
+   [x] agent/ — 6 files created/updated (pre-filled from scan)
+   [ ] .github/workflows/ci.yml  — CI on every push/PR
+   [ ] .env.example              — env var template
+   [ ] README.md                 — restructure to kit template
+
+   Which optional changes? (all / none / list numbers)
+   ```
+9. Apply selected changes.
+10. Show init summary:
+    ```
+    ✅ Init complete — <project-name>
+    Stack:  <detected>
+    Files:  X created · Y updated
+    Status: ✅ Mapped
+    ```
+
+**"reinit" — Re-scan and sync agent files:**
+Re-scans the entire project and brings all agent files in sync with the current codebase. Use when significant code changes have been made since the last scan and agent files are stale.
+
+1. Announce: "Re-scanning — syncing agent files to current codebase..."
+2. Read current `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` as baseline.
+3. **Deep scan** — same scope as `init` step 5. Read source files, config files, directory structure.
+4. **Update `agent/AGENT.md`** — update only fields that changed (stack versions, new tools, port, conda env). Note what changed.
+5. **Rebuild `agent/AGENT_CONTEXT.md`** — rewrite from current codebase state:
+   - Phase — inferred from TASKS.md progress + codebase completeness
+   - What's done — `[x]` tasks + visible completed code
+   - What's next — `[ ]` tasks
+   - Blockers — TODO/FIXME markers in source, missing deps, failing tests
+   - File structure — current directory tree
+6. **SPECS.md staleness check** — count `[x]` tasks in TASKS.md vs features in SPECS.md. If completed tasks are not represented in SPECS → list them: "3 completed tasks not in SPECS.md — add as features? (y/n)"
+7. **PLANS.md vs code** — if architecture visible in the code differs from PLANS.md → flag it: "PLANS.md may be stale — <field> shows <X> in code but <Y> in PLANS. Update? (y/n)"
+8. Show reinit summary:
+   ```
+   ✅ Reinit complete — <project-name>
+   AGENT.md:      <fields updated, or "no changes">
+   AGENT_CONTEXT: rebuilt — phase: <X> · <Y> tasks pending
+   SPECS.md:      <N stale features> / current ✅
+   PLANS.md:      <stale fields flagged> / current ✅
+   ```
 
 ### Critical Operations (ALWAYS ASK FIRST)
 - Creating or deleting repositories

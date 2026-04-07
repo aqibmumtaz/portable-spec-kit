@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)
-**Built over:** v0.4.1 — v0.4.5 · **Tests:** 673 (528 framework across 43 sections + 145 benchmarking)
+**Built over:** v0.4.1 — v0.4.6 · **Tests:** 676 (531 framework across 43 sections + 145 benchmarking)
 
 ### Highlights
 - **GitHub Actions CI** — ci.yml runs all 3 test suites on every push and PR; release.yml verifies tag matches framework version on v* tag push
@@ -57,10 +57,20 @@ All notable changes to the Portable Spec Kit are documented here.
 - `user-profile-setup.md` — 2 missing edge cases from framework
 - All remaining flows: diagrams added, content audited and accurate
 
+### Flow Documentation + Commands (v0.4.6)
+- **Flow docs reordered** — logical user journey: onboarding (01-06), session management (07-10), development (11-12), release (13). 10 files renumbered.
+- **New `05-project-init.md`** — `init`/`reinit` explicit command flows: deep scan, agent file create/sync, SPECS/PLANS staleness check, edge cases table, init vs reinit comparison table
+- **Renamed** — `12-project-lifecycle.md` (was requirements-to-delivery), `13-release-workflow.md` (was development-release)
+- **`init` / `reinit` commands** — added as explicit signals in framework with full 10-step and 8-step flows respectively
+- **Test Execution Flow** — extracted as named section, referenced by all test-running commands (run tests, prepare/update/refresh release, push gate). Eliminates redundancy across flows.
+- **Version bump BEFORE push rule** — added to Versioning Rules: bump → commit → push order enforced, anti-pattern documented
+- **README commands table** — expanded to all 9 commands with accurate descriptions; release summary corrected (10 steps, Flows step added)
+- Section 19 updated: all 13 flow file names corrected
+
 ### Tests
 | Suite | Tests | Status |
 |-------|-------|--------|
-| test-spec-kit.sh (43 sections) | 528 | ✅ All passing |
+| test-spec-kit.sh (43 sections) | 531 | ✅ All passing |
 | test-spd-benchmarking.sh | 145 | ✅ All passing |
 | test-release-check.sh | 57/57 features | ✅ Release ready |
 

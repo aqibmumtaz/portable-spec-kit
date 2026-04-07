@@ -62,11 +62,15 @@
 
 | Signal | What it does |
 |--------|-------------|
+| `init` | Deep scan → create/fill agent/ files from codebase → optional changes checklist. See [05-project-init.md](05-project-init.md) |
+| `reinit` | Re-scan → sync stale agent files → SPECS/PLANS staleness check. See [05-project-init.md](05-project-init.md) |
+| `run tests` | Runs all 3 suites — failure summary + fix plan if any fail. No commits, no version changes |
 | `prepare release` / `update release` | Full 10-step sequence — tests, flow docs, counts, ARD audit, version bump, PDFs, publish |
+| `prepare release and push` / `prepare release, commit and push` | Full prepare release → commit → push via sync.sh |
 | `refresh release` | Same 10 steps but **no version bump** (step 4 skipped) — re-test and sync current version |
-| `run tests` | Runs test suites only — no version change, no commits |
+| `refresh release and push` / `refresh release, commit and push` | Same as above → commit → push via sync.sh |
 | `commit` | Stages and commits — no push |
-| `push` | Pushes to remote — triggers pre-push gate first |
+| `push` | Pre-push gate (check files changed since last prepare release) → push via sync.sh |
 
 **Agent never auto-triggers any of these.** Wait for explicit user signal.
 

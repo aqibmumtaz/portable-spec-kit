@@ -65,7 +65,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Version:</strong> v0.4.5</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 673 passing (528 framework + 145 benchmarking), 43 sections</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 676 passing (531 framework + 145 benchmarking), 43 sections</div>
   </div>
 </div>
 
@@ -77,7 +77,7 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 12 flow documents, 673 automated tests (528 framework + 145 benchmarking), 43 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 13 flow documents, 676 automated tests (531 framework + 145 benchmarking), 43 test sections.
 </div>
 
 <h3>Key Highlights</h3>
@@ -90,9 +90,9 @@
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>12 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>673 (528 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>676 (531 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
-  <tr><td>Flow documents</td><td>12 step-by-step work flows</td></tr>
+  <tr><td>Flow documents</td><td>13 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
   <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
   <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
@@ -102,7 +102,7 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)</h3>
-<p>Kit: v0.4.1 — v0.4.5</p>
+<p>Kit: v0.4.1 — v0.4.6</p>
 <ul>
   <li><strong>GitHub Actions CI:</strong> <code>ci.yml</code> runs all 3 test suites on every push and PR. <code>release.yml</code> verifies tag matches framework version on v* tag push.</li>
   <li><strong>Framework CI/CD rules:</strong> <code>ci.yml</code> template with stack-aware commands (Jest/pytest/Go/Bash), New Project Setup Step 7.5, Existing Project Setup checklist CI item, CI &amp; Community Contributions section (4 rules).</li>
@@ -110,8 +110,9 @@
   <li><strong>check_stub_complete():</strong> added to <code>tests/test-release-check.sh</code> (kit copy + template) — blocks release if test stubs have unfilled TODO markers.</li>
   <li><strong>Community files:</strong> PR template, bug report + feature request issue templates. CI badge in README.</li>
   <li><strong>Cross-platform sed fix:</strong> <code>test-spd-benchmarking.sh</code> now runs on Ubuntu (GitHub Actions).</li>
-  <li><strong>673 tests</strong> (528 framework across 43 sections + 145 benchmarking). Section 42: CI/CD (29 tests). Section 43: Spec-Based Test Generation (15 tests).</li>
+  <li><strong>676 tests</strong> (531 framework across 43 sections + 145 benchmarking). Section 42: CI/CD (29 tests). Section 43: Spec-Based Test Generation (15 tests).</li>
   <li><strong>v0.4.5:</strong> 2 new flow docs (11-existing-project-setup, 12-cicd-setup). All 12 flow docs validated at 63-char box alignment. Section 19 expanded to cover all 12 flows. ARD flow diagrams section added. Prepare release rule updated: flow docs first, mandatory ARD audit, mandatory PDFs.</li>
+  <li><strong>v0.4.6:</strong> Flow docs reordered logically (onboarding 01-06, session 07-10, development 11-12, release 13). New <code>05-project-init.md</code> — explicit <code>init</code>/<code>reinit</code> commands. Renamed: <code>12-project-lifecycle.md</code>, <code>13-release-workflow.md</code>. <code>init</code>/<code>reinit</code> added as explicit command signals with full flows. Test Execution Flow extracted as named section — referenced by all test-running commands. Version bump BEFORE push rule added. 676 tests (531 framework + 145 benchmarking).</li>
 </ul>
 
 <h3>v0.3 — Framework Hardening + R→F→T Traceability (April 2026)</h3>
@@ -124,7 +125,7 @@
   <li><strong>Release notes scope rule:</strong> only include changes committed and visible in public repo; never mention excluded files (private docs, research papers).</li>
   <li><strong>Simplified versioning:</strong> aligned patches (v0.N.x = release v0.N). All specific version examples replaced with generic <code>v0.N.x</code>/<code>v0.1.4→v0.1.5</code> so rules never go stale. GitHub release title = minor version (v0.N — Title) matching CHANGELOG.</li>
   <li><strong>README hardening:</strong> Critical Scenarios table (8 situations), Development Guidelines section, "first methodology native to the AI era" framing.</li>
-  <li><strong>673 tests</strong> (528 framework across 43 sections + 145 benchmarking). All passing.</li>
+  <li><strong>676 tests</strong> (531 framework across 43 sections + 145 benchmarking). All passing.</li>
 </ul>
 
 <h3>v0.2 — Versioning + Project Scenarios (April 2026)</h3>
@@ -159,7 +160,7 @@
 
 <h4>Flow Documentation</h4>
 <ul>
-  <li>12 flow documents created in <code>docs/work-flows/</code></li>
+  <li>13 flow documents created in <code>docs/work-flows/</code></li>
   <li>Each flow: title, trigger condition, step-by-step diagram, edge cases, files involved</li>
   <li>Context Management rule: update flows after implementation/tests</li>
 </ul>
@@ -349,7 +350,7 @@ workspace/
 </div>
 
 <h3>Flow Diagrams</h3>
-<p>Step-by-step box diagrams for all 12 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
+<p>Step-by-step box diagrams for all 13 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
 
 <h4>01 — First Session in New Workspace</h4>
 <p><em>When: User opens an AI agent in a workspace for the first time — no WORKSPACE_CONTEXT.md exists.</em></p>
@@ -772,7 +773,7 @@ workspace/
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  2. "run tests"                                             │
-│     bash tests/test-spec-kit.sh          → 528 tests        │
+│     bash tests/test-spec-kit.sh          → 531 tests        │
 │     bash tests/test-spd-benchmarking.sh  → 145 tests        │
 │     bash tests/test-release-check.sh     → 57/57 features   │
 │     Fix any failures before continuing                      │
@@ -1117,7 +1118,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td>41</td><td>Pre-Release Consistency Gate — cross-file count, version, template, docs sync</td><td>28</td></tr>
   <tr><td>42</td><td>CI/CD — GitHub Actions, Community Files, and Framework Rules</td><td>29</td></tr>
   <tr><td>43</td><td>Spec-Based Test Generation</td><td>15</td></tr>
-  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>528</strong></td></tr>
+  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>531</strong></td></tr>
 </table>
 
 <h3>Test Categories</h3>
@@ -1149,10 +1150,10 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>CONTRIBUTING.md</code></td><td>PR guidelines, portability test, review process</td></tr>
   <tr><td><code>LICENSE</code></td><td>MIT License</td></tr>
   <tr><td><code>ard/</code></td><td>Architecture Reference Documents (this file + Quick Guide)</td></tr>
-  <tr><td><code>docs/work-flows/</code></td><td>12 work flow documents</td></tr>
+  <tr><td><code>docs/work-flows/</code></td><td>13 work flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
-  <tr><td><code>tests/</code></td><td>673 automated tests (528 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
+  <tr><td><code>tests/</code></td><td>676 automated tests (531 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
 </table>
 
 <h3>Local-Only Files (NOT pushed)</h3>
