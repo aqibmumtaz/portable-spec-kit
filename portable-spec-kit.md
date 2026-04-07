@@ -171,24 +171,39 @@ workspace/.portable-spec-kit/user-profile/
 ### Push
 - **Do NOT push** to remote unless user explicitly says "push"
 - Commit ≠ push. Commit is local and safe. Push is remote and requires explicit instruction.
-- **Pre-push gate** — before every push, all test suites must pass. If user says "push" without having run "prepare release" in this session → run tests first, show results, then push. Never push with known failures even if user asks for urgency.
-- **Version bump BEFORE push** — bump version first, commit it, then push. Never push then bump after. Increment for all changes except minor text fixes. Bump for: bug fixes, patches, task completion, new rules, features, renames, template changes, test additions, flow updates. Do NOT bump for: typo fixes, text tweaks, formatting, cosmetic PDF regeneration. When bumping: update (1) `agent/AGENT_CONTEXT.md` Version field (bump patch number e.g. v0.1.4 → v0.1.5), (2) `README.md` version badge + test badge. Order: bump → commit → push.
+- **Pre-push gate** — check if any files were modified since the last `prepare release` completed (use `git diff` against the last release commit):
+  - **No changes since last prepare release** → push immediately, no tests needed
+  - **Changes exist** → run **Test Execution Flow**. If all pass → warn user: "Changes were made after the last prepare release — flow docs, ARD, version bump, PDFs, RELEASES, CHANGELOG may be out of date. Proceed anyway? (y/n)". User yes → push. Do NOT attempt any release steps — push is not a substitute for prepare release.
+- **Push = `bash agent/sync.sh "message"`** — that's it. sync.sh handles copying files and pushing to `aqibmumtaz/portable-spec-kit`.
+
+### Test Execution Flow (used by all commands that run tests)
+
+Whenever any command triggers a test run (run tests, prepare release, push gate), always follow this flow:
+
+1. Run ALL 3 suites to completion — never stop on first failure, collect all results:
+   - `bash tests/test-spec-kit.sh`
+   - `bash tests/test-spd-benchmarking.sh`
+   - `bash tests/test-release-check.sh agent/SPECS.md`
+2. If all pass → show pass summary and continue
+3. If any failures exist:
+   - Show **failure summary**: suite name, test name, error message for each failure
+   - Show **fix plan**: one-line diagnosis + proposed fix for each failure
+   - Ask user: "X test(s) failed. Fix now? (Enter = yes, or describe changes)"
+   - User approves → fix, re-run from step 1
+   - User declines → stop. Do not proceed with known failures.
 
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
-- **"run tests"** → run test suite only
+- **"run tests"** → run Test Execution Flow. No commits, no version changes.
 - **"prepare release"** / **"update release"** → full release sequence (see below)
 - **"refresh release"** → re-test and sync current release without bumping version (see below)
 - **"commit"** → commit staged changes
-- **"push"** → push to remote
+- **"push"** → push to remote (pre-push gate applies)
+- **"prepare release and push"** / **"prepare release, commit and push"** → run full prepare release sequence, then commit all release changes, then push via `bash agent/sync.sh`. No additional confirmation needed between steps — user has already given the full instruction.
+- **"refresh release and push"** / **"refresh release, commit and push"** → same as above but with refresh release sequence (no version bump)
 
 **"prepare release" / "update release" full sequence:**
-1. Run ALL project test suites to completion — do not stop at first failure. Collect results across all suites. If any failures exist:
-   - Show a **failure summary**: suite name, test name, error message for each failure
-   - Show a **fix plan**: for each failure, one-line diagnosis + proposed fix
-   - Ask user: "X test(s) failed. Fix now? (Enter = yes, or describe changes)"
-   - User approves → fix and re-run. Do not proceed to step 2 until all suites pass.
-   - User declines → stop release. Do not proceed with known failures.
+1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop release.
 2. **Update flow docs (FIRST)** — scan `docs/work-flows/`:
    - **Update** any existing flow doc that describes a process that changed this release
    - **Create** a new flow doc for any new process or feature implemented this release that doesn't have one yet
@@ -204,12 +219,12 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
 6. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
 7. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
-8. Publish — commit all changes to `Slimlogix/Documents` (git add + commit), then run `bash agent/sync.sh "commit message"` to push to the public repo `aqibmumtaz/portable-spec-kit`. sync.sh handles: copying portable-spec-kit.md (root → project → examples), syncing all files to public repo, creating/updating GitHub Release from CHANGELOG.md, updating the v0.N tag. If `gh` not authenticated → run `gh auth login` first.
-9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version (check README or portable-spec-kit.md header on GitHub)
+8. Commit and publish — stage and commit all release changes, then run `bash agent/sync.sh "commit message"` to push to `aqibmumtaz/portable-spec-kit`. sync.sh handles: copying portable-spec-kit.md (root → project → examples), syncing all files to public repo, creating/updating GitHub Release from CHANGELOG.md, updating the v0.N tag. If `gh` not authenticated → run `gh auth login` first.
+9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version (check portable-spec-kit.md header on GitHub)
 10. **Show the release summary block** (see format below)
 
 **"refresh release" sequence (same version, no bump):**
-1. Run ALL project test suites to completion — collect results. If any failures exist: show failure summary + fix plan, ask user to approve fixes, re-run. Do not proceed with known failures.
+1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop.
 2. **Update flow docs (FIRST)** — scan `docs/work-flows/`:
    - **Update** any existing flow doc that describes a process that changed
    - **Create** a new flow doc for any new process implemented that doesn't have one yet
@@ -225,7 +240,7 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
 6. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
 7. Update `CHANGELOG.md` — update the current version entry (same patch range, updated content)
-8. Publish — commit all changes to `Slimlogix/Documents`, then run `bash agent/sync.sh "commit message"` to push to `aqibmumtaz/portable-spec-kit`. If `gh` not authenticated → run `gh auth login` first.
+8. Commit and publish — stage and commit all release changes, then run `bash agent/sync.sh "commit message"` to push to `aqibmumtaz/portable-spec-kit`. If `gh` not authenticated → run `gh auth login` first.
 9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version
 10. **Show the release summary block** (see format below)
 
