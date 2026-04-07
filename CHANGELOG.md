@@ -7,8 +7,67 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
+## v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)
+**Built over:** v0.4.1 — v0.4.5 · **Tests:** 673 (528 framework across 43 sections + 145 benchmarking)
+
+### Highlights
+- **GitHub Actions CI** — ci.yml runs all 3 test suites on every push and PR; release.yml verifies tag matches framework version on v* tag push
+- **Framework CI/CD rules** — every user project now gets CI guidance during setup: ci.yml template, Step 7.5, stack-aware test commands (Jest/pytest/Go/Bash), Existing Project Setup checklist CI item
+- **CI & Community Contributions section** — 4 rules: CI badge rule, branch protection guidance, PR workflow, contribution validation
+- **Spec-Based Test Generation** — forward flow only: SPECS origin detection, per-feature acceptance criteria format (### F{n} subsections), stub generation trigger, stack-aware stubs, stub completion gate
+- **`check_stub_complete()`** — added to test-release-check.sh (kit copy + template); blocks release if test stubs have unfilled TODO markers
+- **Community files** — PR template, bug report + feature request issue templates
+- **Cross-platform sed fix** — test-spd-benchmarking.sh now runs on Ubuntu (GitHub Actions)
+- **Section 41 gate hardening** — 5 new tests enforce ARD version badge, flow doc Kit refs, benchmarking fixture Kit refs, example Kit fields — gaps that previously required manual doc audits
+- **Section 42** (29 tests) + **Section 43** (15 tests) — CI/CD and spec-gen validated on every prepare release
+- **Flow documentation overhaul** — `docs/system-flows/` → `docs/work-flows/`; 3 flow docs overhauled to reflect current system; `development-release.md` added (full 8-step gate with Section 41 groups, stub gate, pre-push gate)
+- **`check_stub_complete()` grep bug fixed** — `grep -cE ... || echo 0` → `grep -E ... | wc -l` (macOS: grep -c exits 1 on 0 matches, causing doubled output and integer comparison failure)
+
+### Framework Changes
+- **CI & Community Contributions** — CI badge rule, branch protection guidance, PR workflow rule, contribution validation rule
+- **ci.yml template** — shipped in portable-spec-kit.md with `{TEST_COMMAND}` + `{SETUP_STEPS}` placeholders; stack-aware command detection table
+- **New Project Setup Step 7.5** — create `.github/workflows/ci.yml` after stack confirmed; always includes `test-release-check.sh agent/SPECS.md`
+- **Existing Project Setup checklist** — CI item added
+- **Branch & PR Workflow** — CI must be green before merging any PR; branch protection guidance
+- **Spec-Based Test Generation section** — 8 rules: origin detection, per-feature criteria format, stub generation trigger, no-criteria edge case, retroactive flow rule, stub generation steps, stack-aware formats, stub completion gate
+- **SPECS.md template** — global `## Acceptance Criteria` → per-feature `## Feature Acceptance Criteria / ### F{n}` format
+- **test-release-check.sh template** — `check_stub_complete()` + stub gate added (shipped to all new user projects)
+- **New Project Setup Step 4** — updated to mention stub generation when criteria written
+
+### Flow Documentation (v0.4.3)
+- `docs/system-flows/` → `docs/work-flows/` — renamed, all references updated across 20+ files
+- `spec-persistent-development.md` — per-feature criteria in Phase 1; stub lifecycle (RED/GREEN) + CI update step in Phase 3; prepare release 8-step gate in Phase 4; CI step in Pipeline Sync
+- `new-project-setup.md` — Step 1 per-feature criteria + stubs; Step 6 CI workflow creation; renumbered
+- `development-release.md` — new: full prepare release gate, 3 test suites breakdown, Section 41 groups, stub gate, pre-push gate, edge cases
+- Section 41 flow doc count test fixed: grep pattern updated "system flow" → "work flow"
+
+### Flow Documentation (v0.4.5)
+- **2 new flow docs** — `11-existing-project-setup.md`: Step 0 state detection (Mapped/Partial/New), full scan flow, edge cases table, contrast with returning session; `12-cicd-setup.md`: stack detection, ci.yml generation, CI badge, branch protection, pre-push gate, PR contribution gate
+- **All 12 flow docs aligned** — 63-char box-line standard enforced via Python `unicodedata.east_asian_width`; emoji-wide characters (✅, 🔍) accounted for correctly
+- Section 19 expanded: "All 12 Flows + Diagram Integrity" — file existence + title/trigger + content tests for all 12 flows
+- README flow table: rows 11 + 12 added; "10 step-by-step flows" → "12 step-by-step flows"
+- ARD HTML: flow table rebuilt (12 rows, # column), all count references updated
+
+### Flow Documentation (v0.4.4)
+- All 10 flow docs updated with ASCII box diagrams
+- `development-release.md` — developer workflow diagram added (DEVELOP → run tests → prepare release → commit → push → verify)
+- `returning-session.md` — Step 0 kit status, 5-step read order, Kit update flow with stale sweep + codebase scan, profile/scan decoupling
+- `first-session-workspace.md` — profile/scan decoupling, scan announcement
+- `file-management.md` — Kit Update scan flow, decision diagram, edge cases
+- `user-profile-setup.md` — 2 missing edge cases from framework
+- All remaining flows: diagrams added, content audited and accurate
+
+### Tests
+| Suite | Tests | Status |
+|-------|-------|--------|
+| test-spec-kit.sh (43 sections) | 528 | ✅ All passing |
+| test-spd-benchmarking.sh | 145 | ✅ All passing |
+| test-release-check.sh | 57/57 features | ✅ Release ready |
+
+---
+
 ## v0.3 — Framework Hardening + R→F→T Traceability (April 2026)
-**Built over:** v0.3.1 — v0.3.26 (26 patches) · **Tests:** 597 (452 framework + 145 benchmarking)
+**Built over:** v0.3.1 — v0.3.27 · **Tests:** 597 (452 framework + 145 benchmarking)
 
 ### Highlights
 - Full **R→F→T traceability chain** — every done feature requires a test reference in SPECS.md before release

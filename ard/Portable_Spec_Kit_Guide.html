@@ -79,20 +79,20 @@
   <div class="framework-flow">
     <div class="fw-step">SPECS</div>
     <div class="fw-arrow">→</div>
-    <div class="fw-step">PLANNING</div>
+    <div class="fw-step">PLANS</div>
     <div class="fw-arrow">→</div>
     <div class="fw-step">TASKS</div>
     <div class="fw-arrow">→</div>
     <div class="fw-step">BUILD + TEST</div>
     <div class="fw-arrow">→</div>
-    <div class="fw-step">TRACK</div>
+    <div class="fw-step">RELEASES</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.2.1</div>
-    <div><strong style="color:#dce4f0;">Date:</strong> March 2026</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.5</div>
+    <div><strong style="color:#dce4f0;">Date:</strong> April 2026</div>
   </div>
 </div>
 
@@ -149,16 +149,18 @@
   <tr><td>User Profile</td><td>Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation</td></tr>
   <tr><td>Git & GitHub Rules</td><td>When to commit, push, ask before critical ops</td></tr>
   <tr><td>Security Rules</td><td>Secret handling, .env practices, code security</td></tr>
-  <tr><td>Versioning</td><td>Two-level: framework v0.2.x (each publish) + release v0.x (milestones), auto-restructure on pull</td></tr>
+  <tr><td>Versioning</td><td>Two-level: framework v0.N.x (each publish) + release v0.N (milestones), auto-restructure on pull</td></tr>
   <tr><td>Task Tracking</td><td>Add tasks FIRST, then work. Module-based organization.</td></tr>
   <tr><td>Testing Standards</td><td>Coverage targets, edge case checklist, mock rules, self-validation</td></tr>
   <tr><td>Code Quality</td><td>Review checklist, naming conventions, deployment checklist</td></tr>
   <tr><td>Error Handling</td><td>Structured errors, logging, error boundaries, user-friendly messages</td></tr>
-  <tr><td>Branch & PR Workflow</td><td>Feature branches, PR format, squash merge, clean history</td></tr>
+  <tr><td>Branch & PR Workflow</td><td>Feature branches, PR format, squash merge, CI-before-merge requirement</td></tr>
+  <tr><td>CI & Community Contributions</td><td>GitHub Actions ci.yml template, stack-aware test commands, branch protection, PR workflow, contribution validation</td></tr>
+  <tr><td>Spec-Based Test Generation</td><td>Forward-flow stub generation, per-feature acceptance criteria format, stack-aware stubs, stub completion gate</td></tr>
   <tr><td>Dependencies</td><td>Bundle size checks, lock files, audit, avoid unnecessary deps</td></tr>
   <tr><td>Project Templates</td><td>6 agent files + README + 8 source code structures (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Auto-Scan</td><td>Detects existing projects, creates missing files, restructures to standard</td></tr>
-  <tr><td>Agent Behavior</td><td>Guide don't enforce, silent tracking, retroactive spec-filling</td></tr>
+  <tr><td>Auto-Scan</td><td>Detects existing projects, creates missing files, restructures to standard — 12 work flow docs</td></tr>
+  <tr><td>Agent Behavior</td><td>Guide don't enforce, silent tracking, retroactive spec-filling, R→F→T traceability</td></tr>
 </table>
 
 <h2>Multi-Agent Support</h2>
@@ -187,7 +189,7 @@
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
     <div class="flow-num">2</div>
-    <div class="flow-text"><strong>Open any AI agent — auto-scaffolds</strong> — detects environment, creates WORKSPACE_CONTEXT.md, creates <code>agent/</code> with 6 files (AGENT, SPECS, PLANNING, TASKS, TRACKER, CONTEXT), project dirs (src/, tests/, docs/), README, .gitignore, .env.example</div>
+    <div class="flow-text"><strong>Open any AI agent — auto-scaffolds</strong> — detects environment, creates WORKSPACE_CONTEXT.md, creates <code>agent/</code> with 6 files (AGENT, AGENT_CONTEXT, SPECS, PLANS, TASKS, RELEASES), project dirs (src/, tests/, docs/), README, .gitignore, .env.example, tests/test-release-check.sh</div>
   </div>
   <div class="flow-arrow">↓</div>
   <div class="flow-step">
@@ -310,7 +312,7 @@ your-project/
   <tr><td>Coverage targets</td><td>Backend 98%+, frontend logic 98%+, UI components 85%+</td></tr>
   <tr><td>No broken features</td><td>User should NEVER discover something doesn't work</td></tr>
   <tr><td>Context updated</td><td>AGENT_CONTEXT.md updated after significant work, after commits, and before any push</td></tr>
-  <tr><td>Flows updated</td><td>docs/system-flows/ updated if any system flow changed — flows always match code</td></tr>
+  <tr><td>Flows updated</td><td>docs/work-flows/ updated if any work flow changed — flows always match code</td></tr>
 </table>
 
 <h3>Phase 4: Tracking</h3>
@@ -322,7 +324,7 @@ your-project/
 ## v0.2 — AI Features (March 30, 2026)
 
 ### Summary
-Added JD-tailored resume, PDF generation, 604 tests.
+Added JD-tailored resume, PDF generation, 673 tests.
 
 ### Changes
 - **Frontend:** JD Tailor modal, version manager, skills tags
@@ -330,7 +332,7 @@ Added JD-tailored resume, PDF generation, 604 tests.
 - **AI:** Bullet format detection, deduplication, length matching
 
 ### Tests
-- 604 tests passing, 95% coverage
+- 673 tests passing, 95% coverage
 
 ### Deployment
 - Deployed to: aqibmumtaz.github.io
@@ -600,7 +602,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.2.1 &bull; April 2026
+  Portable Spec Kit &bull; v0.4.5 &bull; April 2026
 </div>
 
 </div>
@@ -618,7 +620,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.2.1 &bull; April 2026</div>
+    <div class="badge">v0.4.5 &bull; April 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

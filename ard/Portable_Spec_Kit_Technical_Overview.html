@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.1.1 &bull; April 2026</div>
+    <div class="badge">v0.4.5 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.1.1</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 597 passing (452 framework + 145 benchmarking), 41 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.5</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 673 passing (528 framework + 145 benchmarking), 43 sections</div>
   </div>
 </div>
 
@@ -77,22 +77,22 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 9 flow documents, 597 automated tests (452 framework + 145 benchmarking), 41 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 12 flow documents, 673 automated tests (528 framework + 145 benchmarking), 43 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.3.26</td></tr>
+  <tr><td>Current version</td><td>v0.4.5</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (~1,180 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
-  <tr><td>Core strengths</td><td>10 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating)</td></tr>
+  <tr><td>Core strengths</td><td>12 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>597 (452 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>673 (528 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
-  <tr><td>Flow documents</td><td>9 step-by-step system flows</td></tr>
+  <tr><td>Flow documents</td><td>12 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
   <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
   <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
@@ -101,8 +101,21 @@
 <!-- VERSION CHANGELOG -->
 <h2>Version Changelog</h2>
 
+<h3>v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)</h3>
+<p>Kit: v0.4.1 — v0.4.5</p>
+<ul>
+  <li><strong>GitHub Actions CI:</strong> <code>ci.yml</code> runs all 3 test suites on every push and PR. <code>release.yml</code> verifies tag matches framework version on v* tag push.</li>
+  <li><strong>Framework CI/CD rules:</strong> <code>ci.yml</code> template with stack-aware commands (Jest/pytest/Go/Bash), New Project Setup Step 7.5, Existing Project Setup checklist CI item, CI &amp; Community Contributions section (4 rules).</li>
+  <li><strong>Spec-based test generation (8 rules):</strong> SPECS origin detection (forward vs retroactive), per-feature <code>### F{n}</code> acceptance criteria format, stub generation trigger, stack-aware stub formats, stub completion gate.</li>
+  <li><strong>check_stub_complete():</strong> added to <code>tests/test-release-check.sh</code> (kit copy + template) — blocks release if test stubs have unfilled TODO markers.</li>
+  <li><strong>Community files:</strong> PR template, bug report + feature request issue templates. CI badge in README.</li>
+  <li><strong>Cross-platform sed fix:</strong> <code>test-spd-benchmarking.sh</code> now runs on Ubuntu (GitHub Actions).</li>
+  <li><strong>673 tests</strong> (528 framework across 43 sections + 145 benchmarking). Section 42: CI/CD (29 tests). Section 43: Spec-Based Test Generation (15 tests).</li>
+  <li><strong>v0.4.5:</strong> 2 new flow docs (11-existing-project-setup, 12-cicd-setup). All 12 flow docs validated at 63-char box alignment. Section 19 expanded to cover all 12 flows. ARD flow diagrams section added. Prepare release rule updated: flow docs first, mandatory ARD audit, mandatory PDFs.</li>
+</ul>
+
 <h3>v0.3 — Framework Hardening + R→F→T Traceability (April 2026)</h3>
-<p>Kit: v0.3.1 — v0.3.26</p>
+<p>Kit: v0.3.1 — v0.3.27</p>
 <ul>
   <li><strong>R→F→T traceability chain:</strong> every done feature requires test reference in SPECS.md before release. <code>tests/test-release-check.sh</code> distributed as kit template, auto-created on project setup.</li>
   <li><strong>15 new enforcement sections:</strong> SPECS.md staleness check, RELEASES.md trigger rule, scope change recording (DROP/ADD/MODIFY/REPLACE), no-slip task rule, pipeline sync, pre-release consistency gate (Section 41).</li>
@@ -111,7 +124,7 @@
   <li><strong>Release notes scope rule:</strong> only include changes committed and visible in public repo; never mention excluded files (private docs, research papers).</li>
   <li><strong>Simplified versioning:</strong> aligned patches (v0.N.x = release v0.N). All specific version examples replaced with generic <code>v0.N.x</code>/<code>v0.1.4→v0.1.5</code> so rules never go stale. GitHub release title = minor version (v0.N — Title) matching CHANGELOG.</li>
   <li><strong>README hardening:</strong> Critical Scenarios table (8 situations), Development Guidelines section, "first methodology native to the AI era" framing.</li>
-  <li><strong>597 tests</strong> (452 framework across 41 sections + 145 benchmarking). All passing.</li>
+  <li><strong>673 tests</strong> (528 framework across 43 sections + 145 benchmarking). All passing.</li>
 </ul>
 
 <h3>v0.2 — Versioning + Project Scenarios (April 2026)</h3>
@@ -146,7 +159,7 @@
 
 <h4>Flow Documentation</h4>
 <ul>
-  <li>8 flow documents created in <code>docs/system-flows/</code></li>
+  <li>12 flow documents created in <code>docs/work-flows/</code></li>
   <li>Each flow: title, trigger condition, step-by-step diagram, edge cases, files involved</li>
   <li>Context Management rule: update flows after implementation/tests</li>
 </ul>
@@ -192,7 +205,7 @@
 <ol class="toc">
   <li><a href="#arch">Architecture Overview</a></li>
   <li><a href="#profile">User Profile System</a></li>
-  <li><a href="#flows">System Flows</a></li>
+  <li><a href="#flows">Work Flows</a></li>
   <li><a href="#agents">Multi-Agent Support</a></li>
   <li><a href="#security">Security Model</a></li>
   <li><a href="#templates">Source Code Templates</a></li>
@@ -250,7 +263,7 @@ workspace/
 ├── src/                                  ← Source code
 ├── tests/
 │   └── test-release-check.sh             ← R→F→T validator (auto-created by kit)
-├── docs/system-flows/                           ← System flow documentation
+├── docs/work-flows/                           ← System flow documentation
 └── ard/                                  ← Architecture Reference Documents
 </pre>
 
@@ -310,26 +323,652 @@ workspace/
 </table>
 
 <!-- 3. FLOWS -->
-<h2 id="flows">3. System Flows</h2>
+<h2 id="flows">3. Work Flows</h2>
 
-<p>8 documented flows in <code>docs/system-flows/</code> covering every system interaction:</p>
+<p>12 documented flows in <code>docs/work-flows/</code> covering every system interaction:</p>
 
 <table>
-  <tr><th>Flow</th><th>Trigger</th><th>Key Actions</th></tr>
-  <tr><td><strong>User Profile Setup</strong></td><td>First time using kit</td><td>GitHub fetch → 3 questions → save global + workspace</td></tr>
-  <tr><td><strong>New Project Setup</strong></td><td>Creating new project</td><td>Show profile → keep/customize → scaffold agent/ + dirs</td></tr>
-  <tr><td><strong>Returning Session</strong></td><td>Coming back to project</td><td>Load profile → read context → summarize → continue</td></tr>
-  <tr><td><strong>Agent Switching</strong></td><td>Changing AI agent</td><td>All agents read same file via symlinks → zero data loss</td></tr>
-  <tr><td><strong>Profile Customization</strong></td><td>Different prefs per project</td><td>Show CURRENT + RECOMMENDED → save local override</td></tr>
-  <tr><td><strong>Spec-Persistent Development</strong></td><td>Any workflow — specs persist</td><td>SPECS → PLANS → TASKS → RELEASES — living specs, never block</td></tr>
-  <tr><td><strong>First Session Workspace</strong></td><td>New workspace</td><td>Environment detection → WORKSPACE_CONTEXT → auto-scan</td></tr>
-  <tr><td><strong>File Management</strong></td><td>Agent encounters managed file</td><td>Create / restructure / leave-as-is — never lose content</td></tr>
+  <tr><th>#</th><th>Flow</th><th>Trigger</th><th>Key Actions</th></tr>
+  <tr><td>01</td><td><strong>First Session Workspace</strong></td><td>New workspace</td><td>Environment detection → WORKSPACE_CONTEXT → auto-scan</td></tr>
+  <tr><td>02</td><td><strong>User Profile Setup</strong></td><td>First time using kit</td><td>GitHub fetch → 3 questions → save global + workspace</td></tr>
+  <tr><td>03</td><td><strong>New Project Setup</strong></td><td>Creating new project</td><td>Show profile → keep/customize → scaffold agent/ + dirs</td></tr>
+  <tr><td>04</td><td><strong>File Management</strong></td><td>Agent encounters managed file</td><td>Create / restructure / leave-as-is — never lose content</td></tr>
+  <tr><td>05</td><td><strong>Profile Customization</strong></td><td>Different prefs per project</td><td>Show CURRENT + RECOMMENDED → save local override</td></tr>
+  <tr><td>06</td><td><strong>Returning Session</strong></td><td>Coming back to project</td><td>Load profile → read context → summarize → continue</td></tr>
+  <tr><td>07</td><td><strong>Spec-Persistent Development</strong></td><td>Any workflow — specs persist</td><td>SPECS → PLANS → TASKS → RELEASES — living specs, never block</td></tr>
+  <tr><td>08</td><td><strong>Requirements to Delivery</strong></td><td>Client requirements received</td><td>R→F traceability → scope changes → F→T coverage → handoff</td></tr>
+  <tr><td>09</td><td><strong>Development Release</strong></td><td>prepare release command</td><td>Tests → counts → version bump → PDFs → publish → tag</td></tr>
+  <tr><td>10</td><td><strong>Agent Switching</strong></td><td>Changing AI agent</td><td>All agents read same file via symlinks → zero data loss</td></tr>
+  <tr><td>11</td><td><strong>Existing Project Setup</strong></td><td>First-time kit onboarding</td><td>Detect state → scan → fill agent/ → checklist → apply selected</td></tr>
+  <tr><td>12</td><td><strong>CI/CD Setup</strong></td><td>New/existing project setup</td><td>Stack detect → ci.yml template → badge → branch protection</td></tr>
 </table>
 
 <h3>Context Management Rule</h3>
 <div class="highlight">
-  <strong>After completing implementations or running tests:</strong> update <code>agent/AGENT_CONTEXT.md</code> to reflect current code status. Also update <code>docs/system-flows/</code> if any system flow changed, and update test files if new behaviors were added. Context, flows, and tests must always match the actual state of the code.
+  <strong>After completing implementations or running tests:</strong> update <code>agent/AGENT_CONTEXT.md</code> to reflect current code status. Also update <code>docs/work-flows/</code> if any work flow changed, and update test files if new behaviors were added. Context, flows, and tests must always match the actual state of the code.
 </div>
+
+<h3>Flow Diagrams</h3>
+<p>Step-by-step box diagrams for all 12 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
+
+<h4>01 — First Session in New Workspace</h4>
+<p><em>When: User opens an AI agent in a workspace for the first time — no WORKSPACE_CONTEXT.md exists.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. CHECK PROFILE                                           │
+│     workspace/.portable-spec-kit/user-profile/ → FOUND?     │
+│     ~/.portable-spec-kit/user-profile/ → FOUND?             │
+│     Neither → run User Profile Setup flow                   │
+│                                                             │
+│     NOTE: Profile setup and workspace scan are independent  │
+│     If user skips profile → apply defaults, proceed         │
+│     Never block workspace scan waiting for profile          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. DETECT ENVIRONMENT                                      │
+│     OS, Node version, Python version, tools installed       │
+│     → populate Environment &amp; Tools section                  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. SCAN WORKSPACE                                          │
+│     List all directories → identify projects                │
+│     → populate Workspace Overview table                     │
+│     Announce: "Scanning workspace — found X projects..."    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. CREATE WORKSPACE_CONTEXT.md                             │
+│     Sections:                                               │
+│     - Workspace Overview (table of all projects)            │
+│     - Environment &amp; Tools                                   │
+│     - Key Conventions                                       │
+│     - Last Updated                                          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. CREATE AGENT/ DIRS FOR PROJECTS WITHOUT THEM            │
+│     For each project found without agent/ dir:              │
+│     - Create agent/ with 6 template files                   │
+│     - Apply File Creation/Update Rule to README.md          │
+│     Show kit status: 🔍 Understanding your project...       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. WORKSPACE READY                                         │
+│     "Workspace scanned. X projects found."                  │
+│     "What would you like to work on?"                       │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>02 — User Profile Setup</h4>
+<p><em>When: First time using the kit on any machine — no profile exists anywhere.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. DETECT USERNAME                                         │
+│     git config user.name → slugified (lowercase, spaces→-)  │
+│     Filename: user-profile-jane-smith.md                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. FETCH GITHUB PROFILE                                    │
+│     gh api user → full name, bio (if gh authenticated)      │
+│     ├─ gh available → "Welcome, Jane Smith!"                │
+│     ├─ gh not authenticated → ask name + expertise manually │
+│     └─ gh not installed → ask manually                      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. ASK 3 PREFERENCE QUESTIONS                              │
+│     Q1: Communication style?                                │
+│         (a) direct and concise ← RECOMMENDED                │
+│         (b) data-driven, comprehensive with tables          │
+│         (c) conversational and collaborative                │
+│         Enter = use recommended                             │
+│                                                             │
+│     Q2: Working pattern?                                    │
+│         (a) iterative ← RECOMMENDED                         │
+│         (b) plan-first                                      │
+│         (c) prototype-fast                                  │
+│         Enter = use recommended                             │
+│                                                             │
+│     Q3: AI delegation?                                      │
+│         (a) AI does 70%, user guides 30% ← RECOMMENDED      │
+│         (b) AI does 90%, user reviews 10%                   │
+│         (c) 50/50 collaboration                             │
+│         Enter = use recommended                             │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. CONFIRM PROFILE                                         │
+│     ┌─────────────────────────────────┐                     │
+│     │ Jane Smith — B.S. CS.           │                     │
+│     │ Communication: direct           │                     │
+│     │ Working pattern: iterative      │                     │
+│     │ AI delegation: AI does 70%      │                     │
+│     └─────────────────────────────────┘                     │
+│     "Looks good? (Enter = yes, or type changes)"            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. SAVE PROFILE                                            │
+│     ~/.portable-spec-kit/user-profile/user-profile-{u}.md   │
+│     workspace/.portable-spec-kit/user-profile/...           │
+│     → won't ask again on this machine                       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. CONTINUE TO PROJECT SETUP                               │
+│     ✓ Profile ready — proceeds to workspace/project scan    │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>03 — New Project Setup</h4>
+<p><em>When: User asks to create a new project or enters a directory without agent/ files.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. LOAD USER PROFILE                                       │
+│     workspace/.portable-spec-kit/ → global → setup flow     │
+│     Show: "Welcome back, Jane! Setting up new project."     │
+│     Keep or customize for this project?                     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. CREATE PROJECT STRUCTURE (immediately — no questions)   │
+│     agent/ + 6 files, src/, tests/, docs/, ard/             │
+│     input/, output/, cache/                                 │
+│     README.md, .gitignore, .env.example                     │
+│     tests/test-release-check.sh (R→F→T validator)           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. REPORT TO USER                                          │
+│     Show structure created — wait for user to start         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │  When user is ready:
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. SPECS DISCUSSION                                        │
+│     Write agent/SPECS.md — requirements, features           │
+│     Write per-feature acceptance criteria (### F{n})        │
+│     Agent generates test stubs for forward-flow features    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. TECH STACK → user approves                              │
+│     Write agent/PLANS.md — architecture, phases             │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. INITIALIZE STACK                                        │
+│     Install deps, update .gitignore, assign port            │
+│     If Python → conda environment selection flow            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  7. CREATE CI WORKFLOW                                      │
+│     .github/workflows/ci.yml (stack-aware test command)     │
+│     Always includes test-release-check.sh as final step     │
+│     Add CI badge to README.md                               │
+│     "CI will run on every push and PR."                     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  8. START DEVELOPMENT                                       │
+│     Update agent/TASKS.md → begin building                  │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>04 — File Management</h4>
+<p><em>When: Agent encounters any auto-managed file (WORKSPACE_CONTEXT.md, README.md, agent/ files) and needs to decide whether to create, update, or leave it.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  ENCOUNTER A MANAGED FILE                                   │
+│  (WORKSPACE_CONTEXT.md / README.md / agent/* files)         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Does file exist?                                           │
+│     ├─ NO  → CREATE from template                           │
+│     │        Fill in known details (project name, stack)    │
+│     └─ YES → Does file match template?                      │
+│              ├─ YES → LEAVE AS-IS — no changes              │
+│              └─ NO  → RESTRUCTURE:                          │
+│                       Read ALL content                      │
+│                       Map to template sections              │
+│                       Reorganize structure                  │
+│                       RETAIN every detail                   │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+<p><strong>Kit Version Update — Full Scan Flow</strong> (runs when kit version changes on pull):</p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. RESTRUCTURE AGENT/ FILES                                │
+│     Compare each file to current template                   │
+│     Reorganize structure, retain all existing content       │
+│     Update **Kit:** field to new version                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. STALE FIELD NAME SWEEP                                  │
+│     grep -r "Framework versions:" → rename to "Kit:"        │
+│     grep -r "**Framework:**" → rename to "**Kit:**"         │
+│     Check ALL files: agent/, docs/, examples/, templates    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. SCAN PROJECT CODEBASE                                   │
+│     Read source files, config files, directory structure    │
+│     (package.json, requirements.txt, Dockerfile, etc.)      │
+│     Update AGENT.md: stack, tech, ports — from actual code  │
+│     Update AGENT_CONTEXT.md: phase, done, next — from state │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. SHOW COMBINED SUMMARY                                   │
+│     "Portable Spec Kit updated to vX.X."                    │
+│     "Your project: [stack] · [phase] · [X tasks pending]"   │
+│     "Agent files updated: AGENT.md, AGENT_CONTEXT.md"       │
+│     "What's new in vX.X: [CHANGELOG entries]"               │
+│     Continue conversation — zero interruption               │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>05 — Profile Customization</h4>
+<p><em>When: User wants different preferences for a specific project.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. SHOW CURRENT PROFILE                                    │
+│     Load global: ~/.portable-spec-kit/user-profile/...      │
+│     ┌─────────────────────────────────┐                     │
+│     │ Jane Smith — B.S. CS.           │                     │
+│     │ Communication: direct           │                     │
+│     │ Working pattern: iterative      │                     │
+│     │ AI delegation: AI does 70%      │                     │
+│     └─────────────────────────────────┘                     │
+│     "Keep or customize? (Enter = keep)"                     │
+│     (a) Keep as-is  (b) Customize for this project          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ User selects (b)
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. ASK 3 QUESTIONS — each shows CURRENT and RECOMMENDED    │
+│     Q1: Communication style?                                │
+│     Q2: Working pattern?                                    │
+│     Q3: AI delegation?                                      │
+│     Press Enter to keep current value for each              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. CONFIRM CHANGES                                         │
+│     Show summary with changed vs unchanged fields           │
+│     "Looks good? (Enter = yes, or type changes)"            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. SAVE TO WORKSPACE — global unchanged                    │
+│     workspace/.portable-spec-kit/user-profile/...           │
+│     "This workspace uses local profile from now on"         │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>06 — Returning Session</h4>
+<p><em>When: User opens an AI agent in an existing project — coming back after hours, days, weeks, or months.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. LOAD FRAMEWORK                                          │
+│     Agent reads portable-spec-kit.md (via symlink)          │
+│     Check kit version: Framework Version in kit             │
+│     vs **Kit:** in agent/AGENT_CONTEXT.md                   │
+│     ├─ Same → proceed normally                              │
+│     └─ Different → run Kit Update flow (see flow 04)        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. SHOW KIT STATUS (once at session start)                 │
+│     ✅ Spec Kit: Project mapped (vX.X.X) — reading context  │
+│     ⚠  Spec Kit: Partial context — filling in gaps...       │
+│     🔍 Spec Kit: Understanding your project — scanning...   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. LOAD PROFILE                                            │
+│     1. workspace/.portable-spec-kit/user-profile/ → FOUND?  │
+│        └─ Yes → load silently, no questions                 │
+│     2. ~/.portable-spec-kit/user-profile/ → FOUND?          │
+│        └─ Yes → show profile, keep or customize → save WS   │
+│     3. Neither → run User Profile Setup flow first          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. READ PROJECT CONTEXT (in this order)                    │
+│     1. agent/AGENT.md     — project rules, stack            │
+│     2. agent/AGENT_CONTEXT.md — living state                │
+│     3. agent/TASKS.md     — current tasks                   │
+│     4. agent/PLANS.md     — architecture                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. GREET + SUMMARIZE                                       │
+│     "Welcome back, Jane! Here's where we left off:"         │
+│     - Version and phase from AGENT_CONTEXT.md               │
+│     - Tasks completed vs pending from TASKS.md              │
+│     - Last decision + next step                             │
+│     "Want to continue with [next task]?"                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. WORK                                                    │
+│     User gives instructions → agent works                   │
+│     Track all tasks in TASKS.md (no-slip rule)              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  7. SESSION END UPDATE                                      │
+│     Update agent/AGENT_CONTEXT.md — progress, decisions     │
+│     Update docs/work-flows/ if any flow changed             │
+│     Verify no tasks slipped (scan conversation)             │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>07 — Spec-Persistent Development</h4>
+<p><em>When: User follows any development workflow — structured, agile, or mixed. The framework adapts to the user's style, not the other way around.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. SPECS — Define what to build                            │
+│     Write agent/SPECS.md — requirements (Rn), features (Fn) │
+│     Per-feature acceptance criteria (### F{n} subsections)  │
+│     Agent generates test stubs for forward-flow features    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. PLANS — Architect how to build it                       │
+│     Write agent/PLANS.md — stack, architecture, phases      │
+│     Data model, API endpoints, security, methodology        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. TASKS + BUILD — Execute                                 │
+│     Write agent/TASKS.md (version-based, checkboxes)        │
+│     For each task: TASKS.md FIRST → build → test → done     │
+│     Stubs RED → implement → stubs GREEN → mark [x]          │
+│     check_stub_complete() gate before marking [x]           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. SYNC — Keep all 4 pipeline files current                │
+│     SPECS.md, PLANS.md, TASKS.md, AGENT_CONTEXT.md          │
+│     Record scope changes (DROP/ADD/MODIFY/REPLACE)          │
+│     R→F traceability: Rn → Fn through every change          │
+│     F→T traceability: Fn → test ref in Tests column         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ When all version tasks [x] done
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. PREPARE RELEASE (10-step gate)                          │
+│     Flow docs → counts → ARD audit → version bump           │
+│     PDFs → RELEASES.md → CHANGELOG.md → publish             │
+│     Section 41 (28 tests) catches any sync gaps             │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. RELEASES.md — Record what happened                      │
+│     Version summary, Kit range, changes by category         │
+│     Test results, deployment, known issues                  │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>08 — Requirements to Delivery</h4>
+<p><em>When: A project goes through its full lifecycle — client requirements through delivery. Shows R→F→T traceability at every phase.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. CLIENT REQUIREMENTS                                     │
+│     Client gives requirements (human language)              │
+│     Agent translates: Rn → Fn (R→F traceability starts)     │
+│     SPECS.md + PLANS.md + TASKS.md + AGENT_CONTEXT.md       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. BUILD — features + scope changes                        │
+│     Implement features — track in TASKS.md                  │
+│     Client changes requirements mid-project:                │
+│     DROP / ADD / MODIFY / REPLACE — recorded in SPECS.md    │
+│     R→F traceability maintained through every change        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. CONTEXT BREAK (developer stops / agent switch)          │
+│     Context persists in agent/ files — nothing lost         │
+│     Any agent / any session picks up from AGENT_CONTEXT.md  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. RESUME                                                  │
+│     Agent reads AGENT_CONTEXT.md → "Here's where we left"   │
+│     Continues seamlessly — zero rebuild of context          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. RELEASE v0.1                                            │
+│     All version tasks [x] done → prepare release            │
+│     RELEASES.md — what was delivered vs descoped            │
+│     R→F→T traceability: every feature has test coverage     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. HANDOFF (months later — new developer)                  │
+│     Sarah reads agent/ files — understands everything       │
+│     Requirements → features → decisions → test coverage     │
+│     Continues without any briefing from original developer  │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>09 — Development Release</h4>
+<p><em>When: User says "prepare release", "update release", or "refresh release". Runs the 10-step gate.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. DEVELOP                                                 │
+│     Write code / add rules / update templates               │
+│     Add tasks to TASKS.md as you go (no-slip rule)          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. "run tests"                                             │
+│     bash tests/test-spec-kit.sh          → 528 tests        │
+│     bash tests/test-spd-benchmarking.sh  → 145 tests        │
+│     bash tests/test-release-check.sh     → 57/57 features   │
+│     Fix any failures before continuing                      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. "prepare release" (10-step gate)                        │
+│                                                             │
+│  Step 1   Run all 3 suites — stop if any fail               │
+│  Step 2   Update flow docs (FIRST) — any changed flows      │
+│  Step 3   Counts + ARD audit — README badge, ard/ HTML      │
+│           (version, flow count, test count, changelog)      │
+│  Step 4   Bump version — AGENT_CONTEXT.md + README badge    │
+│  Step 5   PDFs — open ard/*.html in browser → print to PDF  │
+│  Step 6   Update agent/RELEASES.md                          │
+│  Step 7   Update CHANGELOG.md                               │
+│  Step 8   Publish GitHub Release (auto via gh if authed)    │
+│  Step 9   After push — update v0.N tag to HEAD              │
+│  Step 10  Show release summary block                        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. "commit"                                                │
+│     Stage and commit all changes                            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. "push"                                                  │
+│     bash agent/sync.sh "message"                            │
+│     → copies to temp clone                                  │
+│     → excludes docs/research/ (private)                     │
+│     → pushes to aqibmumtaz/portable-spec-kit                │
+│     → creates/updates GitHub Release from CHANGELOG.md      │
+│     → updates v0.N tag to HEAD                              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. VERIFY (after push)                                     │
+│     CI badge turns green on GitHub (~2 min)                 │
+│     GitHub Release shows correct notes                      │
+│     v0.4 tag points to HEAD                                 │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>10 — Agent Switching</h4>
+<p><em>When: User switches from one AI agent to another (e.g., Claude → Cursor → Copilot).</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  DAY 1: AGENT A (e.g., Claude)                              │
+│     Reads CLAUDE.md → symlink → portable-spec-kit.md        │
+│     Reads user profile from .portable-spec-kit/user-profile/│
+│     Reads agent/AGENT_CONTEXT.md                            │
+│     Works on project → updates AGENT_CONTEXT.md, TASKS.md   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ User switches agent
+┌──────────────────────▼──────────────────────────────────────┐
+│  DAY 2: AGENT B (e.g., Cursor)                              │
+│     Reads .cursorrules → same symlink → portable-spec-kit.md│
+│     Reads SAME user profile                                 │
+│     Reads SAME agent/AGENT_CONTEXT.md                       │
+│     "Welcome back, Jane! Here's where we left off..."       │
+│     Picks up exactly where Agent A stopped                  │
+│     Works → updates SAME AGENT_CONTEXT.md, TASKS.md         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ User switches again
+┌──────────────────────▼──────────────────────────────────────┐
+│  DAY N: AGENT C (e.g., Copilot)                             │
+│     Reads .github/copilot-instructions.md → same source     │
+│     Reads SAME profile, SAME context                        │
+│     Continues seamlessly — zero data loss                   │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>11 — Existing Project Setup</h4>
+<p><em>When: User installs the spec kit on a project that already has code — first-time onboarding, not returning.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  0. DETECT PROJECT STATE (show once at session start)       │
+│     Inspect agent/ directory:                               │
+│     ├─ Mapped   → ✅ Project mapped — read context normally │
+│     ├─ Partial  → ⚠  Partial context — fill gaps, skip scan │
+│     └─ New/None → 🔍 No context — proceed with full scan ↓  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  1. ANNOUNCE SCAN                                           │
+│     "Spec Kit is understanding your project —               │
+│      scanning structure, stack, files, dependencies..."     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. SCAN THOROUGHLY                                         │
+│     Config files:                                           │
+│       package.json · requirements.txt · pyproject.toml      │
+│       Dockerfile · docker-compose.yml · go.mod · Cargo.toml │
+│       tsconfig.json · pubspec.yaml · .env.example           │
+│     Top-level dirs + sample src/ structure                  │
+│     Build complete picture before touching anything         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. FILL agent/AGENT.md FROM SCAN                           │
+│     Stack, tech, dev server port, key scripts               │
+│     Env var names (.env.example — names only, never values) │
+│     If Python project → run Environment Selection flow      │
+│     Never leave fields TBD if answer is visible in code     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. FILL agent/AGENT_CONTEXT.md FROM SCAN                   │
+│     Current phase, what appears done, key decisions         │
+│     Directory structure and tech choices visible in code    │
+│     Phase estimate from codebase state                      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. PRESENT CHECKLIST                                       │
+│     "Scan complete. Here's what I found and suggest:"       │
+│                                                             │
+│     Detected: [stack] · [version] · Port [N]                │
+│                                                             │
+│     [x] Create agent/ (6 files, pre-filled from scan)       │
+│     [x] Create WORKSPACE_CONTEXT.md                         │
+│     [ ] Create .env.example from .env                       │
+│     [ ] Create .github/workflows/ci.yml                     │
+│     [ ] Restructure README.md to match template             │
+│                                                             │
+│     "Which changes? All, some, or none."                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. APPLY SELECTED CHANGES ONLY                             │
+│     agent/ files — always safe to create                    │
+│     Everything else — only if user selected it              │
+│     Never rename / move / delete without explicit approval  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  7. CONTINUE NORMALLY                                       │
+│     Project is now spec kit managed                         │
+│     Proceed to user's task — no more setup prompts          │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>12 — CI/CD Setup</h4>
+<p><em>When: Agent creates a CI/CD pipeline — during new project setup (Step 7.5), existing project onboarding, or when user says "add CI".</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  1. DETECT STACK                                            │
+│     Read agent/AGENT.md — Stack table                       │
+│     Identify: language, test runner, package manager        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. SELECT TEST COMMAND (stack-aware)                       │
+│     Node.js + Jest      → npx jest --passWithNoTests        │
+│     Node.js + Vitest    → npx vitest run                    │
+│     Node.js + generic   → npm test                          │
+│     Python + pytest     → python -m pytest                  │
+│     Go                  → go test ./...                     │
+│     Bash scripts only   → (omit Run tests step)             │
+│     Unknown             → echo 'Configure test command'     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. GENERATE .github/workflows/ci.yml                       │
+│     on: push (main) + pull_request                          │
+│     runs-on: ubuntu-latest                                  │
+│     steps:                                                  │
+│       - actions/checkout@v4                                 │
+│       - {SETUP_STEPS} (Node/Python if applicable)           │
+│       - run: {TEST_COMMAND}                                 │
+│       - run: bash tests/test-release-check.sh agent/SPECS.md│
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. ADD CI BADGE TO README.md                               │
+│     Insert as FIRST badge:                                  │
+│     [![CI]({repo}/actions/workflows/ci.yml/badge.svg)]      │
+│            ({repo}/actions/workflows/ci.yml)                │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. TELL USER: ENABLE BRANCH PROTECTION                     │
+│     GitHub Settings → Branches → Add rule                   │
+│     Require CI status checks to pass before merging         │
+│     Prevents pushes with failing tests reaching main        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. VERIFY (after first push)                               │
+│     CI badge turns green on GitHub (~2 min)                 │
+│     Stack tests pass                                        │
+│     R→F→T validator passes (0 done features = OK)           │
+└─────────────────────────────────────────────────────────────┘
+</pre>
 
 <!-- 4. AGENTS -->
 <h2 id="agents">4. Multi-Agent Support</h2>
@@ -432,7 +1071,7 @@ What to build      How to build it     Track progress      Log results
 <!-- 8. TESTING -->
 <h2 id="testing">8. Testing Infrastructure</h2>
 
-<h3>Test Suite: 597 Tests (452 Framework + 145 Benchmarking), 41 Sections</h3>
+<h3>Test Suite: 673 Tests (528 Framework + 145 Benchmarking), 43 Sections</h3>
 <table>
   <tr><th>#</th><th>Section</th><th>Tests</th></tr>
   <tr><td>1</td><td>Repo File Structure</td><td>10</td></tr>
@@ -475,8 +1114,10 @@ What to build      How to build it     Track progress      Log results
   <tr><td>38</td><td>Retroactive Spec Filling Simulation</td><td>6</td></tr>
   <tr><td>39</td><td>Context Persistence — 10 Disruption Scenarios</td><td>16</td></tr>
   <tr><td>40</td><td>R→F→T Traceability — Feature Tests Required</td><td>17</td></tr>
-  <tr><td>41</td><td>Pre-Release Consistency Gate — cross-file count, version, template, docs sync</td><td>23</td></tr>
-  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>452</strong></td></tr>
+  <tr><td>41</td><td>Pre-Release Consistency Gate — cross-file count, version, template, docs sync</td><td>28</td></tr>
+  <tr><td>42</td><td>CI/CD — GitHub Actions, Community Files, and Framework Rules</td><td>29</td></tr>
+  <tr><td>43</td><td>Spec-Based Test Generation</td><td>15</td></tr>
+  <tr><td></td><td><strong>TOTAL (framework)</strong></td><td><strong>528</strong></td></tr>
 </table>
 
 <h3>Test Categories</h3>
@@ -491,8 +1132,10 @@ What to build      How to build it     Track progress      Log results
   <tr><td>Security &amp; privacy</td><td>4</td><td>No leaked personal info or company names</td></tr>
   <tr><td>Infrastructure</td><td>12</td><td>Sync script, context rules, license</td></tr>
   <tr><td>Spec-persistence &amp; enforcement rules (§§26–41)</td><td>150</td><td>R→F traceability, R→F→T chain, scope changes, staleness, RELEASES trigger, no-slip, pipeline sync, security rules, version bump, release commands, git rules, existing project setup, retro fill, context persistence (10 disruptions), feature test coverage enforcement</td></tr>
+  <tr><td>CI/CD — GitHub Actions &amp; framework rules (§42)</td><td>29</td><td>Kit CI files, user project CI/CD framework rules, cross-platform sed, community templates</td></tr>
+  <tr><td>Spec-based test generation (§43)</td><td>15</td><td>Origin detection, per-feature criteria, stub generation, stack-aware formats, completion gate</td></tr>
   <tr><td><strong>Benchmarking (separate suite)</strong></td><td><strong>145</strong></td><td>5 projects × 8 lifecycle phases × SPD validation</td></tr>
-  <tr><td><strong>TOTAL</strong></td><td><strong>597</strong></td><td></td></tr>
+  <tr><td><strong>TOTAL</strong></td><td><strong>673</strong></td><td></td></tr>
 </table>
 
 <!-- 9. FILES -->
@@ -506,10 +1149,10 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>CONTRIBUTING.md</code></td><td>PR guidelines, portability test, review process</td></tr>
   <tr><td><code>LICENSE</code></td><td>MIT License</td></tr>
   <tr><td><code>ard/</code></td><td>Architecture Reference Documents (this file + Quick Guide)</td></tr>
-  <tr><td><code>docs/system-flows/</code></td><td>9 system flow documents</td></tr>
+  <tr><td><code>docs/work-flows/</code></td><td>12 work flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
-  <tr><td><code>tests/</code></td><td>587 automated tests (442 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
+  <tr><td><code>tests/</code></td><td>673 automated tests (528 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
 </table>
 
 <h3>Local-Only Files (NOT pushed)</h3>
@@ -554,7 +1197,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.1.1 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.4.5 &bull; April 2026
 </div>
 
 </div>
@@ -572,7 +1215,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.1.1 &bull; April 2026</div>
+    <div class="badge">v0.4.5 &bull; April 2026</div>
   </div>
 </div>
 

@@ -168,7 +168,7 @@ EOF
 # RELEASES.md — $PROJECT
 > **Purpose:** Version history.
 ## v0.1 — Current (In Progress)
-Kit: v0.3.0
+Kit: v0.4.5
 EOF
   cat > "$S_DIR/agent/AGENT.md" << EOF
 # AGENT.md — $PROJECT
@@ -181,7 +181,7 @@ EOF
 # AGENT_CONTEXT.md — $PROJECT
 ## Current Status
 - **Version:** v0.1
-- **Kit:** v0.3.0
+- **Kit:** v0.4.5
 - **Phase:** Setup
 - **Status:** Project initialized
 ## What's Done
@@ -240,14 +240,18 @@ EOF
 
   # SPD: update tasks, specs current
   for f in $BUILT_FEATURES; do
-    sed -i '' "s/- \[ \] Build $f/- [x] Build $f/" "$S_DIR/agent/TASKS.md"
+    sed -i '' "s/- \[ \] Build $f/- [x] Build $f/" "$S_DIR/agent/TASKS.md" 2>/dev/null || \
+    sed -i "s/- \[ \] Build $f/- [x] Build $f/" "$S_DIR/agent/TASKS.md"
   done
   DONE_COUNT=$(grep -c "\[x\]" "$S_DIR/agent/TASKS.md")
-  sed -i '' "s/| v0.1 | 0\/$FEATURE_COUNT/| v0.1 | $DONE_COUNT\/$FEATURE_COUNT/" "$S_DIR/agent/TASKS.md"
+  sed -i '' "s/| v0.1 | 0\/$FEATURE_COUNT/| v0.1 | $DONE_COUNT\/$FEATURE_COUNT/" "$S_DIR/agent/TASKS.md" 2>/dev/null || \
+  sed -i "s/| v0.1 | 0\/$FEATURE_COUNT/| v0.1 | $DONE_COUNT\/$FEATURE_COUNT/" "$S_DIR/agent/TASKS.md"
 
   # Update AGENT_CONTEXT
-  sed -i '' "s/Setup/Development/" "$S_DIR/agent/AGENT_CONTEXT.md"
-  sed -i '' "s/Project initialized/$DONE_COUNT of $FEATURE_COUNT features done/" "$S_DIR/agent/AGENT_CONTEXT.md"
+  sed -i '' "s/Setup/Development/" "$S_DIR/agent/AGENT_CONTEXT.md" 2>/dev/null || \
+  sed -i "s/Setup/Development/" "$S_DIR/agent/AGENT_CONTEXT.md"
+  sed -i '' "s/Project initialized/$DONE_COUNT of $FEATURE_COUNT features done/" "$S_DIR/agent/AGENT_CONTEXT.md" 2>/dev/null || \
+  sed -i "s/Project initialized/$DONE_COUNT of $FEATURE_COUNT features done/" "$S_DIR/agent/AGENT_CONTEXT.md"
 
   s_current=3; s_tasks=3; s_decisions=3; s_arch=3; s_sync=3
   P2_S=$((s_current + s_tasks + s_decisions + s_arch + s_sync))
@@ -286,7 +290,8 @@ EOF
   csv "$PROJECT" "$STACK" "agile" "scope" "descoped_tracked" "$a_descoped" "card deleted"
 
   # SPD: fast + documented
-  sed -i '' "s/- \[ \] Build $DROPPED/- [ ] Build $DROPPED — DESCOPED: moved to Backlog/" "$S_DIR/agent/TASKS.md"
+  sed -i '' "s/- \[ \] Build $DROPPED/- [ ] Build $DROPPED — DESCOPED: moved to Backlog/" "$S_DIR/agent/TASKS.md" 2>/dev/null || \
+  sed -i "s/- \[ \] Build $DROPPED/- [ ] Build $DROPPED — DESCOPED: moved to Backlog/" "$S_DIR/agent/TASKS.md"
   echo "- [ ] Build analytics" >> "$S_DIR/agent/TASKS.md"
   # Add decision to PLANS
   echo "| Scope change | Dropped $DROPPED, added analytics | Client priority |" >> "$S_DIR/agent/PLANS.md"

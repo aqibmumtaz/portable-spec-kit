@@ -96,6 +96,19 @@ run_test() {
   return $result
 }
 
+check_stub_complete() {
+  local test_ref="$1"
+  local todo_count
+  # Match standalone TODO comments and skip/placeholder assertions at line start
+  # All patterns anchored to avoid false positives inside grep pattern strings
+  todo_count=$(grep -E "^[[:space:]]*(#[[:space:]]*TODO|//[[:space:]]*TODO|test\.skip\(|it\.skip\(|xit\(|xtest\(|expect\(true\)\.toBe\(false\)|assert False|t\.Skip\()" "$test_ref" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$todo_count" -gt 0 ]; then
+    echo "${test_ref}:stubs_incomplete:${todo_count}" >> "$TEST_CACHE_FILE"
+    return 1
+  fi
+  return 0
+}
+
 echo ""
 echo "════════════════════════════════════════════════════════════"
 echo "  RELEASE READINESS — R→F→T Coverage Check"
@@ -138,6 +151,13 @@ while IFS= read -r line; do
     else
       REF_PRESENT=$((REF_PRESENT + 1))
       FILE_EXISTS=$((FILE_EXISTS + 1))
+
+      if ! check_stub_complete "$test_ref"; then
+        stub_count=$(grep "^${test_ref}:stubs_incomplete:" "$TEST_CACHE_FILE" | cut -d: -f3)
+        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  STUBS NOT FILLED ($stub_count TODO markers): $test_ref"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        continue
+      fi
 
       run_test "$test_ref"
       run_result=$?

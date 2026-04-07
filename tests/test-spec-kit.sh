@@ -614,44 +614,90 @@ rm -rf "$EDGE_TEMP"
 pass "Edge: temp dir cleaned"
 
 # ═══════════════════════════════════════════════════════════════
-section "19. Flow Documentation — All 9 Flows Present"
+section "19. Flow Documentation — All 12 Flows + Diagram Integrity"
 # ═══════════════════════════════════════════════════════════════
 
-FLOWS_DIR="$PROJ/docs/system-flows"
-[ -d "$FLOWS_DIR" ] && pass "docs/system-flows/ directory exists" || fail "docs/system-flows/ MISSING"
+FLOWS_DIR="$PROJ/docs/work-flows"
+[ -d "$FLOWS_DIR" ] && pass "docs/work-flows/ directory exists" || fail "docs/work-flows/ MISSING"
 
-for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management requirements-to-delivery; do
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-file-management 05-profile-customization 06-returning-session 07-spec-persistent-development 08-requirements-to-delivery 09-development-release 10-agent-switching 11-existing-project-setup 12-cicd-setup; do
   [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
 done
 
 # Verify each flow has required sections
-for flow in user-profile-setup new-project-setup returning-session agent-switching profile-customization spec-persistent-development first-session-workspace file-management requirements-to-delivery; do
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-file-management 05-profile-customization 06-returning-session 07-spec-persistent-development 08-requirements-to-delivery 09-development-release 10-agent-switching 11-existing-project-setup 12-cicd-setup; do
   grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
   grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
 done
 
 # Verify profile flows reference .portable-spec-kit/user-profile/
-for flow in user-profile-setup new-project-setup returning-session profile-customization first-session-workspace; do
+for flow in 02-user-profile-setup 03-new-project-setup 06-returning-session 05-profile-customization 01-first-session-workspace; do
   grep -q "portable-spec-kit/user-profile" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: references profile path" || fail "Flow $flow: missing profile path"
 done
 
-# Verify agent-switching flow mentions symlinks
-grep -q "symlink" "$FLOWS_DIR/agent-switching.md" && pass "Flow agent-switching: mentions symlinks" || fail "Flow agent-switching: missing symlinks"
+# Verify 10-agent-switching flow mentions symlinks
+grep -q "symlink" "$FLOWS_DIR/10-agent-switching.md" && pass "Flow 10-agent-switching: mentions symlinks" || fail "Flow 10-agent-switching: missing symlinks"
 
 # Verify spec-persistent flow has context update step
-grep -q "AGENT_CONTEXT" "$FLOWS_DIR/spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
-grep -q "docs/system-flows" "$FLOWS_DIR/spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
+grep -q "AGENT_CONTEXT" "$FLOWS_DIR/07-spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
+grep -q "docs/work-flows" "$FLOWS_DIR/07-spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
 
-# Verify requirements-to-delivery flow content
-grep -q "R1" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has R→F traceability" || fail "Flow requirements-to-delivery: missing R→F traceability"
-grep -q "DROP" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has scope change types" || fail "Flow requirements-to-delivery: missing scope change types"
-grep -q "REPLACE" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has REPLACE type" || fail "Flow requirements-to-delivery: missing REPLACE"
-grep -q "TaskFlow" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has TaskFlow example" || fail "Flow requirements-to-delivery: missing TaskFlow"
-grep -q "Phase 9" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has all 9 phases" || fail "Flow requirements-to-delivery: missing phases"
-grep -q "Traceability Chain" "$FLOWS_DIR/requirements-to-delivery.md" && pass "Flow requirements-to-delivery: has traceability chain" || fail "Flow requirements-to-delivery: missing traceability"
+# Verify 08-requirements-to-delivery flow content
+grep -q "R1" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has R→F traceability" || fail "Flow 08-requirements-to-delivery: missing R→F traceability"
+grep -q "DROP" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has scope change types" || fail "Flow 08-requirements-to-delivery: missing scope change types"
+grep -q "REPLACE" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has REPLACE type" || fail "Flow 08-requirements-to-delivery: missing REPLACE"
+grep -q "TaskFlow" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has TaskFlow example" || fail "Flow 08-requirements-to-delivery: missing TaskFlow"
+grep -q "Phase 9" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has all 9 phases" || fail "Flow 08-requirements-to-delivery: missing phases"
+grep -q "Traceability Chain" "$FLOWS_DIR/08-requirements-to-delivery.md" && pass "Flow 08-requirements-to-delivery: has traceability chain" || fail "Flow 08-requirements-to-delivery: missing traceability"
 
-# Verify new-project-setup flow mentions conda for Python projects
-grep -q "conda\|Environment Selection" "$FLOWS_DIR/new-project-setup.md" && pass "Flow new-project-setup: references Python env setup" || fail "Flow new-project-setup: missing Python env reference"
+# Verify 03-new-project-setup flow mentions conda for Python projects
+grep -q "conda\|Environment Selection" "$FLOWS_DIR/03-new-project-setup.md" && pass "Flow 03-new-project-setup: references Python env setup" || fail "Flow 03-new-project-setup: missing Python env reference"
+
+# Verify 09-development-release flow content
+grep -q "prepare release\|8-Step\|Prepare Release" "$FLOWS_DIR/09-development-release.md" && pass "Flow 09-development-release: has prepare release sequence" || fail "Flow 09-development-release: missing prepare release"
+grep -q "Pre-Push Gate\|pre-push\|pre_push" "$FLOWS_DIR/09-development-release.md" && pass "Flow 09-development-release: has pre-push gate" || fail "Flow 09-development-release: missing pre-push gate"
+grep -q "Stub Completion\|stub.*complete\|check_stub_complete" "$FLOWS_DIR/09-development-release.md" && pass "Flow 09-development-release: has stub completion gate" || fail "Flow 09-development-release: missing stub completion gate"
+
+# Verify 11-existing-project-setup flow content
+grep -q "Mapped\|Partial\|New" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has kit status states" || fail "Flow 11-existing-project-setup: missing kit status states"
+grep -q "DETECT PROJECT STATE\|Detect.*State\|Step 0" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has Step 0 state detection" || fail "Flow 11-existing-project-setup: missing Step 0 state detection"
+grep -q "SCAN\|scan.*thoroughly\|Scan" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has scan step" || fail "Flow 11-existing-project-setup: missing scan step"
+grep -q "PRESENT CHECKLIST\|checklist\|suggest" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: has checklist step" || fail "Flow 11-existing-project-setup: missing checklist step"
+grep -q "Returning Session\|returning.*session\|vs.*return" "$FLOWS_DIR/11-existing-project-setup.md" && pass "Flow 11-existing-project-setup: contrasts with returning session" || fail "Flow 11-existing-project-setup: missing returning session comparison"
+
+# Verify 12-cicd-setup flow content
+grep -q "ci\.yml\|ci_yml\|CI workflow" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: references ci.yml" || fail "Flow 12-cicd-setup: missing ci.yml reference"
+grep -q "stack\|Stack\|STACK" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: has stack detection step" || fail "Flow 12-cicd-setup: missing stack detection"
+grep -q "test-release-check\|R.*F.*T\|release-check" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: includes test-release-check.sh in CI" || fail "Flow 12-cicd-setup: missing test-release-check.sh"
+grep -q "badge\|Badge" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: has CI badge step" || fail "Flow 12-cicd-setup: missing CI badge step"
+grep -qi "branch protection\|branch_protection" "$FLOWS_DIR/12-cicd-setup.md" && pass "Flow 12-cicd-setup: has branch protection guidance" || fail "Flow 12-cicd-setup: missing branch protection"
+
+# ── Diagram integrity checks (run on every prepare release) ──────
+
+# No tree-style standalone ▼ lines between boxes
+TREE_V=$(grep -rl $'^\s*\xe2\x96\xbc\s*$' "$FLOWS_DIR/" 2>/dev/null | wc -l | tr -d ' ')
+[ "$TREE_V" -eq 0 ] && pass "Flow docs: no tree-style standalone ▼ lines" || fail "Flow docs: tree-style ▼ found — convert to box connectors (┌──────▼──────┐)"
+
+# No standalone │ lines between steps (tree-style spacing)
+TREE_PIPE=$(grep -rPl '^\s+│\s*$' "$FLOWS_DIR/" 2>/dev/null | wc -l | tr -d ' ')
+[ "$TREE_PIPE" -eq 0 ] && pass "Flow docs: no tree-style standalone │ spacing lines" || fail "Flow docs: tree-style │ spacing found — use └──────┬──────┘ connector format"
+
+# All box lines exactly 63 display chars wide (box drawing chars = 1 display col)
+MISALIGNED=$(python3 -c "
+import glob, unicodedata
+def dw(s): return len(s) + sum(1 for c in s if unicodedata.east_asian_width(c) in ('W','F'))
+bad = sum(1 for f in glob.glob('$FLOWS_DIR/*.md')
+          for line in open(f, encoding='utf-8')
+          if line.rstrip('\n') and line.rstrip('\n')[0] in '│┌└' and dw(line.rstrip('\n')) != 63)
+print(bad)
+" 2>/dev/null || echo 0)
+[ "$MISALIGNED" -eq 0 ] && pass "Flow docs: all box lines are exactly 63 chars wide" || fail "Flow docs: $MISALIGNED box line(s) misaligned — right │ border not aligned"
+
+# Framework has architecture-change rule for flow docs
+grep -q "Architecture change rule\|architecture change.*flow\|process.*change.*flow doc" "$PROJ/portable-spec-kit.md" && pass "Flow docs: framework has architecture-change rule" || fail "Flow docs: architecture-change rule missing from framework"
+
+# Framework has release gate for flow docs in prepare release step
+grep -q "flow doc.*release\|release.*flow doc\|prepare release.*flow\|flow.*prepare release" "$PROJ/portable-spec-kit.md" && pass "Flow docs: release gate for flow docs in prepare release" || fail "Flow docs: flow doc release gate missing from prepare release"
 
 # ═══════════════════════════════════════════════════════════════
 section "20. ARD Directory — Guide Moved"
@@ -674,7 +720,7 @@ section "21. Context Management Rule"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Tier 1.*After significant work\|Tier 2.*Before push" "$PROJ/portable-spec-kit.md" && pass "Context rule: two-tier update rule defined" || fail "Context rule: missing trigger"
-grep -q "docs/system-flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
+grep -q "docs/work-flows/" "$PROJ/portable-spec-kit.md" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
 grep -q "SPECS.md.*PLANS.md.*TASKS.md\|Tier 2" "$PROJ/portable-spec-kit.md" && pass "Context rule: Tier 2 full sync before push" || fail "Context rule: missing triad"
 
 # ═══════════════════════════════════════════════════════════════
@@ -767,8 +813,8 @@ section "24. README — Python Environment Section"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
-grep -q "9 step-by-step flow" "$PROJ/README.md" && pass "README: 9 flows count" || fail "README: wrong flow count"
-grep -q "requirements-to-delivery" "$PROJ/README.md" && pass "README: requirements-to-delivery flow listed" || fail "README: missing requirements-to-delivery"
+grep -q "12 step-by-step flow" "$PROJ/README.md" && pass "README: 12 flows count" || fail "README: wrong flow count"
+grep -q "08-requirements-to-delivery" "$PROJ/README.md" && pass "README: 08-requirements-to-delivery flow listed" || fail "README: missing 08-requirements-to-delivery"
 
 # ═══════════════════════════════════════════════════════════════
 section "25. License"
@@ -1472,15 +1518,15 @@ grep -q "\*\*Kit:\*\*" "$PROJ/examples/starter/agent/AGENT_CONTEXT.md" 2>/dev/nu
 
 # Flow docs must not reference stale **Framework:** field (rename completeness check)
 ! grep -rq "against \*\*Framework:\*\*\|update Framework in AGENT_CONTEXT\|update Framework version in AGENT_CONTEXT" \
-    "$PROJ/docs/system-flows/" 2>/dev/null \
+    "$PROJ/docs/work-flows/" 2>/dev/null \
   && pass "template currency: flow docs use Kit field references (no stale Framework)" \
   || fail "template currency: flow docs have stale **Framework:** references — update to **Kit:**"
 
 # ── Group 4: Docs Consistency (4 tests) ─────────────────────────
 
-# docs/system-flows/ actual file count must match framework claim
-ACTUAL_FLOWS=$(ls "$PROJ/docs/system-flows/"*.md 2>/dev/null | wc -l | tr -d ' ')
-CLAIMED_FLOWS=$(grep -o "[0-9]* system flow" "$PROJ/portable-spec-kit.md" | grep -o "^[0-9]*" | head -1)
+# docs/work-flows/ actual file count must match framework claim
+ACTUAL_FLOWS=$(ls "$PROJ/docs/work-flows/"*.md 2>/dev/null | wc -l | tr -d ' ')
+CLAIMED_FLOWS=$( { grep -oE "[0-9]+ work flow" "$PROJ/portable-spec-kit.md" 2>/dev/null; grep -oE "[0-9]+ work flow" "$PROJ/agent/SPECS.md" 2>/dev/null; } | grep -oE "^[0-9]+" | sort -rn | head -1)
 [ -z "$CLAIMED_FLOWS" ] && CLAIMED_FLOWS=0
 [ "$ACTUAL_FLOWS" -ge "$CLAIMED_FLOWS" ] && [ "$ACTUAL_FLOWS" -gt 0 ] \
   && pass "docs consistency: $ACTUAL_FLOWS flow docs exist (framework claims $CLAIMED_FLOWS)" \
@@ -1501,6 +1547,93 @@ LATEST_RELEASE_RANGE=$(grep "^Kit:" "$PROJ/agent/RELEASES.md" | head -1)
 echo "$LATEST_RELEASE_RANGE" | grep -q "$PROJ_VER" \
   && pass "docs consistency: RELEASES.md current range includes $PROJ_VER" \
   || fail "docs consistency: RELEASES.md range doesn't include $PROJ_VER — update range"
+
+# ARD version badge must match current framework version
+grep -q "$PROJ_VER" "$PROJ/ard/Portable_Spec_Kit_Technical_Overview.html" 2>/dev/null \
+  && pass "docs consistency: ARD version badge matches $PROJ_VER" \
+  || fail "docs consistency: ARD version badge doesn't include $PROJ_VER — update ARD cover badge and footer"
+
+# Flow docs must not reference a stale Kit version (any Kit: line must match current version)
+STALE_FLOW_KIT=$(grep -r "^Kit: v[0-9]" "$PROJ/docs/work-flows/" 2>/dev/null | grep -v "$PROJ_VER" | wc -l | tr -d ' ')
+[ "$STALE_FLOW_KIT" -eq 0 ] \
+  && pass "docs consistency: flow docs Kit references are current ($PROJ_VER)" \
+  || fail "docs consistency: $STALE_FLOW_KIT flow doc(s) have stale Kit version — update to $PROJ_VER"
+
+# Benchmarking test fixtures must use current Kit version
+STALE_BENCH_KIT=$(grep "Kit: v[0-9]" "$PROJ/tests/test-spd-benchmarking.sh" 2>/dev/null | grep -v "$PROJ_VER" | wc -l | tr -d ' ')
+[ "$STALE_BENCH_KIT" -eq 0 ] \
+  && pass "docs consistency: test-spd-benchmarking.sh fixtures use current Kit ($PROJ_VER)" \
+  || fail "docs consistency: $STALE_BENCH_KIT stale Kit version(s) in benchmarking fixtures — update to $PROJ_VER"
+
+# Example AGENT_CONTEXT.md files must have current Kit version
+STALE_EX_KIT=$(grep "\*\*Kit:\*\*" "$PROJ/examples/my-app/agent/AGENT_CONTEXT.md" "$PROJ/examples/starter/agent/AGENT_CONTEXT.md" 2>/dev/null | grep -v "$PROJ_VER" | wc -l | tr -d ' ')
+[ "$STALE_EX_KIT" -eq 0 ] \
+  && pass "docs consistency: example AGENT_CONTEXT.md Kit fields are current ($PROJ_VER)" \
+  || fail "docs consistency: $STALE_EX_KIT example AGENT_CONTEXT.md file(s) have stale Kit — update to $PROJ_VER"
+
+# Example RELEASES.md files must have current Kit version
+STALE_EX_REL=$(grep "^Kit: v[0-9]" "$PROJ/examples/my-app/agent/RELEASES.md" "$PROJ/examples/starter/agent/RELEASES.md" 2>/dev/null | grep -v "$PROJ_VER" | wc -l | tr -d ' ')
+[ "$STALE_EX_REL" -eq 0 ] \
+  && pass "docs consistency: example RELEASES.md Kit fields are current ($PROJ_VER)" \
+  || fail "docs consistency: $STALE_EX_REL example RELEASES.md file(s) have stale Kit — update to $PROJ_VER"
+
+# ═══════════════════════════════════════════════════════════════
+section "42. CI/CD — GitHub Actions, Community Files, and Framework Rules"
+# ═══════════════════════════════════════════════════════════════
+
+# Kit repo CI files
+[ -f "$PROJ/.github/workflows/ci.yml" ] && pass "CI: ci.yml exists" || fail "CI: ci.yml MISSING"
+grep -q "pull_request" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: triggers on pull_request" || fail "CI: pull_request trigger MISSING"
+grep -q "ubuntu-latest" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: runs on ubuntu-latest" || fail "CI: ubuntu-latest MISSING"
+grep -q "test-spec-kit.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-spec-kit.sh" || fail "CI: test-spec-kit.sh not in ci.yml"
+grep -q "test-spd-benchmarking.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-spd-benchmarking.sh" || fail "CI: benchmarking not in ci.yml"
+grep -q "test-release-check.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-release-check.sh" || fail "CI: release-check not in ci.yml"
+[ -f "$PROJ/.github/workflows/release.yml" ] && pass "CI: release.yml exists" || fail "CI: release.yml MISSING"
+grep -q "v\*" "$PROJ/.github/workflows/release.yml" 2>/dev/null && pass "CI: release.yml triggers on v* tags" || fail "CI: v* tag trigger MISSING"
+grep -q "FRAMEWORK_VER\|Framework Version" "$PROJ/.github/workflows/release.yml" 2>/dev/null && pass "CI: release.yml verifies version consistency" || fail "CI: version check MISSING"
+[ -f "$PROJ/.github/pull_request_template.md" ] && pass "CI: PR template exists" || fail "CI: PR template MISSING"
+grep -qi "portabilit" "$PROJ/.github/pull_request_template.md" 2>/dev/null && pass "CI: PR template has portability test" || fail "CI: PR template missing portability test"
+grep -q "test-spec-kit.sh" "$PROJ/.github/pull_request_template.md" 2>/dev/null && pass "CI: PR template references test suites" || fail "CI: PR template missing test commands"
+[ -d "$PROJ/.github/ISSUE_TEMPLATE" ] && pass "CI: ISSUE_TEMPLATE/ dir exists" || fail "CI: ISSUE_TEMPLATE/ MISSING"
+[ -f "$PROJ/.github/ISSUE_TEMPLATE/bug_report.md" ] && pass "CI: bug_report.md exists" || fail "CI: bug_report.md MISSING"
+[ -f "$PROJ/.github/ISSUE_TEMPLATE/feature_request.md" ] && pass "CI: feature_request.md exists" || fail "CI: feature_request.md MISSING"
+grep -q "actions/workflows/ci.yml/badge.svg" "$PROJ/README.md" 2>/dev/null && pass "CI: README has CI badge" || fail "CI: README missing CI badge"
+BARE_SED=$(grep -n "sed -i ''" "$PROJ/tests/test-spd-benchmarking.sh" 2>/dev/null | grep -v "2>/dev/null" | wc -l | tr -d ' \t')
+[ "$BARE_SED" -eq 0 ] && pass "CI: test-spd-benchmarking.sh uses cross-platform sed" || fail "CI: $BARE_SED bare 'sed -i \"\"' lines without Linux fallback"
+
+# Framework rules for user projects — validates portable-spec-kit.md teaches CI/CD correctly
+grep -q "CI & Community\|CI.*Community Contributions" "$PROJ/portable-spec-kit.md" && pass "CI: framework has CI & Community Contributions section" || fail "CI: CI & Community Contributions section MISSING"
+grep -q "CI status badge rule\|CI.*badge.*rule" "$PROJ/portable-spec-kit.md" && pass "CI: framework has CI badge rule for user projects" || fail "CI: CI badge rule MISSING"
+grep -q "branch protection\|Branch protection" "$PROJ/portable-spec-kit.md" && pass "CI: framework has branch protection guidance" || fail "CI: branch protection guidance MISSING"
+grep -q "PR workflow rule\|merge any PR\|community PR" "$PROJ/portable-spec-kit.md" && pass "CI: framework has PR workflow rule" || fail "CI: PR workflow rule MISSING"
+grep -q "Contribution validation rule\|CI.*minimum bar\|green CI.*minimum" "$PROJ/portable-spec-kit.md" && pass "CI: framework has contribution validation rule" || fail "CI: contribution validation rule MISSING"
+grep -q "CI must be green.*merg\|green.*before merg\|CI.*green.*PR" "$PROJ/portable-spec-kit.md" && pass "CI: Branch & PR section requires CI green before merge" || fail "CI: CI-before-merge requirement MISSING"
+grep -q "ci\.yml template\|GitHub Actions.*template\|Step 7\.5" "$PROJ/portable-spec-kit.md" && pass "CI: framework has ci.yml template + Step 7.5 for new projects" || fail "CI: ci.yml template / Step 7.5 MISSING from framework"
+grep -q "test-release-check\.sh agent/SPECS\.md\|R.*F.*T.*validator.*ci\|ci.*release-check" "$PROJ/portable-spec-kit.md" && pass "CI: framework requires test-release-check.sh in user project CI" || fail "CI: test-release-check.sh not required in user CI template"
+grep -q "npx jest\|npm test\|python -m pytest\|go test\|vitest run" "$PROJ/portable-spec-kit.md" && pass "CI: framework has stack-aware test commands for user CI" || fail "CI: stack-aware test commands MISSING"
+grep -q "actions/setup-node\|actions/setup-python" "$PROJ/portable-spec-kit.md" && pass "CI: framework has stack setup steps (Node/Python) for user CI" || fail "CI: stack setup steps MISSING from framework"
+grep -q "Create.*ci\.yml\|ci\.yml.*existing\|existing.*setup.*CI" "$PROJ/portable-spec-kit.md" && pass "CI: Existing Project Setup checklist includes CI" || fail "CI: Existing Project Setup missing CI item"
+grep -q "Step 7\.5\|7\.5.*CI\|create.*ci\.yml.*after stack" "$PROJ/portable-spec-kit.md" && pass "CI: New Project Setup Step 7.5 creates ci.yml after stack confirmed" || fail "CI: New Project Setup Step 7.5 MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "43. Spec-Based Test Generation"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "SPECS origin detection\|forward flow\|retroactive flow" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework has SPECS origin detection rule" || fail "SpecGen: SPECS origin detection rule MISSING"
+grep -q "forward flow.*generate test stubs\|test stub.*forward flow\|forward.*stub" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework generates stubs in forward flow only" || fail "SpecGen: forward flow stub generation rule MISSING"
+grep -q "retroactive.*do NOT generate\|retroactive.*write tests directly" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework skips stubs in retroactive flow" || fail "SpecGen: retroactive flow rule MISSING"
+grep -q "Feature Acceptance Criteria\|per-feature acceptance criteria" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework has per-feature acceptance criteria format" || fail "SpecGen: per-feature criteria format MISSING"
+grep -q "Feature Acceptance Criteria" "$PROJ/agent/SPECS.md" && pass "SpecGen: kit's own SPECS.md uses per-feature criteria format" || fail "SpecGen: kit SPECS.md not updated to per-feature format"
+grep -q "stack-aware\|Stack.*stub\|stub.*stack" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework has stack-aware stub formats" || fail "SpecGen: stack-aware stub formats MISSING"
+grep -q "# TODO.*implement\|TODO: implement\|stub.*completion\|incomplete.*marker" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework has stub completion rule" || fail "SpecGen: stub completion rule MISSING"
+grep -q "test\.skip\|xit(\|xtest\|expect(true)\.toBe(false)" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework lists incomplete markers" || fail "SpecGen: incomplete marker list MISSING"
+grep -q "refuse to mark done\|refuse.*mark.*\[x\]\|incomplete.*test stubs.*before marking" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework refuses to mark done with incomplete stubs" || fail "SpecGen: stub-gate rule MISSING"
+grep -q "forward flow.*sequence\|recommended sequence" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework has forward flow sequence" || fail "SpecGen: forward flow sequence MISSING"
+grep -q "check_stub_complete\|stubs_incomplete\|TODO.*marker" "$PROJ/tests/test-release-check.sh" && pass "SpecGen: test-release-check.sh has stub completion check" || fail "SpecGen: stub completion check missing from test-release-check.sh"
+grep -q "check_stub_complete\|stubs_incomplete\|TODO.*marker" "$PROJ/portable-spec-kit.md" && pass "SpecGen: kit template for test-release-check.sh has stub completion check" || fail "SpecGen: stub completion check missing from kit template"
+grep -q "Spec-Based Test Generation\|spec.*based.*test\|test.*stub.*generation" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework section exists" || fail "SpecGen: Spec-Based Test Generation section MISSING"
+grep -q "f{n}\|f1-\|f2-\|fn-" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework shows stub naming convention" || fail "SpecGen: stub naming convention MISSING"
+grep -q "### F[0-9]" "$PROJ/agent/SPECS.md" && pass "SpecGen: kit SPECS.md has per-feature F{n} sections" || fail "SpecGen: kit SPECS.md missing per-feature F{n} sections"
 
 # ═══════════════════════════════════════════════════════════════
 # RESULTS

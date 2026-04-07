@@ -4,9 +4,10 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.3.27-blue.svg)](portable-spec-kit.md)
+[![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-v0.4.5-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-597%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-673%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 
 <table>
@@ -25,10 +26,31 @@
 <tr>
 <td width="25%" align="center"><strong>🏗️ Self-Scaffolding</strong><br><sub>Auto-creates 6 agent files<br>8 stack templates built-in<br>Ready to code in seconds</sub></td>
 <td width="25%" align="center"><strong>✅ Self-Validating</strong><br><sub>Agent tests everything<br>Fixes before presenting<br>98%+ coverage target</sub></td>
+<td width="25%" align="center"><strong>🧪 Automated Test Generation</strong><br><sub>Criteria → stubs instantly<br>Stack-aware formats<br>Stub gate blocks incomplete work</sub></td>
+<td width="25%" align="center"><strong>🔁 CI/CD Ready</strong><br><sub>GitHub Actions auto-setup<br>Stack-aware test commands<br>R→F→T gate enforced in CI</sub></td>
 </tr>
 </table>
 
 > **Inspired by GitHub's [spec-kit](https://github.com/github/spec-kit).** A different philosophy — specs persist alongside your code, maintained by the agent, never blocking. No CLI install, no Python dependency, no package managers. One file — zero friction.
+
+---
+
+## What's New in v0.4
+
+**CI/CD pipeline** — Every project using the kit now gets GitHub Actions CI automatically during setup (Step 7.5). The agent generates `.github/workflows/ci.yml` with stack-aware test commands (Jest, pytest, Go, Bash). The R→F→T validator (`test-release-check.sh`) is always included — specs validation runs in CI, not just locally.
+
+**Spec-based test generation** — When you write acceptance criteria for a feature in SPECS.md, the agent generates test stubs immediately (forward flow only). Per-feature `### F{n}` format keeps criteria next to the feature they describe. The stub completion gate prevents marking a feature done while test stubs are unfilled.
+
+| What's new | Details |
+|------------|---------|
+| GitHub Actions: `ci.yml` + `release.yml` | Runs all 3 test suites on push/PR; verifies tag on release |
+| CI/CD framework rules | `ci.yml` template, Step 7.5 in New Project Setup, stack-aware commands, Existing Project Setup CI checklist item |
+| CI & Community Contributions section | CI badge rule, branch protection guidance, PR workflow, contribution validation |
+| Spec-based test generation (8 rules) | SPECS origin detection, per-feature criteria format, stub trigger, stack-aware stubs, stub completion gate |
+| `check_stub_complete()` in `test-release-check.sh` | Blocks release if test stubs contain unfilled TODO markers |
+| Community files | PR template, bug report + feature request issue templates |
+| Cross-platform sed fix | `test-spd-benchmarking.sh` now runs on Ubuntu (GitHub Actions) |
+| **641 tests** (was 597) | Section 42: 29 CI/CD tests · Section 43: 15 spec-gen tests |
 
 ---
 
@@ -380,9 +402,11 @@ Content is never lost. Existing files are reorganized, not overwritten.
 | **Versioning** | Two-level: framework patches + release milestones, auto-restructure on pull |
 | **Task Tracking** | Tasks-first workflow, version-based organization (v0.x headings + backlog) |
 | **Testing** | Coverage targets, edge case checklist, mock rules, self-validation |
+| **Spec-Based Test Generation** | SPECS origin detection (forward vs retroactive), per-feature acceptance criteria, stub generation, stack-aware formats, stub completion gate |
 | **Code Quality** | Review checklist, naming conventions, deployment checklist |
 | **Error Handling** | Structured errors, logging, error boundaries, user-friendly messages |
 | **Branch & PR** | Feature branches, PR format, squash merge, clean history |
+| **CI & Community Contributions** | CI badge rule, branch protection guidance, PR workflow, contribution validation, ci.yml template with stack-aware commands (Jest/pytest/Go/Bash) |
 | **Python Environment** | Conda env per project (respects existing venv), environment selection flow, pyproject.toml/environment.yml support, 9 edge cases |
 | **Dependencies** | Bundle size checks, lock files, audit, avoid unnecessary deps |
 | **Project Templates** | 6 agent files + README + 8 source code structures (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document) |
@@ -610,19 +634,22 @@ examples/my-app/
 
 ## Flows
 
-Detailed step-by-step diagrams for every system flow:
+Detailed step-by-step diagrams for every work flow:
 
-| Flow | When It Triggers |
-|------|-----------------|
-| **[User Profile Setup](docs/system-flows/user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
-| **[New Project Setup](docs/system-flows/new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
-| **[Returning Session](docs/system-flows/returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
-| **[Agent Switching](docs/system-flows/agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
-| **[Profile Customization](docs/system-flows/profile-customization.md)** | Different preferences per project — local override |
-| **[Spec-Persistent Development](docs/system-flows/spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
-| **[First Session Workspace](docs/system-flows/first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
-| **[Requirements to Delivery](docs/system-flows/requirements-to-delivery.md)** | Full lifecycle — client requirements through handoff |
-| **[File Management](docs/system-flows/file-management.md)** | Create/update/restructure rule — never lose content |
+| # | Flow | When It Triggers |
+|---|------|-----------------|
+| 01 | **[First Session Workspace](docs/work-flows/01-first-session-workspace.md)** | First time in a workspace — environment detection, auto-scan |
+| 02 | **[User Profile Setup](docs/work-flows/02-user-profile-setup.md)** | First time using the kit — GitHub fetch + 3 questions |
+| 03 | **[New Project Setup](docs/work-flows/03-new-project-setup.md)** | Creating a new project — profile shown, scaffold created |
+| 04 | **[File Management](docs/work-flows/04-file-management.md)** | Create/update/restructure rule — never lose content |
+| 05 | **[Profile Customization](docs/work-flows/05-profile-customization.md)** | Different preferences per project — local override |
+| 06 | **[Returning Session](docs/work-flows/06-returning-session.md)** | Coming back after days/weeks — context loaded, no questions |
+| 07 | **[Spec-Persistent Development](docs/work-flows/07-spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
+| 08 | **[Requirements to Delivery](docs/work-flows/08-requirements-to-delivery.md)** | Full lifecycle — client requirements through handoff |
+| 09 | **[Development Release](docs/work-flows/09-development-release.md)** | prepare release — tests, counts, version bump, publish |
+| 10 | **[Agent Switching](docs/work-flows/10-agent-switching.md)** | Switching Claude → Cursor → Copilot — zero data loss |
+| 11 | **[Existing Project Setup](docs/work-flows/11-existing-project-setup.md)** | First-time kit onboarding on a codebase that already exists |
+| 12 | **[CI/CD Setup](docs/work-flows/12-cicd-setup.md)** | ci.yml generation — stack detection, badge, branch protection |
 
 ---
 
@@ -630,7 +657,7 @@ Detailed step-by-step diagrams for every system flow:
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
-- **[System Flows](docs/system-flows/)** — 9 step-by-step flow diagrams
+- **[Work Flows](docs/work-flows/)** — 12 step-by-step flow diagrams
 - **SPD Concept Paper** — Methodology paper with evaluation *(coming soon)*
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README

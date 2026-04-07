@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.3.26 -->
+<!-- Framework Version: v0.4.5 -->
 
-**Version:** v0.3.26 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 597 (452 framework + 145 benchmarking)
+**Version:** v0.4.5 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 673 (528 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -30,6 +30,8 @@ This file is the **Portable Spec Kit** framework. It is distributed as `portable
 
 **All point to the same source file** — `portable-spec-kit.md`. Edit one, all agents read the update.
 
+**NEVER edit symlink files directly** (`CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`). Always edit `portable-spec-kit.md` — the symlinks are read-only pointers. Editing a symlink file edits the source underneath it, but doing so by name causes confusion about which file is authoritative. All framework changes go to `portable-spec-kit.md` only.
+
 On first session, the agent also auto-creates:
 - `WORKSPACE_CONTEXT.md` — workspace environment and project listing
 - `agent/` directory in each project — with 6 management files (AGENT.md, AGENT_CONTEXT.md, SPECS.md, PLANS.md, TASKS.md, RELEASES.md)
@@ -49,7 +51,7 @@ Known sources (fetch the most relevant one for the question):
 | How a rule works | `portable-spec-kit.md` |
 | Version history / what changed | `CHANGELOG.md` |
 | Examples / starter project | `examples/starter/` or `examples/my-app/` |
-| Flow documentation | `docs/system-flows/` |
+| Flow documentation | `docs/work-flows/` |
 | Architecture / technical overview | `ard/Portable_Spec_Kit_Technical_Overview.html` |
 
 **If the question doesn't match a known source, or if new docs may have been added:** scan the repo structure first (`https://github.com/aqibmumtaz/portable-spec-kit`) to discover what files and directories exist, then fetch the most relevant one. The repo may grow over time — always check before assuming a file doesn't exist.
@@ -133,7 +135,7 @@ workspace/.portable-spec-kit/user-profile/
 3. If workspace copy found → use directly, no questions
 4. Address user by name
 5. Adapt response depth, language, and autonomy to their preferences
-6. When flow docs (`docs/system-flows/`) or test files are updated during a session → update `agent/AGENT_CONTEXT.md` to reflect what changed
+6. When flow docs (`docs/work-flows/`) or test files are updated during a session → update `agent/AGENT_CONTEXT.md` to reflect what changed
 
 ### Edge Cases
 - No gh CLI → ask name/expertise manually
@@ -181,26 +183,51 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 - **"push"** → push to remote
 
 **"prepare release" / "update release" full sequence:**
-1. Run all project test suites — stop if any fail.
-2. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts or version
-3. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge
-4. Regenerate PDFs — only if HTML source changed; skip and note if not
-5. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
-6. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
-7. Publish release notes — auto GitHub Releases + CHANGELOG.md if `gh` authenticated; prompt to connect or skip if not
-8. After push — update the minor version tag to HEAD
-9. **Show the release summary block** (see format below)
+1. Run ALL project test suites to completion — do not stop at first failure. Collect results across all suites. If any failures exist:
+   - Show a **failure summary**: suite name, test name, error message for each failure
+   - Show a **fix plan**: for each failure, one-line diagnosis + proposed fix
+   - Ask user: "X test(s) failed. Fix now? (Enter = yes, or describe changes)"
+   - User approves → fix and re-run. Do not proceed to step 2 until all suites pass.
+   - User declines → stop release. Do not proceed with known failures.
+2. **Update flow docs (FIRST)** — scan `docs/work-flows/`:
+   - **Update** any existing flow doc that describes a process that changed this release
+   - **Create** a new flow doc for any new process or feature implemented this release that doesn't have one yet
+   - **Order check** — verify the numeric prefix order (`01-`, `02-`, ...) reflects the logical sequence a user would follow (e.g. setup flows before development flows, development before release). If adding a new flow breaks logical order, renumber affected files to restore it. When renumbering: `grep -r` entire repo for every old filename and update every reference (README flow table, Section 19 tests, ARD HTML flow table, CHANGELOG, RELEASES, all other flow docs that cross-link) in the same session. No stragglers.
+   - Box-style format required for all flow docs. No tree-style connectors. All box lines 63 chars wide.
+3. Update all counts and docs — README badges, any doc referencing test counts or version. **ARD audit (MANDATORY):** Update ALL HTML files in `ard/` — cover version badge, Key Highlights version + flow count + test count, Version Changelog section for this release (bump Kit range, update test counts), flow diagrams section if any flows changed. Every field referencing a version, test count, or flow count must match the new version. Never skip ARD updates.
+4. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge
+5. Regenerate PDFs — **mandatory on every prepare release** (ARD HTML always changes when version bumps). Run WeasyPrint for each `ard/*.html` file:
+   ```bash
+   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Technical_Overview.html" "ard/Portable_Spec_Kit_Technical_Overview.pdf"
+   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Guide.html" "ard/Portable_Spec_Kit_Guide.pdf"
+   ```
+   Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
+6. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
+7. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
+8. Publish — commit all changes to `Slimlogix/Documents` (git add + commit), then run `bash agent/sync.sh "commit message"` to push to the public repo `aqibmumtaz/portable-spec-kit`. sync.sh handles: copying portable-spec-kit.md (root → project → examples), syncing all files to public repo, creating/updating GitHub Release from CHANGELOG.md, updating the v0.N tag. If `gh` not authenticated → run `gh auth login` first.
+9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version (check README or portable-spec-kit.md header on GitHub)
+10. **Show the release summary block** (see format below)
 
 **"refresh release" sequence (same version, no bump):**
-1. Run all project test suites — stop if any fail.
-2. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts
-3. **No version bump** — version stays the same
-4. Regenerate PDFs — only if HTML source changed
-5. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
-6. Update `CHANGELOG.md` — update the current version entry (same patch range, updated content)
-7. Publish release notes — auto GitHub Releases + CHANGELOG.md if `gh` authenticated; prompt to connect or skip if not
-8. After push — update the minor version tag to HEAD
-9. **Show the release summary block** (see format below)
+1. Run ALL project test suites to completion — collect results. If any failures exist: show failure summary + fix plan, ask user to approve fixes, re-run. Do not proceed with known failures.
+2. **Update flow docs (FIRST)** — scan `docs/work-flows/`:
+   - **Update** any existing flow doc that describes a process that changed
+   - **Create** a new flow doc for any new process implemented that doesn't have one yet
+   - **Order check** — verify numeric prefix order reflects logical user sequence. Renumber if needed; update every reference repo-wide (README, tests, ARD, CHANGELOG, RELEASES, cross-links) in the same session.
+   - Box-style format. All lines 63 chars wide.
+3. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts. **ARD audit (MANDATORY):** Update all `ard/` HTML files — flow tables, test counts, changelog entry for this version.
+4. **No version bump** — version stays the same
+5. Regenerate PDFs — mandatory. Run WeasyPrint for each `ard/*.html` file:
+   ```bash
+   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Technical_Overview.html" "ard/Portable_Spec_Kit_Technical_Overview.pdf"
+   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Guide.html" "ard/Portable_Spec_Kit_Guide.pdf"
+   ```
+   Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
+6. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
+7. Update `CHANGELOG.md` — update the current version entry (same patch range, updated content)
+8. Publish — commit all changes to `Slimlogix/Documents`, then run `bash agent/sync.sh "commit message"` to push to `aqibmumtaz/portable-spec-kit`. If `gh` not authenticated → run `gh auth login` first.
+9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version
+10. **Show the release summary block** (see format below)
 
 **Release summary (shown after all steps complete — required for prepare/update/refresh release):**
 ```
@@ -209,14 +236,15 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 ══════════════════════════════════════════════
   1. Tests        <Suite>: X passed ✅  <Suite>: X passed ✅
                   Total: X/X passing ✅
-  2. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
-  3. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
+  2. Flows        docs/work-flows/ current ✅
+  3. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
+  4. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
                   unchanged — v0.N.x —             (refresh only)
-  4. PDFs         regenerated ✅ / skipped (no HTML changes) ⚠
-  5. RELEASES.md  updated ✅
-  6. CHANGELOG.md updated ✅
-  7. GitHub       published ✅ / pending push ⏳
-  8. Tag          pending push ⏳
+  5. PDFs         open ard/*.html in browser → File → Print → Save as PDF ⏳
+  6. RELEASES.md  updated ✅
+  7. CHANGELOG.md updated ✅
+  8. GitHub       published ✅ / pending push ⏳
+  9. Tag          pending push ⏳
 ══════════════════════════════════════════════
 ```
 Do not finalize the release (version bump, commit) if any suite has failures.
@@ -240,8 +268,10 @@ After tests pass, check `gh auth status` and proceed:
 **Edge cases:**
 - **No test suites exist** → show `No test suites configured — skipping test run` in summary block and proceed. Tests are required before v1.0.
 - **New suite added this session** → include it in the summary automatically
+- **Test failures exist** → run all suites to completion first, then show failure summary (suite, test name, error) + fix plan (one-line diagnosis + proposed fix per failure). Ask user to approve. Fix → re-run → only proceed when all pass. Never skip failures.
 - **release-check.sh shows untested features** → **do not finalize the release**. Add test references to the SPECS.md Tests column, ensure those tests pass, then re-run prepare release. A feature is not done until it has a test ref.
-- **PDFs don't need regeneration** → skip regeneration, note it. "PDFs regenerated (if any)" means only if HTML source changed.
+- **New flow needed** → create in `docs/work-flows/` during step 2. Choose its number based on logical position in the user journey — not just "next highest". If inserting mid-sequence, renumber subsequent files and update all references repo-wide before proceeding.
+- **PDFs** → always regenerate all `ard/` HTML files to PDF on every prepare release using WeasyPrint (`/Users/AqibMumtaz/anaconda3/bin/weasyprint`). Run both commands, verify non-zero output file size. GLib warnings are harmless.
 - **GitHub release already exists for this version** → update it (not create new) — use `gh release edit`
 - **CHANGELOG.md missing entry for this version** → add it before publishing
 - **Release notes scope** — only include changes that are committed and visible in the repo. Never mention files, features, or work that is excluded from the public repo (e.g. private docs/, research papers, local-only scripts)
@@ -461,6 +491,76 @@ Kit: v0.2.1 — v0.2.7
 - Use tables for comparison, prose for analysis
 - Professional styling with clear hierarchy
 
+### Spec-Based Test Generation
+
+**SPECS origin detection rule:** Before generating test stubs, detect whether SPECS.md is in forward flow or retroactive flow:
+- **Forward flow** — feature is `[ ]` (not yet built) and acceptance criteria exist under `## Feature Acceptance Criteria` → generate test stubs immediately
+- **Retroactive flow** — feature `[ ]` but already built (matching `[x]` task in TASKS.md) → do NOT generate stubs; write tests directly against existing code
+- **Mixed** — some features forward, some retroactive → generate stubs only for forward features
+- Announce: "F1, F3 in forward flow — generating test stubs. F2 retroactive — write tests directly."
+
+**Per-feature acceptance criteria format:** Each feature's acceptance criteria live in a dedicated subsection of SPECS.md, not a global list:
+```markdown
+## Feature Acceptance Criteria
+
+### F1 — Feature Name
+- [ ] Criterion 1 (what a passing state looks like)
+- [ ] Criterion 2
+- [ ] Edge case: what happens when X is empty
+
+### F2 — Another Feature
+- [ ] Criterion 1
+```
+
+**Test stub generation trigger:** Stubs are generated automatically when ALL of these are true:
+- Feature is `[ ]` (not yet built)
+- Feature has acceptance criteria under `## Feature Acceptance Criteria / ### F{n}`
+- SPECS was written before the corresponding task was completed (forward flow)
+- Triggers: (1) agent writes/updates SPECS.md with criteria, (2) user says "start F1" or "implement F1"
+
+**No-criteria edge case:** If a forward-flow feature has no acceptance criteria written:
+- Do NOT generate stubs
+- Prompt: "F1 has no acceptance criteria. Add criteria under `### F1 — Feature Name` and I'll generate stubs. Or skip and write tests manually."
+- If user skips → proceed without stubs; R→F→T test ref still required before marking done
+
+**Retroactive flow — no stubs, direct tests:** If SPECS is retroactive (feature already built):
+- Do NOT generate stubs — code exists, write tests against it directly
+- Tests column must still be filled and test-release-check.sh must pass before marking `[x]`
+
+**Test stub generation rule (forward flow only):** When trigger conditions are met:
+1. Detect stack from `agent/AGENT.md` Stack table → choose test format
+2. Generate stub file in `tests/` named after feature: `tests/f1-feature-name.test.js` (Jest), `tests/test_f1_feature_name.py` (pytest), `tests/f1-feature-name.sh` (bash), etc.
+3. One test case per acceptance criterion — title = criterion text, body = `// TODO: implement`
+4. Add stub file path to SPECS.md Tests column for that feature
+5. Add task to TASKS.md: `[ ] Implement tests for F1 — Feature Name`
+6. Announce: "Generated stub: tests/f1-feature-name.test.js (3 tests for F1)"
+
+**Stack-aware stub formats:**
+
+| Stack | File format | Stub body |
+|-------|------------|-----------|
+| Jest / Vitest (JS/TS) | `tests/f{n}-name.test.js` | `test('criterion', () => { // TODO: implement\n  expect(true).toBe(false); });` |
+| pytest (Python) | `tests/test_f{n}_name.py` | `def test_criterion():\n    # TODO: implement\n    assert False` |
+| Go | `tests/f{n}_name_test.go` | `func TestCriterion(t *testing.T) {\n    t.Skip("TODO: implement")\n}` |
+| Bash | `tests/test-f{n}-name.sh` | `# TODO: implement\necho "FAIL: not implemented"; exit 1` |
+| Unknown stack | `tests/f{n}-name-manual.md` | Checklist of manual test steps, one per criterion |
+
+**Test stub completion rule:** Before marking a feature `[x]` done in SPECS.md, the agent must verify the test file contains NO incomplete markers:
+- No `# TODO`, `// TODO`, `/* TODO */`
+- No `test.skip`, `xit`, `xtest`, `it.skip`
+- No placeholder assertions: `expect(true).toBe(false)`, `assert False`, `t.Skip(...)`
+- If incomplete markers found → refuse to mark done, show which tests need implementation
+- Message: "F1 still has 2 incomplete test stubs. Fill them before marking done."
+
+**Forward flow recommended sequence:**
+1. Write feature row in SPECS.md (status `[ ]`)
+2. Write acceptance criteria under `## Feature Acceptance Criteria / ### F{n}`
+3. Agent generates test stubs immediately → files created, Tests column updated
+4. Run tests → all fail (RED — expected)
+5. Implement feature code to pass tests (GREEN)
+6. Run tests → all pass
+7. Agent marks feature `[x]` in SPECS.md (after verifying no TODO stubs remain)
+
 ### Code Review (Before Commit)
 - No `console.log` left in production code (dev debugging only)
 - No `TODO` or `FIXME` left unresolved — either fix it or create a task in TASKS.md
@@ -507,6 +607,59 @@ Before any deployment:
 - PR body: summary bullets + test plan
 - Squash merge preferred — clean history
 - Delete branch after merge
+- CI must be green before merging any PR (from any contributor, including yourself)
+- Enable branch protection on `main` (GitHub Settings → Branches → require status checks)
+
+### CI & Community Contributions
+
+**CI status badge rule:** Every public GitHub repo using the kit should show a CI badge in README.md reflecting the main branch test status. Badge format:
+`[![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)](https://github.com/{owner}/{repo}/actions/workflows/ci.yml)`
+
+**Branch protection guidance:** Enable branch protection on `main` (GitHub Settings → Branches → Add rule). Require status checks to pass before merging — select the CI workflow. Prevents pushes with failing tests reaching main.
+
+**PR workflow rule:** When a contributor opens a PR, do not merge until all CI checks are green. Review for portability (any project / any language / any agent?) before merging.
+
+**Contribution validation rule:** Before merging any PR — from any contributor including yourself — CI must be green. Green CI is the minimum bar; code review is additional, not a substitute.
+
+**ci.yml template for user projects:** When setting up CI for a project, generate `.github/workflows/ci.yml` using this template. Fill in `{TEST_COMMAND}` and `{SETUP_STEPS}` based on the detected stack from `agent/AGENT.md`. Always include `test-release-check.sh agent/SPECS.md` as the final step — this enforces the R→F→T gate in CI.
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      {SETUP_STEPS}
+      - name: Run tests
+        run: {TEST_COMMAND}
+      - name: R→F→T validator
+        run: bash tests/test-release-check.sh agent/SPECS.md
+```
+
+**Stack-aware test command detection** (fill `{TEST_COMMAND}` and `{SETUP_STEPS}` from `agent/AGENT.md` Stack table):
+
+| Stack | `{TEST_COMMAND}` | `{SETUP_STEPS}` |
+|-------|-----------------|----------------|
+| Node.js + Jest | `npx jest --passWithNoTests` | `uses: actions/setup-node@v4` + `run: npm ci` |
+| Node.js + Vitest | `npx vitest run` | same as Jest |
+| Node.js + generic | `npm test` | same as Jest |
+| Python + pytest | `python -m pytest` | `uses: actions/setup-python@v4` + `run: pip install -r requirements.txt` |
+| Go | `go test ./...` | (none) |
+| Bash scripts only | (omit Run tests step — test-release-check.sh covers it) | (none) |
+| Unknown / not detected | `echo "Configure test command in ci.yml"` + warn user | (none) |
+
+**New Project Setup Step 7.5 — create CI workflow:** After stack is confirmed (Step 7), create `.github/workflows/ci.yml` using the template above. Add CI badge to README.md as the first badge. Tell user: "CI will run on every push and PR. Enable branch protection in GitHub Settings → Branches to require CI checks before merge."
+
+**Existing project CI setup:** During existing project onboarding (scan checklist), include:
+`[ ] Create .github/workflows/ci.yml (CI on every push/PR + R→F→T validator)`
+Agent fills in the test command from the detected stack. Always includes `bash tests/test-release-check.sh agent/SPECS.md`.
 
 ### Python Environment (MANDATORY — Conda)
 - **Every Python project MUST have its own conda environment** — never install packages into `base` or system Python
@@ -622,6 +775,35 @@ In both cases, **always confirm with the user** before creating or selecting an 
 ---
 
 ## Document Generation (ARD / Technical Docs)
+
+### Flow Documentation (`docs/work-flows/`)
+
+**All flow diagrams use box-style ASCII diagrams.** Never use tree-style connectors (bare `│/▼` on standalone lines). Every flow doc in `docs/work-flows/` must follow this format:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  STEP NAME                                                   │
+│     Detail line 1                                           │
+│     Detail line 2                                           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  NEXT STEP                                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Rules:
+- Each step in a flow = one box (`┌─...─┐` / `│` / `└─...─┘`)
+- Boxes connect with `└──────┬──────┘` → `┌──────▼──────┐` connectors
+- Decision branches go inside the box as `├─ Yes → ... / └─ No → ...`
+- Inner content boxes (showing file states, examples) nest with 2-space indent inside outer box
+- No standalone `│` or `▼` lines between steps
+- When updating a flow doc, convert any remaining tree-style sections to box-style in the same session
+- Every box line (`│...│`) must be exactly 63 display characters wide — pad trailing spaces to align the right `│` border
+
+**Architecture change rule:** When any agent behavior, process, or setup flow changes — new step added, trigger modified, rule removed — update the relevant `docs/work-flows/` file in the same session. A process change without a matching flow doc update is incomplete.
+
+**Release gate for flow docs:** As part of every `prepare release` Step 2 — scan `docs/work-flows/` and verify each flow reflects current behavior. If any flow describes a process that changed this release, update it before finalizing. Box-style format required. No tree-style connectors. All box lines 63 chars wide.
 
 ### Document Structure (Standard Order)
 1. Title Page (cover — readable text, professional styling)
@@ -769,6 +951,7 @@ Check the project's scan state and display the status once when the agent first 
    [ ] Rename ARD/ → ard/ (to match kit convention)
    [ ] Create .env.example from existing .env
    [ ] Restructure README.md to match template
+   [ ] Create .github/workflows/ci.yml (CI on every push/PR + R→F→T validator)
 
    "Which changes would you like? Select all, some, or none."
    ```
@@ -1216,9 +1399,15 @@ Brief description of what this project does and who it's for.
 - **In scope:**
 - **Out of scope (future):**
 
-## Acceptance Criteria
-- [ ] Criterion 1
+## Feature Acceptance Criteria
+
+### F1 — Feature Name
+- [ ] Criterion 1 (what a passing state looks like)
 - [ ] Criterion 2
+- [ ] Edge case: what happens when X is empty
+
+### F2 — Another Feature
+- [ ] Criterion 1
 ```
 
 **agent/PLANS.md:**
@@ -1436,6 +1625,19 @@ run_test() {
   return $result
 }
 
+check_stub_complete() {
+  local test_ref="$1"
+  local todo_count
+  # Match standalone TODO comments and skip/placeholder assertions at line start
+  # All patterns anchored to avoid false positives inside grep pattern strings
+  todo_count=$(grep -cE "^[[:space:]]*(#[[:space:]]*TODO|//[[:space:]]*TODO|test\.skip\(|it\.skip\(|xit\(|xtest\(|expect\(true\)\.toBe\(false\)|assert False|t\.Skip\()" "$test_ref" 2>/dev/null || echo 0)
+  if [ "$todo_count" -gt 0 ]; then
+    echo "${test_ref}:stubs_incomplete:${todo_count}" >> "$TEST_CACHE_FILE"
+    return 1
+  fi
+  return 0
+}
+
 echo ""
 echo "════════════════════════════════════════════════════════════"
 echo "  RELEASE READINESS — R→F→T Coverage Check"
@@ -1468,6 +1670,12 @@ while IFS= read -r line; do
     else
       REF_PRESENT=$((REF_PRESENT + 1))
       FILE_EXISTS=$((FILE_EXISTS + 1))
+      if ! check_stub_complete "$test_ref"; then
+        stub_count=$(grep "^${test_ref}:stubs_incomplete:" "$TEST_CACHE_FILE" | cut -d: -f3)
+        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  STUBS NOT FILLED ($stub_count TODO markers): $test_ref"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        continue
+      fi
       run_test "$test_ref"; run_result=$?
       if [ "$run_result" -eq 0 ]; then
         printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✓  $test_ref"
@@ -1534,13 +1742,15 @@ Create all 6 agent files using the templates above.
 
 **Then (when user is ready):**
 
-**Step 4:** Specs discussion → write `agent/SPECS.md`
+**Step 4:** Specs discussion → write `agent/SPECS.md`. For each feature, add acceptance criteria under `## Feature Acceptance Criteria / ### F{n} — Feature Name`. Agent generates test stubs immediately for any forward-flow feature that has criteria written (see Spec-Based Test Generation rules).
 
 **Step 5:** Recommend tech stack → user approves
 
 **Step 6:** Write `agent/PLANS.md` — architecture, phases. Deployment deferred to release time.
 
 **Step 7:** Initialize stack — install deps, update `.gitignore`, assign dev server port automatically
+
+**Step 7.5:** Create GitHub Actions CI workflow — generate `.github/workflows/ci.yml` using the CI template (see CI & Community Contributions section). Detect test command from stack. Add CI badge to README.md as first badge. Tell user: "CI will run on every push and PR. Enable branch protection in GitHub Settings → Branches to require CI checks before merge."
 
 **Step 8:** Start development — update `agent/TASKS.md`, begin building
 
