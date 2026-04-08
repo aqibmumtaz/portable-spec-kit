@@ -1,5 +1,5 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.4.11 -->
+<!-- Framework Version: v0.4.10 -->
 
 **Version:** v0.4.9 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 781 (636 framework + 145 benchmarking)

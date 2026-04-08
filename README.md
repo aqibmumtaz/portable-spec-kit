@@ -8,7 +8,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-781%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
+<!-- CI badge — hidden until GitHub Actions billing is fixed (Settings → Billing → Payment information → add card, then delete Actions budget in Budgets and alerts, then re-enable workflow in Actions → CI → Enable workflow)
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
+-->
 
 <table>
 <tr>
