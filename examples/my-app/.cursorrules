@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.4.6 -->
+<!-- Framework Version: v0.4.7 -->
 
-**Version:** v0.4.6 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 676 (531 framework + 145 benchmarking)
+**Version:** v0.4.7 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 752 (607 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -511,6 +511,15 @@ Kit: v0.2.1 — v0.2.7
   - Build phases adjusted → update Build Phases section
   - New methodology or research findings → add to Methodology & Research section
   - If PLANS.md is empty after stack is chosen → fill architecture from current codebase
+- **Architecture Decision Log (ADL)** — add a row to `## Architecture Decision Log` in PLANS.md for every significant technical decision:
+  - **Format:** `| ADR-NNN | YYYY-MM-DD | Decision | Options Considered | Chosen | Why | Impact |`
+  - **ADR numbering:** Sequential, 3-digit zero-padded (ADR-001, ADR-002, …). First decision = ADR-001.
+  - **Date:** ISO 8601 (YYYY-MM-DD). Convert relative dates ("last Thursday") to absolute.
+  - **Impact:** What files, components, or systems are affected.
+  - **Newest first:** most recent decision at top (prepend, don't append).
+  - **ADL is immutable history** — never delete or modify past decisions. If a decision is superseded → add a new row: "ADR-005 supersedes ADR-002".
+  - **When to add:** stack chosen/replaced, database schema changed, API pattern changed, test framework changed, methodology adopted, architecture pattern changed, security approach changed.
+  - **NOT for:** bug fixes, small implementation choices, variable names, content changes, feature additions with no architecture impact.
 - **AGENT.md** — update when project config changes:
   - Stack changed → update Stack table
   - Brand colors or fonts changed → update Brand section
@@ -733,6 +742,8 @@ jobs:
 `[ ] Create .github/workflows/ci.yml (CI on every push/PR + R→F→T validator)`
 Agent fills in the test command from the detected stack. Always includes `bash tests/test-release-check.sh agent/SPECS.md`.
 
+**Existing project onboarding — agent/ commit check:** During existing project scan, if project is team/open-source, check if `agent/` is in `.gitignore`. If yes → suggest: `[ ] Remove agent/ from .gitignore (enables AI-powered onboarding for contributors)`.
+
 ### Python Environment (MANDATORY — Conda)
 - **Every Python project MUST have its own conda environment** — never install packages into `base` or system Python
 - **Default env name** = project directory name, lowercase, kebab-case (e.g., `aiiu`, `speech-ai-rd`, `my-api`)
@@ -920,6 +931,39 @@ Rules:
 - Examples: layout rules, outreach trackers, scoring plans, research notes
 - Only code files, configs, and READMEs belong at project root
 - The `agent/` directory is the single location for all project management and AI-generated reference docs
+
+### AI-Powered Onboarding
+
+**Commit `agent/` for team and open-source projects (MANDATORY):** For any project with multiple contributors or a public GitHub repo — commit the `agent/` directory to git. Never add `agent/` to `.gitignore` for team or open-source projects.
+
+When a contributor clones the repo, their agent reads the 6 spec files and is fully briefed without any verbal handoff, onboarding call, or wiki hunt:
+1. Agent detects `agent/` exists → reads all 6 files (Mapped state)
+2. Shows: "✅ Spec Kit: Project mapped (vX.X.X) — briefed from spec files"
+3. Presents: stack, current version, phase, top pending tasks
+4. Contributor starts working immediately — fully context-aware
+
+This is the Persistent Memory Architecture applied to contributor onboarding. Any agent (Claude, Cursor, Copilot, Cline) reads the same files — briefing is agent-agnostic.
+
+**What stays gitignored (unchanged):** `.env`, `cache/`, `output/`, `logs/` — these are still excluded. The 6 `agent/` management files contain project structure, not secrets.
+
+**Solo project exception:** If definitively single-developer and private, `agent/` may be gitignored. But if in doubt — commit it. Cost of committing: near zero. Cost of not committing when a collaborator joins: full manual re-onboarding.
+
+**CONTRIBUTING.md guidance for open-source projects:** Add this note:
+> "This project uses Portable Spec Kit. Your AI agent will be briefed automatically when you clone — open a session and it will read `agent/` to understand the project state, current version, and pending tasks."
+
+**Sensitive content check:** Before committing `agent/`, verify no sensitive data has been added (passwords, API keys, personal info). Agent files contain project structure — not secrets. If secrets found in an agent file → remove them and add to `.env` instead.
+
+**`.gitignore` default on new project setup:**
+- Team/open-source detected → `.gitignore` does NOT include `agent/`; tell user: "Committing `agent/` enables AI-powered onboarding — contributors briefed automatically on clone."
+- Solo/private → add comment: `# agent/ — commit this for team projects`
+
+**`agent/` already gitignored warning:** If existing project has `agent/` in `.gitignore` and the project has contributors → warn: "agent/ is gitignored — contributors won't be briefed on clone. Remove from .gitignore for team projects?"
+
+**AI-Powered Onboarding edge cases:**
+- New contributor uses different AI agent → all agents read same files (Cursor, Copilot, Cline, Claude) — briefing works regardless
+- Forked open-source project → forker clones with `agent/` → briefed on upstream project state; can diverge from there
+- User wants agent files private → valid for private projects; explain trade-off
+- Mono-repo with multiple `agent/` dirs → each subproject decides independently
 
 ### File Creation/Update Rule (applies to ALL auto-managed files)
 
@@ -1329,8 +1373,137 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 - User says "build me X" → add to TASKS.md, then build it
 - User says "fix this bug" → add to TASKS.md, fix it, mark done
 - User says "what's the status?" → show from TASKS.md and AGENT_CONTEXT.md
+- User says "progress", "dashboard", or "burndown" → read TASKS.md and generate a progress dashboard (see Progress Dashboard below)
 - User comes back after weeks → read AGENT_CONTEXT.md, summarize where they left off
 - User says "keep noted" or "note this" → add to the appropriate agent/ file (TASKS.md for future work, PLANS.md for decisions, AGENT_CONTEXT.md for current state) — never to external memory systems
+
+### Progress Dashboard
+
+**Progress dashboard trigger:** When the user says `progress`, `dashboard`, `burndown`, `status report`, `how are we doing`, or `what's left` — generate a progress dashboard immediately from `agent/TASKS.md`. No scripts required. Agent reads TASKS.md directly and computes all metrics inline.
+
+**Dashboard output format:**
+```
+══════════════════════════════════════════════════════════
+  PROGRESS DASHBOARD — <Project Name>  (v0.N.x)
+══════════════════════════════════════════════════════════
+  Version: v0.N — <Theme>
+
+  OVERALL
+  ───────────────────────────────────────────────────────
+  Done:     X tasks   [████████████░░░░░░░░]  XX%
+  Pending:  Y tasks
+  Total:    Z tasks
+
+  BY VERSION
+  ───────────────────────────────────────────────────────
+  v0.0  ████████████████████  8/8   100% ✅ Done
+  v0.1  ████████████████████  14/14 100% ✅ Done
+  v0.4  ████████░░░░░░░░░░░░  7/16   44% 🔄 Current
+
+  CURRENT VERSION TASKS (v0.N)
+  ───────────────────────────────────────────────────────
+  [x] Task 1
+  [x] Task 2
+  [ ] Task 3
+  [ ] Task 4
+
+  BLOCKERS
+  ───────────────────────────────────────────────────────
+  (none)
+
+  NEXT ACTIONS
+  ───────────────────────────────────────────────────────
+  1. <next pending task>
+  2. <next pending task>
+══════════════════════════════════════════════════════════
+```
+
+If `@username` tags are present in TASKS.md, add a BY CONTRIBUTOR section:
+```
+  BY CONTRIBUTOR
+  ───────────────────────────────────────────────────────
+  @aqib      ████████████░░░░░░░░  6/8   75%
+  @sara      ████░░░░░░░░░░░░░░░░  2/6   33%
+  Unassigned ████░░░░░░░░░░░░░░░░  2/10  20%
+```
+
+**Dashboard computation rules:**
+- Parse every `- [x]` and `- [ ]` line under each version heading in TASKS.md
+- Count done vs total per version group
+- Compute percentage: `done / total * 100`
+- Build progress bar: each `█` = 5% of 100%. Bar width = 20 chars. Right-pad with `░`.
+- Use ✅ for 100% complete versions, 🔄 for in-progress versions, 🔲 for not-started versions
+- Current version = heading marked `— Current` (or last non-Backlog heading if no marker present)
+- Backlog items are never counted in progress — they are future scope
+- Blocked items (under `### Blocked`) count as pending but are listed separately in BLOCKERS
+
+**Dashboard is read-only:** Never auto-show. Never modify any files. Generated on-demand only.
+
+**Dashboard edge cases:**
+- TASKS.md missing → "No TASKS.md found — run `init` to set up the project"
+- No version headings detected → show flat list of all done/pending tasks
+- All tasks done → "🎉 All tasks complete — ready for release"
+- Current version has 0 tasks → "No tasks added for this version yet"
+- Very long task list (50+ items) → truncate CURRENT VERSION TASKS to first 10 done + all pending; add "(X more done tasks — see TASKS.md)"
+- No `### Blocked` section → omit BLOCKERS row entirely
+- Progress bar max = 20 chars — never exceed
+- Backlog: show count only ("Backlog: N tasks in future scope") — do not enumerate
+
+### Multi-Agent Task Tracking
+
+**@username ownership syntax:** Tasks in TASKS.md can be tagged with `@username` to assign an owner. Username format = slugified `git config user.name` (lowercase, spaces → dashes — same format as user profile filenames). Multiple owners allowed. Tag anywhere in the task line (end preferred). Untagged tasks = unassigned.
+
+```markdown
+- [ ] Implement login API @aqib
+- [ ] Write frontend tests @sara
+- [ ] Review database schema @aqib @sara   ← shared task
+- [ ] Deploy to staging                     ← unassigned
+```
+
+**Per-user task view trigger:** When user says `my tasks`, `tasks for @username`, `what do I have`, or `my workload` — detect current user from `git config user.name` (slugified), filter TASKS.md for tasks tagged `@{current-user}`, show per-user task view:
+
+```
+══════════════════════════════════════════════════════════
+  TASKS — @aqib  (v0.N — <project>)
+══════════════════════════════════════════════════════════
+  v0.N — Current
+  ───────────────────────────────────────────────────────
+  [ ] Implement login API
+  [ ] Review database schema  (shared with @sara)
+  [x] Setup project structure
+
+  ASSIGNED TO @aqib: 3 tasks (1 done, 2 pending)
+══════════════════════════════════════════════════════════
+```
+
+**Delegation rule:** When user says `assign [task] to @username` or `delegate [task] to @username`:
+- Find the task line in TASKS.md by feature number or keyword match
+- Add `@username` tag to that line
+- Confirm: "Assigned '[task]' to @username in **ProjectName** TASKS.md"
+- If already assigned → skip, confirm: "Already assigned to @username"
+
+**Unassign rule:** When user says `unassign @username from [task]`:
+- Remove that `@username` tag from the task line
+- If it was the only owner → task becomes unassigned
+- Confirm: "Removed @username from '[task]' — now unassigned"
+
+**Cross-agent coordination rule:** When two users share a git repo and each has their own AI agent — the agents coordinate through TASKS.md, not direct communication. Agent A assigns task → commits → pushes. Agent B pulls → sees the new assignment → shows task in per-user view. No APIs. No real-time connection. This is Persistent Memory Architecture applied to team task management.
+
+**Shared task rule:** A task tagged `@a @b` is shared — counts as pending for both users until the task is marked `[x]`. The last person to mark it done completes it for both.
+
+**Dashboard integration:** If any task in TASKS.md has `@username` tags, the Progress Dashboard automatically includes a BY CONTRIBUTOR section (see Progress Dashboard above).
+
+**TASKS.md remains human-readable:** `@username` tags are visible plain markdown. Anyone reading TASKS.md sees who owns what — no tooling required.
+
+**Multi-agent edge cases:**
+- User not in any task → "No tasks assigned to @username. Unassigned tasks: N"
+- Typo in `@username` → show as-is; never silently drop
+- `@username` on a blocked task → still visible in per-user view, labeled "(blocked)"
+- All tasks assigned to one user → note: "All tasks owned by @username — consider distributing"
+- No tags yet (fresh project) → show all unassigned tasks + hint: "No tasks tagged to you yet. Add @{your-username} to any task to claim ownership"
+- Git user not configured → fall back: "What's your username? (used for task filtering)"
+- Shared task `@a @b`: if @a marks done but @b hasn't → still `[ ]` in @b's view; shown as "(shared with @b — pending their confirmation)" in @a's view
+- Very long task list → truncate per-user view to 20 items, show "(N more — see TASKS.md)"
 
 **Fill gaps proactively.** Don't wait for the user to ask — detect and fill:
 - SPECS.md empty after 3+ tasks completed → retroactively fill from what's been built
@@ -1348,6 +1521,23 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 - "PLANS.md shows we planned X — should I update it?" (shows plan awareness)
 
 **The user's time is sacred.** Agent does 90% of the work. User reviews 10%. Never ask the user to write specs/plans/tasks — the agent writes them, user approves or adjusts.
+
+### Persistent Memory Architecture
+
+The 6 agent files (`AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANS.md`, `TASKS.md`, `RELEASES.md`) collectively form the project's **Persistent Memory** — not merely documentation. Any AI agent that reads them is instantly briefed: no verbal handoff, no onboarding call, no stale wiki.
+
+**Properties of Persistent Memory:**
+- **Durable** — persists in git across time; survives session ends, machine changes, team turnover
+- **Shared** — any agent on any machine reads the same files from the same repo
+- **Portable** — works with Claude, Cursor, Copilot, Cline, Windsurf — agent-agnostic by design
+- **Team-scale** — multiple users and agents coordinate without any real-time connection
+- **Auditable** — git history records every change, who made it, and when
+
+**How Persistent Memory enables team coordination:** Agent A works on the project → writes decisions to PLANS.md, tasks to TASKS.md, state to AGENT_CONTEXT.md → commits and pushes. Agent B on another machine (or using a different AI tool) pulls → reads the same files → is fully briefed without any message exchange. No APIs. No message queues. No real-time orchestration required.
+
+This is the core innovation of SPD beyond spec persistence. Just as Spec-Persistent Development keeps specs alive through development, Persistent Memory Architecture keeps project intelligence alive across contributors, agents, and time.
+
+**Persistent Memory vs. agent memory/context:** Agent memory (like Claude Code's conversation history) is ephemeral — lost when the session ends. Persistent Memory lives in git. It survives across sessions, across agents, and across team members. Always tracking silently = always writing to Persistent Memory.
 
 ### Agent File Templates
 
@@ -1525,14 +1715,17 @@ src/
 1. Task 1
 2. Task 2
 
+## Architecture Decision Log
+
+> Record every significant technical decision here — stack choices, pattern changes, methodology shifts. One row per decision. Newest first.
+
+| # | Date | Decision | Options Considered | Chosen | Why | Impact |
+|---|------|----------|-------------------|--------|-----|--------|
+| ADR-001 | YYYY-MM-DD | | | | | |
+
 ## Methodology & Research
 ### Approaches Evaluated
 <!-- What options were considered and why -->
-
-### Decision Log
-| Decision | Options Considered | Chosen | Why | Evidence |
-|----------|-------------------|--------|-----|----------|
-| | | | | |
 
 ### Research Notes
 <!-- Key findings, benchmarks, comparisons. Detailed research files go in research/ directory -->
@@ -1553,8 +1746,9 @@ src/
 
 ## v0.1 — Current
 - [x] Project setup
-- [ ] Task 1
-- [ ] Task 2
+- [ ] Task 1 @username          ← assign tasks with @username (optional)
+- [ ] Task 2 @username @other   ← multiple owners allowed
+- [ ] Task 3                    ← unassigned
 
 ### Blocked
 <!-- Tasks waiting on external dependencies -->

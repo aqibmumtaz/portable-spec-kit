@@ -5,7 +5,7 @@
 
 ## Current Status
 - **Version:** v0.1.0
-- **Kit:** v0.4.6
+- **Kit:** v0.4.7
 - **Phase:** Foundation
 - **Status:** Core features in progress
 

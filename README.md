@@ -5,9 +5,9 @@
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-v0.4.6-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.4.7-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-676%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-752%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 
 <table>
@@ -657,6 +657,7 @@ Detailed step-by-step diagrams for every work flow:
 | 11 | **[Spec-Persistent Development](docs/work-flows/11-spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
 | 12 | **[Project Lifecycle](docs/work-flows/12-project-lifecycle.md)** | Full lifecycle — client requirements through handoff |
 | 13 | **[Release Workflow](docs/work-flows/13-release-workflow.md)** | prepare release — tests, counts, version bump, publish |
+| 14 | **[Team Collaboration](docs/work-flows/14-team-collaboration.md)** | Multi-agent task tracking, progress dashboard, @username ownership |
 
 ---
 
@@ -664,7 +665,7 @@ Detailed step-by-step diagrams for every work flow:
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
-- **[Work Flows](docs/work-flows/)** — 13 step-by-step flow diagrams
+- **[Work Flows](docs/work-flows/)** — 14 step-by-step flow diagrams
 - **SPD Concept Paper** — Methodology paper with evaluation *(coming soon)*
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README

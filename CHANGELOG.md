@@ -7,8 +7,8 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
-## v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)
-**Built over:** v0.4.1 — v0.4.6 · **Tests:** 676 (531 framework across 43 sections + 145 benchmarking)
+## v0.4 — CI/CD Pipeline + Spec-Based Test Generation + Team Intelligence (April 2026)
+**Built over:** v0.4.1 — v0.4.7 · **Tests:** 752 (607 framework across 48 sections + 145 benchmarking)
 
 ### Highlights
 - **GitHub Actions CI** — ci.yml runs all 3 test suites on every push and PR; release.yml verifies tag matches framework version on v* tag push
@@ -67,12 +67,21 @@ All notable changes to the Portable Spec Kit are documented here.
 - **README commands table** — expanded to all 9 commands with accurate descriptions; release summary corrected (10 steps, Flows step added)
 - Section 19 updated: all 13 flow file names corrected
 
+### Team Intelligence Layer (v0.4.7)
+- **F58 — Progress Dashboard** — trigger words (`progress`, `dashboard`, `burndown`, `status report`, `how are we doing`, `what's left`) → inline burndown from TASKS.md; OVERALL / BY VERSION / CURRENT TASKS / NEXT ACTIONS / BLOCKERS / BY CONTRIBUTOR sections; progress bars (█=5%, 20-char, ░ padding); version icons ✅/🔄/🔲; read-only; backlog excluded; edge cases: missing TASKS.md, all-done, truncation at 50+
+- **F59 — Multi-Agent Task Tracking** — `@username` ownership syntax in TASKS.md; per-user task view (`my tasks`, `my workload`); delegation/unassign protocol; cross-agent coordination via shared TASKS.md (file is the message bus); shared task rule (`@a @b`); TASKS.md human-readable plain markdown
+- **F60 — Persistent Memory Architecture** — named concept for the 6 agent files collectively; 5 properties: Durable (git), Shared (any agent), Portable (Claude/Cursor/Copilot/Cline/Windsurf), Team-scale, Auditable; tracking = writing to persistent memory; no API/no message queue
+- **F61 — Architecture Decision Log** — `### Decision Log` promoted to top-level `## Architecture Decision Log` in PLANS.md template; ADR-NNN format (3-digit zero-padded) with Date/Options/Chosen/Why/Impact columns; newest-first; immutable history; supersede pattern; kit PLANS.md updated with 7 retroactive ADRs (ADR-001–007)
+- **F62 — AI-Powered Onboarding** — commit `agent/` for team/open-source projects (never gitignore); clone → briefed flow; CONTRIBUTING.md guidance in template; solo exception; sensitive content check; `.gitignore` comment for solo projects; Existing Project Setup checklist updated
+- **New flow doc `14-team-collaboration.md`** — Multi-Agent Task Tracking and Progress Dashboard flows; Edge Cases table (11 conditions); Persistent Memory Architecture properties table; 63-char alignment enforced
+- **Sections 44–48** — 70 new framework tests across 5 new sections; Section 19 expanded for flow 14 (+6 tests); framework total 531 → 607
+
 ### Tests
 | Suite | Tests | Status |
 |-------|-------|--------|
-| test-spec-kit.sh (43 sections) | 531 | ✅ All passing |
+| test-spec-kit.sh (48 sections) | 607 | ✅ All passing |
 | test-spd-benchmarking.sh | 145 | ✅ All passing |
-| test-release-check.sh | 57/57 features | ✅ Release ready |
+| test-release-check.sh | 62/62 features | ✅ Release ready |
 
 ---
 

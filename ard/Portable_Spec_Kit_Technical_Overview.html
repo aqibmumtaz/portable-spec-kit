@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.4.6 &bull; April 2026</div>
+    <div class="badge">v0.4.7 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.6</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 676 passing (531 framework + 145 benchmarking), 43 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.7</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 752 passing (607 framework + 145 benchmarking), 48 sections</div>
   </div>
 </div>
 
@@ -77,22 +77,22 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 13 flow documents, 676 automated tests (531 framework + 145 benchmarking), 43 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 14 flow documents, 752 automated tests (607 framework + 145 benchmarking), 48 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.4.6</td></tr>
+  <tr><td>Current version</td><td>v0.4.7</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (~1,180 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>12 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>676 (531 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>752 (607 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
-  <tr><td>Flow documents</td><td>13 step-by-step work flows</td></tr>
+  <tr><td>Flow documents</td><td>14 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
   <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
   <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
@@ -102,7 +102,7 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)</h3>
-<p>Kit: v0.4.1 — v0.4.6</p>
+<p>Kit: v0.4.1 — v0.4.7</p>
 <ul>
   <li><strong>GitHub Actions CI:</strong> <code>ci.yml</code> runs all 3 test suites on every push and PR. <code>release.yml</code> verifies tag matches framework version on v* tag push.</li>
   <li><strong>Framework CI/CD rules:</strong> <code>ci.yml</code> template with stack-aware commands (Jest/pytest/Go/Bash), New Project Setup Step 7.5, Existing Project Setup checklist CI item, CI &amp; Community Contributions section (4 rules).</li>
@@ -110,9 +110,10 @@
   <li><strong>check_stub_complete():</strong> added to <code>tests/test-release-check.sh</code> (kit copy + template) — blocks release if test stubs have unfilled TODO markers.</li>
   <li><strong>Community files:</strong> PR template, bug report + feature request issue templates. CI badge in README.</li>
   <li><strong>Cross-platform sed fix:</strong> <code>test-spd-benchmarking.sh</code> now runs on Ubuntu (GitHub Actions).</li>
-  <li><strong>676 tests</strong> (531 framework across 43 sections + 145 benchmarking). Section 42: CI/CD (29 tests). Section 43: Spec-Based Test Generation (15 tests).</li>
+  <li><strong>746 tests</strong> (601 framework across 48 sections + 145 benchmarking). Section 42: CI/CD (29 tests). Section 43: Spec-Based Test Generation (15 tests).</li>
   <li><strong>v0.4.5:</strong> 2 new flow docs (11-existing-project-setup, 12-cicd-setup). All 12 flow docs validated at 63-char box alignment. Section 19 expanded to cover all 12 flows. ARD flow diagrams section added. Prepare release rule updated: flow docs first, mandatory ARD audit, mandatory PDFs.</li>
-  <li><strong>v0.4.6:</strong> Flow docs reordered logically (onboarding 01-06, session 07-10, development 11-12, release 13). New <code>05-project-init.md</code> — explicit <code>init</code>/<code>reinit</code> commands. Renamed: <code>12-project-lifecycle.md</code>, <code>13-release-workflow.md</code>. <code>init</code>/<code>reinit</code> added as explicit command signals with full flows. Test Execution Flow extracted as named section — referenced by all test-running commands. Version bump BEFORE push rule added. 676 tests (531 framework + 145 benchmarking).</li>
+  <li><strong>v0.4.6:</strong> Flow docs reordered logically (onboarding 01-06, session 07-10, development 11-12, release 13). New <code>05-project-init.md</code> — explicit <code>init</code>/<code>reinit</code> commands. Renamed: <code>12-project-lifecycle.md</code>, <code>13-release-workflow.md</code>. <code>init</code>/<code>reinit</code> added as explicit command signals with full flows. Test Execution Flow extracted as named section — referenced by all test-running commands. Version bump BEFORE push rule added. 746 tests (601 framework + 145 benchmarking).</li>
+  <li><strong>v0.4.7 — Team Intelligence Layer (F58–F62):</strong> Progress Dashboard (trigger words → inline burndown with progress bars, BY CONTRIBUTOR for @username projects). Multi-Agent Task Tracking (@username ownership syntax, per-user task view, delegation/unassign protocol, cross-agent coordination via TASKS.md). Persistent Memory Architecture (named concept: 6 agent files = Persistent Memory, 5 properties: Durable/Shared/Portable/Team-scale/Auditable). Architecture Decision Log (ADL promoted to <code>## Architecture Decision Log</code> top-level in PLANS.md, ADR-NNN format, immutable history, supersede pattern). AI-Powered Onboarding (commit <code>agent/</code> for team/OS projects, clone → briefed, agent-agnostic). New flow doc: <code>14-team-collaboration.md</code>. 752 tests (607 framework across 48 sections + 145 benchmarking).</li>
 </ul>
 
 <h3>v0.3 — Framework Hardening + R→F→T Traceability (April 2026)</h3>
@@ -125,7 +126,7 @@
   <li><strong>Release notes scope rule:</strong> only include changes committed and visible in public repo; never mention excluded files (private docs, research papers).</li>
   <li><strong>Simplified versioning:</strong> aligned patches (v0.N.x = release v0.N). All specific version examples replaced with generic <code>v0.N.x</code>/<code>v0.1.4→v0.1.5</code> so rules never go stale. GitHub release title = minor version (v0.N — Title) matching CHANGELOG.</li>
   <li><strong>README hardening:</strong> Critical Scenarios table (8 situations), Development Guidelines section, "first methodology native to the AI era" framing.</li>
-  <li><strong>676 tests</strong> (531 framework across 43 sections + 145 benchmarking). All passing.</li>
+  <li><strong>746 tests</strong> (601 framework across 48 sections + 145 benchmarking). All passing.</li>
 </ul>
 
 <h3>v0.2 — Versioning + Project Scenarios (April 2026)</h3>
@@ -160,7 +161,7 @@
 
 <h4>Flow Documentation</h4>
 <ul>
-  <li>13 flow documents created in <code>docs/work-flows/</code></li>
+  <li>14 flow documents created in <code>docs/work-flows/</code></li>
   <li>Each flow: title, trigger condition, step-by-step diagram, edge cases, files involved</li>
   <li>Context Management rule: update flows after implementation/tests</li>
 </ul>
@@ -326,7 +327,7 @@ workspace/
 <!-- 3. FLOWS -->
 <h2 id="flows">3. Work Flows</h2>
 
-<p>13 documented flows in <code>docs/work-flows/</code> covering every system interaction:</p>
+<p>14 documented flows in <code>docs/work-flows/</code> covering every system interaction:</p>
 
 <table>
   <tr><th>#</th><th>Flow</th><th>Trigger</th><th>Key Actions</th></tr>
@@ -343,6 +344,7 @@ workspace/
   <tr><td>11</td><td><strong>Spec-Persistent Development</strong></td><td>Any workflow — specs persist</td><td>SPECS → PLANS → TASKS → RELEASES — living specs, never block</td></tr>
   <tr><td>12</td><td><strong>Project Lifecycle</strong></td><td>Client requirements received</td><td>R→F traceability → scope changes → F→T coverage → handoff</td></tr>
   <tr><td>13</td><td><strong>Release Workflow</strong></td><td>prepare release command</td><td>Tests → counts → version bump → PDFs → publish → tag</td></tr>
+  <tr><td>14</td><td><strong>Team Collaboration</strong></td><td>Multi-agent / team project</td><td>@username tagging → per-user view → delegation → progress dashboard</td></tr>
 </table>
 
 <h3>Context Management Rule</h3>
@@ -351,7 +353,7 @@ workspace/
 </div>
 
 <h3>Flow Diagrams</h3>
-<p>Step-by-step box diagrams for all 13 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
+<p>Step-by-step box diagrams for all 14 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
 
 <h4>01 — First Session in New Workspace</h4>
 <p><em>When: User opens an AI agent in a workspace for the first time — no WORKSPACE_CONTEXT.md exists.</em></p>
@@ -798,9 +800,9 @@ workspace/
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  2. "run tests"                                             │
-│     bash tests/test-spec-kit.sh          → 531 tests        │
+│     bash tests/test-spec-kit.sh          → 601 tests        │
 │     bash tests/test-spd-benchmarking.sh  → 145 tests        │
-│     bash tests/test-release-check.sh     → 57/57 features   │
+│     bash tests/test-release-check.sh     → 62/62 features   │
 │     Fix any failures before continuing                      │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -840,6 +842,41 @@ workspace/
 │     CI badge turns green on GitHub (~2 min)                 │
 │     GitHub Release shows correct notes                      │
 │     v0.4 tag points to HEAD                                 │
+└─────────────────────────────────────────────────────────────┘
+</pre>
+
+<h4>14 — Team Collaboration</h4>
+<p><em>When: Multiple developers share a project, each with their own agent. Also covers progress dashboard trigger words.</em></p>
+<pre>
+┌─────────────────────────────────────────────────────────────┐
+│  @username TASK OWNERSHIP                                   │
+│     - [ ] Implement login API @aqib                         │
+│     - [ ] Review schema @aqib @sara   ← shared task         │
+│     - [ ] Write tests                 ← unassigned          │
+│     Username = slugified git config user.name               │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  "my tasks" → per-user view                                 │
+│     Agent detects current user from git config              │
+│     Filters TASKS.md for @{current-user}                    │
+│     Shows: done/pending/shared, assigned count              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  "progress" / "dashboard" → inline burndown                 │
+│     OVERALL: done/pending/total + progress bar              │
+│     BY VERSION: █ bar per version, ✅/🔄/🔲 status          │
+│     CURRENT VERSION TASKS + NEXT ACTIONS                    │
+│     BY CONTRIBUTOR (if @tags present)                       │
+│     Read-only — never modifies any file                     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  CROSS-AGENT COORDINATION (Persistent Memory)               │
+│     Agent A assigns task → commits → pushes                 │
+│     Agent B pulls → sees assignment in TASKS.md             │
+│     No APIs, no messages — TASKS.md is the channel          │
 └─────────────────────────────────────────────────────────────┘
 </pre>
 
@@ -1175,10 +1212,10 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>CONTRIBUTING.md</code></td><td>PR guidelines, portability test, review process</td></tr>
   <tr><td><code>LICENSE</code></td><td>MIT License</td></tr>
   <tr><td><code>ard/</code></td><td>Architecture Reference Documents (this file + Quick Guide)</td></tr>
-  <tr><td><code>docs/work-flows/</code></td><td>13 work flow documents</td></tr>
+  <tr><td><code>docs/work-flows/</code></td><td>14 work flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
-  <tr><td><code>tests/</code></td><td>676 automated tests (531 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
+  <tr><td><code>tests/</code></td><td>752 automated tests (607 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
 </table>
 
 <h3>Local-Only Files (NOT pushed)</h3>
@@ -1223,7 +1260,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.4.6 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.4.7 &bull; April 2026
 </div>
 
 </div>
@@ -1241,7 +1278,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.4.6 &bull; April 2026</div>
+    <div class="badge">v0.4.7 &bull; April 2026</div>
   </div>
 </div>
 

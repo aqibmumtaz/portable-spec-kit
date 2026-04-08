@@ -614,18 +614,18 @@ rm -rf "$EDGE_TEMP"
 pass "Edge: temp dir cleaned"
 
 # ═══════════════════════════════════════════════════════════════
-section "19. Flow Documentation — All 13 Flows + Diagram Integrity"
+section "19. Flow Documentation — All 14 Flows + Diagram Integrity"
 # ═══════════════════════════════════════════════════════════════
 
 FLOWS_DIR="$PROJ/docs/work-flows"
 [ -d "$FLOWS_DIR" ] && pass "docs/work-flows/ directory exists" || fail "docs/work-flows/ MISSING"
 
-for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow; do
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow 14-team-collaboration; do
   [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
 done
 
 # Verify each flow has required sections
-for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow; do
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow 14-team-collaboration; do
   grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
   grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
 done
@@ -657,6 +657,11 @@ grep -q "conda\|Environment Selection" "$FLOWS_DIR/03-new-project-setup.md" && p
 grep -q "prepare release\|8-Step\|Prepare Release" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has prepare release sequence" || fail "Flow 13-release-workflow: missing prepare release"
 grep -q "Pre-Push Gate\|pre-push\|pre_push" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has pre-push gate" || fail "Flow 13-release-workflow: missing pre-push gate"
 grep -q "Stub Completion\|stub.*complete\|check_stub_complete" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has stub completion gate" || fail "Flow 13-release-workflow: missing stub completion gate"
+
+# Verify 14-team-collaboration flow content
+grep -q "@username\|username.*ownership\|task.*owner" "$FLOWS_DIR/14-team-collaboration.md" && pass "Flow 14-team-collaboration: has @username ownership" || fail "Flow 14-team-collaboration: missing @username ownership"
+grep -q "progress.*dashboard\|dashboard.*trigger\|TRIGGER WORDS" "$FLOWS_DIR/14-team-collaboration.md" && pass "Flow 14-team-collaboration: has progress dashboard trigger" || fail "Flow 14-team-collaboration: missing dashboard trigger"
+grep -q "Persistent Memory\|persistent.*memory" "$FLOWS_DIR/14-team-collaboration.md" && pass "Flow 14-team-collaboration: references Persistent Memory Architecture" || fail "Flow 14-team-collaboration: missing Persistent Memory reference"
 
 # Verify 04-existing-project-setup flow content
 grep -q "Mapped\|Partial\|New" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has kit status states" || fail "Flow 04-existing-project-setup: missing kit status states"
@@ -813,7 +818,7 @@ section "24. README — Python Environment Section"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
-grep -q "13 step-by-step flow" "$PROJ/README.md" && pass "README: 13 flows count" || fail "README: wrong flow count"
+grep -q "14 step-by-step flow" "$PROJ/README.md" && pass "README: 14 flows count" || fail "README: wrong flow count"
 grep -q "12-project-lifecycle" "$PROJ/README.md" && pass "README: 12-project-lifecycle flow listed" || fail "README: missing 12-project-lifecycle"
 
 # ═══════════════════════════════════════════════════════════════
@@ -1634,6 +1639,101 @@ grep -q "check_stub_complete\|stubs_incomplete\|TODO.*marker" "$PROJ/portable-sp
 grep -q "Spec-Based Test Generation\|spec.*based.*test\|test.*stub.*generation" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework section exists" || fail "SpecGen: Spec-Based Test Generation section MISSING"
 grep -q "f{n}\|f1-\|f2-\|fn-" "$PROJ/portable-spec-kit.md" && pass "SpecGen: framework shows stub naming convention" || fail "SpecGen: stub naming convention MISSING"
 grep -q "### F[0-9]" "$PROJ/agent/SPECS.md" && pass "SpecGen: kit SPECS.md has per-feature F{n} sections" || fail "SpecGen: kit SPECS.md missing per-feature F{n} sections"
+
+# ═══════════════════════════════════════════════════════════════
+section "44. Progress Dashboard"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Progress Dashboard" "$PROJ/portable-spec-kit.md" && pass "Dashboard: framework has Progress Dashboard section" || fail "Dashboard: Progress Dashboard section MISSING"
+grep -q "progress.*dashboard\|dashboard.*burndown\|trigger.*dashboard\|burndown.*trigger" "$PROJ/portable-spec-kit.md" && pass "Dashboard: trigger words defined" || fail "Dashboard: trigger words MISSING"
+grep -q "OVERALL\|done.*total\|pending.*total\|progress.*bar" "$PROJ/portable-spec-kit.md" && pass "Dashboard: output format defined (OVERALL section)" || fail "Dashboard: output format MISSING"
+grep -q "BY VERSION\|per.*version\|version.*heading" "$PROJ/portable-spec-kit.md" && pass "Dashboard: BY VERSION breakdown defined" || fail "Dashboard: BY VERSION section MISSING"
+grep -q "████\|█.*░\|progress bar\|bar.*width" "$PROJ/portable-spec-kit.md" && pass "Dashboard: progress bar format defined" || fail "Dashboard: progress bar format MISSING"
+grep -q "✅.*Done\|🔄.*Current\|100%.*complete" "$PROJ/portable-spec-kit.md" && pass "Dashboard: version status icons defined" || fail "Dashboard: version status icons MISSING"
+grep -q "CURRENT VERSION TASKS\|current.*version.*tasks" "$PROJ/portable-spec-kit.md" && pass "Dashboard: CURRENT VERSION TASKS section defined" || fail "Dashboard: current tasks section MISSING"
+grep -q "NEXT ACTIONS\|next.*actions\|next.*pending" "$PROJ/portable-spec-kit.md" && pass "Dashboard: NEXT ACTIONS section defined" || fail "Dashboard: next actions MISSING"
+grep -q "Backlog.*never counted\|backlog.*future.*scope\|not.*counted.*progress" "$PROJ/portable-spec-kit.md" && pass "Dashboard: Backlog items excluded from count" || fail "Dashboard: Backlog exclusion rule MISSING"
+grep -q "BLOCKERS\|blocked.*items\|Blocked.*separately" "$PROJ/portable-spec-kit.md" && pass "Dashboard: BLOCKERS section defined" || fail "Dashboard: blockers section MISSING"
+grep -q "read-only\|does not modify\|no.*files.*modified\|generate.*on-demand" "$PROJ/portable-spec-kit.md" && pass "Dashboard: read-only / no file modification rule" || fail "Dashboard: read-only rule MISSING"
+grep -q "BY CONTRIBUTOR\|per.*user.*breakdown\|@username.*dashboard" "$PROJ/portable-spec-kit.md" && pass "Dashboard: BY CONTRIBUTOR section defined for @username projects" || fail "Dashboard: BY CONTRIBUTOR section MISSING"
+grep -q "TASKS.md missing\|No TASKS.md\|missing.*TASKS" "$PROJ/portable-spec-kit.md" && pass "Dashboard: missing TASKS.md edge case handled" || fail "Dashboard: missing TASKS.md edge case MISSING"
+grep -q "All tasks complete\|all.*done.*release\|🎉" "$PROJ/portable-spec-kit.md" && pass "Dashboard: all-done state handled" || fail "Dashboard: all-done state MISSING"
+grep -q "Unassigned\|unassigned.*tasks\|tasks without @" "$PROJ/portable-spec-kit.md" && pass "Dashboard: unassigned tasks grouped separately" || fail "Dashboard: unassigned group MISSING"
+grep -q "truncate\|50+\|X more done\|long task list" "$PROJ/portable-spec-kit.md" && pass "Dashboard: long task list truncation rule" || fail "Dashboard: truncation edge case MISSING"
+grep -q "how are we doing\|status report\|what.*left" "$PROJ/portable-spec-kit.md" && pass "Dashboard: natural language triggers included" || fail "Dashboard: natural language triggers MISSING"
+grep -q "Agent.*reads.*TASKS\|reads TASKS.md\|read.*TASKS.md.*directly" "$PROJ/portable-spec-kit.md" && pass "Dashboard: trigger → read TASKS.md behavior defined" || fail "Dashboard: trigger behavior MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "45. Multi-Agent Task Tracking"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "@username.*TASKS\|task.*owner.*@\|ownership syntax" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: @username ownership syntax defined" || fail "MultiAgent: @username syntax MISSING"
+grep -q "slugified.*git config\|git config.*slugified\|username.*detection" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: username detection from git config defined" || fail "MultiAgent: username detection MISSING"
+grep -q "multiple.*owner\|@a @b\|two.*username\|Multiple owners" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: multiple owners rule defined" || fail "MultiAgent: multiple owners MISSING"
+grep -q "per-user.*task.*view\|my tasks.*trigger\|my workload.*trigger\|Per-user task view" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: per-user task view trigger defined" || fail "MultiAgent: per-user view trigger MISSING"
+grep -q "Delegation rule\|assign.*to @\|delegate.*to @" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: delegation protocol defined" || fail "MultiAgent: delegation protocol MISSING"
+grep -q "Unassign rule\|unassign.*@\|remove.*@.*task\|untagged.*unassigned" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: unassign/remove ownership rule defined" || fail "MultiAgent: unassign rule MISSING"
+grep -q "TASKS.md.*human-readable\|plain.*markdown.*readable\|no tooling" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: TASKS.md remains human-readable rule" || fail "MultiAgent: human-readable rule MISSING"
+grep -q "cross-agent.*coordination\|agents.*coordinate.*through.*TASKS\|pull.*sees.*assignment" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: cross-agent coordination via TASKS.md" || fail "MultiAgent: cross-agent coordination rule MISSING"
+grep -q "Dashboard integration\|BY CONTRIBUTOR\|@.*dashboard.*section" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: dashboard BY CONTRIBUTOR from @tags" || fail "MultiAgent: BY CONTRIBUTOR dashboard section MISSING"
+grep -q "blocked.*task.*per-user\|blocked.*visible\|blocked.*per-user" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: blocked tasks visible in per-user view" || fail "MultiAgent: blocked task edge case MISSING"
+grep -q "No tasks.*assigned\|No tasks.* @\|unassigned.*tasks.*hint" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: no-tasks-for-user edge case handled" || fail "MultiAgent: no-tasks edge case MISSING"
+grep -q "Git user not configured\|fall.*back.*asking.*username\|username.*not.*configured" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: git user not configured edge case" || fail "MultiAgent: unconfigured git user edge case MISSING"
+grep -q "shared.*done.*@a.*@b\|last.*owner.*mark.*done\|last person to mark" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: shared task completion rule" || fail "MultiAgent: shared task completion rule MISSING"
+grep -q "Typo.*@username\|typo.*@\|show as-is\|as-is.*dashboard" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: typo in @username handled gracefully" || fail "MultiAgent: @username typo edge case MISSING"
+grep -q "No tasks tagged.*yet\|claim ownership\|Add.*@.*username.*claim" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: fresh project (no tags) guidance" || fail "MultiAgent: no-tags fresh project guidance MISSING"
+grep -q "TASKS.md.*template.*@username\|@username.*←\|@username.*assign" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: TASKS.md template shows @username syntax" || fail "MultiAgent: template missing @username example"
+grep -q "All tasks owned.*consider distributing\|consider distributing\|all.*assigned.*one user" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: all-tasks-one-user distribution warning" || fail "MultiAgent: distribute warning MISSING"
+grep -q "Persistent Memory.*applied.*team\|Persistent Memory.*team task\|Persistent Memory Architecture applied" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: cross-agent coordination linked to Persistent Memory" || fail "MultiAgent: Persistent Memory Architecture link MISSING"
+grep -q "shared.*pending.*their confirmation\|pending.*@b.*confirmation\|both.*mark.*done" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: shared task pending state per-user" || fail "MultiAgent: shared task per-user state MISSING"
+grep -q "truncate.*per-user\|20 items.*per-user\|N more.*TASKS.md" "$PROJ/portable-spec-kit.md" && pass "MultiAgent: long task list truncation in per-user view" || fail "MultiAgent: per-user truncation MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "46. Persistent Memory Architecture"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Persistent Memory Architecture\|Persistent Memory" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: framework introduces Persistent Memory Architecture concept" || fail "PersistentMem: concept MISSING"
+grep -q "6 agent files.*Persistent Memory\|agent files.*persistent memory\|AGENT_CONTEXT.*SPECS.*memory" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: 6 agent files = persistent memory" || fail "PersistentMem: 6 files = memory definition MISSING"
+grep -q "Durable.*git\|durable.*persists.*git\|git.*durable" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Durable property defined (git)" || fail "PersistentMem: Durable property MISSING"
+grep -q "Shared.*any agent\|shared.*any.*machine\|any agent.*reads" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Shared property defined (any agent)" || fail "PersistentMem: Shared property MISSING"
+grep -q "Portable.*Claude.*Cursor\|portable.*Copilot\|works with.*Claude.*Cursor" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Portable property defined (multi-agent)" || fail "PersistentMem: Portable property MISSING"
+grep -q "Team-scale\|team.*scale.*coordinate\|multiple.*agents.*coordinate" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Team-scale property defined" || fail "PersistentMem: Team-scale property MISSING"
+grep -q "Auditable.*git.*history\|git.*history.*auditable\|auditable" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Auditable property defined" || fail "PersistentMem: Auditable property MISSING"
+grep -q "tracking.*Persistent Memory\|tracking.*writing.*memory\|Always tracking.*Persistent Memory" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: tracking = writing to Persistent Memory" || fail "PersistentMem: tracking-as-memory framing MISSING"
+grep -q "No APIs.*No message queue\|no.*APIs\|no.*message.*queue" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: files replace real-time APIs" || fail "PersistentMem: no-API benefit MISSING"
+grep -q "verbal handoff\|no.*onboarding.*call\|no.*wiki\|instantly briefed" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: zero-handoff benefit stated" || fail "PersistentMem: zero-handoff benefit MISSING"
+grep -q "ephemeral.*agent.*context\|ephemeral.*session.*ends\|Persistent Memory.*survives" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: distinction from ephemeral agent context" || fail "PersistentMem: ephemeral vs persistent distinction MISSING"
+grep -q "core innovation.*SPD\|keeps.*project.*intelligence.*alive\|intelligence.*across.*contributors" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: positioned as core SPD innovation" || fail "PersistentMem: core innovation framing MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "47. Architecture Decision Log"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Architecture Decision Log\|ADR-\|ADL" "$PROJ/portable-spec-kit.md" && pass "ADL: Architecture Decision Log concept defined in framework" || fail "ADL: ADL concept MISSING"
+grep -q "ADR-[0-9][0-9][0-9]\|ADR.*NNN\|ADR.*sequential\|ADR.*numbered" "$PROJ/portable-spec-kit.md" && pass "ADL: ADR numbering format defined (ADR-NNN)" || fail "ADL: ADR numbering MISSING"
+grep -q "YYYY-MM-DD\|ISO.*date\|absolute.*date.*ADL\|ISO 8601" "$PROJ/portable-spec-kit.md" && pass "ADL: ISO date format required" || fail "ADL: ISO date format MISSING"
+grep -q "Impact.*column\|Impact.*files\|Impact.*systems\|Impact.*components" "$PROJ/portable-spec-kit.md" && pass "ADL: Impact column defined" || fail "ADL: Impact column MISSING"
+grep -q "Newest first\|most recent.*top\|prepend.*append\|newest.*ADL\|Newest entries first" "$PROJ/portable-spec-kit.md" && pass "ADL: newest-first order rule" || fail "ADL: newest-first rule MISSING"
+grep -q "never delete.*ADL\|immutable.*ADL\|immutable history\|past.*decision.*preserved" "$PROJ/portable-spec-kit.md" && pass "ADL: ADL entries are immutable (no delete)" || fail "ADL: immutable history rule MISSING"
+grep -q "supersedes.*ADR\|ADR.*supersedes\|new.*row.*referencing.*old" "$PROJ/portable-spec-kit.md" && pass "ADL: supersede pattern defined" || fail "ADL: supersede pattern MISSING"
+grep -q "NOT for.*bug\|not.*for.*small\|implementation.*choices.*excluded\|not.*for.*minor" "$PROJ/portable-spec-kit.md" && pass "ADL: scope boundary (not for bugs/small changes)" || fail "ADL: scope boundary MISSING"
+grep -q "Architecture Decision Log" "$PROJ/agent/PLANS.md" && pass "ADL: kit's own PLANS.md has Architecture Decision Log section" || fail "ADL: kit PLANS.md not updated to ADL format"
+grep -q "ADR-[0-9]" "$PROJ/agent/PLANS.md" && pass "ADL: kit's PLANS.md has ADR entries" || fail "ADL: kit PLANS.md missing ADR entries"
+
+# ═══════════════════════════════════════════════════════════════
+section "48. AI-Powered Onboarding"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "AI-Powered Onboarding\|AI.*onboarding.*rule\|commit.*agent.*team\|Commit.*agent.*MANDATORY" "$PROJ/portable-spec-kit.md" && pass "Onboarding: AI-Powered Onboarding rule defined" || fail "Onboarding: rule MISSING"
+grep -q "team.*project.*commit.*agent\|open-source.*commit.*agent\|public.*repo.*agent\|public GitHub repo.*commit" "$PROJ/portable-spec-kit.md" && pass "Onboarding: commit agent/ for team/open-source projects" || fail "Onboarding: team/open-source commit rule MISSING"
+grep -q "Never add.*gitignore.*team\|not.*gitignore.*team\|never.*gitignore.*team" "$PROJ/portable-spec-kit.md" && pass "Onboarding: never gitignore agent/ for team projects" || fail "Onboarding: gitignore exclusion rule MISSING"
+grep -q "clone.*briefed\|contributor.*clones.*reads\|spec.*files.*onboarding\|clones the repo.*briefed" "$PROJ/portable-spec-kit.md" && pass "Onboarding: clone → briefed flow described" || fail "Onboarding: clone-briefed flow MISSING"
+grep -q "CONTRIBUTING.md guidance\|CONTRIBUTING.md.*open-source.*add\|CONTRIBUTING.*briefed.*clone" "$PROJ/portable-spec-kit.md" && pass "Onboarding: CONTRIBUTING.md guidance defined" || fail "Onboarding: CONTRIBUTING.md guidance MISSING"
+grep -q "Solo project exception\|solo.*exception\|single.*developer.*private.*agent" "$PROJ/portable-spec-kit.md" && pass "Onboarding: solo project exception defined" || fail "Onboarding: solo exception MISSING"
+grep -q "Sensitive content check\|secrets.*agent.*file\|sensitive.*agent.*check" "$PROJ/portable-spec-kit.md" && pass "Onboarding: sensitive content check before commit" || fail "Onboarding: sensitive content check MISSING"
+grep -q "already.*gitignored.*warn\|agent.*gitignored.*warn\|warn.*gitignore.*agent" "$PROJ/portable-spec-kit.md" && pass "Onboarding: agent/ in .gitignore warning" || fail "Onboarding: gitignored warning MISSING"
+grep -q "agent-agnostic.*brief\|Cursor.*Copilot.*same.*files\|different.*AI.*agent.*clone\|any agent.*can.*read" "$PROJ/portable-spec-kit.md" && pass "Onboarding: agent-agnostic briefing (any AI agent)" || fail "Onboarding: agent-agnostic briefing MISSING"
+grep -q "Solo.*private.*add comment\|add comment.*team projects\|commit this for team" "$PROJ/portable-spec-kit.md" && pass "Onboarding: .gitignore comment for solo/private projects" || fail "Onboarding: gitignore comment rule MISSING"
 
 # ═══════════════════════════════════════════════════════════════
 # RESULTS

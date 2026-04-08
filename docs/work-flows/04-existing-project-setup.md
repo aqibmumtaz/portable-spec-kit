@@ -54,6 +54,7 @@
 │                                                             │
 │     [x] Create agent/ (6 files, pre-filled from scan)       │
 │     [x] Create WORKSPACE_CONTEXT.md                         │
+│     [ ] Commit agent/ to git (team/OS — AI-powered onboard) │
 │     [ ] Create .env.example from .env                       │
 │     [ ] Create .github/workflows/ci.yml                     │
 │     [ ] Restructure README.md to match template             │
@@ -86,6 +87,8 @@
 | Existing README.md | Read to supplement findings; never overwrite without approval |
 | Large project (100+ files) | Scan config + top-level dirs; sample src/ only |
 | Team project with existing agent/ | Read and use existing context, don't overwrite |
+| Team / open-source project | Recommend committing agent/ — enables AI-powered onboarding for contributors |
+| agent/ already in .gitignore | Warn: "agent/ is gitignored — contributors won't be briefed on clone. Remove for team projects?" |
 
 ## Kit Status States (Step 0)
 

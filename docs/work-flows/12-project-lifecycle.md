@@ -523,13 +523,22 @@ A client hires a developer to build a task management app called **TaskFlow**. T
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│  Sarah opens her agent, reads TaskFlow agent/ files         │
+│  AI-POWERED ONBOARDING (agent/ was committed to git)        │
+│     Sarah clones the repo                                   │
+│     Her agent detects agent/ directory                      │
+│     Reads all 6 files automatically on first session        │
+│     Shows: "✅ Spec Kit: Project mapped (v0.2.4)"           │
+│     Presents: stack · current phase · top pending tasks     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Sarah is fully briefed — no call, no wiki, no document     │
 │     SPECS.md — what was built and why:                      │
 │       R1: Auth + SSO ✓ (email-only → SSO added per client)  │
 │       R2: Dashboard ✓ (unchanged from original)             │
 │       R3: PDF → Out of scope (client dropped)               │
 │       R4: List view ✓ (was calendar, changed for perf.)     │
-│     PLANS.md — stack + 5 decisions with reasons             │
+│     PLANS.md — stack + Architecture Decision Log (ADR-001–5)│
 │       Next.js 14 + FastAPI + PostgreSQL                     │
 │       PDF dropped, calendar added then replaced, SSO added  │
 │     TASKS.md — full history (8 tasks, descoped noted)       │
@@ -539,20 +548,15 @@ A client hires a developer to build a task management app called **TaskFlow**. T
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│  Sarah understands TaskFlow in minutes                      │
-│     What it does and what was descoped (with reasons)       │
-│     What changed mid-project and WHY                        │
-│     How it's architected and why those choices were made    │
-│     What's done (v0.1) and what's pending (v0.2)            │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│  ✓ Knowledge transfer without meetings                      │
+│  ✓ Instant knowledge transfer                               │
 │     The specs ARE the documentation                         │
+│     Works with any agent — Claude, Cursor, Copilot, Cline   │
 │     Agent greets Sarah: "Welcome to TaskFlow! Here's        │
-│     the current state..."                                   │
+│     the current state: v0.2, 3 tasks pending..."            │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**AI-Powered Onboarding rule:** For team and open-source projects, commit `agent/` to git. Never add it to `.gitignore` for these project types. The agent files are the onboarding documentation — they belong in version control. Solo / private projects: optional.
 
 ---
 
