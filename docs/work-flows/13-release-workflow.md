@@ -1,6 +1,6 @@
 # Flow: Release Workflow
 
-> **When:** User says "prepare release", "update release", or "refresh release". Agent runs the full gate sequence — tests, flow docs, counts, version bump, PDFs, publish.
+> **When:** User says "prepare release", "update release", or "refresh release". Agent runs steps 1–7 (tests → flow docs → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md) and shows a release summary for review. **No commit. No push.** Commit and push only when explicitly instructed separately or via "prepare release and push".
 
 ## End-to-End Flow
 
@@ -13,14 +13,14 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  2. "run tests"                                             │
-│     bash tests/test-spec-kit.sh          → 528 tests        │
+│     bash tests/test-spec-kit.sh          → 607 tests        │
 │     bash tests/test-spd-benchmarking.sh  → 145 tests        │
-│     bash tests/test-release-check.sh     → 57/57 features   │
+│     bash tests/test-release-check.sh     → 62/62 features   │
 │     Review results before continuing                        │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│  3. "prepare release"                                       │
+│  3. "prepare release"  (steps 1–7, NO commit/push)          │
 │                                                             │
 │  Step 1   Run ALL suites to completion — collect failures   │
 │           Show failure summary + fix plan → user consent    │
@@ -32,9 +32,7 @@
 │  Step 5   Generate PDFs — WeasyPrint both ard/*.html files  │
 │  Step 6   Update agent/RELEASES.md — new version entry      │
 │  Step 7   Update CHANGELOG.md — grouped by minor release    │
-│  Step 8   Publish GitHub Release (auto via gh if authed)    │
-│  Step 9   After push — update v0.N tag to HEAD              │
-│  Step 10  Show release summary block                        │
+│  Step 8   Show release summary (GitHub + Tag = ⏳ pending)  │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
@@ -65,16 +63,16 @@
 | `init` | Deep scan → create/fill agent/ files from codebase → optional changes checklist. See [05-project-init.md](05-project-init.md) |
 | `reinit` | Re-scan → sync stale agent files → SPECS/PLANS staleness check. See [05-project-init.md](05-project-init.md) |
 | `run tests` | Runs all 3 suites — failure summary + fix plan if any fail. No commits, no version changes |
-| `prepare release` / `update release` | Full 10-step sequence — tests, flow docs, counts, ARD audit, version bump, PDFs, publish |
-| `prepare release and push` / `prepare release, commit and push` | Full prepare release → commit → push via sync.sh |
-| `refresh release` | Same 10 steps but **no version bump** (step 4 skipped) — re-test and sync current version |
-| `refresh release and push` / `refresh release, commit and push` | Same as above → commit → push via sync.sh |
+| `prepare release` / `update release` | Steps 1–7 only — tests, flow docs, counts, ARD audit, version bump, PDFs, RELEASES.md, CHANGELOG.md + show summary. **No commit. No push.** |
+| `prepare release and push` / `prepare release, commit and push` | Steps 1–7 → commit all changes → push via sync.sh → show summary (GitHub + Tag ✅) |
+| `refresh release` | Steps 1–7, **no version bump** (step 4 skipped) — re-test and sync current version. **No commit. No push.** |
+| `refresh release and push` / `refresh release, commit and push` | Steps 1–7 (no version bump) → commit → push via sync.sh |
 | `commit` | Stages and commits — no push |
 | `push` | Pre-push gate (check files changed since last prepare release) → push via sync.sh |
 
 **Agent never auto-triggers any of these.** Wait for explicit user signal.
 
-## The 10-Step Prepare Release Gate
+## The 7-Step Prepare Release Gate (+ summary)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -139,21 +137,10 @@
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│  Step 8: Publish release notes                              │
-│     gh authenticated → CHANGELOG.md + GitHub Release (auto) │
-│     gh not authenticated →                                  │
-│       (a) Connect now — run `gh auth login` then continue   │
-│       (b) Skip — CHANGELOG.md only this release             │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│  Step 9: After push — update minor version tag to HEAD      │
-│     git tag -f v0.N HEAD                                    │
-│     git push origin v0.N --force                            │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│  Step 10: Show release summary block                        │
+│  Step 8: Show release summary block                         │
+│     GitHub row → ⏳ pending — run: commit and push          │
+│     Tag row    → ⏳ pending — run: commit and push          │
+│     ── Stops here. User reviews before committing. ──       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -173,14 +160,16 @@
   5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
   6. RELEASES.md  updated ✅
   7. CHANGELOG.md updated ✅
-  8. GitHub       published ✅ / pending push ⏳
-  9. Tag          pending push ⏳
+  8. GitHub       ⏳ pending — run: commit and push   (prepare release)
+                  published ✅                        (prepare release and push)
+  9. Tag          ⏳ pending — run: commit and push   (prepare release)
+                  updated ✅                          (prepare release and push)
 ══════════════════════════════════════════════
 ```
 
 ## The 3 Test Suites — What Each Gate Checks
 
-### tests/test-spec-kit.sh — Framework Gate (43 sections)
+### tests/test-spec-kit.sh — Framework Gate (48 sections)
 
 | Section group | What it validates |
 |--------------|-------------------|
@@ -192,6 +181,11 @@
 | **41** | **Pre-release consistency gate** (28 tests) — see below |
 | 42 | CI/CD — kit GitHub Actions files + framework CI rules for user projects |
 | 43 | Spec-Based Test Generation — origin detection, stubs, completion gate |
+| 44 | Progress Dashboard — triggers, output format, computation rules, edge cases |
+| 45 | Multi-Agent Task Tracking — @username syntax, per-user view, delegation, coordination |
+| 46 | Persistent Memory Architecture — concept, 5 properties, no-API rule |
+| 47 | Architecture Decision Log — ADR format, immutability, supersede, scope boundary |
+| 48 | AI-Powered Onboarding — team/OS commit rule, clone→briefed flow, agent-agnostic |
 
 **Section 41 — Pre-Release Consistency Gate (28 tests):**
 
@@ -281,3 +275,8 @@ A feature cannot be marked `[x]` done until its test stubs are fully implemented
 | CHANGELOG.md entry missing | Add it before publishing |
 | No git tags in use | Skip tag update step, note it |
 | Release notes scope | Only include changes committed and visible in public repo. Never mention private docs, research papers, local-only scripts |
+| User says "prepare release" | Stop after step 7 + show summary. Do NOT commit or push. Wait for explicit instruction. |
+| User says "prepare release to review" | Same as above — "to review" reinforces stop-before-push. Show summary, await confirmation. |
+| User says "prepare release and push" | Run all steps 1–7 + commit + push + show summary (GitHub ✅, Tag ✅) in one sequence. |
+| Changes made after prepare release | Do NOT re-run prepare release automatically. Wait for user to say "prepare release" again or "commit". |
+| User commits before prepare release | Valid — commit is always separate. But prepare release still needed before push to ensure all docs are current. |

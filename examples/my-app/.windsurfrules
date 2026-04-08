@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.4.7 -->
+<!-- Framework Version: v0.4.8 -->
 
-**Version:** v0.4.7 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.4.8 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 752 (607 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -195,16 +195,16 @@ Whenever any command triggers a test run (run tests, prepare release, update rel
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
 - **"run tests"** → run Test Execution Flow. No commits, no version changes.
-- **"prepare release"** / **"update release"** → full release sequence (see below)
-- **"refresh release"** → re-test and sync current release without bumping version (see below)
+- **"prepare release"** / **"update release"** → steps 1–7 only (tests → flows → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md) + show release summary. **No commit. No push.** Changes sit staged for user review.
+- **"refresh release"** → same as prepare release but no version bump. **No commit. No push.**
 - **"commit"** → commit staged changes
 - **"push"** → push to remote (pre-push gate applies)
-- **"prepare release and push"** / **"prepare release, commit and push"** → run full prepare release sequence, then commit all release changes, then push via `bash agent/sync.sh`. No additional confirmation needed between steps — user has already given the full instruction.
-- **"refresh release and push"** / **"refresh release, commit and push"** → same as above but with refresh release sequence (no version bump)
+- **"prepare release and push"** / **"prepare release, commit and push"** → steps 1–7 + commit all release changes + push via `bash agent/sync.sh` + show release summary. No confirmation needed between steps — user has given the full instruction.
+- **"refresh release and push"** / **"refresh release, commit and push"** → same as above but no version bump.
 - **"init"** → scan project thoroughly, create/fill all agent/ files from codebase
 - **"reinit"** → re-scan project, sync all agent files to current codebase state
 
-**"prepare release" / "update release" full sequence:**
+**"prepare release" / "update release" sequence (steps 1–7, no commit/push):**
 1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop release.
 2. **Update flow docs (FIRST)** — scan `docs/work-flows/`:
    - **Update** any existing flow doc that describes a process that changed this release
@@ -221,11 +221,16 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
 6. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
 7. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
-8. Commit and publish — stage and commit all release changes, then run `bash agent/sync.sh "commit message"` to push to `aqibmumtaz/portable-spec-kit`. sync.sh handles: copying portable-spec-kit.md (root → project → examples), syncing all files to public repo, creating/updating GitHub Release from CHANGELOG.md, updating the v0.N tag. If `gh` not authenticated → run `gh auth login` first.
-9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version (check portable-spec-kit.md header on GitHub)
-10. **Show the release summary block** (see format below)
+8. **Show the release summary block** (see format below) — GitHub and Tag rows show `⏳ pending push`
 
-**"refresh release" sequence (same version, no bump):**
+**"prepare release and push" / "prepare release, commit and push" sequence (steps 1–7 + commit + push):**
+- Run steps 1–7 above in full
+- Then: stage and commit all release changes with descriptive message
+- Then: run `bash agent/sync.sh "commit message"` — handles: copying portable-spec-kit.md (root → project → examples), syncing all files to public repo, creating/updating GitHub Release from CHANGELOG.md, updating the v0.N tag. If `gh` not authenticated → run `gh auth login` first.
+- Then: verify version on `aqibmumtaz/portable-spec-kit` matches current version
+- Then: **Show the release summary block** — GitHub and Tag rows show `✅`
+
+**"refresh release" sequence (same version, no bump, no commit/push):**
 1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop.
 2. **Update flow docs (FIRST)** — scan `docs/work-flows/`:
    - **Update** any existing flow doc that describes a process that changed
@@ -242,11 +247,16 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
 6. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
 7. Update `CHANGELOG.md` — update the current version entry (same patch range, updated content)
-8. Commit and publish — stage and commit all release changes, then run `bash agent/sync.sh "commit message"` to push to `aqibmumtaz/portable-spec-kit`. If `gh` not authenticated → run `gh auth login` first.
-9. After sync.sh completes — verify version on `aqibmumtaz/portable-spec-kit` matches current version
-10. **Show the release summary block** (see format below)
+8. **Show the release summary block** (see format below) — GitHub and Tag rows show `⏳ pending push`
 
-**Release summary (shown after all steps complete — required for prepare/update/refresh release):**
+**"refresh release and push" / "refresh release, commit and push" sequence:**
+- Run steps 1–7 above in full
+- Then: stage and commit all release changes
+- Then: run `bash agent/sync.sh "commit message"` to push. If `gh` not authenticated → run `gh auth login` first.
+- Then: verify version on `aqibmumtaz/portable-spec-kit` matches current version
+- Then: **Show the release summary block** — GitHub and Tag rows show `✅`
+
+**Release summary (shown at end of every prepare/refresh release command):**
 ```
 ══════════════════════════════════════════════
   RELEASE SUMMARY — v0.N.x
@@ -257,30 +267,32 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
   3. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
   4. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
                   unchanged — v0.N.x —             (refresh only)
-  5. PDFs         open ard/*.html in browser → File → Print → Save as PDF ⏳
+  5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
   6. RELEASES.md  updated ✅
   7. CHANGELOG.md updated ✅
-  8. GitHub       published ✅ / pending push ⏳
-  9. Tag          pending push ⏳
+  8. GitHub       ⏳ pending — run: commit and push   (prepare release)
+                  published ✅                        (prepare release and push)
+  9. Tag          ⏳ pending — run: commit and push   (prepare release)
+                  updated ✅                          (prepare release and push)
 ══════════════════════════════════════════════
 ```
-Do not finalize the release (version bump, commit) if any suite has failures.
+Do not finalize the release (version bump) if any suite has failures.
 
-**Release notes publishing (automatic on every prepare release):**
+**Release notes publishing (only when committing and pushing):**
 
-CHANGELOG.md is always updated — it is the universal fallback visible to all users in the repo. GitHub Releases are the additional layer when `gh` is authenticated.
+Applies only when running `prepare release and push` / `prepare release, commit and push` (or `refresh release and push`). CHANGELOG.md is always updated as part of step 7 above — it is the universal fallback. GitHub Releases are the additional layer published during the push step.
 
-After tests pass, check `gh auth status` and proceed:
-- **If `gh` authenticated** → do option a automatically: update CHANGELOG.md + create/update GitHub release (`gh release create/edit`) with CHANGELOG.md notes for this version. Mark as `--latest`. No prompt needed.
+During the push step, check `gh auth status` and proceed:
+- **If `gh` authenticated** → automatically: commit all release changes + run `bash agent/sync.sh` to push + create/update GitHub release with CHANGELOG.md notes for this version (`--latest`). No prompt needed.
 - **If `gh` not authenticated** → ask user:
   ```
   gh CLI not authenticated. GitHub Releases require auth.
   (a) Connect now — run `gh auth login` then continue
-  (b) Skip — CHANGELOG.md only this release
+  (b) Commit and push only — skip GitHub release this time
   ```
-  - User picks (a) → run `gh auth login`, re-check auth, then proceed with GitHub release
-  - User picks (b) or skips → CHANGELOG.md only
-- Both paths always update CHANGELOG.md — never skip it
+  - User picks (a) → run `gh auth login`, re-check auth, then proceed with full publish
+  - User picks (b) → commit + push via git, skip GitHub release creation
+- CHANGELOG.md is always updated in step 7 regardless of auth state — never skip it
 
 **Edge cases:**
 - **No test suites exist** → show `No test suites configured — skipping test run` in summary block and proceed. Tests are required before v1.0.

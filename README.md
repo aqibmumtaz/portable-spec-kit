@@ -5,7 +5,7 @@
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-v0.4.7-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.4.8-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-752%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
@@ -347,14 +347,14 @@ Enter at any point. Start from specs, start from code, or start mid-project — 
 | `"init"` | Deep scan → create/fill all agent/ files from codebase → optional changes checklist (CI workflow, .env.example, README) |
 | `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check → show delta |
 | `"run tests"` | Run all 3 suites to completion — show failure summary + fix plan if any fail. No commits, no version changes. |
-| `"prepare release"` / `"update release"` | 1 → Tests · 2 → Flow docs · 3 → Counts & ARD · 4 → Version bump · 5 → PDFs · 6 → RELEASES.md · 7 → CHANGELOG.md · 8 → Publish · 9 → Verify · **10 → Release summary** |
-| `"prepare release and push"` / `"prepare release, commit and push"` | Full prepare release → commit → push via sync.sh. No confirmation between steps. |
-| `"refresh release"` | Same 10 steps — **no version bump** (step 4 skipped) |
-| `"refresh release and push"` / `"refresh release, commit and push"` | Same as above → commit → push via sync.sh |
+| `"prepare release"` / `"update release"` | Steps 1–7: Tests · Flow docs · Counts & ARD · Version bump · PDFs · RELEASES.md · CHANGELOG.md → **show summary. No commit. No push.** |
+| `"refresh release"` | Same steps 1–7 — **no version bump** (step 4 skipped) → show summary. No commit. No push. |
+| `"prepare release and push"` / `"prepare release, commit and push"` | Steps 1–7 → commit → push via sync.sh → show summary (GitHub ✅, Tag ✅). No confirmation between steps. |
+| `"refresh release and push"` / `"refresh release, commit and push"` | Same as above but no version bump. |
 | `"commit"` | Stages files, commits with descriptive message + `Co-Authored-By` |
-| `"push"` | Pre-push gate (check if files changed since last prepare release) → push via `bash agent/sync.sh` |
+| `"push"` | Pre-push gate → runs all 3 suites if not run this session → push via `bash agent/sync.sh` |
 
-**Every `prepare release`, `update release`, and `refresh release` ends with this summary:**
+**Every `prepare release` / `refresh release` ends with this summary:**
 ```
 ══════════════════════════════════════════════
   RELEASE SUMMARY — v0.N.x
@@ -369,8 +369,10 @@ Enter at any point. Start from specs, start from code, or start mid-project — 
   5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
   6. RELEASES.md  updated ✅
   7. CHANGELOG.md updated ✅
-  8. GitHub       published ✅ / pending push ⏳
-  9. Tag          pending push ⏳
+  8. GitHub       ⏳ pending — run: commit and push   (prepare release)
+                  published ✅                        (prepare release and push)
+  9. Tag          ⏳ pending — run: commit and push   (prepare release)
+                  updated ✅                          (prepare release and push)
 ══════════════════════════════════════════════
 ```
 The release is only finalized if all test suites pass. Any failure → show failure summary + fix plan → fix → re-run.
@@ -656,7 +658,7 @@ Detailed step-by-step diagrams for every work flow:
 | 10 | **[File Management](docs/work-flows/10-file-management.md)** | Create/update/restructure rule — never lose content |
 | 11 | **[Spec-Persistent Development](docs/work-flows/11-spec-persistent-development.md)** | SPECS → PLAN → TASKS → TRACK — living specs, any workflow |
 | 12 | **[Project Lifecycle](docs/work-flows/12-project-lifecycle.md)** | Full lifecycle — client requirements through handoff |
-| 13 | **[Release Workflow](docs/work-flows/13-release-workflow.md)** | prepare release — tests, counts, version bump, publish |
+| 13 | **[Release Workflow](docs/work-flows/13-release-workflow.md)** | prepare release — tests, flow docs, counts, version bump, PDFs, RELEASES.md, CHANGELOG.md + summary (no commit/push) |
 | 14 | **[Team Collaboration](docs/work-flows/14-team-collaboration.md)** | Multi-agent task tracking, progress dashboard, @username ownership |
 
 ---

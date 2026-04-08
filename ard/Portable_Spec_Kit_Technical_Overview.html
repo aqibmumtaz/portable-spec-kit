@@ -59,12 +59,12 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.4.7 &bull; April 2026</div>
+    <div class="badge">v0.4.8 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.7</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.4.8</div>
     <div><strong style="color:#dce4f0;">Tests:</strong> 752 passing (607 framework + 145 benchmarking), 48 sections</div>
   </div>
 </div>
@@ -83,7 +83,7 @@
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.4.7</td></tr>
+  <tr><td>Current version</td><td>v0.4.8</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (~1,180 lines)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
@@ -102,7 +102,7 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.4 — CI/CD Pipeline + Spec-Based Test Generation (April 2026)</h3>
-<p>Kit: v0.4.1 — v0.4.7</p>
+<p>Kit: v0.4.1 — v0.4.8</p>
 <ul>
   <li><strong>GitHub Actions CI:</strong> <code>ci.yml</code> runs all 3 test suites on every push and PR. <code>release.yml</code> verifies tag matches framework version on v* tag push.</li>
   <li><strong>Framework CI/CD rules:</strong> <code>ci.yml</code> template with stack-aware commands (Jest/pytest/Go/Bash), New Project Setup Step 7.5, Existing Project Setup checklist CI item, CI &amp; Community Contributions section (4 rules).</li>
@@ -113,7 +113,8 @@
   <li><strong>746 tests</strong> (601 framework across 48 sections + 145 benchmarking). Section 42: CI/CD (29 tests). Section 43: Spec-Based Test Generation (15 tests).</li>
   <li><strong>v0.4.5:</strong> 2 new flow docs (11-existing-project-setup, 12-cicd-setup). All 12 flow docs validated at 63-char box alignment. Section 19 expanded to cover all 12 flows. ARD flow diagrams section added. Prepare release rule updated: flow docs first, mandatory ARD audit, mandatory PDFs.</li>
   <li><strong>v0.4.6:</strong> Flow docs reordered logically (onboarding 01-06, session 07-10, development 11-12, release 13). New <code>05-project-init.md</code> — explicit <code>init</code>/<code>reinit</code> commands. Renamed: <code>12-project-lifecycle.md</code>, <code>13-release-workflow.md</code>. <code>init</code>/<code>reinit</code> added as explicit command signals with full flows. Test Execution Flow extracted as named section — referenced by all test-running commands. Version bump BEFORE push rule added. 746 tests (601 framework + 145 benchmarking).</li>
-  <li><strong>v0.4.7 — Team Intelligence Layer (F58–F62):</strong> Progress Dashboard (trigger words → inline burndown with progress bars, BY CONTRIBUTOR for @username projects). Multi-Agent Task Tracking (@username ownership syntax, per-user task view, delegation/unassign protocol, cross-agent coordination via TASKS.md). Persistent Memory Architecture (named concept: 6 agent files = Persistent Memory, 5 properties: Durable/Shared/Portable/Team-scale/Auditable). Architecture Decision Log (ADL promoted to <code>## Architecture Decision Log</code> top-level in PLANS.md, ADR-NNN format, immutable history, supersede pattern). AI-Powered Onboarding (commit <code>agent/</code> for team/OS projects, clone → briefed, agent-agnostic). New flow doc: <code>14-team-collaboration.md</code>. 752 tests (607 framework across 48 sections + 145 benchmarking).</li>
+  <li><strong>v0.4.7 — Team Intelligence Layer (F58–F62):</strong> Progress Dashboard (trigger words → inline burndown with progress bars, BY CONTRIBUTOR for @username projects). Multi-Agent Task Tracking (@username ownership syntax, per-user task view, delegation/unassign protocol, cross-agent coordination via TASKS.md). Persistent Memory Architecture (named concept: 6 agent files = Persistent Memory, 5 properties: Durable/Shared/Portable/Team-scale/Auditable). Architecture Decision Log (ADL promoted to <code>## Architecture Decision Log</code> top-level in PLANS.md, ADR-NNN format, immutable history, supersede pattern). AI-Powered Onboarding (commit <code>agent/</code> for team/OS projects, clone → briefed, agent-agnostic). New flow doc: <code>14-team-collaboration.md</code>. Sections 44–48. 752 tests (607 framework across 48 sections + 145 benchmarking).</li>
+  <li><strong>v0.4.8 — Release command fix:</strong> <code>prepare release</code> corrected — steps 1–7 only, no commit, no push. Release summary shows GitHub/Tag as ⏳ pending. <code>prepare release and push</code> is the explicit command that commits and pushes. <code>13-release-workflow.md</code> flow doc updated (7-step gate, corrected trigger table, 5 new edge cases). README commands table updated.</li>
 </ul>
 
 <h3>v0.3 — Framework Hardening + R→F→T Traceability (April 2026)</h3>
@@ -1260,7 +1261,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.4.7 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.4.8 &bull; April 2026
 </div>
 
 </div>
@@ -1278,7 +1279,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.4.7 &bull; April 2026</div>
+    <div class="badge">v0.4.8 &bull; April 2026</div>
   </div>
 </div>
 

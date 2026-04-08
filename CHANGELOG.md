@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.4 — CI/CD Pipeline + Spec-Based Test Generation + Team Intelligence (April 2026)
-**Built over:** v0.4.1 — v0.4.7 · **Tests:** 752 (607 framework across 48 sections + 145 benchmarking)
+**Built over:** v0.4.1 — v0.4.8 · **Tests:** 752 (607 framework across 48 sections + 145 benchmarking)
 
 ### Highlights
 - **GitHub Actions CI** — ci.yml runs all 3 test suites on every push and PR; release.yml verifies tag matches framework version on v* tag push
@@ -66,6 +66,13 @@ All notable changes to the Portable Spec Kit are documented here.
 - **Version bump BEFORE push rule** — added to Versioning Rules: bump → commit → push order enforced, anti-pattern documented
 - **README commands table** — expanded to all 9 commands with accurate descriptions; release summary corrected (10 steps, Flows step added)
 - Section 19 updated: all 13 flow file names corrected
+
+### Release Command Fix (v0.4.8)
+- **`prepare release` corrected** — steps 1–7 only, no commit, no push. Release summary GitHub/Tag rows show `⏳ pending — run: commit and push`
+- **`prepare release and push`** — the explicit command that runs steps 1–7 + commit + push + shows summary with GitHub/Tag ✅
+- **`13-release-workflow.md`** — renamed to "7-step gate"; publish steps removed from prepare release box; trigger table corrected; 5 new edge cases (prepare release stops, prepare release to review, prepare release and push, changes after release, commit before release)
+- **README commands table** — `prepare release` row says "No commit. No push."; release summary block shows `⏳` vs `✅` states per command type
+- **Framework `portable-spec-kit.md`** — Release Process signals, prepare/refresh sequences, release notes publishing section all corrected
 
 ### Team Intelligence Layer (v0.4.7)
 - **F58 — Progress Dashboard** — trigger words (`progress`, `dashboard`, `burndown`, `status report`, `how are we doing`, `what's left`) → inline burndown from TASKS.md; OVERALL / BY VERSION / CURRENT TASKS / NEXT ACTIONS / BLOCKERS / BY CONTRIBUTOR sections; progress bars (█=5%, 20-char, ░ padding); version icons ✅/🔄/🔲; read-only; backlog excluded; edge cases: missing TASKS.md, all-done, truncation at 50+
