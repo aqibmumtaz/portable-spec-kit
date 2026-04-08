@@ -13,7 +13,7 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  2. "run tests"                                             │
-│     bash tests/test-spec-kit.sh          → 607 tests        │
+│     bash tests/test-spec-kit.sh          → 608 tests        │
 │     bash tests/test-spd-benchmarking.sh  → 145 tests        │
 │     bash tests/test-release-check.sh     → 62/62 features   │
 │     Review results before continuing                        │
@@ -117,8 +117,8 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  Step 5: Generate PDFs (MANDATORY on every release)         │
-│     /path/to/weasyprint ard/Technical_Overview.html → .pdf  │
-│     /path/to/weasyprint ard/Guide.html → .pdf               │
+│     for f in ard/*.html; do                                 │
+│       weasyprint "$f" "${f%.html}.pdf"; done                │
 │     Verify non-zero file size. GLib warnings = harmless.    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -157,7 +157,7 @@
   3. Counts       README, ARD, RELEASES, CHANGELOG ✅
   4. Version      v0.N.x-1 → v0.N.x ✅       (prepare/update only)
                   unchanged — v0.N.x —         (refresh only)
-  5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
+  5. PDFs         all ard/*.pdf regenerated ✅                
   6. RELEASES.md  updated ✅
   7. CHANGELOG.md updated ✅
   8. GitHub       ⏳ pending — run: commit and push   (prepare release)
@@ -178,7 +178,7 @@
 | 21–30 | Existing project setup, scenarios, retro fill, context persistence |
 | 31–38 | Session start, returning session, profile customization, sync |
 | 39–40 | R→F traceability, R→F→T traceability chain |
-| **41** | **Pre-release consistency gate** (28 tests) — see below |
+| **41** | **Pre-release consistency gate** (31 tests) — see below |
 | 42 | CI/CD — kit GitHub Actions files + framework CI rules for user projects |
 | 43 | Spec-Based Test Generation — origin detection, stubs, completion gate |
 | 44 | Progress Dashboard — triggers, output format, computation rules, edge cases |
@@ -187,17 +187,15 @@
 | 47 | Architecture Decision Log — ADR format, immutability, supersede, scope boundary |
 | 48 | AI-Powered Onboarding — team/OS commit rule, clone→briefed flow, agent-agnostic |
 
-**Section 41 — Pre-Release Consistency Gate (28 tests):**
+**Section 41 — Pre-Release Consistency Gate (33 tests):**
 
 | Group | Tests | What it checks |
 |-------|-------|----------------|
 | 1: Count sync | 5 | README badge ↔ ARD count ↔ SPECS criteria ↔ test-spec-kit.sh section count ↔ AGENT_CONTEXT version |
 | 2: R→F→T gate | 4 | Every done feature has test ref, test files exist, tests pass (via test-release-check.sh) |
-| 3: Template completeness | 6 | Kit templates (Groups 3 + 3b) — all agent file templates present + test-release-check.sh template |
-| 3b: Rename completeness | 2 | No stale field names in any file (`Framework versions:`, `**Framework:**`) |
-| 4: Docs consistency | 5 | ARD version badge ↔ current Kit; flow docs Kit refs current; benchmarking fixture Kit current; example AGENT_CONTEXT.md Kit current; example RELEASES.md Kit current |
-| 5: RELEASES.md range | 3 | Kit version range format; range start ≤ current; CHANGELOG entry exists |
-| 6: CI & spec-gen | 3 | ci.yml present; release.yml present; Section 43 exists in test suite |
+| 3: Template completeness | 4 | Kit agent file templates present (SPECS Tests col, Req col, AGENT_CONTEXT Kit field, user profile path) |
+| 3b: Template currency | 8 | Framework template freshness — TASKS headings, RELEASES Kit field, AGENT.md triggers, example currency, flow doc Kit refs |
+| 4: Docs consistency | 12 | ARD (all ard/*.html) ↔ current Kit; flow docs Kit refs current; benchmarking fixture Kit current; example AGENT_CONTEXT.md + RELEASES.md Kit current; RELEASES.md range; kit own AGENT_CONTEXT.md Version+Kit; CHANGELOG built-over range; R→F→T in ARD; README Critical Scenarios; flow count |
 
 ### tests/test-spd-benchmarking.sh — SPD Benchmarking (145 tests)
 

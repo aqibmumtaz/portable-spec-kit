@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.4 — CI/CD Pipeline + Spec-Based Test Generation + Team Intelligence (April 2026)
-**Built over:** v0.4.1 — v0.4.8 · **Tests:** 752 (607 framework across 48 sections + 145 benchmarking)
+**Built over:** v0.4.1 — v0.4.11 · **Tests:** 781 (636 framework across 50 sections + 145 benchmarking)
 
 ### Highlights
 - **GitHub Actions CI** — ci.yml runs all 3 test suites on every push and PR; release.yml verifies tag matches framework version on v* tag push
@@ -67,6 +67,16 @@ All notable changes to the Portable Spec Kit are documented here.
 - **README commands table** — expanded to all 9 commands with accurate descriptions; release summary corrected (10 steps, Flows step added)
 - Section 19 updated: all 13 flow file names corrected
 
+### Release Flow Hardened (v0.4.9)
+- **ARD audit rule** — uses `ard/*.html` glob; covers all current and future ARD files (no hardcoded filenames)
+- **WeasyPrint loop** — `for f in ard/*.html; do weasyprint "$f" "${f%.html}.pdf"; done` — works for any number of files
+- **Section 41 + 2 tests** (total 33): kit `agent/AGENT_CONTEXT.md` Version+Kit match; `CHANGELOG.md` built-over range includes current version — closes last two silent failure modes
+- **Section 41 count corrected** — documented as 28, actual was 31 → now 33; flow doc and ARD updated
+- **ARD Guide version fix** — `ard/Portable_Spec_Kit_Guide.html` was stale at v0.4.6; now at v0.4.9
+- **TASKS.md §8.1** — F58/F59/F62 confirmed implemented, marked `[x]`; paper test count updated to 781
+- **Section 49 — Kit Self-Validation** (8 tests): example symlink validity (both examples, all 5 agent config files), Progress Summary table required in TASKS.md, AGENT.md/SPECS.md/RELEASES.md template compliance, root/Projects copy sync check; +7 symlink tests in Sections 6, 7, 11
+- **Section 50 — Kit Framework Self-Validation** (11 tests): no `/Users/` or `/home/` absolute paths, no hardcoded tool binary paths (`anaconda3/bin/weasyprint`, etc.), WeasyPrint loop form enforced, ARD audit uses `ard/*.html` glob, no hardcoded `both X.html AND Y.html` pair, release summary PDF glob, flow docs/ARD HTML/sync.sh all clean
+
 ### Release Command Fix (v0.4.8)
 - **`prepare release` corrected** — steps 1–7 only, no commit, no push. Release summary GitHub/Tag rows show `⏳ pending — run: commit and push`
 - **`prepare release and push`** — the explicit command that runs steps 1–7 + commit + push + shows summary with GitHub/Tag ✅
@@ -86,7 +96,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ### Tests
 | Suite | Tests | Status |
 |-------|-------|--------|
-| test-spec-kit.sh (48 sections) | 607 | ✅ All passing |
+| test-spec-kit.sh (50 sections) | 636 | ✅ All passing |
 | test-spd-benchmarking.sh | 145 | ✅ All passing |
 | test-release-check.sh | 62/62 features | ✅ Release ready |
 

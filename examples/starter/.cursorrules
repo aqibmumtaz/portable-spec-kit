@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.4.8 -->
+<!-- Framework Version: v0.4.11 -->
 
-**Version:** v0.4.8 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 752 (607 framework + 145 benchmarking)
+**Version:** v0.4.9 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 781 (636 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -211,12 +211,13 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    - **Create** a new flow doc for any new process or feature implemented this release that doesn't have one yet
    - **Order check** — verify the numeric prefix order (`01-`, `02-`, ...) reflects the logical sequence a user would follow (e.g. setup flows before development flows, development before release). If adding a new flow breaks logical order, renumber affected files to restore it. When renumbering: `grep -r` entire repo for every old filename and update every reference (README flow table, Section 19 tests, ARD HTML flow table, CHANGELOG, RELEASES, all other flow docs that cross-link) in the same session. No stragglers.
    - Box-style format required for all flow docs. No tree-style connectors. All box lines 63 chars wide.
-3. Update all counts and docs — README badges, any doc referencing test counts or version. **ARD audit (MANDATORY):** Update ALL HTML files in `ard/` — cover version badge, Key Highlights version + flow count + test count, Version Changelog section for this release (bump Kit range, update test counts), flow diagrams section if any flows changed. Every field referencing a version, test count, or flow count must match the new version. Never skip ARD updates.
+3. Update all counts and docs — README badges, any doc referencing test counts or version. **ARD audit (MANDATORY):** Update ALL HTML files in `ard/*.html` — every file in the `ard/` directory. For **every** `ard/*.html` file: version badge, footer version, version field. For **Technical Overview** also: Key Highlights version + flow count + test count, Version Changelog section (bump Kit range, update test counts), flow diagrams section if any flows changed. Every field referencing a version, test count, or flow count must match the new version. Never update one file and skip others.
 4. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge
-5. Regenerate PDFs — **mandatory on every prepare release** (ARD HTML always changes when version bumps). Run WeasyPrint for each `ard/*.html` file:
+5. Regenerate PDFs — **mandatory on every prepare release** (ARD HTML always changes when version bumps). Run WeasyPrint for every `ard/*.html` file:
    ```bash
-   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Technical_Overview.html" "ard/Portable_Spec_Kit_Technical_Overview.pdf"
-   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Guide.html" "ard/Portable_Spec_Kit_Guide.pdf"
+   for f in ard/*.html; do
+     weasyprint "$f" "${f%.html}.pdf"
+   done
    ```
    Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
 6. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
@@ -237,12 +238,13 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    - **Create** a new flow doc for any new process implemented that doesn't have one yet
    - **Order check** — verify numeric prefix order reflects logical user sequence. Renumber if needed; update every reference repo-wide (README, tests, ARD, CHANGELOG, RELEASES, cross-links) in the same session.
    - Box-style format. All lines 63 chars wide.
-3. Update all counts and docs — README badges, ARD/Technical Overview, any doc referencing test counts. **ARD audit (MANDATORY):** Update all `ard/` HTML files — flow tables, test counts, changelog entry for this version.
+3. Update all counts and docs — README badges, any doc referencing test counts. **ARD audit (MANDATORY):** Update ALL HTML files in `ard/*.html` — every file in the `ard/` directory. For every `ard/*.html` file: version badge, footer, version field. Never update one file and skip others.
 4. **No version bump** — version stays the same
-5. Regenerate PDFs — mandatory. Run WeasyPrint for each `ard/*.html` file:
+5. Regenerate PDFs — mandatory. Run WeasyPrint for every `ard/*.html` file:
    ```bash
-   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Technical_Overview.html" "ard/Portable_Spec_Kit_Technical_Overview.pdf"
-   /Users/AqibMumtaz/anaconda3/bin/weasyprint "ard/Portable_Spec_Kit_Guide.html" "ard/Portable_Spec_Kit_Guide.pdf"
+   for f in ard/*.html; do
+     weasyprint "$f" "${f%.html}.pdf"
+   done
    ```
    Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
 6. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
@@ -267,7 +269,7 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
   3. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
   4. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
                   unchanged — v0.N.x —             (refresh only)
-  5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
+  5. PDFs         all ard/*.pdf regenerated ✅                
   6. RELEASES.md  updated ✅
   7. CHANGELOG.md updated ✅
   8. GitHub       ⏳ pending — run: commit and push   (prepare release)
@@ -300,7 +302,7 @@ During the push step, check `gh auth status` and proceed:
 - **Test failures exist** → run all suites to completion first, then show failure summary (suite, test name, error) + fix plan (one-line diagnosis + proposed fix per failure). Ask user to approve. Fix → re-run → only proceed when all pass. Never skip failures.
 - **release-check.sh shows untested features** → **do not finalize the release**. Add test references to the SPECS.md Tests column, ensure those tests pass, then re-run prepare release. A feature is not done until it has a test ref.
 - **New flow needed** → create in `docs/work-flows/` during step 2. Choose its number based on logical position in the user journey — not just "next highest". If inserting mid-sequence, renumber subsequent files and update all references repo-wide before proceeding.
-- **PDFs** → always regenerate all `ard/` HTML files to PDF on every prepare release using WeasyPrint (`/Users/AqibMumtaz/anaconda3/bin/weasyprint`). Run both commands, verify non-zero output file size. GLib warnings are harmless.
+- **PDFs** → always regenerate all `ard/*.html` files to PDF on every prepare release using WeasyPrint (`weasyprint`). Use the loop form: `for f in ard/*.html; do weasyprint "$f" "${f%.html}.pdf"; done`. Verify non-zero output file sizes. GLib warnings are harmless.
 - **GitHub release already exists for this version** → update it (not create new) — use `gh release edit`
 - **CHANGELOG.md missing entry for this version** → add it before publishing
 - **Release notes scope** — only include changes that are committed and visible in the repo. Never mention files, features, or work that is excluded from the public repo (e.g. private docs/, research papers, local-only scripts)

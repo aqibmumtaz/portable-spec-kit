@@ -114,6 +114,13 @@ S="$PROJ/examples/starter"
 [ -f "$S/agent/RELEASES.md" ] && pass "starter: agent/RELEASES.md" || fail "starter: RELEASES.md MISSING"
 grep -q "portable-spec-kit.md" "$S/README.md" && pass "starter README references portable-spec-kit.md" || fail "starter README still says CLAUDE.md"
 grep -q "Portable Spec Kit" "$S/README.md" && pass "starter README mentions Portable Spec Kit" || fail "starter README missing kit reference"
+# Symlinks: all 5 agent config files must be symlinks (not regular files)
+SYMS_OK=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -L "$S/$f" ] || SYMS_OK=0; done
+[ "$SYMS_OK" -eq 1 ] && pass "starter: all 5 agent config files are symlinks → portable-spec-kit.md" || fail "starter: one or more agent config files NOT symlinks"
+# Symlinks must resolve (not broken)
+SYMS_VALID=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -f "$S/$f" ] || SYMS_VALID=0; done
+[ "$SYMS_VALID" -eq 1 ] && pass "starter: all 5 agent config symlinks resolve (not broken)" || fail "starter: one or more agent config symlinks broken"
+diff "$S/portable-spec-kit.md" "$S/CLAUDE.md" > /dev/null 2>&1 && pass "starter: CLAUDE.md content matches portable-spec-kit.md" || fail "starter: CLAUDE.md content DIFFERS — symlink or copy mismatch"
 
 # ═══════════════════════════════════════════════════════════════
 section "7. My-App Example — Complete + Realistic Data"
@@ -131,6 +138,13 @@ M="$PROJ/examples/my-app"
 grep -q "Next.js" "$M/agent/AGENT.md" && pass "my-app: has Next.js stack" || fail "my-app: no stack defined"
 grep -q "11/16\|11 of 16" "$M/agent/TASKS.md" 2>/dev/null || grep -q "\[x\]" "$M/agent/TASKS.md" && pass "my-app: has completed tasks" || fail "my-app: no tasks done"
 grep -q "v0.1" "$M/agent/RELEASES.md" && pass "my-app: has v0.1 changelog" || fail "my-app: no changelog"
+# Symlinks: all 5 agent config files must be symlinks (not regular files)
+SYMS_OK=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -L "$M/$f" ] || SYMS_OK=0; done
+[ "$SYMS_OK" -eq 1 ] && pass "my-app: all 5 agent config files are symlinks → portable-spec-kit.md" || fail "my-app: one or more agent config files NOT symlinks"
+# Symlinks must resolve (not broken)
+SYMS_VALID=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -f "$M/$f" ] || SYMS_VALID=0; done
+[ "$SYMS_VALID" -eq 1 ] && pass "my-app: all 5 agent config symlinks resolve (not broken)" || fail "my-app: one or more agent config symlinks broken"
+diff "$M/portable-spec-kit.md" "$M/CLAUDE.md" > /dev/null 2>&1 && pass "my-app: CLAUDE.md content matches portable-spec-kit.md" || fail "my-app: CLAUDE.md content DIFFERS — symlink or copy mismatch"
 
 # ═══════════════════════════════════════════════════════════════
 section "8. README — Key Sections Present"
@@ -189,6 +203,11 @@ if [ -f "$ROOT/portable-spec-kit.md" ]; then
 
   [ -f "$ROOT/WORKSPACE_CONTEXT.md" ] && pass "WORKSPACE_CONTEXT.md exists at root" || fail "WORKSPACE_CONTEXT.md MISSING"
   ! [ -f "$ROOT/CLAUDE_CONTEXT.md" ] && pass "No old CLAUDE_CONTEXT.md" || fail "Stale CLAUDE_CONTEXT.md exists"
+  # Broken symlink detection — all 5 symlinks must resolve
+  ALL_VALID=1
+  for f in CLAUDE.md .cursorrules .windsurfrules .clinerules; do [ -f "$ROOT/$f" ] || ALL_VALID=0; done
+  [ -f "$ROOT/.github/copilot-instructions.md" ] || ALL_VALID=0
+  [ "$ALL_VALID" -eq 1 ] && pass "Workspace: all 5 agent config symlinks resolve (not broken)" || fail "Workspace: one or more workspace symlinks broken"
 else
   echo "  (skipped — not running in author's workspace)"
 fi
@@ -1553,10 +1572,15 @@ echo "$LATEST_RELEASE_RANGE" | grep -q "$PROJ_VER" \
   && pass "docs consistency: RELEASES.md current range includes $PROJ_VER" \
   || fail "docs consistency: RELEASES.md range doesn't include $PROJ_VER — update range"
 
-# ARD version badge must match current framework version
+# ARD version badge must match current framework version (Technical Overview)
 grep -q "$PROJ_VER" "$PROJ/ard/Portable_Spec_Kit_Technical_Overview.html" 2>/dev/null \
-  && pass "docs consistency: ARD version badge matches $PROJ_VER" \
-  || fail "docs consistency: ARD version badge doesn't include $PROJ_VER — update ARD cover badge and footer"
+  && pass "docs consistency: ARD Technical Overview version badge matches $PROJ_VER" \
+  || fail "docs consistency: ARD Technical Overview version badge doesn't include $PROJ_VER — update ARD cover badge and footer"
+
+# ARD Guide version must match current framework version
+grep -q "$PROJ_VER" "$PROJ/ard/Portable_Spec_Kit_Guide.html" 2>/dev/null \
+  && pass "docs consistency: ARD Guide version matches $PROJ_VER" \
+  || fail "docs consistency: ARD Guide version doesn't include $PROJ_VER — update ard/Portable_Spec_Kit_Guide.html version fields"
 
 # Flow docs must not reference a stale Kit version (any Kit: line must match current version)
 STALE_FLOW_KIT=$(grep -r "^Kit: v[0-9]" "$PROJ/docs/work-flows/" 2>/dev/null | grep -v "$PROJ_VER" | wc -l | tr -d ' ')
@@ -1581,6 +1605,18 @@ STALE_EX_REL=$(grep "^Kit: v[0-9]" "$PROJ/examples/my-app/agent/RELEASES.md" "$P
 [ "$STALE_EX_REL" -eq 0 ] \
   && pass "docs consistency: example RELEASES.md Kit fields are current ($PROJ_VER)" \
   || fail "docs consistency: $STALE_EX_REL example RELEASES.md file(s) have stale Kit — update to $PROJ_VER"
+
+# Kit's own AGENT_CONTEXT.md Version and Kit fields must match current framework version
+AGENT_CTX_VER=$(grep "\*\*Version:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" 2>/dev/null | head -1 | grep -o "v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*")
+AGENT_CTX_KIT=$(grep "\*\*Kit:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" 2>/dev/null | head -1 | grep -o "v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*")
+[ "$AGENT_CTX_VER" = "$PROJ_VER" ] && [ "$AGENT_CTX_KIT" = "$PROJ_VER" ] \
+  && pass "docs consistency: agent/AGENT_CONTEXT.md Version + Kit fields match $PROJ_VER" \
+  || fail "docs consistency: agent/AGENT_CONTEXT.md Version ($AGENT_CTX_VER) or Kit ($AGENT_CTX_KIT) ≠ $PROJ_VER — bump both fields"
+
+# CHANGELOG.md built-over range must include current framework version
+grep -q "v0\.4\.1 — $PROJ_VER\|Built over:.*$PROJ_VER" "$PROJ/CHANGELOG.md" 2>/dev/null \
+  && pass "docs consistency: CHANGELOG.md built-over range includes $PROJ_VER" \
+  || fail "docs consistency: CHANGELOG.md built-over range doesn't include $PROJ_VER — update 'Built over:' line"
 
 # ═══════════════════════════════════════════════════════════════
 section "42. CI/CD — GitHub Actions, Community Files, and Framework Rules"
@@ -1734,6 +1770,119 @@ grep -q "Sensitive content check\|secrets.*agent.*file\|sensitive.*agent.*check"
 grep -q "already.*gitignored.*warn\|agent.*gitignored.*warn\|warn.*gitignore.*agent" "$PROJ/portable-spec-kit.md" && pass "Onboarding: agent/ in .gitignore warning" || fail "Onboarding: gitignored warning MISSING"
 grep -q "agent-agnostic.*brief\|Cursor.*Copilot.*same.*files\|different.*AI.*agent.*clone\|any agent.*can.*read" "$PROJ/portable-spec-kit.md" && pass "Onboarding: agent-agnostic briefing (any AI agent)" || fail "Onboarding: agent-agnostic briefing MISSING"
 grep -q "Solo.*private.*add comment\|add comment.*team projects\|commit this for team" "$PROJ/portable-spec-kit.md" && pass "Onboarding: .gitignore comment for solo/private projects" || fail "Onboarding: gitignore comment rule MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "49. Kit Self-Validation"
+# ═══════════════════════════════════════════════════════════════
+
+# TASKS.md Progress Summary (required for Progress Dashboard integration)
+grep -q "## Progress Summary" "$PROJ/agent/TASKS.md" && pass "Kit TASKS.md: has Progress Summary section" || fail "Kit TASKS.md: Progress Summary section MISSING"
+grep -q "| Version" "$PROJ/agent/TASKS.md" && pass "Kit TASKS.md: Progress Summary has table header row" || fail "Kit TASKS.md: Progress Summary table MISSING"
+
+# Kit's own AGENT.md template compliance
+grep -q "## Stack" "$PROJ/agent/AGENT.md" && pass "Kit AGENT.md: has Stack section" || fail "Kit AGENT.md: Stack section MISSING"
+grep -q "On Every Session" "$PROJ/agent/AGENT.md" && pass "Kit AGENT.md: has On Every Session Start section" || fail "Kit AGENT.md: On Every Session Start MISSING"
+
+# Kit's own SPECS.md has Req + Tests columns (R→F→T format)
+grep -q "| Req |" "$PROJ/agent/SPECS.md" && pass "Kit SPECS.md: features table has Req column" || fail "Kit SPECS.md: Req column MISSING"
+grep -q "| Tests |" "$PROJ/agent/SPECS.md" && pass "Kit SPECS.md: features table has Tests column" || fail "Kit SPECS.md: Tests column MISSING"
+
+# Kit's own RELEASES.md has Kit: version field
+grep -q "^Kit:" "$PROJ/agent/RELEASES.md" && pass "Kit RELEASES.md: has Kit: version field" || fail "Kit RELEASES.md: Kit: field MISSING"
+
+# Root workspace copy in sync with Projects copy
+if [ -f "$ROOT/portable-spec-kit.md" ]; then
+  diff "$ROOT/portable-spec-kit.md" "$PROJ/portable-spec-kit.md" > /dev/null 2>&1 \
+    && pass "portable-spec-kit.md: root workspace copy matches Projects copy" \
+    || fail "portable-spec-kit.md: root workspace copy DIFFERS from Projects copy — cp needed"
+else
+  echo "  (skipped — root workspace copy not found)"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+section "50. Kit Framework Self-Validation"
+# ═══════════════════════════════════════════════════════════════
+# These tests ensure the distributable framework file never contains local
+# paths, hardcoded tool binary locations, or project-specific filenames in
+# command/rule contexts — any of which break portability for other users.
+
+PSK="$PROJ/portable-spec-kit.md"
+
+# ── 1. No absolute local user paths ──────────────────────────────────────────
+# /Users/<name> (macOS), /home/<name> (Linux) are machine-specific.
+# The framework should never reference them in rules or commands.
+! grep -q "/Users/" "$PSK" \
+  && pass "Portability: no /Users/ absolute paths in framework" \
+  || fail "Portability: /Users/ path found in framework — machine-specific path leaked"
+
+! grep -q "/home/" "$PSK" \
+  && pass "Portability: no /home/ absolute paths in framework" \
+  || fail "Portability: /home/ path found in framework — use \$HOME variable instead"
+
+# ── 2. No hardcoded tool binary paths ────────────────────────────────────────
+# Tools must be invoked by plain name (e.g. 'weasyprint'), not absolute path.
+# Absolute paths only work on the author's machine — they break for everyone else.
+! grep -qE "anaconda3/bin/|miniconda3/bin/|/usr/local/bin/weasyprint|/opt/homebrew/bin/weasyprint" "$PSK" \
+  && pass "Portability: no hardcoded tool binary paths in framework (weasyprint, conda)" \
+  || fail "Portability: hardcoded tool binary path found — use plain command name (e.g. 'weasyprint')"
+
+# ── 3. WeasyPrint — loop form, not per-file hardcoded commands ───────────────
+# Hardcoded: weasyprint somedir/Specific_File.html somedir/Specific_File.pdf
+# Correct:   for f in <dir>/*.html; do weasyprint "$f" "${f%.html}.pdf"; done
+# Generic: matches any 'for f in <anything>/*.html' loop — not tied to ard/ dir name.
+grep -qE 'for f in [^ ]*/\*\.html' "$PSK" \
+  && pass "Portability: WeasyPrint uses a glob loop form (for f in <dir>/*.html)" \
+  || fail "Portability: WeasyPrint glob loop MISSING — must not hardcode individual HTML filenames"
+
+# Generic: catch weasyprint followed by any literal .html path (not a variable/glob).
+# Matches: weasyprint somedir/AnyFile.html  (hardcoded — BAD)
+# No match: weasyprint "$f"  (variable — OK), weasyprint dir/*.html  (glob — OK)
+! grep -qE 'weasyprint [A-Za-z][A-Za-z0-9_/]*[A-Za-z0-9_][A-Za-z0-9_.]*\.html' "$PSK" \
+  && pass "Portability: weasyprint command doesn't hardcode any specific .html filename" \
+  || fail "Portability: weasyprint hardcodes a specific .html filename — use loop form with \$f variable"
+
+# ── 4. Doc audit rule uses a glob, not specific filenames ────────────────────
+# The prepare release step must use a glob so it covers any future doc files.
+# Generic: matches any '<dir>/*.html' glob pattern — not tied to ard/ dir name.
+grep -qE '[A-Za-z][A-Za-z0-9_/]*/\*\.html' "$PSK" \
+  && pass "Portability: doc audit rule uses a directory glob (<dir>/*.html)" \
+  || fail "Portability: doc audit glob MISSING — prepare release may hardcode specific filenames"
+
+# Hardcoded 'both' pattern: "this means both X.html AND Y.html" — was the original bug.
+! grep -qE "both.*\.html.*AND.*\.html|AND.*\.html.*both.*\.html" "$PSK" \
+  && pass "Portability: no 'both X.html AND Y.html' hardcoded pair in framework" \
+  || fail "Portability: hardcoded HTML filename pair found — replace with a glob pattern"
+
+# ── 5. Release summary PDF line uses glob notation ───────────────────────────
+# Generic: matches any 'dir/*.pdf regenerated' or 'all dir/*.pdf' pattern.
+grep -qE '[A-Za-z][A-Za-z0-9_/]*/\*\.pdf regenerated|all [A-Za-z][A-Za-z0-9_/]*/\*\.pdf' "$PSK" \
+  && pass "Portability: release summary PDF line uses a glob notation (<dir>/*.pdf)" \
+  || fail "Portability: release summary PDF line may hardcode specific filenames — use a glob"
+
+# ── 6. Flow docs don't hardcode weasyprint with specific ARD filenames ────────
+FLOWS_PSK="$PROJ/docs/work-flows"
+if [ -d "$FLOWS_PSK" ]; then
+  # Generic: catch weasyprint followed by any literal .html path in any flow doc.
+  # Matches: weasyprint anydir/AnyFile.html  (hardcoded — BAD)
+  # No match: weasyprint "$f"  (variable — OK)
+  BAD_FLOWS=$(grep -rlE 'weasyprint [A-Za-z][A-Za-z0-9_/]*[A-Za-z0-9_][A-Za-z0-9_.]*\.html' "$FLOWS_PSK" 2>/dev/null | wc -l | tr -d ' ')
+  [ "$BAD_FLOWS" -eq 0 ] \
+    && pass "Portability: no flow doc hardcodes weasyprint with a specific .html filename" \
+    || fail "Portability: $BAD_FLOWS flow doc(s) hardcode weasyprint with a specific .html filename"
+fi
+
+# ── 7. ARD HTML files don't contain machine-specific paths ───────────────────
+if ls "$PROJ/ard/"*.html 1>/dev/null 2>&1; then
+  BAD_ARD=$(grep -l "/Users/\|anaconda3/bin\|miniconda3/bin" "$PROJ/ard/"*.html 2>/dev/null | wc -l | tr -d ' ')
+  [ "$BAD_ARD" -eq 0 ] \
+    && pass "Portability: ARD HTML files contain no machine-specific paths" \
+    || fail "Portability: $BAD_ARD ARD HTML file(s) contain machine-specific paths"
+fi
+
+# ── 8. sync.sh doesn't contain machine-specific paths ────────────────────────
+! grep -qE "/Users/[A-Za-z]|/home/[A-Za-z]" "$PROJ/agent/sync.sh" 2>/dev/null \
+  && pass "Portability: sync.sh contains no machine-specific paths" \
+  || fail "Portability: sync.sh contains machine-specific path — hardcoded user directory"
 
 # ═══════════════════════════════════════════════════════════════
 # RESULTS
