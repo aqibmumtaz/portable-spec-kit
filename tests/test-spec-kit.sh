@@ -2236,6 +2236,61 @@ SELFHELP_HARDCODED=$(awk '/Kit Self-Help/,/Always track silently/' "$PROJ/portab
   && pass "SelfHelp: no hardcoded counts in Self-Help section" \
   || fail "SelfHelp: $SELFHELP_HARDCODED hardcoded count(s) in Self-Help section"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 55: ONBOARDING TOUR + CONTEXTUAL PRESENCE (10 tests)
+# ═══════════════════════════════════════════════════════════════════════════════
+section "55. Onboarding Tour + Contextual Presence"
+
+# 1. Onboarding Tour section exists
+grep -q "Onboarding Tour" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: Onboarding Tour section exists" \
+  || fail "Tour: Onboarding Tour section MISSING"
+
+# 2. Tour trigger defined (first session only)
+grep -qi "tour_completed.*config\|Tour completed" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: tour trigger + completion flag defined" \
+  || fail "Tour: tour trigger MISSING"
+
+# 3. Tour is interactive (step by step)
+grep -q "Step 1 of 4\|one step at a time" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: interactive step-by-step flow defined" \
+  || fail "Tour: step-by-step flow MISSING"
+
+# 4. Skip tour option
+grep -q "skip tour" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: skip tour option defined" \
+  || fail "Tour: skip tour option MISSING"
+
+# 5. Tour never repeats
+grep -q "Tour never runs again\|never runs again" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: never-repeat rule defined" \
+  || fail "Tour: never-repeat rule MISSING"
+
+# 6. Tour adapts to project state
+grep -qi "Steps adapt to.*state\|adapts to project state" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: state-adaptive tour defined" \
+  || fail "Tour: state-adaptive tour MISSING"
+
+# 7. Contextual Presence section exists
+grep -q "Contextual Presence" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: Contextual Presence section exists" \
+  || fail "Tour: Contextual Presence section MISSING"
+
+# 8. Session greeting defined
+grep -qi "Session greeting\|Welcome back" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: session greeting defined" \
+  || fail "Tour: session greeting MISSING"
+
+# 9. Milestone acknowledgments defined
+grep -qi "Milestone acknowledgment" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: milestone acknowledgments defined" \
+  || fail "Tour: milestone acknowledgments MISSING"
+
+# 10. Tour completed flag in config template
+grep -q "Tour completed" "$PROJ/portable-spec-kit.md" \
+  && pass "Tour: tour_completed flag in config template" \
+  || fail "Tour: tour_completed flag MISSING from config template"
+
 # ═══════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════

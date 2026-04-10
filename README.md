@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/version-v0.5.2-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-838%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-848%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -57,7 +57,7 @@
 | Scope Drift (F66) | `psk-scope-check.sh`, 5 dimensions, drift score, added to release pipeline Step 3 |
 | Agent directory structure | `agent/` root = markdown only, `design/` = plans, `scripts/` = bash |
 | Orchestration table | 37 items across 8 groups with trigger types (explicit/auto/continuous) |
-| **838 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
+| **848 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
 
 ---
 
@@ -162,13 +162,19 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-sp
 
 **What happens:** Downloads `portable-spec-kit.md` and creates symlinks (Mac/Linux) or copies (Windows) for every supported agent. Edit one file — all agents stay in sync.
 
-Your AI agent reads the framework and on first session:
-- **Sets up your personalized profile** — fetches your GitHub identity, asks your preferences, saves to `.portable-spec-kit/user-profile/`
-- Creates project management files (`agent/` directory with 6 structured files)
-- Follows your coding standards, testing rules, security practices
-- Tracks every task, decision, and version
-- Maintains context across sessions — pick up weeks later seamlessly
-- Addresses you by name, adapts to your expertise and working style
+**What happens after install — the kit takes over:**
+
+1. **Personalized profile** — fetches your GitHub identity, asks 3 quick preferences, adapts to your expertise
+2. **Project setup** — scans your codebase, creates 6 management files in `agent/`, detects your stack
+3. **Guided tour** — 4-step interactive walkthrough (under 1 minute): your project, how to work, your settings, getting help
+4. **Ready to build** — just describe what you want. The kit tracks specs, plans, tasks, tests, and releases automatically
+
+After setup, the kit stays present:
+- **Every session** — greets you by name, shows pending tasks, flags scope issues
+- **At every milestone** — acknowledges progress, suggests next steps
+- **When you're stuck** — say `"help"` and the kit shows exactly what you can do right now
+- **When you need guidance** — say `"how do I...?"` and it walks you through step by step
+- **You never memorize commands** — the kit knows what's relevant and surfaces it contextually
 
 ---
 
@@ -224,45 +230,39 @@ your-project/
 └── .github/copilot-instructions.md → portable-spec-kit.md ← Copilot
 ```
 
-### Step 2: Open any AI agent — personalizes and scaffolds your project
+### Step 2: Open any AI agent — the kit takes you through setup
 
-The agent reads the framework and automatically sets everything up:
+The agent reads the framework and guides you through everything:
 
 ```
-✓ Sets up your profile (.portable-spec-kit/user-profile/ — GitHub auto-detect + preferences)
-✓ Detects your environment (OS, Node, Python, tools)
-✓ Creates WORKSPACE_CONTEXT.md (workspace state)
-✓ Creates agent/ directory with 6 management files:
-    agent/AGENT.md           ← Project rules, stack, brand
-    agent/AGENT_CONTEXT.md   ← Living state (updated every session)
-    agent/SPECS.md           ← Requirements & features
-    agent/PLANS.md        ← Architecture, methodology & research
-    agent/TASKS.md           ← Task tracking
-    agent/RELEASES.md         ← Version history
-✓ Creates project directories (src/, tests/, docs/, ard/, input/, output/)
-✓ Creates tests/test-release-check.sh ← R→F→T validation — every done feature must have a passing test before release
-✓ Creates README.md with standard structure
-✓ Creates .gitignore + .env.example
-✓ Ready to work — following YOUR standards
+✓ Profile setup — GitHub auto-detect + 3 quick preferences
+✓ Project scan — detects stack, creates agent/ files, README, .gitignore
+✓ Config created — .portable-spec-kit/config.md with defaults
+✓ Guided tour — 4-step interactive walkthrough:
+    1. Your project (what's set up, what's tracked)
+    2. How to work (just talk naturally — the kit handles the rest)
+    3. Your settings (what's enabled, how to change)
+    4. Getting help (say "help" anytime — the kit guides you)
+✓ Ready to build!
 ```
 
-### Step 3: Work however you want
-
-The agent adapts to you — not the other way around:
+### Step 3: Just work — the kit stays with you
 
 ```
 You: "Build me a login page"
-Agent: Added to TASKS.md → builds → tests → done ✓
+Kit: Plans it → builds it → tests it → tracks it → done ✓
 
 You: "What should I do next?"
-Agent: Walks you through SPECS → PLANS → TASKS flow
+Kit: Shows your pending tasks and suggests the next action
 
-You: "Fix this bug"
-Agent: Added to TASKS.md → fixes → marks done ✓
+You: "help"
+Kit: Shows exactly what you can do right now, based on your project state
 
-You: "What's the status?"
-Agent: Shows progress from TASKS.md + AGENT_CONTEXT.md
+You: "How do I release?"
+Kit: Walks you through step by step — one step at a time
 ```
+
+The kit never gets in your way. It tracks silently, helps when asked, and suggests features when relevant — all derived from your current project state, always up to date.
 
 ### Step 4: Context stays current
 

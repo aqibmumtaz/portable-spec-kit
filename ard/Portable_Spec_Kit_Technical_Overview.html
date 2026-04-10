@@ -65,7 +65,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Version:</strong> v0.5.2</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 838 passing (693 framework + 145 benchmarking), 54 sections</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 848 passing (703 framework + 145 benchmarking), 55 sections</div>
   </div>
 </div>
 
@@ -77,7 +77,7 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 16 flow documents, 838 automated tests (693 framework + 145 benchmarking), 54 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 16 flow documents, 848 automated tests (703 framework + 145 benchmarking), 54 test sections.
 </div>
 
 <h3>Key Highlights</h3>
@@ -90,7 +90,7 @@
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>12 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready)</td></tr>
   <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>838 (693 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>848 (703 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
   <tr><td>Flow documents</td><td>16 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
@@ -115,7 +115,7 @@
   <li><strong>v0.4.6:</strong> Flow docs reordered logically (onboarding 01-06, session 07-10, development 11-12, release 13). New <code>05-project-init.md</code> — explicit <code>init</code>/<code>reinit</code> commands. Renamed: <code>12-project-lifecycle.md</code>, <code>13-release-workflow.md</code>. <code>init</code>/<code>reinit</code> added as explicit command signals with full flows. Test Execution Flow extracted as named section — referenced by all test-running commands. Version bump BEFORE push rule added. 746 tests (601 framework + 145 benchmarking).</li>
   <li><strong>v0.4.7 — Team Intelligence Layer (F58–F62):</strong> Progress Dashboard (trigger words → inline burndown with progress bars, BY CONTRIBUTOR for @username projects). Multi-Agent Task Tracking (@username ownership syntax, per-user task view, delegation/unassign protocol, cross-agent coordination via TASKS.md). Persistent Memory Architecture (named concept: 6 agent files = Persistent Memory, 5 properties: Durable/Shared/Portable/Team-scale/Auditable). Architecture Decision Log (ADL promoted to <code>## Architecture Decision Log</code> top-level in PLANS.md, ADR-NNN format, immutable history, supersede pattern). AI-Powered Onboarding (commit <code>agent/</code> for team/OS projects, clone → briefed, agent-agnostic). New flow doc: <code>14-team-collaboration.md</code>. Sections 44–48. 752 tests (607 framework across 48 sections + 145 benchmarking).</li>
   <li><strong>v0.4.8 — Release command fix:</strong> <code>prepare release</code> corrected — steps 1–7 only, no commit, no push. Release summary shows GitHub/Tag as ⏳ pending. <code>prepare release and push</code> is the explicit command that commits and pushes. <code>13-release-workflow.md</code> flow doc updated (7-step gate, corrected trigger table, 5 new edge cases). README commands table updated.</li>
-  <li><strong>v0.4.9 — Release flow hardened + Kit Self-Validation + Portability Gate:</strong> ARD audit rule changed to <code>ard/*.html</code> glob (no hardcoded filenames). WeasyPrint commands use loop form. Section 41 + 2 new tests: kit <code>agent/AGENT_CONTEXT.md</code> Version+Kit match; <code>CHANGELOG.md</code> built-over range includes current version. Section 41: 28→33 tests. ARD Guide version fix. Section 49: Kit Self-Validation (8 tests) — example symlink validity, Progress Summary, template compliance, root/Projects copy sync. Section 50: Framework Portability (11 tests) — no machine-specific paths, no hardcoded tool binary paths, WeasyPrint loop form, ARD glob, sync.sh/flow docs/ARD HTML clean. +7 symlink tests in Sections 6/7/11. 838 tests (693 framework across 54 sections + 145 benchmarking).</li>
+  <li><strong>v0.4.9 — Release flow hardened + Kit Self-Validation + Portability Gate:</strong> ARD audit rule changed to <code>ard/*.html</code> glob (no hardcoded filenames). WeasyPrint commands use loop form. Section 41 + 2 new tests: kit <code>agent/AGENT_CONTEXT.md</code> Version+Kit match; <code>CHANGELOG.md</code> built-over range includes current version. Section 41: 28→33 tests. ARD Guide version fix. Section 49: Kit Self-Validation (8 tests) — example symlink validity, Progress Summary, template compliance, root/Projects copy sync. Section 50: Framework Portability (11 tests) — no machine-specific paths, no hardcoded tool binary paths, WeasyPrint loop form, ARD glob, sync.sh/flow docs/ARD HTML clean. +7 symlink tests in Sections 6/7/11. 848 tests (703 framework across 55 sections + 145 benchmarking).</li>
 </ul>
 
 <h3>v0.3 — Framework Hardening + R→F→T Traceability (April 2026)</h3>
@@ -1217,7 +1217,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>docs/work-flows/</code></td><td>16 work flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
-  <tr><td><code>tests/</code></td><td>838 automated tests (693 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
+  <tr><td><code>tests/</code></td><td>848 automated tests (703 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
 </table>
 
 <h3>Local-Only Files (NOT pushed)</h3>
