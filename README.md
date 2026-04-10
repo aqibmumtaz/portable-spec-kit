@@ -4,7 +4,7 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.5.2-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.5.3-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-848%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
@@ -47,17 +47,22 @@
 
 **Scope Drift Detection** — 5-dimension drift check (feature drift, requirement gaps, scope creep, architecture drift, plan staleness). Proactive at session start. psk-scope-check.sh with drift score.
 
-**Release pipeline expanded** — Now 9 steps (added code review + scope check). Release summary shows 11 rows.
+**Project Config** — `.portable-spec-kit/config.md` with toggles for CI/CD, Jira, code review, scope drift. CI disabled by default (no red X). All toggles take effect immediately. Generic `"show config"` command to review and change.
+
+**Onboarding Tour** — 4-step interactive walkthrough on first install. Adapts to project state. Skip anytime. Never repeats. Say `"tour"` for a refresher.
+
+**Built-in Self-Help** — say `"help"` anytime. The kit shows what you can do right now based on your project state. Say `"how do I...?"` for step-by-step walkthroughs. All guidance is dynamic — always matches the current kit version.
 
 | What's new | Details |
 |------------|---------|
 | Jira sync (F63) | `psk-jira-sync.sh`, `psk-tracker.sh`, 10 commands, Track A/B hours, PID lock |
 | Feature Design (F64) | `agent/design/` directory, 3 triggers, plan template, ADL Plan Ref column |
-| Auto Code Review (F65) | `psk-code-review.sh` + AI layer, advisory, added to release pipeline Step 2 |
-| Scope Drift (F66) | `psk-scope-check.sh`, 5 dimensions, drift score, added to release pipeline Step 3 |
-| Agent directory structure | `agent/` root = markdown only, `design/` = plans, `scripts/` = bash |
-| Orchestration table | 37 items across 8 groups with trigger types (explicit/auto/continuous) |
-| **848 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
+| Auto Code Review (F65) | `psk-code-review.sh` + AI layer, advisory, in release pipeline |
+| Scope Drift (F66) | `psk-scope-check.sh`, 5 dimensions, drift score, in release pipeline |
+| Project Config | `.portable-spec-kit/config.md`, CI disabled by default, generic toggle command |
+| Onboarding Tour | 4-step interactive walkthrough, state-adaptive, never repeats |
+| Self-Help | `"help"` anytime, dynamic guidance, contextual presence every session |
+| Agent directory | `agent/` root = markdown only, `design/` = plans, `scripts/` = bash |
 
 ---
 
@@ -386,6 +391,12 @@ Everything the agent does — automatically or on command. All natural language,
 | | `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check | Explicit |
 | **Config** | `"show config"` / `"config"` | Show all toggles + interactive toggle by number or name | Explicit |
 | | `"enable [name]"` / `"disable [name]"` | Quick toggle any setting: ci, jira, code review, scope check | Explicit |
+| **Help** | `"help"` / `"what can I do?"` | Contextual help based on current project state | Explicit |
+| | `"how do I [action]?"` | Step-by-step walkthrough of any process | Explicit |
+| | `"tour"` | Re-run the onboarding tour as a refresher | Explicit |
+| | *(auto)* First session | 4-step interactive onboarding tour | Auto (once) |
+| | *(auto)* Every session start | Session greeting: name + project + pending tasks | Auto |
+| | *(auto)* At milestones | Brief acknowledgment + next step suggestion | Auto |
 | | | **Define & Design** | |
 | **Development** | `"build X"` / `"add feature X"` | Added to TASKS.md → built → tested → marked done | Explicit |
 | | `"fix X"` | Added to TASKS.md → fixed → marked done | Explicit |
@@ -503,6 +514,7 @@ Content is never lost. Existing files are reorganized, not overwritten.
 | **Dependencies** | Bundle size checks, lock files, audit, avoid unnecessary deps |
 | **Project Templates** | 6 agent files + README + 8 source code structures (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document) |
 | **Auto-Scan** | Detects projects, creates/restructures files, preserves existing content |
+| **Self-Help + Onboarding** | Guided tour on first install, contextual help on `"help"`, step-by-step walkthroughs, session greetings, milestone acknowledgments, proactive nudges — all dynamic, version-resilient |
 | **Agent Behavior** | Guide don't enforce, silent tracking, retroactive spec-filling |
 
 ---

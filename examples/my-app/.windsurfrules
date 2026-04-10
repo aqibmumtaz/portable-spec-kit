@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.5.2 -->
+<!-- Framework Version: v0.5.3 -->
 
-**Version:** v0.5.2 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.5.3 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 848 (703 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -308,7 +308,7 @@ This table is the **exhaustive** list of what each toggle controls. If an action
 ══════════════════════════════════════════
   #  Setting                  Status
   ─  ───────────────────────  ──────
-  1  CI/CD                    disabled
+  1  CI/CD                    pushdisabled
   2  CI Badge in README       disabled
   3  Jira Integration         disabled
   4  Code Review (auto)       enabled
