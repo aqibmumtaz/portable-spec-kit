@@ -4,7 +4,7 @@
 # RELEASES.md — My App
 
 ## v0.1 — Foundation (March 2026)
-Kit: v0.5.1
+Kit: v0.5.2
 
 ### Summary
 Core app with auth + task CRUD. Foundation for real-time collaboration.

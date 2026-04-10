@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.5.1 -->
+<!-- Framework Version: v0.5.2 -->
 
-**Version:** v0.5.1 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.5.2 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 828 (683 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -236,35 +236,102 @@ After first-session profile setup completes, agent shows config summary:
   Review anytime: say 'show config'"
 ```
 
-### Config-Aware Behavior
-The agent reads config before executing config-dependent actions:
+### Config Gateway Rule (MANDATORY)
 
-| Action | Config check | If disabled |
-|--------|-------------|-------------|
-| Create `.github/workflows/ci.yml` | `CI/CD.Enabled` | Skip — don't create workflow files |
-| Show CI badge in README | `CI/CD.Badge in README` | Skip or hide in HTML comment |
-| Run `sync to jira` | `Jira.Enabled` | "Jira not configured. Run `jira setup` first." |
-| Run `psk-code-review.sh` after feature | `Code Review.Auto on feature completion` | Skip silently |
-| Run `psk-code-review.sh` in release | `Code Review.In release pipeline` | Skip Step 2 in prepare release |
-| Run `psk-scope-check.sh` at session start | `Scope Drift.Auto on session start` | Skip silently |
-| Run `psk-scope-check.sh` in release | `Scope Drift.In release pipeline` | Skip Step 3 in prepare release |
+**Before executing ANY config-dependent action, the agent MUST:**
+1. Read `.portable-spec-kit/config.md`
+2. Check the relevant toggle in the Config Contract table below
+3. If disabled → follow the "If disabled" column exactly
+4. If enabled → proceed normally
+
+This is a **single gateway** — not per-step checks. Every automatic trigger, every pipeline step, every command that touches a configurable feature goes through this gate. No exceptions.
+
+**When adding a new config toggle or a new feature that should be configurable:**
+1. Add the toggle to `.portable-spec-kit/config.md` template (with default value)
+2. Add ALL actions controlled by this toggle to the Config Contract table (every pipeline, every trigger, every auto-action)
+3. Add enable/disable command to Config Commands table
+4. In every pipeline step or trigger that uses this feature → reference the Config Gateway Rule explicitly
+5. **The toggle takes effect immediately** — agent reads config before every action, not once at startup
+
+**When adding an existing configurable feature to a new pipeline:** Add a new row to Config Contract for that pipeline. The toggle name stays the same — the row just maps it to the new location. This ensures disabling the feature stops it everywhere, including the new pipeline.
+
+**Integrity rule:** If a toggle exists in Config Contract, there must be ZERO places in the framework where that action runs without checking the toggle. To verify: `grep` the framework for the action name — every hit must have a config gate or be a manual command.
+
+### Config Contract (Single Source of Truth)
+
+This table is the **exhaustive** list of what each toggle controls. If an action is not in this table, it runs unconditionally. If it IS in this table, the agent must check config before running it.
+
+| Toggle | Action | Where it runs | If disabled |
+|--------|--------|---------------|-------------|
+| `CI/CD.Enabled` | Create `.github/workflows/ci.yml` | Project setup Step 7.5 | Skip — no workflow files |
+| `CI/CD.Enabled` | Create/update CI workflow | `enable ci` command | N/A — command enables it |
+| `CI/CD.Badge in README` | Show CI badge | README generation, consistency sweep | Hide in HTML comment |
+| `Jira.Enabled` | `sync to jira` (full 8-step flow) | Explicit command | "Jira disabled. Enable: `enable jira`" |
+| `Jira.Enabled` | `jira status` | Explicit command | Same message |
+| `Jira.Enabled` | `jira setup` | Explicit command | Allow — this is how you enable it |
+| `Jira.Enabled` | `link jira` / `unlink jira` | Explicit command | "Jira disabled." |
+| `Jira.Enabled` | Track B from psk-tracker logs | Hours reconciliation | Fall back to git/mtime |
+| `Code Review.Auto on feature completion` | Run `psk-code-review.sh` + AI review | After feature marked done, before [x] | Skip — feature marked [x] without review |
+| `Code Review.In release pipeline` | Run `psk-code-review.sh` | Prepare release Step 2 | Skip — show "disabled in config" in summary |
+| `Code Review.In release pipeline` | Run `psk-code-review.sh` | Refresh release Step 2 | Skip — same |
+| `Code Review.In release pipeline` | Run `psk-code-review.sh` | **Any future pipeline that includes code review** | Skip — same |
+| `Scope Drift.Auto on session start` | Run `psk-scope-check.sh --quick` | Session start | Skip silently |
+| `Scope Drift.Auto on session start` | Run `psk-scope-check.sh` | Before `sync to jira` | Skip silently |
+| `Scope Drift.In release pipeline` | Run `psk-scope-check.sh` | Prepare release Step 3 | Skip — show "disabled in config" in summary |
+| `Scope Drift.In release pipeline` | Run `psk-scope-check.sh` | Refresh release Step 3 | Skip — same |
+| `Scope Drift.In release pipeline` | Run `psk-scope-check.sh` | **Any future pipeline that includes scope check** | Skip — same |
+
+**Manual commands always work regardless of config.** `"review code"`, `"check scope"`, `"hours summary"` — these run when the user explicitly asks, even if the toggle is off. Config controls **automatic** behavior, not what you can ask for.
+
+**Future-proofing:** The rows marked "Any future pipeline" mean: if code review or scope check gets added to a new trigger (e.g., push gate, PR creation), it MUST check the same config toggle. The contract is the authority — not the individual step.
 
 ### Config Commands
 | Command | What it does |
 |---------|-------------|
-| `"show config"` / `"review config"` | Display current config + option to change |
+| `"show config"` / `"review config"` | Display current config + option to change any setting |
 | `"update config"` | Same as show config — interactive edit |
-| `"enable ci"` / `"enable cicd"` | Set CI/CD.Enabled = true → create workflow + badge |
-| `"disable ci"` / `"disable cicd"` | Set CI/CD.Enabled = false → remove workflow + hide badge |
-| `"enable jira"` | Set Jira.Enabled = true (still needs `jira setup` for credentials) |
+| `"enable ci"` / `"disable ci"` | Toggle CI/CD → creates/removes workflow + badge |
+| `"enable jira"` / `"disable jira"` | Toggle Jira integration |
+| `"enable code review"` / `"disable code review"` | Toggle auto code review (after features + in pipeline) |
+| `"enable scope check"` / `"disable scope check"` | Toggle scope drift detection (at session start + in pipeline) |
+
+**All toggles take effect immediately.** No restart needed. The agent reads config before every config-dependent action — if you disable mid-session, the very next trigger respects the change.
+
+### Config Value Parsing
+- `true` (case-insensitive: `true`, `True`, `TRUE`) = enabled
+- Everything else (`false`, `no`, `0`, empty, missing) = disabled
+- Agent normalizes values on write: always writes lowercase `true` or `false`
+
+### Config Read Timing
+- **Per-step, not per-session.** Each pipeline step and each auto-trigger reads config independently. If you change config between Step 1 and Step 2 of prepare release, Step 2 sees the new value.
+- **In-progress operations complete.** If an operation is already running (e.g., `sync to jira` mid-way through Step 6), it finishes. Config changes don't abort running operations — they affect the NEXT trigger.
 
 ### Edge Cases
+
+**Config file:**
 - Config file missing → create with defaults, no questions
 - Config file empty → treat as missing, recreate
 - Config has unknown fields → preserve them (user may have custom settings)
-- Setting changed mid-session → takes effect immediately (no restart needed)
+- Config file corrupted (not valid markdown) → recreate with defaults, warn user
+
+**Timing:**
+- Setting changed mid-session → takes effect at next config-dependent action (not retroactive)
+- Toggle enabled mid-session after session-start trigger already fired → won't re-run session-start check. User can run manually: `"check scope"`
+- Toggle changed during multi-step pipeline (prepare release) → each step reads fresh config. Later steps see the change.
+- Long-running operation already in progress (sync, release) → completes with the config that was active when it started. Config change affects next operation, not current one.
+
+**Remote state:**
+- CI disabled locally but remote still has ci.yml → red X continues until next push. Agent warns: "CI disabled locally. Push to remove workflow from remote: `push`"
+- CI enabled locally but not yet pushed → workflow only active after push
+
+**Safety warnings:**
+- All safety steps disabled (code review + scope check both off) at prepare release → agent warns before Step 4: "⚠ Code review and scope check are both disabled. Releasing without quality gates. Continue? (y/n/enable)"
+- Single safety step disabled → show "disabled in config" in release summary (no prompt, just visibility)
+
+**Team:**
 - Team member has different config preference → config is per-project not per-user; discuss and agree
-- CI enabled but no billing → workflow created but checks fail; agent detects and suggests: "CI checks failing — disable CI badge until billing fixed? (`disable ci`)"
+- Config committed by one team member, pulled by another → takes effect immediately for the puller
+- CI enabled but no billing → workflow created but checks fail; agent detects and suggests: "CI checks failing — disable CI until billing fixed? (`disable ci`)"
 
 ---
 
@@ -314,8 +381,8 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 
 **"prepare release" / "update release" sequence (steps 1–9, no commit/push):**
 1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop release.
-2. **Run code review** — `bash agent/scripts/psk-code-review.sh`. Issues found → show report, ask user to fix or skip. Advisory — does not block release, but flagged in summary.
-3. **Run scope drift check** — `bash agent/scripts/psk-scope-check.sh`. Drift score > 0 → show report, recommend review. Advisory — does not block release, but flagged in summary.
+2. **Run code review** — check `.portable-spec-kit/config.md` → `Code Review.In release pipeline`. If enabled → run `bash agent/scripts/psk-code-review.sh`. Issues found → show report, ask user to fix or skip. Advisory — does not block release, but flagged in summary. If disabled → skip, show "Code review: disabled in config" in summary.
+3. **Run scope drift check** — check `.portable-spec-kit/config.md` → `Scope Drift.In release pipeline`. If enabled → run `bash agent/scripts/psk-scope-check.sh`. Drift score > 0 → show report, recommend review. Advisory — does not block release, but flagged in summary. If disabled → skip, show "Scope check: disabled in config" in summary.
 4. **Update flow docs** — scan `docs/work-flows/`:
    - **Update** any existing flow doc that describes a process that changed this release
    - **Create** a new flow doc for any new process or feature implemented this release that doesn't have one yet
@@ -349,8 +416,8 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 
 **"refresh release" sequence (same version, no bump, no commit/push):**
 1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop.
-2. **Run code review** — `bash agent/scripts/psk-code-review.sh`. Advisory — show report if issues found.
-3. **Run scope drift check** — `bash agent/scripts/psk-scope-check.sh`. Advisory — show report if drift detected.
+2. **Run code review** — check config → `Code Review.In release pipeline`. If enabled → run `bash agent/scripts/psk-code-review.sh`. If disabled → skip.
+3. **Run scope drift check** — check config → `Scope Drift.In release pipeline`. If enabled → run `bash agent/scripts/psk-scope-check.sh`. If disabled → skip.
 4. **Update flow docs** — scan `docs/work-flows/`:
    - **Update** any existing flow doc that describes a process that changed
    - **Create** a new flow doc for any new process implemented that doesn't have one yet
@@ -383,8 +450,8 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 ══════════════════════════════════════════════
   1. Tests        <Suite>: X passed ✅  <Suite>: X passed ✅
                   Total: X/X passing ✅
-  2. Code Review  X passed, Y issues (advisory) ✅/⚠
-  3. Scope Check  drift score: N ✅/⚠
+  2. Code Review  X passed, Y issues (advisory) ✅/⚠  (or: disabled in config)
+  3. Scope Check  drift score: N ✅/⚠              (or: disabled in config)
   4. Flows        docs/work-flows/ current ✅
   5. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
   6. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
@@ -1809,7 +1876,7 @@ Automated two-layer code review after every feature completion. The agent runs t
 - **Layer 1 — `psk-code-review.sh`** (mechanical, grep-based): security anti-patterns (`eval`, `pickle`, `shell=True`, `dangerouslySetInnerHTML`, native browser dialogs, hardcoded secrets), code quality (`console.log` in production, unresolved `TODO/FIXME`, `.env` files committed), directory structure (agent files present, scripts in `agent/scripts/`), naming conventions (kebab-case files, snake_case Python). Stack auto-detected from `agent/AGENT.md`.
 - **Layer 2 — AI judgment** (agent adds after script): architecture compliance (code matches `PLANS.md` Stack and structure), design decision compliance (code matches `agent/design/f{N}.md` decisions), naming clarity (semantically clear, not just pattern-compliant), test quality (meaningful assertions, not just "doesn't crash").
 
-**Trigger:** After completing a feature, before marking `[x]`. Agent runs `bash agent/scripts/psk-code-review.sh` then appends AI review items.
+**Trigger:** After completing a feature, before marking `[x]`. **Config gate:** check `Code Review.Auto on feature completion` in Config Contract — if disabled, skip. If enabled, agent runs `bash agent/scripts/psk-code-review.sh` then appends AI review items.
 
 **Advisory, not blocking.** Kit principle: "never blocks." If issues found, agent shows report and asks: "N issues found. Fix now? (y/n/skip)". User can skip. But skipped reviews are flagged at `sync to jira` and `prepare release`.
 
@@ -1834,11 +1901,11 @@ Proactive detection of scope drift across 5 dimensions. Ensures the project stay
 
 **Drift score:** 0 = aligned. Each issue adds 1. Score > 0 triggers report.
 
-**Trigger schedule:**
-- Session start (quick — feature drift + plan staleness only)
-- Before `sync to jira` (full 5-dimension check)
-- During `prepare release` Step 2 (full check, advisory)
-- On `"check scope"` command (full check on demand)
+**Trigger schedule (all subject to Config Gateway Rule):**
+- Session start — **config gate:** `Scope Drift.Auto on session start`. Quick check only.
+- Before `sync to jira` — **config gate:** `Scope Drift.Auto on session start`. Full check.
+- During `prepare release` Step 3 — **config gate:** `Scope Drift.In release pipeline`. Full check.
+- On `"check scope"` command — **always runs** (manual commands bypass config)
 
 **Advisory at session/sync. Recommended-fix at release.** Drift doesn't block work, but is surfaced for user awareness. At release, drift is flagged prominently.
 
