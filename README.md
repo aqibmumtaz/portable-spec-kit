@@ -6,7 +6,7 @@
 
 [![Version](https://img.shields.io/badge/version-v0.5.2-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-828%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-838%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -57,7 +57,7 @@
 | Scope Drift (F66) | `psk-scope-check.sh`, 5 dimensions, drift score, added to release pipeline Step 3 |
 | Agent directory structure | `agent/` root = markdown only, `design/` = plans, `scripts/` = bash |
 | Orchestration table | 37 items across 8 groups with trigger types (explicit/auto/continuous) |
-| **828 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
+| **838 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
 
 ---
 
@@ -384,8 +384,8 @@ Everything the agent does — automatically or on command. All natural language,
 | | | **Setup & Context** | |
 | **Project Setup** | `"init"` | Deep scan → create/fill all agent/ files → optional changes checklist | Explicit |
 | | `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check | Explicit |
-| **Config** | `"show config"` / `"review config"` | Display project config + option to change settings | Explicit |
-| | `"enable ci"` / `"disable ci"` | Toggle CI/CD — creates/removes workflow + badge | Explicit |
+| **Config** | `"show config"` / `"config"` | Show all toggles + interactive toggle by number or name | Explicit |
+| | `"enable [name]"` / `"disable [name]"` | Quick toggle any setting: ci, jira, code review, scope check | Explicit |
 | | | **Define & Design** | |
 | **Development** | `"build X"` / `"add feature X"` | Added to TASKS.md → built → tested → marked done | Explicit |
 | | `"fix X"` | Added to TASKS.md → fixed → marked done | Explicit |

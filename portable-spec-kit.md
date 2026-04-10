@@ -2,7 +2,7 @@
 <!-- Framework Version: v0.5.2 -->
 
 **Version:** v0.5.2 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 828 (683 framework + 145 benchmarking)
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 838 (693 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -38,23 +38,27 @@ On first session, the agent also auto-creates:
 - `README.md` — structured project overview
 
 **If the user asks any question about the kit — installation, features, setup, examples, changelog, methodology, or how anything works:**
-Use the GitHub repo as the knowledge source — fetch the relevant file on demand and answer from it. Do not guess or paraphrase from memory.
+
+**Three help layers (checked in order, all must agree):**
+1. **Local framework** (this file) — primary source. Agent reads the current `portable-spec-kit.md` for rules, commands, processes. Always up to date because it's the file the agent is reading.
+2. **Local project files** — `README.md`, `CHANGELOG.md`, `agent/SPECS.md`, `.portable-spec-kit/config.md` — current project state, features, config. Always up to date because they're local.
+3. **GitHub repo** (fallback for install/update questions) — fetch from `https://github.com/aqibmumtaz/portable-spec-kit` only for questions about installation, updates, or examples that need the published version.
+
+**Source priority:** Local files first. GitHub repo only when the user asks about installing, updating, or comparing against the published version. Never fetch from GitHub to answer "how do I release?" — that answer is in the local framework file.
 
 **Repo:** https://github.com/aqibmumtaz/portable-spec-kit
 **Raw base URL:** `https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/`
 
-Known sources (fetch the most relevant one for the question):
+Known GitHub sources (fetch only when local can't answer):
 | Question type | Source to fetch |
 |---------------|----------------|
-| Install / reinstall / update | `README.md` |
-| Features / what the kit does | `README.md` |
-| How a rule works | `portable-spec-kit.md` |
-| Version history / what changed | `CHANGELOG.md` |
-| Examples / starter project | `examples/starter/` or `examples/my-app/` |
-| Flow documentation | `docs/work-flows/` |
-| Architecture / technical overview | `ard/Portable_Spec_Kit_Technical_Overview.html` |
+| Install / reinstall / update | `README.md` from repo |
+| Examples / starter project | `examples/starter/` or `examples/my-app/` from repo |
+| What's the latest published version? | `CHANGELOG.md` from repo |
 
-**If the question doesn't match a known source, or if new docs may have been added:** scan the repo structure first (`https://github.com/aqibmumtaz/portable-spec-kit`) to discover what files and directories exist, then fetch the most relevant one. The repo may grow over time — always check before assuming a file doesn't exist.
+**Everything else → read from local files.** The agent already has this framework file loaded — no need to fetch from GitHub for "how do I release?" or "what commands can I use?".
+
+**If the question doesn't match a known source, or if new docs may have been added:** scan the repo structure first to discover what files exist, then fetch the most relevant one.
 
 ---
 
@@ -286,16 +290,39 @@ This table is the **exhaustive** list of what each toggle controls. If an action
 **Future-proofing:** The rows marked "Any future pipeline" mean: if code review or scope check gets added to a new trigger (e.g., push gate, PR creation), it MUST check the same config toggle. The contract is the authority — not the individual step.
 
 ### Config Commands
+
+**One command for all config — generic, works for any toggle:**
+
 | Command | What it does |
 |---------|-------------|
-| `"show config"` / `"review config"` | Display current config + option to change any setting |
-| `"update config"` | Same as show config — interactive edit |
-| `"enable ci"` / `"disable ci"` | Toggle CI/CD → creates/removes workflow + badge |
-| `"enable jira"` / `"disable jira"` | Toggle Jira integration |
-| `"enable code review"` / `"disable code review"` | Toggle auto code review (after features + in pipeline) |
-| `"enable scope check"` / `"disable scope check"` | Toggle scope drift detection (at session start + in pipeline) |
+| `"show config"` / `"config"` | Show all toggles + interactive toggle by number or name |
+| `"enable [name]"` / `"disable [name]"` | Quick toggle any setting: `enable ci`, `disable jira`, etc. |
 
-**All toggles take effect immediately.** No restart needed. The agent reads config before every config-dependent action — if you disable mid-session, the very next trigger respects the change.
+**`show config` interactive flow:**
+```
+══════════════════════════════════════════
+  PROJECT CONFIG
+══════════════════════════════════════════
+  #  Setting                  Status
+  ─  ───────────────────────  ──────
+  1  CI/CD                    disabled
+  2  CI Badge in README       disabled
+  3  Jira Integration         disabled
+  4  Code Review (auto)       enabled
+  5  Code Review (pipeline)   enabled
+  6  Scope Check (auto)       enabled
+  7  Scope Check (pipeline)   enabled
+──────────────────────────────────────────
+  Toggle: type number or name. Done: Enter
+══════════════════════════════════════════
+```
+User types `1` → toggled → show updated table. Types `4` → toggled. Enter → done. Side effects applied automatically (CI enabled → workflow created; CI disabled → workflow removed).
+
+**Quick toggle:** `"enable ci"`, `"disable scope check"` — agent matches name to config field, toggles, confirms. Same as interactive but faster for one change.
+
+**Generic — new configs auto-appear.** Agent reads all fields from `.portable-spec-kit/config.md`. Adding a new field to config.md automatically makes it show in `show config`. No new command needed.
+
+**All toggles take effect immediately.** No restart. Agent reads config before every config-dependent action.
 
 ### Config Value Parsing
 - `true` (case-insensitive: `true`, `True`, `TRUE`) = enabled
@@ -395,6 +422,7 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
    - **ARD audit (MANDATORY):** Update ALL HTML files in `ard/*.html`. For every file: version badge, footer version, version field. For Technical Overview: Key Highlights version + flow count + test count, Version Changelog section (bump Kit range, update counts). **Check historical entries are not contaminated** by version bump (e.g., v0.4 range should stay v0.4.x, not change to current version). Never update one file and skip others.
    - **Design plan completeness:** Every feature (Fn) marked `[x]` in SPECS.md that has a design file in `agent/design/` → verify it's listed in PLANS.md Plans Directory table. Any missing → add.
    - **Test assertion sync:** If test files contain hardcoded counts (flow count, section count), verify they match current values. Stale assertions = false failures on next run.
+   - **Guidance freshness check:** Verify no hardcoded counts, version numbers, or feature-specific examples appear in the Kit Self-Help section or guidance tables. All guidance must be dynamic (derived at runtime from framework/config/project state). If a hardcoded value is found → replace with a dynamic instruction (e.g., "read from SPECS.md" not "66 features").
 6. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge. **Also update phase description** in AGENT_CONTEXT.md to reflect current features (not just version number).
 7. Regenerate PDFs — **mandatory on every prepare release** (ARD HTML always changes when version bumps). Run WeasyPrint for every `ard/*.html` file:
    ```bash
@@ -1640,6 +1668,103 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 4. "I'll track everything as we go and log it in RELEASES.md at the end"
 
 **Always mention project name when reporting.** When confirming tasks, status, or actions — always include which project it applies to (e.g. "Noted in **ProjectName** agent/TASKS.md").
+
+### Kit Self-Help (Built-in Guidance)
+
+The kit is self-sufficient — the user should never need to memorize commands, features, or processes. The agent guides the user through the kit naturally. The user just works; the agent knows the kit and helps at every step.
+
+**Strict rule: NEVER expose kit internals to the user.** Explain WHAT the user can do and HOW to do it — never WHY the kit was designed a certain way, section numbers, rule names, or enforcement logic.
+
+**All guidance is dynamic — never hardcoded.** The agent derives all help content by reading the current state of the framework, project files, and config at the time of the request. No static command lists, no hardcoded counts, no version-specific examples. This ensures guidance stays correct across all framework versions without manual updates.
+
+**Dynamic guidance sources:**
+
+| What the agent needs to know | Where it reads from |
+|------------------------------|---------------------|
+| Available commands | Scan this framework file for command tables — extract dynamically |
+| Current project state | `agent/AGENT_CONTEXT.md` + `agent/TASKS.md` + `agent/SPECS.md` |
+| What's configured | `.portable-spec-kit/config.md` — show only features that are enabled |
+| Release process steps | Scan the "prepare release" sequence in this framework — count steps dynamically |
+| Test counts | Run or read last test results — never hardcode a number |
+| Feature list | Read `agent/SPECS.md` features table — always current |
+| Design plan status | Read `agent/design/` directory — list what exists |
+
+**Help triggers — user asks, agent answers:**
+
+| User says | Agent does |
+|-----------|-----------|
+| `"help"` / `"what can I do?"` | Read project state → show only relevant next actions |
+| `"how do I [action]?"` | Read the process from framework → walk through step by step |
+| `"what's next?"` | Read TASKS.md + AGENT_CONTEXT.md → suggest next pending action |
+| `"explain [feature]"` | Explain what it does and how to use it — not how it's built |
+| `"show commands"` / `"what can I say?"` | Scan framework for commands relevant to current state + enabled config |
+
+**Contextual help — derived from project state, not static:**
+
+The agent reads current files and shows ONLY what applies:
+- No `agent/` → suggest `init`
+- SPECS.md empty → suggest defining features
+- Features defined, no `agent/design/` plans → suggest `plan F{N}`
+- Features designed, TASKS.md empty → suggest building
+- Tasks in progress → show progress, suggest `what's the status?`
+- All tasks `[x]` → suggest `prepare release`
+- Config has Jira disabled + user asks about Jira → suggest `enable jira`
+- Config has feature enabled but user hasn't used it → nudge once
+
+**Process walkthroughs — read from framework, guide step by step:**
+
+When user asks "how do I release?" or "how do I set up Jira?", the agent reads the actual process definition from this framework file and walks through it one step at a time. Never hardcode step counts or content — read the current sequence.
+
+**Command discovery — filtered by state + config:**
+
+When user asks "what can I say?", the agent scans the framework for all commands, then filters by:
+1. **Project state** — don't show release commands if nothing is built
+2. **Config state** — don't show Jira commands if Jira is disabled
+3. **Relevance** — show general commands (help, progress, config) always
+
+**Proactive nudges — derived from observation, not a static list:**
+
+The agent observes user behavior and suggests kit features when naturally relevant:
+- Used a kit feature? → Don't nudge about it
+- Hasn't used an enabled feature in a while? → Nudge once
+- Doing something manually that the kit automates? → Suggest the automated way
+- Config has defaults since setup? → Suggest reviewing config
+
+**Nudge rules:**
+- Each nudge shown **once per session** — never repeat
+- Only when **naturally relevant** — don't interrupt workflow
+- User says "stop suggesting" or "no tips" → stop all nudges for session
+- Brief — one line, not a paragraph
+
+**What to NEVER tell the user:**
+- Framework section numbers, rule names, or internal structure
+- How rules are enforced or how the agent checks compliance
+- Config Contract, Config Gateway Rule, or enforcement logic
+- How tests validate framework rules
+- Internal step numbers (say "I'll handle the release steps" not "Step 5 is...")
+- Why the framework was designed a certain way
+- Script internals or implementation details
+
+**Version upgrade resilience:**
+
+All guidance is derived at runtime from the current framework file. When the kit updates:
+- New commands automatically appear in `show commands` (agent re-scans framework)
+- New config toggles automatically appear in `show config` (agent reads config.md)
+- New pipeline steps automatically appear in process walkthroughs (agent reads sequence)
+- New features automatically appear in contextual help (agent reads SPECS.md + config)
+- Removed features automatically disappear (not in framework = not shown)
+- **No manual guidance updates needed on version upgrade** — the agent reads what's current
+
+**Help layer consistency (enforced at release):**
+
+The three help layers (local framework, local project files, GitHub repo) must agree. Consistency is checked during prepare release Step 5 (consistency sweep):
+- README orchestration table commands must match commands defined in this framework file
+- README "What's New" must reflect CHANGELOG entries for the current version
+- Config commands shown in `show config` must match toggles in `.portable-spec-kit/config.md`
+- Flow doc count in README must match actual count in `docs/work-flows/`
+- Any new framework feature must be discoverable via `help` (agent reads it from this file)
+
+**Self-help is NOT a separate system.** It's the agent reading THIS file + project files + config. If the framework is correct, self-help is correct. If the framework is stale, self-help is stale — the consistency sweep catches this.
 
 **Always track silently.** Even if the user doesn't follow the process:
 - User says "build me X" → add to TASKS.md, then build it

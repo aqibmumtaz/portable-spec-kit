@@ -8,7 +8,7 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.5 — Jira Integration + Feature Design + Code Review + Scope Drift + Project Config (April 2026)
-**Built over:** v0.5.1 — v0.5.2 · **Tests:** 828 (683 framework across 53 sections + 145 benchmarking)
+**Built over:** v0.5.1 — v0.5.2 · **Tests:** 838 (693 framework across 53 sections + 145 benchmarking)
 
 ### Highlights
 - **Jira Cloud integration** — `psk-jira-sync.sh` syncs completed tasks to Jira via REST API v3. Explicit-only (`sync to jira`), never automatic. PID-based lock, 5× retry with Retry-After, sanitized SYNC_RESULT.json

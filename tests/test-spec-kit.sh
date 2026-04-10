@@ -2179,6 +2179,63 @@ grep -qi "advisory.*session\|Advisory at session" "$PROJ/portable-spec-kit.md" \
   && pass "ScopeDrift: advisory at session rule defined" \
   || fail "ScopeDrift: advisory rule MISSING"
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 54: KIT SELF-HELP + GUIDANCE CONSISTENCY (10 tests)
+# ═══════════════════════════════════════════════════════════════════════════════
+section "54. Kit Self-Help + Guidance Consistency"
+
+# 1. Self-Help section exists
+grep -q "Kit Self-Help" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: Kit Self-Help section exists in framework" \
+  || fail "SelfHelp: Kit Self-Help section MISSING"
+
+# 2. Dynamic guidance rule (never hardcoded)
+grep -q "All guidance is dynamic" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: dynamic guidance rule defined" \
+  || fail "SelfHelp: dynamic guidance rule MISSING"
+
+# 3. Never expose internals rule
+grep -q "NEVER expose kit internals" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: never-expose-internals rule defined" \
+  || fail "SelfHelp: never-expose-internals rule MISSING"
+
+# 4. Help triggers defined
+grep -q 'help.*what can I do' "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: help triggers defined" \
+  || fail "SelfHelp: help triggers MISSING"
+
+# 5. Contextual help (state-dependent)
+grep -qi "Contextual help.*derived\|reads current files" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: contextual help is state-derived" \
+  || fail "SelfHelp: contextual help not state-derived"
+
+# 6. Version upgrade resilience
+grep -q "Version upgrade resilience" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: version upgrade resilience defined" \
+  || fail "SelfHelp: version upgrade resilience MISSING"
+
+# 7. Help layer consistency rule
+grep -q "Help layer consistency" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: help layer consistency rule defined" \
+  || fail "SelfHelp: help layer consistency rule MISSING"
+
+# 8. Guidance freshness in consistency sweep
+grep -q "Guidance freshness check" "$PROJ/portable-spec-kit.md" \
+  && pass "SelfHelp: guidance freshness check in release pipeline" \
+  || fail "SelfHelp: guidance freshness check MISSING from pipeline"
+
+# 9. README orchestration table exists and has entries
+ORCH_ROWS=$(grep -c "| \*\*" "$PROJ/README.md" 2>/dev/null || echo 0)
+[ "$ORCH_ROWS" -gt 10 ] \
+  && pass "SelfHelp: README orchestration table has $ORCH_ROWS entries" \
+  || fail "SelfHelp: README orchestration table too small ($ORCH_ROWS rows)"
+
+# 10. No hardcoded test count in Self-Help section
+SELFHELP_HARDCODED=$(awk '/Kit Self-Help/,/Always track silently/' "$PROJ/portable-spec-kit.md" | grep -E '[0-9]{3,} (tests|commands|features)' 2>/dev/null | wc -l | tr -d ' ')
+[ "$SELFHELP_HARDCODED" -eq 0 ] \
+  && pass "SelfHelp: no hardcoded counts in Self-Help section" \
+  || fail "SelfHelp: $SELFHELP_HARDCODED hardcoded count(s) in Self-Help section"
+
 # ═══════════════════════════════════════════════════════════════
 # RESULTS
 # ═══════════════════════════════════════════════════════════════
