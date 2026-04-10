@@ -2,7 +2,7 @@
 <!-- Framework Version: v0.5.1 -->
 
 **Version:** v0.5.1 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 836 (691 framework + 145 benchmarking)
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 828 (683 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -157,6 +157,114 @@ workspace/.portable-spec-kit/user-profile/
 - Working pattern: {selected or custom}
 - AI delegation: {selected or custom}
 ```
+
+---
+
+## Project Config
+
+> **Purpose:** Project-level configuration for kit behavior — what's enabled, what's disabled, how the kit behaves for this project. Stored in `.portable-spec-kit/config.md`, committed to repo, shared across team.
+
+### Config Storage
+```
+workspace/.portable-spec-kit/
+├── user-profile/          ← Per-user preferences (who)
+│   └── user-profile-{username}.md
+└── config.md              ← Project config (what's enabled)
+```
+
+**One config per project.** Lives alongside user profiles in `.portable-spec-kit/`. Committed to git — team shares the same config. Not in `agent/` (config is kit infrastructure, not project management).
+
+### Config Format
+```markdown
+# Project Config
+> Auto-created on first session. Edit anytime.
+> Review: say "show config" or "review config"
+
+## CI/CD
+- **Enabled:** false
+- **Provider:** github-actions
+- **Badge in README:** false
+
+## Jira Integration
+- **Enabled:** false
+
+## Time Tracking
+- **psk-tracker installed:** false
+
+## Code Review
+- **Auto on feature completion:** true
+- **In release pipeline:** true
+
+## Scope Drift Detection
+- **Auto on session start:** true
+- **In release pipeline:** true
+```
+
+### Config Defaults (all new projects)
+| Setting | Default | Why |
+|---------|---------|-----|
+| CI/CD enabled | `false` | Requires GitHub Actions billing; user enables when ready |
+| CI badge in README | `false` | No badge until CI is actually working |
+| Jira enabled | `false` | Optional feature; needs credentials first |
+| psk-tracker installed | `false` | Optional; updated automatically by install-tracker.sh |
+| Code review auto | `true` | Advisory, non-blocking — safe default |
+| Code review in pipeline | `true` | Advisory — adds value at no cost |
+| Scope drift auto | `true` | Advisory, non-blocking — safe default |
+| Scope drift in pipeline | `true` | Advisory — adds value at no cost |
+
+### Config Creation
+**Auto-created** on first session if `.portable-spec-kit/config.md` doesn't exist — uses defaults above. No questions asked. User can review and change anytime.
+
+### Config Review (user-triggered)
+User says `"show config"` / `"review config"` / `"update config"`:
+1. Agent reads `.portable-spec-kit/config.md`
+2. Shows current settings in a formatted table
+3. Asks: "Change anything? (type setting name, or Enter to keep)"
+4. User types setting → agent shows options → user picks → config updated
+5. If CI/CD changed to enabled → agent creates `.github/workflows/ci.yml` and adds badge to README
+6. If CI/CD changed to disabled → agent removes `.github/workflows/ci.yml` and hides badge in README (HTML comment)
+
+### Config After Profile Setup
+After first-session profile setup completes, agent shows config summary:
+```
+"Project config (defaults applied):
+  CI/CD:         disabled (enable: say 'enable ci')
+  Jira:          disabled (enable: say 'jira setup')
+  Code review:   enabled (auto after features)
+  Scope check:   enabled (auto at session start)
+
+  Review anytime: say 'show config'"
+```
+
+### Config-Aware Behavior
+The agent reads config before executing config-dependent actions:
+
+| Action | Config check | If disabled |
+|--------|-------------|-------------|
+| Create `.github/workflows/ci.yml` | `CI/CD.Enabled` | Skip — don't create workflow files |
+| Show CI badge in README | `CI/CD.Badge in README` | Skip or hide in HTML comment |
+| Run `sync to jira` | `Jira.Enabled` | "Jira not configured. Run `jira setup` first." |
+| Run `psk-code-review.sh` after feature | `Code Review.Auto on feature completion` | Skip silently |
+| Run `psk-code-review.sh` in release | `Code Review.In release pipeline` | Skip Step 2 in prepare release |
+| Run `psk-scope-check.sh` at session start | `Scope Drift.Auto on session start` | Skip silently |
+| Run `psk-scope-check.sh` in release | `Scope Drift.In release pipeline` | Skip Step 3 in prepare release |
+
+### Config Commands
+| Command | What it does |
+|---------|-------------|
+| `"show config"` / `"review config"` | Display current config + option to change |
+| `"update config"` | Same as show config — interactive edit |
+| `"enable ci"` / `"enable cicd"` | Set CI/CD.Enabled = true → create workflow + badge |
+| `"disable ci"` / `"disable cicd"` | Set CI/CD.Enabled = false → remove workflow + hide badge |
+| `"enable jira"` | Set Jira.Enabled = true (still needs `jira setup` for credentials) |
+
+### Edge Cases
+- Config file missing → create with defaults, no questions
+- Config file empty → treat as missing, recreate
+- Config has unknown fields → preserve them (user may have custom settings)
+- Setting changed mid-session → takes effect immediately (no restart needed)
+- Team member has different config preference → config is per-project not per-user; discuss and agree
+- CI enabled but no billing → workflow created but checks fail; agent detects and suggests: "CI checks failing — disable CI badge until billing fixed? (`disable ci`)"
 
 ---
 
@@ -337,7 +445,7 @@ Explicit trigger for full project scan and agent file setup. Handles any kit sta
    Scan complete. Detected: <stack> · Port <X>
 
    [x] agent/ — 6 files created/updated (pre-filled from scan)
-   [ ] .github/workflows/ci.yml  — CI on every push/PR
+   [ ] CI/CD — disabled by default (say `enable ci` when ready)
    [ ] .env.example              — env var template
    [ ] README.md                 — restructure to kit template
 
@@ -811,10 +919,10 @@ jobs:
 | Bash scripts only | (omit Run tests step — test-release-check.sh covers it) | (none) |
 | Unknown / not detected | `echo "Configure test command in ci.yml"` + warn user | (none) |
 
-**New Project Setup Step 7.5 — create CI workflow:** After stack is confirmed (Step 7), create `.github/workflows/ci.yml` using the template above. Add CI badge to README.md as the first badge. Tell user: "CI will run on every push and PR. Enable branch protection in GitHub Settings → Branches to require CI checks before merge."
+**New Project Setup Step 7.5 — CI workflow (config-aware):** After stack is confirmed (Step 7), check `.portable-spec-kit/config.md` → `CI/CD.Enabled`. If `true` → create `.github/workflows/ci.yml` using the template above, add CI badge to README.md. If `false` (default) → skip CI workflow creation. Tell user: "CI/CD is disabled by default. Enable anytime: say `enable ci`".
 
 **Existing project CI setup:** During existing project onboarding (scan checklist), include:
-`[ ] Create .github/workflows/ci.yml (CI on every push/PR + R→F→T validator)`
+`[ ] Enable CI/CD (disabled by default — say `enable ci` when ready)`
 Agent fills in the test command from the detected stack. Always includes `bash tests/test-release-check.sh agent/SPECS.md`.
 
 **Existing project onboarding — agent/ commit check:** During existing project scan, if project is team/open-source, check if `agent/` is in `.gitignore`. If yes → suggest: `[ ] Remove agent/ from .gitignore (enables AI-powered onboarding for contributors)`.
@@ -1153,7 +1261,7 @@ Check the project's scan state and display the status once when the agent first 
    [ ] Rename ARD/ → ard/ (to match kit convention)
    [ ] Create .env.example from existing .env
    [ ] Restructure README.md to match template
-   [ ] Create .github/workflows/ci.yml (CI on every push/PR + R→F→T validator)
+   [ ] Enable CI/CD (disabled by default — say `enable ci` when ready)
 
    "Which changes would you like? Select all, some, or none."
    ```

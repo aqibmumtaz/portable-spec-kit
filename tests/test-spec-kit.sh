@@ -1622,16 +1622,21 @@ grep -q "v0\.4\.1 — $PROJ_VER\|Built over:.*$PROJ_VER" "$PROJ/CHANGELOG.md" 2>
 section "42. CI/CD — GitHub Actions, Community Files, and Framework Rules"
 # ═══════════════════════════════════════════════════════════════
 
-# Kit repo CI files
-[ -f "$PROJ/.github/workflows/ci.yml" ] && pass "CI: ci.yml exists" || fail "CI: ci.yml MISSING"
-grep -q "pull_request" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: triggers on pull_request" || fail "CI: pull_request trigger MISSING"
-grep -q "ubuntu-latest" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: runs on ubuntu-latest" || fail "CI: ubuntu-latest MISSING"
-grep -q "test-spec-kit.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-spec-kit.sh" || fail "CI: test-spec-kit.sh not in ci.yml"
-grep -q "test-spd-benchmarking.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-spd-benchmarking.sh" || fail "CI: benchmarking not in ci.yml"
-grep -q "test-release-check.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-release-check.sh" || fail "CI: release-check not in ci.yml"
-[ -f "$PROJ/.github/workflows/release.yml" ] && pass "CI: release.yml exists" || fail "CI: release.yml MISSING"
-grep -q "v\*" "$PROJ/.github/workflows/release.yml" 2>/dev/null && pass "CI: release.yml triggers on v* tags" || fail "CI: v* tag trigger MISSING"
-grep -q "FRAMEWORK_VER\|Framework Version" "$PROJ/.github/workflows/release.yml" 2>/dev/null && pass "CI: release.yml verifies version consistency" || fail "CI: version check MISSING"
+# Kit repo CI files — config-aware: skip if CI disabled in .portable-spec-kit/config.md
+CI_ENABLED=$(grep -i "Enabled:.*true" "$PROJ/.portable-spec-kit/config.md" 2>/dev/null | head -1)
+if [ -n "$CI_ENABLED" ] && [ -f "$PROJ/.github/workflows/ci.yml" ]; then
+  pass "CI: ci.yml exists (CI enabled in config)"
+  grep -q "pull_request" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: triggers on pull_request" || fail "CI: pull_request trigger MISSING"
+  grep -q "ubuntu-latest" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: runs on ubuntu-latest" || fail "CI: ubuntu-latest MISSING"
+  grep -q "test-spec-kit.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-spec-kit.sh" || fail "CI: test-spec-kit.sh not in ci.yml"
+  grep -q "test-spd-benchmarking.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-spd-benchmarking.sh" || fail "CI: benchmarking not in ci.yml"
+  grep -q "test-release-check.sh" "$PROJ/.github/workflows/ci.yml" 2>/dev/null && pass "CI: ci.yml runs test-release-check.sh" || fail "CI: release-check not in ci.yml"
+  [ -f "$PROJ/.github/workflows/release.yml" ] && pass "CI: release.yml exists" || fail "CI: release.yml MISSING"
+  grep -q "v\*" "$PROJ/.github/workflows/release.yml" 2>/dev/null && pass "CI: release.yml triggers on v* tags" || fail "CI: v* tag trigger MISSING"
+  grep -q "FRAMEWORK_VER\|Framework Version" "$PROJ/.github/workflows/release.yml" 2>/dev/null && pass "CI: release.yml verifies version consistency" || fail "CI: version check MISSING"
+else
+  pass "CI: CI/CD disabled in config — workflow file checks skipped"
+fi
 [ -f "$PROJ/.github/pull_request_template.md" ] && pass "CI: PR template exists" || fail "CI: PR template MISSING"
 grep -qi "portabilit" "$PROJ/.github/pull_request_template.md" 2>/dev/null && pass "CI: PR template has portability test" || fail "CI: PR template missing portability test"
 grep -q "test-spec-kit.sh" "$PROJ/.github/pull_request_template.md" 2>/dev/null && pass "CI: PR template references test suites" || fail "CI: PR template missing test commands"

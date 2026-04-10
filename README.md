@@ -6,9 +6,9 @@
 
 [![Version](https://img.shields.io/badge/version-v0.5.1-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-836%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-828%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
-<!-- CI badge — hidden until GitHub Actions billing is fixed (Settings → Billing → Payment information → add card, then delete Actions budget in Budgets and alerts, then re-enable workflow in Actions → CI → Enable workflow)
+<!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
 -->
 
@@ -57,7 +57,7 @@
 | Scope Drift (F66) | `psk-scope-check.sh`, 5 dimensions, drift score, added to release pipeline Step 3 |
 | Agent directory structure | `agent/` root = markdown only, `design/` = plans, `scripts/` = bash |
 | Orchestration table | 37 items across 8 groups with trigger types (explicit/auto/continuous) |
-| **836 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
+| **828 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
 
 ---
 
@@ -311,7 +311,8 @@ The agent updates `agent/AGENT_CONTEXT.md` at three natural checkpoints — not 
 ```
 your-project/
 ├── portable-spec-kit.md    ← The framework (source file)
-├── .portable-spec-kit/     ← Kit config (user profiles, per-user, committed)
+├── .portable-spec-kit/     ← Kit config (committed)
+│   ├── config.md           ← Project config (CI/CD, Jira, toggles)
 │   └── user-profile/
 │       └── user-profile-{username}.md
 ├── CLAUDE.md               ← Symlink (Claude Code)
@@ -383,6 +384,8 @@ Everything the agent does — automatically or on command. All natural language,
 | | | **Setup & Context** | |
 | **Project Setup** | `"init"` | Deep scan → create/fill all agent/ files → optional changes checklist | Explicit |
 | | `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check | Explicit |
+| **Config** | `"show config"` / `"review config"` | Display project config + option to change settings | Explicit |
+| | `"enable ci"` / `"disable ci"` | Toggle CI/CD — creates/removes workflow + badge | Explicit |
 | | | **Define & Design** | |
 | **Development** | `"build X"` / `"add feature X"` | Added to TASKS.md → built → tested → marked done | Explicit |
 | | `"fix X"` | Added to TASKS.md → fixed → marked done | Explicit |
@@ -482,6 +485,7 @@ Content is never lost. Existing files are reorganized, not overwritten.
 | Section | What It Governs |
 |---------|----------------|
 | **User Profile** | Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation |
+| **Project Config** | `.portable-spec-kit/config.md` — CI/CD, Jira, code review, scope drift toggles. Disabled-by-default CI. Review anytime. |
 | **Git & GitHub** | Commit rules, push rules, critical ops requiring approval |
 | **Security** | .env handling, secret management, code security practices |
 | **Versioning** | Two-level: framework patches + release milestones, auto-restructure on pull |
