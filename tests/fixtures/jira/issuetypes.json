@@ -1,0 +1,6 @@
+[
+  {"self": "https://testorg.atlassian.net/rest/api/3/issuetype/10000", "id": "10000", "name": "Epic", "subtask": false},
+  {"self": "https://testorg.atlassian.net/rest/api/3/issuetype/10001", "id": "10001", "name": "Story", "subtask": false},
+  {"self": "https://testorg.atlassian.net/rest/api/3/issuetype/10002", "id": "10002", "name": "Task", "subtask": false},
+  {"self": "https://testorg.atlassian.net/rest/api/3/issuetype/10003", "id": "10003", "name": "Sub-task", "subtask": true}
+]

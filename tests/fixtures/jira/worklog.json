@@ -1,0 +1,7 @@
+{
+  "self": "https://testorg.atlassian.net/rest/api/3/issue/10042/worklog/10001",
+  "id": "10001",
+  "timeSpent": "1h 30m",
+  "timeSpentSeconds": 5400,
+  "started": "2026-04-09T14:30:00.000Z"
+}

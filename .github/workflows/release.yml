@@ -1,0 +1,36 @@
+name: Release verification
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  verify:
+    name: Verify release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Framework tests
+        run: bash tests/test-spec-kit.sh
+
+      - name: SPD benchmarking suite
+        run: bash tests/test-spd-benchmarking.sh
+
+      - name: R→F→T release validator
+        run: bash tests/test-release-check.sh agent/SPECS.md
+
+      - name: Verify tag matches framework version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          FRAMEWORK_VER=$(grep "Framework Version:" portable-spec-kit.md | grep -o "v[0-9]*\.[0-9]*" | head -1)
+          echo "Tag: $TAG  Framework (minor): $FRAMEWORK_VER"
+          if echo "$TAG" | grep -q "^${FRAMEWORK_VER}"; then
+            echo "Version match confirmed"
+          else
+            echo "ERROR: tag $TAG does not match framework version $FRAMEWORK_VER"
+            exit 1
+          fi

@@ -7,6 +7,51 @@ All notable changes to the Portable Spec Kit are documented here.
 
 ---
 
+## v0.5 — Jira Integration + Feature Design + Code Review + Scope Drift (April 2026)
+**Built over:** v0.5.1 · **Tests:** 836 (691 framework across 53 sections + 145 benchmarking)
+
+### Highlights
+- **Jira Cloud integration** — `psk-jira-sync.sh` syncs completed tasks to Jira via REST API v3. Explicit-only (`sync to jira`), never automatic. PID-based lock, 5× retry with Retry-After, sanitized SYNC_RESULT.json
+- **Automatic hours tracking** — Track A (agent session wall-clock) + Track B (psk-tracker OS daemon). Combined, deduplicated, confirmed by user before any Jira post
+- **psk-tracker daemon** — OS-level 10s poll, FOCUS/BLUR logs, macOS/Linux/Windows support, WSL detection, headless/Docker exit
+- **Feature Design Pipeline** — every feature in SPECS.md gets a design plan in `agent/design/`. 3 triggers: explicit, auto on SPECS.md, implementation gate. Decisions auto-flow to PLANS.md ADL
+- **Auto Code Review (F65)** — two-layer review (psk-code-review.sh mechanical + AI judgment). Security anti-patterns, naming, TODO, secrets, structure. Runs after feature completion, advisory not blocking
+- **Scope Drift Detection (F66)** — 5-dimension drift check (feature drift, requirement gaps, scope creep, architecture drift, plan staleness). psk-scope-check.sh with drift score. Proactive at session start
+- **Release pipeline expanded** — prepare release now 9 steps (added code review + scope check after tests). Summary block shows 11 rows
+- **Agent directory structure** — `agent/` root = markdown only, `agent/design/` = plans, `agent/scripts/` = bash
+
+### Framework Changes
+- Jira Integration section + Time Tracking section added to portable-spec-kit.md
+- AGENT.md template: Jira Config (URL, project key, mappings, transition mapping, idle threshold)
+- ADL format updated: Plan Ref column links decisions back to design files
+- Development flow: SPECS → design/ → PLANS.md → TASKS → RELEASES (5-stage pipeline)
+- Sync rule: 5 pipeline files (includes plan state update)
+- Agent-Created Files rule: scripts/ subdirectory, directory structure diagram
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `agent/scripts/psk-jira-sync.sh` | Jira REST API v3 sync script |
+| `agent/scripts/psk-tracker.sh` | OS-level window focus daemon |
+| `agent/scripts/install-tracker.sh` | Daemon installer (macOS/Linux/Windows) |
+| `agent/scripts/uninstall-tracker.sh` | Daemon uninstaller |
+| `agent/scripts/psk-tracker-report.sh` | Track B JSON report generator |
+| `tests/mock-jira-server.sh` | Mock Jira HTTP server for testing |
+| `tests/fixtures/jira/*.json` | 7 Jira API fixture files |
+| `agent/scripts/psk-code-review.sh` | Automated code review (mechanical layer) |
+| `agent/scripts/psk-scope-check.sh` | Scope drift detection (5 dimensions) |
+| `docs/work-flows/15-jira-integration.md` | Jira sync flow doc |
+| `docs/work-flows/16-feature-design.md` | Feature design flow doc |
+
+### Tests
+| Section | Tests | What it validates |
+|---------|:-----:|-------------------|
+| Section 51 | 28 | Jira integration rules, scripts, Track A/B, dedup, commands |
+| Section 52 | 15 | Auto code review rules, two-layer, trigger, advisory |
+| Section 53 | 12 | Scope drift detection, 5 dimensions, drift score, triggers |
+
+---
+
 ## v0.4 — CI/CD Pipeline + Spec-Based Test Generation + Team Intelligence (April 2026)
 **Built over:** v0.4.1 — v0.4.11 · **Tests:** 781 (636 framework across 50 sections + 145 benchmarking)
 

@@ -1,0 +1,9 @@
+{
+  "self": "https://testorg.atlassian.net/rest/api/3/project/10001",
+  "id": "10001",
+  "key": "TESTPROJ",
+  "name": "Test Project",
+  "projectTypeKey": "software",
+  "style": "classic",
+  "isPrivate": false
+}

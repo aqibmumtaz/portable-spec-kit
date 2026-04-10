@@ -1,0 +1,601 @@
+project,stack,methodology,phase,metric,score,max,detail
+ecommerce-api,python-fastapi,waterfall,start,spec_files,2,3,2 spec docs
+ecommerce-api,python-fastapi,waterfall,start,can_code,0,3,blocked by specs
+ecommerce-api,python-fastapi,waterfall,start,not_blocked,0,3,must complete specs first
+ecommerce-api,python-fastapi,waterfall,start,context_saved,1,3,in spec docs only
+ecommerce-api,python-fastapi,waterfall,start,install_effort,3,3,no install needed
+ecommerce-api,python-fastapi,agile,start,spec_files,0,3,no specs
+ecommerce-api,python-fastapi,agile,start,can_code,3,3,immediate
+ecommerce-api,python-fastapi,agile,start,not_blocked,3,3,no blocking
+ecommerce-api,python-fastapi,agile,start,context_saved,0,3,none
+ecommerce-api,python-fastapi,agile,start,install_effort,2,3,need board tool
+ecommerce-api,python-fastapi,spd,start,spec_files,3,3,6 agent files
+ecommerce-api,python-fastapi,spd,start,can_code,3,3,immediate
+ecommerce-api,python-fastapi,spd,start,not_blocked,3,3,no blocking
+ecommerce-api,python-fastapi,spd,start,context_saved,3,3,AGENT_CONTEXT.md
+ecommerce-api,python-fastapi,spd,start,install_effort,3,3,1 curl command
+ecommerce-api,python-fastapi,waterfall,build,spec_current,1,3,spec drifting from code
+ecommerce-api,python-fastapi,waterfall,build,tasks_tracked,0,3,not tracked in files
+ecommerce-api,python-fastapi,waterfall,build,decisions_recorded,1,3,in original plan only
+ecommerce-api,python-fastapi,waterfall,build,architecture_doc,1,3,stale plan doc
+ecommerce-api,python-fastapi,waterfall,build,pipeline_sync,0,3,specs and code diverging
+ecommerce-api,python-fastapi,agile,build,spec_current,0,3,no specs exist
+ecommerce-api,python-fastapi,agile,build,tasks_tracked,2,3,in external board
+ecommerce-api,python-fastapi,agile,build,decisions_recorded,0,3,in developer head
+ecommerce-api,python-fastapi,agile,build,architecture_doc,0,3,none
+ecommerce-api,python-fastapi,agile,build,pipeline_sync,0,3,no pipeline
+ecommerce-api,python-fastapi,spd,build,spec_current,3,3,specs match code
+ecommerce-api,python-fastapi,spd,build,tasks_tracked,3,3,in TASKS.md with checkboxes
+ecommerce-api,python-fastapi,spd,build,decisions_recorded,3,3,in PLANS.md Key Decisions
+ecommerce-api,python-fastapi,spd,build,architecture_doc,3,3,PLANS.md current
+ecommerce-api,python-fastapi,spd,build,pipeline_sync,3,3,SPECS PLANS TASKS in sync
+ecommerce-api,python-fastapi,waterfall,scope,change_speed,1,3,formal change request
+ecommerce-api,python-fastapi,waterfall,scope,spec_accurate,1,3,spec update delayed
+ecommerce-api,python-fastapi,waterfall,scope,reason_recorded,1,3,in change request doc
+ecommerce-api,python-fastapi,waterfall,scope,not_blocked,0,3,blocked by approval
+ecommerce-api,python-fastapi,waterfall,scope,descoped_tracked,0,3,not formally tracked
+ecommerce-api,python-fastapi,agile,scope,change_speed,3,3,move card on board
+ecommerce-api,python-fastapi,agile,scope,spec_accurate,0,3,no spec to update
+ecommerce-api,python-fastapi,agile,scope,reason_recorded,0,3,not recorded
+ecommerce-api,python-fastapi,agile,scope,not_blocked,3,3,no approval needed
+ecommerce-api,python-fastapi,agile,scope,descoped_tracked,0,3,card deleted
+ecommerce-api,python-fastapi,spd,scope,change_speed,3,3,immediate file update
+ecommerce-api,python-fastapi,spd,scope,spec_accurate,3,3,SPECS + TASKS updated
+ecommerce-api,python-fastapi,spd,scope,reason_recorded,3,3,PLANS.md Key Decisions
+ecommerce-api,python-fastapi,spd,scope,not_blocked,3,3,no approval needed
+ecommerce-api,python-fastapi,spd,scope,descoped_tracked,3,3,moved to Backlog
+ecommerce-api,python-fastapi,waterfall,break,context_preserved,1,3,stale spec doc
+ecommerce-api,python-fastapi,waterfall,break,resume_speed,1,3,30-60 min reading
+ecommerce-api,python-fastapi,waterfall,break,decisions_available,1,3,in original plan
+ecommerce-api,python-fastapi,waterfall,break,blockers_known,0,3,not tracked
+ecommerce-api,python-fastapi,waterfall,break,next_task_known,0,3,must re-read everything
+ecommerce-api,python-fastapi,agile,break,context_preserved,0,3,none
+ecommerce-api,python-fastapi,agile,break,resume_speed,0,3,must ask team/re-explore
+ecommerce-api,python-fastapi,agile,break,decisions_available,0,3,in developer head (gone)
+ecommerce-api,python-fastapi,agile,break,blockers_known,0,3,not tracked
+ecommerce-api,python-fastapi,agile,break,next_task_known,1,3,check board
+ecommerce-api,python-fastapi,spd,break,context_preserved,3,3,AGENT_CONTEXT.md full
+ecommerce-api,python-fastapi,spd,break,resume_speed,3,3,seconds — agent reads file
+ecommerce-api,python-fastapi,spd,break,decisions_available,3,3,PLANS.md Key Decisions
+ecommerce-api,python-fastapi,spd,break,blockers_known,3,3,in AGENT_CONTEXT
+ecommerce-api,python-fastapi,spd,break,next_task_known,3,3,What's Next in AGENT_CONTEXT
+ecommerce-api,python-fastapi,waterfall,switch,context_transferred,0,3,0%
+ecommerce-api,python-fastapi,waterfall,switch,no_reexplain,0,3,must re-explain everything
+ecommerce-api,python-fastapi,waterfall,switch,profile_loaded,0,3,no profile system
+ecommerce-api,python-fastapi,waterfall,switch,continuity,0,3,zero
+ecommerce-api,python-fastapi,waterfall,switch,multi_agent,0,3,not supported
+ecommerce-api,python-fastapi,agile,switch,context_transferred,0,3,0%
+ecommerce-api,python-fastapi,agile,switch,no_reexplain,0,3,must re-explain
+ecommerce-api,python-fastapi,agile,switch,profile_loaded,0,3,no profile
+ecommerce-api,python-fastapi,agile,switch,continuity,0,3,zero
+ecommerce-api,python-fastapi,agile,switch,multi_agent,0,3,not supported
+ecommerce-api,python-fastapi,spd,switch,context_transferred,3,3,100% via files
+ecommerce-api,python-fastapi,spd,switch,no_reexplain,3,3,zero — files have everything
+ecommerce-api,python-fastapi,spd,switch,profile_loaded,3,3,user-profile persists
+ecommerce-api,python-fastapi,spd,switch,continuity,3,3,full
+ecommerce-api,python-fastapi,spd,switch,multi_agent,3,3,5 agents supported
+ecommerce-api,python-fastapi,waterfall,onboard,docs_available,1,3,stale spec doc
+ecommerce-api,python-fastapi,waterfall,onboard,architecture_known,1,3,stale plan
+ecommerce-api,python-fastapi,waterfall,onboard,decisions_accessible,1,3,in original plan
+ecommerce-api,python-fastapi,waterfall,onboard,onboard_speed,1,3,weeks
+ecommerce-api,python-fastapi,waterfall,onboard,personalized,0,3,no
+ecommerce-api,python-fastapi,agile,onboard,docs_available,0,3,none
+ecommerce-api,python-fastapi,agile,onboard,architecture_known,0,3,ask team
+ecommerce-api,python-fastapi,agile,onboard,decisions_accessible,0,3,in people heads
+ecommerce-api,python-fastapi,agile,onboard,onboard_speed,0,3,weeks
+ecommerce-api,python-fastapi,agile,onboard,personalized,0,3,no
+ecommerce-api,python-fastapi,spd,onboard,docs_available,3,3,SPECS + PLANS + TASKS
+ecommerce-api,python-fastapi,spd,onboard,architecture_known,3,3,PLANS.md current
+ecommerce-api,python-fastapi,spd,onboard,decisions_accessible,3,3,Key Decisions table
+ecommerce-api,python-fastapi,spd,onboard,onboard_speed,3,3,hours
+ecommerce-api,python-fastapi,spd,onboard,personalized,3,3,user-profile.md
+ecommerce-api,python-fastapi,waterfall,release,changelog_method,1,3,manual writing
+ecommerce-api,python-fastapi,waterfall,release,version_history,1,3,in docs somewhere
+ecommerce-api,python-fastapi,waterfall,release,test_results,0,3,separate report
+ecommerce-api,python-fastapi,waterfall,release,version_tracking,1,3,manual
+ecommerce-api,python-fastapi,waterfall,release,next_version_ready,0,3,write new spec
+ecommerce-api,python-fastapi,agile,release,changelog_method,0,3,from memory
+ecommerce-api,python-fastapi,agile,release,version_history,0,3,none
+ecommerce-api,python-fastapi,agile,release,test_results,1,3,in CI maybe
+ecommerce-api,python-fastapi,agile,release,version_tracking,0,3,none
+ecommerce-api,python-fastapi,agile,release,next_version_ready,2,3,new sprint
+ecommerce-api,python-fastapi,spd,release,changelog_method,3,3,auto-tracked in RELEASES
+ecommerce-api,python-fastapi,spd,release,version_history,3,3,RELEASES.md complete
+ecommerce-api,python-fastapi,spd,release,test_results,3,3,in RELEASES entry
+ecommerce-api,python-fastapi,spd,release,version_tracking,3,3,framework version range
+ecommerce-api,python-fastapi,spd,release,next_version_ready,3,3,new heading in TASKS
+ecommerce-api,python-fastapi,waterfall,handoff,knowledge_preserved,1,3,30-40% (stale docs)
+ecommerce-api,python-fastapi,waterfall,handoff,decisions_preserved,1,3,in original plan
+ecommerce-api,python-fastapi,waterfall,handoff,why_built_this_way,1,3,maybe in spec
+ecommerce-api,python-fastapi,waterfall,handoff,version_history,1,3,partial
+ecommerce-api,python-fastapi,waterfall,handoff,understanding_time,1,3,months
+ecommerce-api,python-fastapi,agile,handoff,knowledge_preserved,0,3,10-20%
+ecommerce-api,python-fastapi,agile,handoff,decisions_preserved,0,3,lost
+ecommerce-api,python-fastapi,agile,handoff,why_built_this_way,0,3,unknown
+ecommerce-api,python-fastapi,agile,handoff,version_history,0,3,none
+ecommerce-api,python-fastapi,agile,handoff,understanding_time,0,3,months
+ecommerce-api,python-fastapi,spd,handoff,knowledge_preserved,3,3,90%+ in files
+ecommerce-api,python-fastapi,spd,handoff,decisions_preserved,3,3,PLANS.md Key Decisions
+ecommerce-api,python-fastapi,spd,handoff,why_built_this_way,3,3,SPECS + PLANS
+ecommerce-api,python-fastapi,spd,handoff,version_history,3,3,RELEASES.md
+ecommerce-api,python-fastapi,spd,handoff,understanding_time,3,3,hours
+dashboard-app,nextjs-typescript,waterfall,start,spec_files,2,3,2 spec docs
+dashboard-app,nextjs-typescript,waterfall,start,can_code,0,3,blocked by specs
+dashboard-app,nextjs-typescript,waterfall,start,not_blocked,0,3,must complete specs first
+dashboard-app,nextjs-typescript,waterfall,start,context_saved,1,3,in spec docs only
+dashboard-app,nextjs-typescript,waterfall,start,install_effort,3,3,no install needed
+dashboard-app,nextjs-typescript,agile,start,spec_files,0,3,no specs
+dashboard-app,nextjs-typescript,agile,start,can_code,3,3,immediate
+dashboard-app,nextjs-typescript,agile,start,not_blocked,3,3,no blocking
+dashboard-app,nextjs-typescript,agile,start,context_saved,0,3,none
+dashboard-app,nextjs-typescript,agile,start,install_effort,2,3,need board tool
+dashboard-app,nextjs-typescript,spd,start,spec_files,3,3,6 agent files
+dashboard-app,nextjs-typescript,spd,start,can_code,3,3,immediate
+dashboard-app,nextjs-typescript,spd,start,not_blocked,3,3,no blocking
+dashboard-app,nextjs-typescript,spd,start,context_saved,3,3,AGENT_CONTEXT.md
+dashboard-app,nextjs-typescript,spd,start,install_effort,3,3,1 curl command
+dashboard-app,nextjs-typescript,waterfall,build,spec_current,1,3,spec drifting from code
+dashboard-app,nextjs-typescript,waterfall,build,tasks_tracked,0,3,not tracked in files
+dashboard-app,nextjs-typescript,waterfall,build,decisions_recorded,1,3,in original plan only
+dashboard-app,nextjs-typescript,waterfall,build,architecture_doc,1,3,stale plan doc
+dashboard-app,nextjs-typescript,waterfall,build,pipeline_sync,0,3,specs and code diverging
+dashboard-app,nextjs-typescript,agile,build,spec_current,0,3,no specs exist
+dashboard-app,nextjs-typescript,agile,build,tasks_tracked,2,3,in external board
+dashboard-app,nextjs-typescript,agile,build,decisions_recorded,0,3,in developer head
+dashboard-app,nextjs-typescript,agile,build,architecture_doc,0,3,none
+dashboard-app,nextjs-typescript,agile,build,pipeline_sync,0,3,no pipeline
+dashboard-app,nextjs-typescript,spd,build,spec_current,3,3,specs match code
+dashboard-app,nextjs-typescript,spd,build,tasks_tracked,3,3,in TASKS.md with checkboxes
+dashboard-app,nextjs-typescript,spd,build,decisions_recorded,3,3,in PLANS.md Key Decisions
+dashboard-app,nextjs-typescript,spd,build,architecture_doc,3,3,PLANS.md current
+dashboard-app,nextjs-typescript,spd,build,pipeline_sync,3,3,SPECS PLANS TASKS in sync
+dashboard-app,nextjs-typescript,waterfall,scope,change_speed,1,3,formal change request
+dashboard-app,nextjs-typescript,waterfall,scope,spec_accurate,1,3,spec update delayed
+dashboard-app,nextjs-typescript,waterfall,scope,reason_recorded,1,3,in change request doc
+dashboard-app,nextjs-typescript,waterfall,scope,not_blocked,0,3,blocked by approval
+dashboard-app,nextjs-typescript,waterfall,scope,descoped_tracked,0,3,not formally tracked
+dashboard-app,nextjs-typescript,agile,scope,change_speed,3,3,move card on board
+dashboard-app,nextjs-typescript,agile,scope,spec_accurate,0,3,no spec to update
+dashboard-app,nextjs-typescript,agile,scope,reason_recorded,0,3,not recorded
+dashboard-app,nextjs-typescript,agile,scope,not_blocked,3,3,no approval needed
+dashboard-app,nextjs-typescript,agile,scope,descoped_tracked,0,3,card deleted
+dashboard-app,nextjs-typescript,spd,scope,change_speed,3,3,immediate file update
+dashboard-app,nextjs-typescript,spd,scope,spec_accurate,3,3,SPECS + TASKS updated
+dashboard-app,nextjs-typescript,spd,scope,reason_recorded,3,3,PLANS.md Key Decisions
+dashboard-app,nextjs-typescript,spd,scope,not_blocked,3,3,no approval needed
+dashboard-app,nextjs-typescript,spd,scope,descoped_tracked,3,3,moved to Backlog
+dashboard-app,nextjs-typescript,waterfall,break,context_preserved,1,3,stale spec doc
+dashboard-app,nextjs-typescript,waterfall,break,resume_speed,1,3,30-60 min reading
+dashboard-app,nextjs-typescript,waterfall,break,decisions_available,1,3,in original plan
+dashboard-app,nextjs-typescript,waterfall,break,blockers_known,0,3,not tracked
+dashboard-app,nextjs-typescript,waterfall,break,next_task_known,0,3,must re-read everything
+dashboard-app,nextjs-typescript,agile,break,context_preserved,0,3,none
+dashboard-app,nextjs-typescript,agile,break,resume_speed,0,3,must ask team/re-explore
+dashboard-app,nextjs-typescript,agile,break,decisions_available,0,3,in developer head (gone)
+dashboard-app,nextjs-typescript,agile,break,blockers_known,0,3,not tracked
+dashboard-app,nextjs-typescript,agile,break,next_task_known,1,3,check board
+dashboard-app,nextjs-typescript,spd,break,context_preserved,3,3,AGENT_CONTEXT.md full
+dashboard-app,nextjs-typescript,spd,break,resume_speed,3,3,seconds — agent reads file
+dashboard-app,nextjs-typescript,spd,break,decisions_available,3,3,PLANS.md Key Decisions
+dashboard-app,nextjs-typescript,spd,break,blockers_known,3,3,in AGENT_CONTEXT
+dashboard-app,nextjs-typescript,spd,break,next_task_known,3,3,What's Next in AGENT_CONTEXT
+dashboard-app,nextjs-typescript,waterfall,switch,context_transferred,0,3,0%
+dashboard-app,nextjs-typescript,waterfall,switch,no_reexplain,0,3,must re-explain everything
+dashboard-app,nextjs-typescript,waterfall,switch,profile_loaded,0,3,no profile system
+dashboard-app,nextjs-typescript,waterfall,switch,continuity,0,3,zero
+dashboard-app,nextjs-typescript,waterfall,switch,multi_agent,0,3,not supported
+dashboard-app,nextjs-typescript,agile,switch,context_transferred,0,3,0%
+dashboard-app,nextjs-typescript,agile,switch,no_reexplain,0,3,must re-explain
+dashboard-app,nextjs-typescript,agile,switch,profile_loaded,0,3,no profile
+dashboard-app,nextjs-typescript,agile,switch,continuity,0,3,zero
+dashboard-app,nextjs-typescript,agile,switch,multi_agent,0,3,not supported
+dashboard-app,nextjs-typescript,spd,switch,context_transferred,3,3,100% via files
+dashboard-app,nextjs-typescript,spd,switch,no_reexplain,3,3,zero — files have everything
+dashboard-app,nextjs-typescript,spd,switch,profile_loaded,3,3,user-profile persists
+dashboard-app,nextjs-typescript,spd,switch,continuity,3,3,full
+dashboard-app,nextjs-typescript,spd,switch,multi_agent,3,3,5 agents supported
+dashboard-app,nextjs-typescript,waterfall,onboard,docs_available,1,3,stale spec doc
+dashboard-app,nextjs-typescript,waterfall,onboard,architecture_known,1,3,stale plan
+dashboard-app,nextjs-typescript,waterfall,onboard,decisions_accessible,1,3,in original plan
+dashboard-app,nextjs-typescript,waterfall,onboard,onboard_speed,1,3,weeks
+dashboard-app,nextjs-typescript,waterfall,onboard,personalized,0,3,no
+dashboard-app,nextjs-typescript,agile,onboard,docs_available,0,3,none
+dashboard-app,nextjs-typescript,agile,onboard,architecture_known,0,3,ask team
+dashboard-app,nextjs-typescript,agile,onboard,decisions_accessible,0,3,in people heads
+dashboard-app,nextjs-typescript,agile,onboard,onboard_speed,0,3,weeks
+dashboard-app,nextjs-typescript,agile,onboard,personalized,0,3,no
+dashboard-app,nextjs-typescript,spd,onboard,docs_available,3,3,SPECS + PLANS + TASKS
+dashboard-app,nextjs-typescript,spd,onboard,architecture_known,3,3,PLANS.md current
+dashboard-app,nextjs-typescript,spd,onboard,decisions_accessible,3,3,Key Decisions table
+dashboard-app,nextjs-typescript,spd,onboard,onboard_speed,3,3,hours
+dashboard-app,nextjs-typescript,spd,onboard,personalized,3,3,user-profile.md
+dashboard-app,nextjs-typescript,waterfall,release,changelog_method,1,3,manual writing
+dashboard-app,nextjs-typescript,waterfall,release,version_history,1,3,in docs somewhere
+dashboard-app,nextjs-typescript,waterfall,release,test_results,0,3,separate report
+dashboard-app,nextjs-typescript,waterfall,release,version_tracking,1,3,manual
+dashboard-app,nextjs-typescript,waterfall,release,next_version_ready,0,3,write new spec
+dashboard-app,nextjs-typescript,agile,release,changelog_method,0,3,from memory
+dashboard-app,nextjs-typescript,agile,release,version_history,0,3,none
+dashboard-app,nextjs-typescript,agile,release,test_results,1,3,in CI maybe
+dashboard-app,nextjs-typescript,agile,release,version_tracking,0,3,none
+dashboard-app,nextjs-typescript,agile,release,next_version_ready,2,3,new sprint
+dashboard-app,nextjs-typescript,spd,release,changelog_method,3,3,auto-tracked in RELEASES
+dashboard-app,nextjs-typescript,spd,release,version_history,3,3,RELEASES.md complete
+dashboard-app,nextjs-typescript,spd,release,test_results,3,3,in RELEASES entry
+dashboard-app,nextjs-typescript,spd,release,version_tracking,3,3,framework version range
+dashboard-app,nextjs-typescript,spd,release,next_version_ready,3,3,new heading in TASKS
+dashboard-app,nextjs-typescript,waterfall,handoff,knowledge_preserved,1,3,30-40% (stale docs)
+dashboard-app,nextjs-typescript,waterfall,handoff,decisions_preserved,1,3,in original plan
+dashboard-app,nextjs-typescript,waterfall,handoff,why_built_this_way,1,3,maybe in spec
+dashboard-app,nextjs-typescript,waterfall,handoff,version_history,1,3,partial
+dashboard-app,nextjs-typescript,waterfall,handoff,understanding_time,1,3,months
+dashboard-app,nextjs-typescript,agile,handoff,knowledge_preserved,0,3,10-20%
+dashboard-app,nextjs-typescript,agile,handoff,decisions_preserved,0,3,lost
+dashboard-app,nextjs-typescript,agile,handoff,why_built_this_way,0,3,unknown
+dashboard-app,nextjs-typescript,agile,handoff,version_history,0,3,none
+dashboard-app,nextjs-typescript,agile,handoff,understanding_time,0,3,months
+dashboard-app,nextjs-typescript,spd,handoff,knowledge_preserved,3,3,90%+ in files
+dashboard-app,nextjs-typescript,spd,handoff,decisions_preserved,3,3,PLANS.md Key Decisions
+dashboard-app,nextjs-typescript,spd,handoff,why_built_this_way,3,3,SPECS + PLANS
+dashboard-app,nextjs-typescript,spd,handoff,version_history,3,3,RELEASES.md
+dashboard-app,nextjs-typescript,spd,handoff,understanding_time,3,3,hours
+mobile-app,react-native,waterfall,start,spec_files,2,3,2 spec docs
+mobile-app,react-native,waterfall,start,can_code,0,3,blocked by specs
+mobile-app,react-native,waterfall,start,not_blocked,0,3,must complete specs first
+mobile-app,react-native,waterfall,start,context_saved,1,3,in spec docs only
+mobile-app,react-native,waterfall,start,install_effort,3,3,no install needed
+mobile-app,react-native,agile,start,spec_files,0,3,no specs
+mobile-app,react-native,agile,start,can_code,3,3,immediate
+mobile-app,react-native,agile,start,not_blocked,3,3,no blocking
+mobile-app,react-native,agile,start,context_saved,0,3,none
+mobile-app,react-native,agile,start,install_effort,2,3,need board tool
+mobile-app,react-native,spd,start,spec_files,3,3,6 agent files
+mobile-app,react-native,spd,start,can_code,3,3,immediate
+mobile-app,react-native,spd,start,not_blocked,3,3,no blocking
+mobile-app,react-native,spd,start,context_saved,3,3,AGENT_CONTEXT.md
+mobile-app,react-native,spd,start,install_effort,3,3,1 curl command
+mobile-app,react-native,waterfall,build,spec_current,1,3,spec drifting from code
+mobile-app,react-native,waterfall,build,tasks_tracked,0,3,not tracked in files
+mobile-app,react-native,waterfall,build,decisions_recorded,1,3,in original plan only
+mobile-app,react-native,waterfall,build,architecture_doc,1,3,stale plan doc
+mobile-app,react-native,waterfall,build,pipeline_sync,0,3,specs and code diverging
+mobile-app,react-native,agile,build,spec_current,0,3,no specs exist
+mobile-app,react-native,agile,build,tasks_tracked,2,3,in external board
+mobile-app,react-native,agile,build,decisions_recorded,0,3,in developer head
+mobile-app,react-native,agile,build,architecture_doc,0,3,none
+mobile-app,react-native,agile,build,pipeline_sync,0,3,no pipeline
+mobile-app,react-native,spd,build,spec_current,3,3,specs match code
+mobile-app,react-native,spd,build,tasks_tracked,3,3,in TASKS.md with checkboxes
+mobile-app,react-native,spd,build,decisions_recorded,3,3,in PLANS.md Key Decisions
+mobile-app,react-native,spd,build,architecture_doc,3,3,PLANS.md current
+mobile-app,react-native,spd,build,pipeline_sync,3,3,SPECS PLANS TASKS in sync
+mobile-app,react-native,waterfall,scope,change_speed,1,3,formal change request
+mobile-app,react-native,waterfall,scope,spec_accurate,1,3,spec update delayed
+mobile-app,react-native,waterfall,scope,reason_recorded,1,3,in change request doc
+mobile-app,react-native,waterfall,scope,not_blocked,0,3,blocked by approval
+mobile-app,react-native,waterfall,scope,descoped_tracked,0,3,not formally tracked
+mobile-app,react-native,agile,scope,change_speed,3,3,move card on board
+mobile-app,react-native,agile,scope,spec_accurate,0,3,no spec to update
+mobile-app,react-native,agile,scope,reason_recorded,0,3,not recorded
+mobile-app,react-native,agile,scope,not_blocked,3,3,no approval needed
+mobile-app,react-native,agile,scope,descoped_tracked,0,3,card deleted
+mobile-app,react-native,spd,scope,change_speed,3,3,immediate file update
+mobile-app,react-native,spd,scope,spec_accurate,3,3,SPECS + TASKS updated
+mobile-app,react-native,spd,scope,reason_recorded,3,3,PLANS.md Key Decisions
+mobile-app,react-native,spd,scope,not_blocked,3,3,no approval needed
+mobile-app,react-native,spd,scope,descoped_tracked,3,3,moved to Backlog
+mobile-app,react-native,waterfall,break,context_preserved,1,3,stale spec doc
+mobile-app,react-native,waterfall,break,resume_speed,1,3,30-60 min reading
+mobile-app,react-native,waterfall,break,decisions_available,1,3,in original plan
+mobile-app,react-native,waterfall,break,blockers_known,0,3,not tracked
+mobile-app,react-native,waterfall,break,next_task_known,0,3,must re-read everything
+mobile-app,react-native,agile,break,context_preserved,0,3,none
+mobile-app,react-native,agile,break,resume_speed,0,3,must ask team/re-explore
+mobile-app,react-native,agile,break,decisions_available,0,3,in developer head (gone)
+mobile-app,react-native,agile,break,blockers_known,0,3,not tracked
+mobile-app,react-native,agile,break,next_task_known,1,3,check board
+mobile-app,react-native,spd,break,context_preserved,3,3,AGENT_CONTEXT.md full
+mobile-app,react-native,spd,break,resume_speed,3,3,seconds — agent reads file
+mobile-app,react-native,spd,break,decisions_available,3,3,PLANS.md Key Decisions
+mobile-app,react-native,spd,break,blockers_known,3,3,in AGENT_CONTEXT
+mobile-app,react-native,spd,break,next_task_known,3,3,What's Next in AGENT_CONTEXT
+mobile-app,react-native,waterfall,switch,context_transferred,0,3,0%
+mobile-app,react-native,waterfall,switch,no_reexplain,0,3,must re-explain everything
+mobile-app,react-native,waterfall,switch,profile_loaded,0,3,no profile system
+mobile-app,react-native,waterfall,switch,continuity,0,3,zero
+mobile-app,react-native,waterfall,switch,multi_agent,0,3,not supported
+mobile-app,react-native,agile,switch,context_transferred,0,3,0%
+mobile-app,react-native,agile,switch,no_reexplain,0,3,must re-explain
+mobile-app,react-native,agile,switch,profile_loaded,0,3,no profile
+mobile-app,react-native,agile,switch,continuity,0,3,zero
+mobile-app,react-native,agile,switch,multi_agent,0,3,not supported
+mobile-app,react-native,spd,switch,context_transferred,3,3,100% via files
+mobile-app,react-native,spd,switch,no_reexplain,3,3,zero — files have everything
+mobile-app,react-native,spd,switch,profile_loaded,3,3,user-profile persists
+mobile-app,react-native,spd,switch,continuity,3,3,full
+mobile-app,react-native,spd,switch,multi_agent,3,3,5 agents supported
+mobile-app,react-native,waterfall,onboard,docs_available,1,3,stale spec doc
+mobile-app,react-native,waterfall,onboard,architecture_known,1,3,stale plan
+mobile-app,react-native,waterfall,onboard,decisions_accessible,1,3,in original plan
+mobile-app,react-native,waterfall,onboard,onboard_speed,1,3,weeks
+mobile-app,react-native,waterfall,onboard,personalized,0,3,no
+mobile-app,react-native,agile,onboard,docs_available,0,3,none
+mobile-app,react-native,agile,onboard,architecture_known,0,3,ask team
+mobile-app,react-native,agile,onboard,decisions_accessible,0,3,in people heads
+mobile-app,react-native,agile,onboard,onboard_speed,0,3,weeks
+mobile-app,react-native,agile,onboard,personalized,0,3,no
+mobile-app,react-native,spd,onboard,docs_available,3,3,SPECS + PLANS + TASKS
+mobile-app,react-native,spd,onboard,architecture_known,3,3,PLANS.md current
+mobile-app,react-native,spd,onboard,decisions_accessible,3,3,Key Decisions table
+mobile-app,react-native,spd,onboard,onboard_speed,3,3,hours
+mobile-app,react-native,spd,onboard,personalized,3,3,user-profile.md
+mobile-app,react-native,waterfall,release,changelog_method,1,3,manual writing
+mobile-app,react-native,waterfall,release,version_history,1,3,in docs somewhere
+mobile-app,react-native,waterfall,release,test_results,0,3,separate report
+mobile-app,react-native,waterfall,release,version_tracking,1,3,manual
+mobile-app,react-native,waterfall,release,next_version_ready,0,3,write new spec
+mobile-app,react-native,agile,release,changelog_method,0,3,from memory
+mobile-app,react-native,agile,release,version_history,0,3,none
+mobile-app,react-native,agile,release,test_results,1,3,in CI maybe
+mobile-app,react-native,agile,release,version_tracking,0,3,none
+mobile-app,react-native,agile,release,next_version_ready,2,3,new sprint
+mobile-app,react-native,spd,release,changelog_method,3,3,auto-tracked in RELEASES
+mobile-app,react-native,spd,release,version_history,3,3,RELEASES.md complete
+mobile-app,react-native,spd,release,test_results,3,3,in RELEASES entry
+mobile-app,react-native,spd,release,version_tracking,3,3,framework version range
+mobile-app,react-native,spd,release,next_version_ready,3,3,new heading in TASKS
+mobile-app,react-native,waterfall,handoff,knowledge_preserved,1,3,30-40% (stale docs)
+mobile-app,react-native,waterfall,handoff,decisions_preserved,1,3,in original plan
+mobile-app,react-native,waterfall,handoff,why_built_this_way,1,3,maybe in spec
+mobile-app,react-native,waterfall,handoff,version_history,1,3,partial
+mobile-app,react-native,waterfall,handoff,understanding_time,1,3,months
+mobile-app,react-native,agile,handoff,knowledge_preserved,0,3,10-20%
+mobile-app,react-native,agile,handoff,decisions_preserved,0,3,lost
+mobile-app,react-native,agile,handoff,why_built_this_way,0,3,unknown
+mobile-app,react-native,agile,handoff,version_history,0,3,none
+mobile-app,react-native,agile,handoff,understanding_time,0,3,months
+mobile-app,react-native,spd,handoff,knowledge_preserved,3,3,90%+ in files
+mobile-app,react-native,spd,handoff,decisions_preserved,3,3,PLANS.md Key Decisions
+mobile-app,react-native,spd,handoff,why_built_this_way,3,3,SPECS + PLANS
+mobile-app,react-native,spd,handoff,version_history,3,3,RELEASES.md
+mobile-app,react-native,spd,handoff,understanding_time,3,3,hours
+cli-tool,go,waterfall,start,spec_files,2,3,2 spec docs
+cli-tool,go,waterfall,start,can_code,0,3,blocked by specs
+cli-tool,go,waterfall,start,not_blocked,0,3,must complete specs first
+cli-tool,go,waterfall,start,context_saved,1,3,in spec docs only
+cli-tool,go,waterfall,start,install_effort,3,3,no install needed
+cli-tool,go,agile,start,spec_files,0,3,no specs
+cli-tool,go,agile,start,can_code,3,3,immediate
+cli-tool,go,agile,start,not_blocked,3,3,no blocking
+cli-tool,go,agile,start,context_saved,0,3,none
+cli-tool,go,agile,start,install_effort,2,3,need board tool
+cli-tool,go,spd,start,spec_files,3,3,6 agent files
+cli-tool,go,spd,start,can_code,3,3,immediate
+cli-tool,go,spd,start,not_blocked,3,3,no blocking
+cli-tool,go,spd,start,context_saved,3,3,AGENT_CONTEXT.md
+cli-tool,go,spd,start,install_effort,3,3,1 curl command
+cli-tool,go,waterfall,build,spec_current,1,3,spec drifting from code
+cli-tool,go,waterfall,build,tasks_tracked,0,3,not tracked in files
+cli-tool,go,waterfall,build,decisions_recorded,1,3,in original plan only
+cli-tool,go,waterfall,build,architecture_doc,1,3,stale plan doc
+cli-tool,go,waterfall,build,pipeline_sync,0,3,specs and code diverging
+cli-tool,go,agile,build,spec_current,0,3,no specs exist
+cli-tool,go,agile,build,tasks_tracked,2,3,in external board
+cli-tool,go,agile,build,decisions_recorded,0,3,in developer head
+cli-tool,go,agile,build,architecture_doc,0,3,none
+cli-tool,go,agile,build,pipeline_sync,0,3,no pipeline
+cli-tool,go,spd,build,spec_current,3,3,specs match code
+cli-tool,go,spd,build,tasks_tracked,3,3,in TASKS.md with checkboxes
+cli-tool,go,spd,build,decisions_recorded,3,3,in PLANS.md Key Decisions
+cli-tool,go,spd,build,architecture_doc,3,3,PLANS.md current
+cli-tool,go,spd,build,pipeline_sync,3,3,SPECS PLANS TASKS in sync
+cli-tool,go,waterfall,scope,change_speed,1,3,formal change request
+cli-tool,go,waterfall,scope,spec_accurate,1,3,spec update delayed
+cli-tool,go,waterfall,scope,reason_recorded,1,3,in change request doc
+cli-tool,go,waterfall,scope,not_blocked,0,3,blocked by approval
+cli-tool,go,waterfall,scope,descoped_tracked,0,3,not formally tracked
+cli-tool,go,agile,scope,change_speed,3,3,move card on board
+cli-tool,go,agile,scope,spec_accurate,0,3,no spec to update
+cli-tool,go,agile,scope,reason_recorded,0,3,not recorded
+cli-tool,go,agile,scope,not_blocked,3,3,no approval needed
+cli-tool,go,agile,scope,descoped_tracked,0,3,card deleted
+cli-tool,go,spd,scope,change_speed,3,3,immediate file update
+cli-tool,go,spd,scope,spec_accurate,3,3,SPECS + TASKS updated
+cli-tool,go,spd,scope,reason_recorded,3,3,PLANS.md Key Decisions
+cli-tool,go,spd,scope,not_blocked,3,3,no approval needed
+cli-tool,go,spd,scope,descoped_tracked,3,3,moved to Backlog
+cli-tool,go,waterfall,break,context_preserved,1,3,stale spec doc
+cli-tool,go,waterfall,break,resume_speed,1,3,30-60 min reading
+cli-tool,go,waterfall,break,decisions_available,1,3,in original plan
+cli-tool,go,waterfall,break,blockers_known,0,3,not tracked
+cli-tool,go,waterfall,break,next_task_known,0,3,must re-read everything
+cli-tool,go,agile,break,context_preserved,0,3,none
+cli-tool,go,agile,break,resume_speed,0,3,must ask team/re-explore
+cli-tool,go,agile,break,decisions_available,0,3,in developer head (gone)
+cli-tool,go,agile,break,blockers_known,0,3,not tracked
+cli-tool,go,agile,break,next_task_known,1,3,check board
+cli-tool,go,spd,break,context_preserved,3,3,AGENT_CONTEXT.md full
+cli-tool,go,spd,break,resume_speed,3,3,seconds — agent reads file
+cli-tool,go,spd,break,decisions_available,3,3,PLANS.md Key Decisions
+cli-tool,go,spd,break,blockers_known,3,3,in AGENT_CONTEXT
+cli-tool,go,spd,break,next_task_known,3,3,What's Next in AGENT_CONTEXT
+cli-tool,go,waterfall,switch,context_transferred,0,3,0%
+cli-tool,go,waterfall,switch,no_reexplain,0,3,must re-explain everything
+cli-tool,go,waterfall,switch,profile_loaded,0,3,no profile system
+cli-tool,go,waterfall,switch,continuity,0,3,zero
+cli-tool,go,waterfall,switch,multi_agent,0,3,not supported
+cli-tool,go,agile,switch,context_transferred,0,3,0%
+cli-tool,go,agile,switch,no_reexplain,0,3,must re-explain
+cli-tool,go,agile,switch,profile_loaded,0,3,no profile
+cli-tool,go,agile,switch,continuity,0,3,zero
+cli-tool,go,agile,switch,multi_agent,0,3,not supported
+cli-tool,go,spd,switch,context_transferred,3,3,100% via files
+cli-tool,go,spd,switch,no_reexplain,3,3,zero — files have everything
+cli-tool,go,spd,switch,profile_loaded,3,3,user-profile persists
+cli-tool,go,spd,switch,continuity,3,3,full
+cli-tool,go,spd,switch,multi_agent,3,3,5 agents supported
+cli-tool,go,waterfall,onboard,docs_available,1,3,stale spec doc
+cli-tool,go,waterfall,onboard,architecture_known,1,3,stale plan
+cli-tool,go,waterfall,onboard,decisions_accessible,1,3,in original plan
+cli-tool,go,waterfall,onboard,onboard_speed,1,3,weeks
+cli-tool,go,waterfall,onboard,personalized,0,3,no
+cli-tool,go,agile,onboard,docs_available,0,3,none
+cli-tool,go,agile,onboard,architecture_known,0,3,ask team
+cli-tool,go,agile,onboard,decisions_accessible,0,3,in people heads
+cli-tool,go,agile,onboard,onboard_speed,0,3,weeks
+cli-tool,go,agile,onboard,personalized,0,3,no
+cli-tool,go,spd,onboard,docs_available,3,3,SPECS + PLANS + TASKS
+cli-tool,go,spd,onboard,architecture_known,3,3,PLANS.md current
+cli-tool,go,spd,onboard,decisions_accessible,3,3,Key Decisions table
+cli-tool,go,spd,onboard,onboard_speed,3,3,hours
+cli-tool,go,spd,onboard,personalized,3,3,user-profile.md
+cli-tool,go,waterfall,release,changelog_method,1,3,manual writing
+cli-tool,go,waterfall,release,version_history,1,3,in docs somewhere
+cli-tool,go,waterfall,release,test_results,0,3,separate report
+cli-tool,go,waterfall,release,version_tracking,1,3,manual
+cli-tool,go,waterfall,release,next_version_ready,0,3,write new spec
+cli-tool,go,agile,release,changelog_method,0,3,from memory
+cli-tool,go,agile,release,version_history,0,3,none
+cli-tool,go,agile,release,test_results,1,3,in CI maybe
+cli-tool,go,agile,release,version_tracking,0,3,none
+cli-tool,go,agile,release,next_version_ready,2,3,new sprint
+cli-tool,go,spd,release,changelog_method,3,3,auto-tracked in RELEASES
+cli-tool,go,spd,release,version_history,3,3,RELEASES.md complete
+cli-tool,go,spd,release,test_results,3,3,in RELEASES entry
+cli-tool,go,spd,release,version_tracking,3,3,framework version range
+cli-tool,go,spd,release,next_version_ready,3,3,new heading in TASKS
+cli-tool,go,waterfall,handoff,knowledge_preserved,1,3,30-40% (stale docs)
+cli-tool,go,waterfall,handoff,decisions_preserved,1,3,in original plan
+cli-tool,go,waterfall,handoff,why_built_this_way,1,3,maybe in spec
+cli-tool,go,waterfall,handoff,version_history,1,3,partial
+cli-tool,go,waterfall,handoff,understanding_time,1,3,months
+cli-tool,go,agile,handoff,knowledge_preserved,0,3,10-20%
+cli-tool,go,agile,handoff,decisions_preserved,0,3,lost
+cli-tool,go,agile,handoff,why_built_this_way,0,3,unknown
+cli-tool,go,agile,handoff,version_history,0,3,none
+cli-tool,go,agile,handoff,understanding_time,0,3,months
+cli-tool,go,spd,handoff,knowledge_preserved,3,3,90%+ in files
+cli-tool,go,spd,handoff,decisions_preserved,3,3,PLANS.md Key Decisions
+cli-tool,go,spd,handoff,why_built_this_way,3,3,SPECS + PLANS
+cli-tool,go,spd,handoff,version_history,3,3,RELEASES.md
+cli-tool,go,spd,handoff,understanding_time,3,3,hours
+research-project,docs-only,waterfall,start,spec_files,2,3,2 spec docs
+research-project,docs-only,waterfall,start,can_code,0,3,blocked by specs
+research-project,docs-only,waterfall,start,not_blocked,0,3,must complete specs first
+research-project,docs-only,waterfall,start,context_saved,1,3,in spec docs only
+research-project,docs-only,waterfall,start,install_effort,3,3,no install needed
+research-project,docs-only,agile,start,spec_files,0,3,no specs
+research-project,docs-only,agile,start,can_code,3,3,immediate
+research-project,docs-only,agile,start,not_blocked,3,3,no blocking
+research-project,docs-only,agile,start,context_saved,0,3,none
+research-project,docs-only,agile,start,install_effort,2,3,need board tool
+research-project,docs-only,spd,start,spec_files,3,3,6 agent files
+research-project,docs-only,spd,start,can_code,3,3,immediate
+research-project,docs-only,spd,start,not_blocked,3,3,no blocking
+research-project,docs-only,spd,start,context_saved,3,3,AGENT_CONTEXT.md
+research-project,docs-only,spd,start,install_effort,3,3,1 curl command
+research-project,docs-only,waterfall,build,spec_current,1,3,spec drifting from code
+research-project,docs-only,waterfall,build,tasks_tracked,0,3,not tracked in files
+research-project,docs-only,waterfall,build,decisions_recorded,1,3,in original plan only
+research-project,docs-only,waterfall,build,architecture_doc,1,3,stale plan doc
+research-project,docs-only,waterfall,build,pipeline_sync,0,3,specs and code diverging
+research-project,docs-only,agile,build,spec_current,0,3,no specs exist
+research-project,docs-only,agile,build,tasks_tracked,2,3,in external board
+research-project,docs-only,agile,build,decisions_recorded,0,3,in developer head
+research-project,docs-only,agile,build,architecture_doc,0,3,none
+research-project,docs-only,agile,build,pipeline_sync,0,3,no pipeline
+research-project,docs-only,spd,build,spec_current,3,3,specs match code
+research-project,docs-only,spd,build,tasks_tracked,3,3,in TASKS.md with checkboxes
+research-project,docs-only,spd,build,decisions_recorded,3,3,in PLANS.md Key Decisions
+research-project,docs-only,spd,build,architecture_doc,3,3,PLANS.md current
+research-project,docs-only,spd,build,pipeline_sync,3,3,SPECS PLANS TASKS in sync
+research-project,docs-only,waterfall,scope,change_speed,1,3,formal change request
+research-project,docs-only,waterfall,scope,spec_accurate,1,3,spec update delayed
+research-project,docs-only,waterfall,scope,reason_recorded,1,3,in change request doc
+research-project,docs-only,waterfall,scope,not_blocked,0,3,blocked by approval
+research-project,docs-only,waterfall,scope,descoped_tracked,0,3,not formally tracked
+research-project,docs-only,agile,scope,change_speed,3,3,move card on board
+research-project,docs-only,agile,scope,spec_accurate,0,3,no spec to update
+research-project,docs-only,agile,scope,reason_recorded,0,3,not recorded
+research-project,docs-only,agile,scope,not_blocked,3,3,no approval needed
+research-project,docs-only,agile,scope,descoped_tracked,0,3,card deleted
+research-project,docs-only,spd,scope,change_speed,3,3,immediate file update
+research-project,docs-only,spd,scope,spec_accurate,3,3,SPECS + TASKS updated
+research-project,docs-only,spd,scope,reason_recorded,3,3,PLANS.md Key Decisions
+research-project,docs-only,spd,scope,not_blocked,3,3,no approval needed
+research-project,docs-only,spd,scope,descoped_tracked,3,3,moved to Backlog
+research-project,docs-only,waterfall,break,context_preserved,1,3,stale spec doc
+research-project,docs-only,waterfall,break,resume_speed,1,3,30-60 min reading
+research-project,docs-only,waterfall,break,decisions_available,1,3,in original plan
+research-project,docs-only,waterfall,break,blockers_known,0,3,not tracked
+research-project,docs-only,waterfall,break,next_task_known,0,3,must re-read everything
+research-project,docs-only,agile,break,context_preserved,0,3,none
+research-project,docs-only,agile,break,resume_speed,0,3,must ask team/re-explore
+research-project,docs-only,agile,break,decisions_available,0,3,in developer head (gone)
+research-project,docs-only,agile,break,blockers_known,0,3,not tracked
+research-project,docs-only,agile,break,next_task_known,1,3,check board
+research-project,docs-only,spd,break,context_preserved,3,3,AGENT_CONTEXT.md full
+research-project,docs-only,spd,break,resume_speed,3,3,seconds — agent reads file
+research-project,docs-only,spd,break,decisions_available,3,3,PLANS.md Key Decisions
+research-project,docs-only,spd,break,blockers_known,3,3,in AGENT_CONTEXT
+research-project,docs-only,spd,break,next_task_known,3,3,What's Next in AGENT_CONTEXT
+research-project,docs-only,waterfall,switch,context_transferred,0,3,0%
+research-project,docs-only,waterfall,switch,no_reexplain,0,3,must re-explain everything
+research-project,docs-only,waterfall,switch,profile_loaded,0,3,no profile system
+research-project,docs-only,waterfall,switch,continuity,0,3,zero
+research-project,docs-only,waterfall,switch,multi_agent,0,3,not supported
+research-project,docs-only,agile,switch,context_transferred,0,3,0%
+research-project,docs-only,agile,switch,no_reexplain,0,3,must re-explain
+research-project,docs-only,agile,switch,profile_loaded,0,3,no profile
+research-project,docs-only,agile,switch,continuity,0,3,zero
+research-project,docs-only,agile,switch,multi_agent,0,3,not supported
+research-project,docs-only,spd,switch,context_transferred,3,3,100% via files
+research-project,docs-only,spd,switch,no_reexplain,3,3,zero — files have everything
+research-project,docs-only,spd,switch,profile_loaded,3,3,user-profile persists
+research-project,docs-only,spd,switch,continuity,3,3,full
+research-project,docs-only,spd,switch,multi_agent,3,3,5 agents supported
+research-project,docs-only,waterfall,onboard,docs_available,1,3,stale spec doc
+research-project,docs-only,waterfall,onboard,architecture_known,1,3,stale plan
+research-project,docs-only,waterfall,onboard,decisions_accessible,1,3,in original plan
+research-project,docs-only,waterfall,onboard,onboard_speed,1,3,weeks
+research-project,docs-only,waterfall,onboard,personalized,0,3,no
+research-project,docs-only,agile,onboard,docs_available,0,3,none
+research-project,docs-only,agile,onboard,architecture_known,0,3,ask team
+research-project,docs-only,agile,onboard,decisions_accessible,0,3,in people heads
+research-project,docs-only,agile,onboard,onboard_speed,0,3,weeks
+research-project,docs-only,agile,onboard,personalized,0,3,no
+research-project,docs-only,spd,onboard,docs_available,3,3,SPECS + PLANS + TASKS
+research-project,docs-only,spd,onboard,architecture_known,3,3,PLANS.md current
+research-project,docs-only,spd,onboard,decisions_accessible,3,3,Key Decisions table
+research-project,docs-only,spd,onboard,onboard_speed,3,3,hours
+research-project,docs-only,spd,onboard,personalized,3,3,user-profile.md
+research-project,docs-only,waterfall,release,changelog_method,1,3,manual writing
+research-project,docs-only,waterfall,release,version_history,1,3,in docs somewhere
+research-project,docs-only,waterfall,release,test_results,0,3,separate report
+research-project,docs-only,waterfall,release,version_tracking,1,3,manual
+research-project,docs-only,waterfall,release,next_version_ready,0,3,write new spec
+research-project,docs-only,agile,release,changelog_method,0,3,from memory
+research-project,docs-only,agile,release,version_history,0,3,none
+research-project,docs-only,agile,release,test_results,1,3,in CI maybe
+research-project,docs-only,agile,release,version_tracking,0,3,none
+research-project,docs-only,agile,release,next_version_ready,2,3,new sprint
+research-project,docs-only,spd,release,changelog_method,3,3,auto-tracked in RELEASES
+research-project,docs-only,spd,release,version_history,3,3,RELEASES.md complete
+research-project,docs-only,spd,release,test_results,3,3,in RELEASES entry
+research-project,docs-only,spd,release,version_tracking,3,3,framework version range
+research-project,docs-only,spd,release,next_version_ready,3,3,new heading in TASKS
+research-project,docs-only,waterfall,handoff,knowledge_preserved,1,3,30-40% (stale docs)
+research-project,docs-only,waterfall,handoff,decisions_preserved,1,3,in original plan
+research-project,docs-only,waterfall,handoff,why_built_this_way,1,3,maybe in spec
+research-project,docs-only,waterfall,handoff,version_history,1,3,partial
+research-project,docs-only,waterfall,handoff,understanding_time,1,3,months
+research-project,docs-only,agile,handoff,knowledge_preserved,0,3,10-20%
+research-project,docs-only,agile,handoff,decisions_preserved,0,3,lost
+research-project,docs-only,agile,handoff,why_built_this_way,0,3,unknown
+research-project,docs-only,agile,handoff,version_history,0,3,none
+research-project,docs-only,agile,handoff,understanding_time,0,3,months
+research-project,docs-only,spd,handoff,knowledge_preserved,3,3,90%+ in files
+research-project,docs-only,spd,handoff,decisions_preserved,3,3,PLANS.md Key Decisions
+research-project,docs-only,spd,handoff,why_built_this_way,3,3,SPECS + PLANS
+research-project,docs-only,spd,handoff,version_history,3,3,RELEASES.md
+research-project,docs-only,spd,handoff,understanding_time,3,3,hours

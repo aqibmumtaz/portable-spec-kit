@@ -1,0 +1,8 @@
+{
+  "self": "https://testorg.atlassian.net/rest/api/3/user?accountId=abc123",
+  "accountId": "abc123",
+  "emailAddress": "test@company.com",
+  "displayName": "Test User",
+  "active": true,
+  "accountType": "atlassian"
+}

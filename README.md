@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.4.11-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.5.1-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-781%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-836%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — hidden until GitHub Actions billing is fixed (Settings → Billing → Payment information → add card, then delete Actions budget in Budgets and alerts, then re-enable workflow in Actions → CI → Enable workflow)
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -17,7 +17,7 @@
 <td width="25%" align="center"><strong>🪶 Lightweight</strong><br><sub>Single markdown file<br>Zero dependencies<br>Zero install</sub></td>
 <td width="25%" align="center"><strong>📦 Portable</strong><br><sub>One file → any repo<br>Works instantly<br>Symlinks for all agents</sub></td>
 <td width="25%" align="center"><strong>👤 Personalized</strong><br><sub>GitHub profile auto-detect<br>Adapts to your expertise<br>Tailored AI behavior</sub></td>
-<td width="25%" align="center"><strong>📋 Spec-Persistent</strong><br><sub>SPECS → PLANS → TASKS → RELEASES<br>Specs persist alongside your code<br>Your workflow, your choice</sub></td>
+<td width="25%" align="center"><strong>📋 Spec-Persistent</strong><br><sub>SPECS → Design → Architect → Build → Release<br>Every feature gets a design plan<br>Your workflow, your choice</sub></td>
 </tr>
 <tr>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
@@ -34,6 +34,30 @@
 </table>
 
 > **Inspired by GitHub's [spec-kit](https://github.com/github/spec-kit).** A different philosophy — specs persist alongside your code, maintained by the agent, never blocking. No CLI install, no Python dependency, no package managers. One file — zero friction.
+
+---
+
+## What's New in v0.5
+
+**Jira Cloud integration** — Sync completed tasks to Jira via `psk-jira-sync.sh` (REST API v3). Automatic hours tracking with Track A (agent session) + Track B (psk-tracker OS daemon). 10 new commands. Explicit-only — never syncs automatically.
+
+**Feature Design Pipeline** — Every feature gets a design plan in `agent/design/f{N}.md`. Three triggers: explicit ("plan F3"), auto on SPECS.md, implementation gate. Decisions auto-flow to PLANS.md ADL.
+
+**Auto Code Review** — Two-layer review (psk-code-review.sh + AI judgment) runs after every feature completion. Security anti-patterns, naming, TODO, secrets, architecture compliance. Advisory, not blocking.
+
+**Scope Drift Detection** — 5-dimension drift check (feature drift, requirement gaps, scope creep, architecture drift, plan staleness). Proactive at session start. psk-scope-check.sh with drift score.
+
+**Release pipeline expanded** — Now 9 steps (added code review + scope check). Release summary shows 11 rows.
+
+| What's new | Details |
+|------------|---------|
+| Jira sync (F63) | `psk-jira-sync.sh`, `psk-tracker.sh`, 10 commands, Track A/B hours, PID lock |
+| Feature Design (F64) | `agent/design/` directory, 3 triggers, plan template, ADL Plan Ref column |
+| Auto Code Review (F65) | `psk-code-review.sh` + AI layer, advisory, added to release pipeline Step 2 |
+| Scope Drift (F66) | `psk-scope-check.sh`, 5 dimensions, drift score, added to release pipeline Step 3 |
+| Agent directory structure | `agent/` root = markdown only, `design/` = plans, `scripts/` = bash |
+| Orchestration table | 37 items across 8 groups with trigger types (explicit/auto/continuous) |
+| **836 tests** (was 781) | Section 51: 28 Jira · Section 52: 15 code review · Section 53: 12 scope drift |
 
 ---
 
@@ -75,9 +99,9 @@ Traditional approaches force a choice: write specs first (waterfall) or skip the
 
 You choose how you work. The kit adapts:
 
-- **Want waterfall?** Follow SPECS → PLANS → TASKS → RELEASES sequentially. The kit supports it.
-- **Want agile?** Jump into coding. The agent tracks tasks and fills specs retroactively.
-- **Want a mix?** Write rough specs, start coding, refine as you go. The agent keeps everything in sync.
+- **Want waterfall?** Follow SPECS → Design Plans → Architecture → TASKS → RELEASES sequentially. The kit supports it.
+- **Want agile?** Jump into coding. The agent tracks tasks, fills specs and plans retroactively.
+- **Want a mix?** Write rough specs, start coding, refine as you go. The agent keeps everything in sync — plans included.
 - **Want to change mid-project?** Started agile but need specs now? The agent fills them from what's built.
 
 The only constant: **specs persist**. However you work, the agent ensures SPECS.md, PLANS.md, TASKS.md, and RELEASES.md always reflect the current state of your project.
@@ -269,16 +293,18 @@ The agent updates `agent/AGENT_CONTEXT.md` at three natural checkpoints — not 
 
 ## The Framework
 
-### The 6 Agent Files (auto-created in `agent/`)
+### The Agent Directory (auto-created in `agent/`)
 
-| File | Purpose | Updated When |
-|------|---------|-------------|
-| `AGENT.md` | Project rules, stack, brand, AI config | Stack or config changes |
-| `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers | After significant work, after commit, before push |
+| File / Dir | Purpose | Updated When |
+|------------|---------|-------------|
+| `AGENT.md` | Project rules, stack, brand, AI config, Jira config | Stack or config changes |
+| `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers, time tracking | After significant work, after commit, before push |
 | `SPECS.md` | Requirements, features, acceptance criteria | Feature added, scope change, feature marked done |
-| `PLANS.md` | Architecture, data model, phases, methodology & research | Architecture or tech decision changes |
+| `PLANS.md` | Architecture summary, ADL index (links to design files) | Architecture or tech decision changes |
 | `TASKS.md` | Version-based task tracking with checkboxes | Before every task (add) + after every task (mark done) |
 | `RELEASES.md` | Version changelog, test results, deployment log | When all tasks under a version are done |
+| `design/` | Per-feature design plans (`f{N}-name.md`) | Auto-created per feature in SPECS.md |
+| `scripts/` | All bash scripts (sync, Jira, tracker, installer) | Created during setup or on first use |
 
 ### Project Structure
 
@@ -294,12 +320,17 @@ your-project/
 ├── README.md               ← Auto-created (standard structure)
 │
 ├── agent/                  ← Auto-created (project management)
-│   ├── AGENT.md
-│   ├── AGENT_CONTEXT.md
-│   ├── SPECS.md
-│   ├── PLANS.md
-│   ├── TASKS.md
-│   └── RELEASES.md
+│   ├── AGENT.md            ← Project rules, stack, config
+│   ├── AGENT_CONTEXT.md    ← Living state (updated every session)
+│   ├── SPECS.md            ← Features + requirements
+│   ├── PLANS.md            ← Architecture + ADL index
+│   ├── TASKS.md            ← Task tracking
+│   ├── RELEASES.md         ← Version changelog
+│   ├── design/             ← Per-feature design plans
+│   │   └── f{N}-name.md
+│   └── scripts/            ← All bash scripts
+│       ├── sync.sh
+│       └── psk-jira-sync.sh  (+ tracker scripts if installed)
 │
 ├── src/                    ← Your code
 ├── tests/
@@ -315,9 +346,19 @@ your-project/
 ### The Pipeline
 
 ```
-SPECS.md  →  PLANS.md  →  TASKS.md  →  [build + test]  →  RELEASES.md
- What        How           Track          Execute             Record
+SPECS.md  →  agent/design/  →  PLANS.md  →  TASKS.md  →  RELEASES.md
+ Define       Design            Architect     Build         Release
 ```
+
+| Step | File | What it does |
+|------|------|-------------|
+| **Define** | `SPECS.md` | What to build — features, requirements, acceptance criteria |
+| **Design** | `agent/design/f{N}.md` | How to build each feature — approach, decisions, edge cases, scope exclusions |
+| **Architect** | `PLANS.md` | Project-wide architecture — stack, data model, ADL index (links back to design files) |
+| **Build** | `TASKS.md` | Execute — track work, assign owners, mark done |
+| **Release** | `RELEASES.md` | Record what shipped — version, changes, test results |
+
+Every decision traceable backwards: Release → Task → Design → Feature → Requirement.
 
 Enter at any point. Start from specs, start from code, or start mid-project — the agent fills whatever's missing.
 
@@ -328,33 +369,65 @@ Enter at any point. Start from specs, start from code, or start mid-project — 
 | `agent/AGENT.md` | Stack changes, new project rules, config changes (port, API provider, brand) |
 | `agent/AGENT_CONTEXT.md` | After significant work, after committing, before any push |
 | `agent/SPECS.md` | New feature added, scope change (DROP/ADD/MODIFY/REPLACE), feature marked done (fill Tests column) |
-| `agent/PLANS.md` | Architecture changes — new tech chosen, data model updated, API endpoints added/modified |
+| `agent/PLANS.md` | Architecture changes — new tech chosen, data model updated, API endpoints added/modified. ADL updated when feature plans record decisions |
+| `agent/design/f{N}.md` | Auto-created when feature added to SPECS.md. Filled during design. Marked "Done" when feature complete |
 | `agent/TASKS.md` | Before every task (add it first), after every task (mark [x] when done) |
 | `agent/RELEASES.md` | When all tasks under a version heading are [x] — entry added immediately, same session |
 
-### Core Commands
+### Spec Kit Orchestration
 
-**Development:**
-| Command | What happens |
-|---------|-------------|
-| `"build X"` / `"add feature X"` | Added to TASKS.md first → built → tested → marked done |
-| `"fix X"` | Added to TASKS.md → fixed → marked done |
-| `"what's the status?"` | Reads TASKS.md + AGENT_CONTEXT.md → full progress report |
-| `"keep noted"` / `"note this"` | Saved to correct agent/ file — never lost |
+Everything the agent does — automatically or on command. All natural language, no slash commands needed.
 
-**Commands (explicit only — the agent never runs these automatically):**
-
-| Command | Flow |
-|---------|------|
-| `"init"` | Deep scan → create/fill all agent/ files from codebase → optional changes checklist (CI workflow, .env.example, README) |
-| `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check → show delta |
-| `"run tests"` | Run all 3 suites to completion — show failure summary + fix plan if any fail. No commits, no version changes. |
-| `"prepare release"` / `"update release"` | Steps 1–7: Tests · Flow docs · Counts & ARD · Version bump · PDFs · RELEASES.md · CHANGELOG.md → **show summary. No commit. No push.** |
-| `"refresh release"` | Same steps 1–7 — **no version bump** (step 4 skipped) → show summary. No commit. No push. |
-| `"prepare release and push"` / `"prepare release, commit and push"` | Steps 1–7 → commit → push via sync.sh → show summary (GitHub ✅, Tag ✅). No confirmation between steps. |
-| `"refresh release and push"` / `"refresh release, commit and push"` | Same as above but no version bump. |
-| `"commit"` | Stages files, commits with descriptive message + `Co-Authored-By` |
-| `"push"` | Pre-push gate → runs all 3 suites if not run this session → push via `bash agent/sync.sh` |
+| Category | Command | What happens | Trigger |
+|----------|---------|-------------|---------|
+| | | **Setup & Context** | |
+| **Project Setup** | `"init"` | Deep scan → create/fill all agent/ files → optional changes checklist | Explicit |
+| | `"reinit"` | Re-scan → sync stale agent files → SPECS/PLANS staleness check | Explicit |
+| | | **Define & Design** | |
+| **Development** | `"build X"` / `"add feature X"` | Added to TASKS.md → built → tested → marked done | Explicit |
+| | `"fix X"` | Added to TASKS.md → fixed → marked done | Explicit |
+| | `"what's the status?"` | Reads TASKS.md + AGENT_CONTEXT.md → full progress report | Explicit |
+| | `"keep noted"` / `"note this"` | Saved to correct agent/ file — never lost | Explicit |
+| **Feature Design** | `"plan F3"` / `"design F3"` | Creates/opens `agent/design/f3-name.md` — fills from conversation | Explicit |
+| | *(auto)* Feature added to SPECS.md | Design stub auto-created in `agent/design/f{N}-name.md` | Auto |
+| | `"implement F3"` / `"start F3"` | **Gate:** checks design exists → if not, creates + fills first → then builds | Explicit + Gate |
+| **Test Generation** | *(auto)* Acceptance criteria written | Test stubs generated from SPECS.md criteria (stack-aware) | Auto |
+| | | **Continuous (always running)** | |
+| **Task Tracking** | *(auto)* Every user message | No-slip rule: scan for tasks, add to TASKS.md, never let anything slip | Continuous |
+| **Time Tracking** | *(auto)* Every agent response | Track A (session time) updated per-response in AGENT_CONTEXT.md | Continuous |
+| **Context Updates** | *(auto)* After significant work | AGENT_CONTEXT.md updated: version, phase, what's done, what's next | Auto |
+| **Spec Staleness** | *(auto)* On detection | If TASKS.md [x] count > SPECS.md features → update SPECS.md | Auto |
+| **ADL Sync** | *(auto)* Design decisions made | Decisions from agent/design/ auto-flow to PLANS.md ADL with Plan Ref | Auto |
+| **Rename Check** | *(auto)* During rename/refactor | `grep -r` entire repo for old term → every instance updated | Auto |
+| | | **Quality Gates** | |
+| **Code Review** | *(auto)* Feature completed | Two-layer review (script + AI) before marking [x] — advisory | Auto |
+| | `"review code"` / `"code review"` | Run review manually on current state | Explicit |
+| **Scope Check** | *(auto)* Session start | Quick drift check (feature drift + plan staleness) | Auto |
+| | `"check scope"` / `"scope check"` | Full 5-dimension drift check on demand | Explicit |
+| | | **Progress & Team** | |
+| **Dashboard** | `"progress"` / `"dashboard"` / `"burndown"` | Progress dashboard: overall · by version · current tasks · blockers | Explicit |
+| **Team Tasks** | `"my tasks"` / `"what do I have"` | Per-user task view filtered by @username | Explicit |
+| | `"assign [task] to @username"` | Adds @username tag to task in TASKS.md | Explicit |
+| | `"unassign @username from [task]"` | Removes @username tag from task | Explicit |
+| | | **Release Pipeline** | |
+| **Testing** | `"run tests"` | Run all suites → show failure summary + fix plan. No commits. | Explicit |
+| **Release** | `"prepare release"` | 9-step pipeline: tests → code review → scope check → flows → counts → version bump → PDFs → RELEASES → CHANGELOG. **No commit. No push.** | Explicit |
+| | `"refresh release"` | Same as prepare release — **no version bump** | Explicit |
+| | `"prepare release and push"` | Full pipeline → commit → push → GitHub release. One command. | Explicit |
+| | `"refresh release and push"` | Same as above but no version bump | Explicit |
+| **Git** | `"commit"` | Stage + commit with descriptive message + `Co-Authored-By` | Explicit |
+| | `"push"` | Pre-push gate (runs tests if changes since last release) → push | Explicit |
+| | | **Jira Integration (optional)** | |
+| **Jira Sync** | `"sync to jira"` | Full 8-step sync: hours confirmation → push to Jira Cloud | Explicit |
+| | `"jira status"` | Show tasks pending sync + hours (no API calls, read-only) | Explicit |
+| | `"jira setup"` | Test connection, map issue types, configure mappings | Explicit |
+| | `"link jira PROJ-123"` | Tag active task with Jira ticket ID | Explicit |
+| | `"unlink jira from [task]"` | Remove Jira ticket tag from task | Explicit |
+| **Time Tracking** | `"install tracker"` | Install psk-tracker OS daemon + register project | Explicit |
+| | `"uninstall tracker"` | Stop daemon, remove OS service (logs preserved) | Explicit |
+| | `"tracker status"` | Show daemon running/stopped, last event, today's minutes | Explicit |
+| | `"start working on [task]"` | Explicit task-start marker — improves time attribution | Explicit |
+| | `"hours summary"` | Show Track A + Track B breakdown for current session | Explicit |
 
 **Every `prepare release` / `refresh release` ends with this summary:**
 ```
@@ -364,16 +437,18 @@ Enter at any point. Start from specs, start from code, or start mid-project — 
   1. Tests        Framework: X passed ✅  Benchmarking: X passed ✅
                   R→F→T: X/X features release-ready ✅
                   Total: X/X passing ✅
-  2. Flows        docs/work-flows/ current ✅
-  3. Counts       README, ARD, RELEASES, CHANGELOG ✅
-  4. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
+  2. Code Review  X passed, Y issues (advisory) ✅/⚠
+  3. Scope Check  drift score: N ✅/⚠
+  4. Flows        docs/work-flows/ current ✅
+  5. Counts       README, ARD, RELEASES, CHANGELOG ✅
+  6. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
                   unchanged — v0.N.x —             (refresh only)
-  5. PDFs         Technical_Overview.pdf ✅  Guide.pdf ✅
-  6. RELEASES.md  updated ✅
-  7. CHANGELOG.md updated ✅
-  8. GitHub       ⏳ pending — run: commit and push   (prepare release)
+  7. PDFs         all ard/*.pdf regenerated ✅
+  8. RELEASES.md  updated ✅
+  9. CHANGELOG.md updated ✅
+  10. GitHub      ⏳ pending — run: commit and push   (prepare release)
                   published ✅                        (prepare release and push)
-  9. Tag          ⏳ pending — run: commit and push   (prepare release)
+  11. Tag         ⏳ pending — run: commit and push   (prepare release)
                   updated ✅                          (prepare release and push)
 ══════════════════════════════════════════════
 ```
@@ -411,6 +486,9 @@ Content is never lost. Existing files are reorganized, not overwritten.
 | **Security** | .env handling, secret management, code security practices |
 | **Versioning** | Two-level: framework patches + release milestones, auto-restructure on pull |
 | **Task Tracking** | Tasks-first workflow, version-based organization (v0.x headings + backlog) |
+| **Feature Planning** | Every feature gets a plan (`agent/design/f{N}.md`), 3 triggers (explicit/auto/gate), decisions auto-flow to ADL, R→F→Plan→ADR→T traceability |
+| **Auto Code Review** | Two-layer review (psk-code-review.sh + AI judgment) after feature completion — security, naming, TODO, secrets, architecture compliance; advisory not blocking |
+| **Scope Drift Detection** | 5 dimensions (feature drift, requirement gaps, scope creep, architecture drift, plan staleness), drift score, proactive at session start |
 | **Testing** | Coverage targets, edge case checklist, mock rules, self-validation |
 | **Spec-Based Test Generation** | SPECS origin detection (forward vs retroactive), per-feature acceptance criteria, stub generation, stack-aware formats, stub completion gate |
 | **Code Quality** | Review checklist, naming conventions, deployment checklist |
@@ -662,6 +740,8 @@ Detailed step-by-step diagrams for every work flow:
 | 12 | **[Project Lifecycle](docs/work-flows/12-project-lifecycle.md)** | Full lifecycle — client requirements through handoff |
 | 13 | **[Release Workflow](docs/work-flows/13-release-workflow.md)** | prepare release — tests, flow docs, counts, version bump, PDFs, RELEASES.md, CHANGELOG.md + summary (no commit/push) |
 | 14 | **[Team Collaboration](docs/work-flows/14-team-collaboration.md)** | Multi-agent task tracking, progress dashboard, @username ownership |
+| 15 | **[Jira Integration](docs/work-flows/15-jira-integration.md)** | 8-step sync flow — credentials, hours reconciliation, hierarchy creation, confirmation UI |
+| 16 | **[Feature Design](docs/work-flows/16-feature-design.md)** | Per-feature design plans, 3 triggers, ADL integration, R→F→Plan→ADR→T traceability |
 
 ---
 
@@ -669,7 +749,7 @@ Detailed step-by-step diagrams for every work flow:
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
-- **[Work Flows](docs/work-flows/)** — 14 step-by-step flow diagrams
+- **[Work Flows](docs/work-flows/)** — 16 step-by-step flow diagrams
 - **SPD Concept Paper** — Methodology paper with evaluation *(coming soon)*
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README

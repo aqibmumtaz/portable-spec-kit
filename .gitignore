@@ -8,3 +8,8 @@ __pycache__/
 cache/
 logs/
 *.log
+
+# Jira sync transient files (never commit)
+agent/.jira-sync.lock
+agent/.agent-context.lock
+agent/SYNC_RESULT.json
