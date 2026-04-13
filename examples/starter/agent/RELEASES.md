@@ -4,7 +4,7 @@
 # RELEASES.md — Starter
 
 ## v0.1 — Setup (Date)
-Kit: v0.5.3
+Kit: v0.5.5
 
 ### Summary
 Project scaffolded with Portable Spec Kit. Ready for development.

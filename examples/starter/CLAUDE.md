@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.5.3 -->
+<!-- Framework Version: v0.5.5 -->
 
-**Version:** v0.5.3 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 848 (703 framework + 145 benchmarking)
+**Version:** v0.5.5 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 875 (730 framework + 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -34,7 +34,7 @@ This file is the **Portable Spec Kit** framework. It is distributed as `portable
 
 On first session, the agent also auto-creates:
 - `WORKSPACE_CONTEXT.md` — workspace environment and project listing
-- `agent/` directory in each project — with 6 management files (AGENT.md, AGENT_CONTEXT.md, SPECS.md, PLANS.md, TASKS.md, RELEASES.md)
+- `agent/` directory in each project — with 9 management files (REQS.md, SPECS.md, PLANS.md, RESEARCH.md, DESIGN.md, TASKS.md, RELEASES.md, AGENT.md, AGENT_CONTEXT.md)
 - `README.md` — structured project overview
 
 **If the user asks any question about the kit — installation, features, setup, examples, changelog, methodology, or how anything works:**
@@ -536,7 +536,7 @@ Explicit trigger for full project scan and agent file setup. Handles any kit sta
 3. If already Mapped → show: "Project already initialized (vX.X.X). Running full re-scan to refresh agent files." then continue.
 4. Announce: "Scanning project — stack, source files, config, dependencies..."
 5. **Deep scan** — read all config files (`package.json`, `requirements.txt`, `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tsconfig.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `*.xcodeproj`, `pubspec.yaml`, `README.md`) + all top-level dirs + sample `src/` files. Build a complete picture before touching anything.
-6. Create `agent/` dir + all 6 agent files if missing — fill every field from scan. Never leave TBD if the answer is visible in the code.
+6. Create `agent/` dir + all 9 agent files if missing — fill every field from scan. Never leave TBD if the answer is visible in the code.
 7. Create `README.md`, `.gitignore`, `.env.example` if missing.
 8. Present scan summary + optional changes checklist:
    ```
@@ -806,7 +806,7 @@ Kit: v0.2.1 — v0.2.7
   - Brand colors or fonts changed → update Brand section
   - AI provider or model changed → update AI Config
   - Dev server port changed → update port
-- **Sync rule:** When completing a feature, update all 5 pipeline files in the same session: SPECS.md, `agent/design/f{N}.md` (mark Current State = Done), PLANS.md (ADL if decisions were made), TASKS.md, and RELEASES.md (if version completed). Don't leave them out of sync.
+- **Sync rule:** When completing a feature, update **all pipeline + support files** in the same session: REQS.md (requirement status), SPECS.md (feature status + Completed date), PLANS.md (ADL if decisions), DESIGN.md + `design/f{N}.md` (mark Done), TASKS.md (mark [x] with date), RELEASES.md (if version complete) + RESEARCH.md (index if research done). Don't leave them out of sync.
 
 ### Testing (MANDATORY)
 - **Always think about edge cases** when creating test cases — empty data, max data, boundary values, null/undefined, single item vs many
@@ -1109,10 +1109,14 @@ In both cases, **always confirm with the user** before creating or selecting an 
 ### Context Management
 **On every session start — read in this order:**
 1. User profile (workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt behavior to preferences
-2. `agent/AGENT.md` — project-specific rules and stack
-3. `agent/AGENT_CONTEXT.md` — current project state
-4. `agent/TASKS.md` — pending and completed tasks
-5. `agent/PLANS.md` — architecture decisions
+2. `agent/AGENT.md` — project config, stack, rules
+3. `agent/AGENT_CONTEXT.md` — project state (what's done, what's next)
+4. `agent/REQS.md` — requirements
+5. `agent/SPECS.md` — features
+6. `agent/PLANS.md` — architecture
+7. `agent/RESEARCH.md` — active research questions
+8. `agent/DESIGN.md` — design overview
+9. `agent/TASKS.md` — current tasks
 
 **Two-tier update rule:**
 
@@ -1316,7 +1320,7 @@ After profile setup + project scan completes on the VERY FIRST session, the agen
 ═══════════════════════════════════════════════
 
 Step 1 of 4: YOUR PROJECT
-  Your project is set up with 6 management files in agent/.
+  Your project is set up with 9 management files in agent/.
   The kit tracks your specs, plans, tasks, and releases automatically.
   → Say "what's the status?" anytime to see where you are.
   (Enter to continue)
@@ -1457,7 +1461,7 @@ Check the project's scan state and display the status once when the agent first 
 
    Detected: Next.js 14 + TypeScript + Supabase · Node 20 · Port 3000
 
-   [x] Create agent/ directory with 6 management files (pre-filled from scan)
+   [x] Create agent/ directory with 9 management files (pre-filled from scan)
    [x] Create WORKSPACE_CONTEXT.md
    [ ] Rename ARD/ → ard/ (to match kit convention)
    [ ] Create .env.example from existing .env
@@ -1467,7 +1471,7 @@ Check the project's scan state and display the status once when the agent first 
    "Which changes would you like? Select all, some, or none."
    ```
 7. **Respect user's choices** — if user says "don't restructure README" or "keep my directory names", follow that
-8. **Only create agent/ files by default** — the 6 management files are always safe to add
+8. **Only create agent/ files by default** — the 9 management files are always safe to add
 9. **Never rename, move, or delete existing files** without explicit user approval
 
 **Scan edge cases:**
@@ -1672,16 +1676,21 @@ App/
 
 ### File Purposes
 
-| File | Purpose | When Updated |
-|------|---------|:---:|
-| `agent/AGENT.md` | Project-specific AI instructions — stack, tools, project rules | Setup, when stack/config changes |
-| `agent/AGENT_CONTEXT.md` | Living state — what's done, what's next, key decisions, blockers | **Every session + after every implementation** |
-| `agent/SPECS.md` | Requirements, features, acceptance criteria | Before dev + **when scope changes** |
-| `agent/PLANS.md` | Architecture summary, ADL, stack decisions — links to plans/ for detail | Before dev + **when architecture evolves** |
-| `agent/design/` | Per-feature plans (f{N}-feature-name.md) — every feature gets one. Captures design, decisions, edge cases. Decisions auto-flow to PLANS.md ADL | **When feature added to SPECS.md** (stub) + during design |
-| `agent/TASKS.md` | Task board — `[ ]` todo, `[x]` done | **Before and after every task** |
-| `agent/RELEASES.md` | Version changelog, deployments, test results | End of version release |
-| `ard/` | Generated docs — technical overview (HTML+PDF), presentation (HTML+PDF) | End of each version release |
+| File / Dir | Purpose | When Updated |
+|------------|---------|:---:|
+| **Pipeline files** | | |
+| `agent/REQS.md` + `reqs/` | Business requirements in client language. Raw input preserved in reqs/ | First — when requirements gathered + **when scope changes** |
+| `agent/SPECS.md` + `specs/` | Features mapped from requirements (R→F). Acceptance criteria | Before dev + **when scope changes** |
+| `agent/PLANS.md` + `plans/` | System architecture, tech stack, ADL, technical requirements | Before dev + **when architecture evolves** |
+| `agent/DESIGN.md` + `design/` | Design overview + per-feature designs. Cross-cutting patterns | **When features designed** (auto/explicit/gate) |
+| `agent/TASKS.md` + `tasks/` | Task tracking by version. Sprint plans when complex | **Before and after every task** |
+| `agent/RELEASES.md` + `releases/` | Published release notes + full traceability summaries | End of version release |
+| **Support files** | | |
+| `agent/RESEARCH.md` + `research/` | Research index across all stages. Per-topic research files | When decisions need data — any stage |
+| `agent/AGENT.md` | Project rules, stack, config, Definition of Done | Setup, when stack/config changes |
+| `agent/AGENT_CONTEXT.md` | Living state — what's done, what's next, blockers | **Every session + after significant work** |
+| **Docs** | | |
+| `ard/` | Generated docs — technical overview (HTML+PDF) | End of each version release |
 
 ### README.md Template
 
@@ -1754,12 +1763,24 @@ Deployment instructions (added at release time).
 
 ### Development Flow
 
+**6 pipeline stages:**
 ```
-SPECS.md (define)  →  agent/design/ (design)  →  PLANS.md (architect)  →  TASKS.md (build)  →  RELEASES.md (release)
-   What to build      Per-feature design plan    ADL + architecture       Track & execute          Log what shipped
+REQS.md → SPECS.md → PLANS.md → DESIGN.md → TASKS.md → RELEASES.md
+require    specify    architect    design      build      release
+  │          │          │           │           │          │
+reqs/      specs/    plans/      design/     tasks/    releases/
 ```
 
-**Full traceability chain:** `R (requirement) → F (feature) → Plan (design + decisions) → ADR (indexed) → T (tests)`
+**3 support files (feed into all stages):**
+```
+RESEARCH.md + research/   ← investigation — feeds into ANY stage when decisions need data
+AGENT.md                  ← project config, stack, rules, Definition of Done
+AGENT_CONTEXT.md          ← living state — what's done, what's next, blockers
+```
+
+**Full traceability chain:** `Raw Input (reqs/) → R (REQS.md) → F (SPECS.md) → Research → Design (DESIGN.md + design/) → ADR (PLANS.md) → T (tests/) → Release (RELEASES.md + releases/)`
+
+**Feedback loops:** Pipeline is logical order, not a gate. Iteration expected — design reveals new requirement → back to REQS.md → flow forward. When iterating backwards, update the upstream file FIRST, then cascade changes forward.
 
 ### Agent Guidance Behavior
 
@@ -2027,7 +2048,7 @@ If `@username` tags are present in TASKS.md, add a BY CONTRIBUTOR section:
 
 ### Persistent Memory Architecture
 
-The 6 agent files (`AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANS.md`, `TASKS.md`, `RELEASES.md`) collectively form the project's **Persistent Memory** — not merely documentation. Any AI agent that reads them is instantly briefed: no verbal handoff, no onboarding call, no stale wiki.
+The 9 agent files (`REQS.md`, `SPECS.md`, `PLANS.md`, `RESEARCH.md`, `DESIGN.md`, `TASKS.md`, `RELEASES.md`, `AGENT.md`, `AGENT_CONTEXT.md`) collectively form the project's **Persistent Memory** — not merely documentation. Any AI agent that reads them is instantly briefed: no verbal handoff, no onboarding call, no stale wiki.
 
 **Properties of Persistent Memory:**
 - **Durable** — persists in git across time; survives session ends, machine changes, team turnover
@@ -2161,10 +2182,15 @@ Use these exact templates when creating `agent/` files. Replace `<Project Name>`
 `<path>`
 
 ## On Every Session Start:
-1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences (adapt behavior)
-2. Read `agent/AGENT_CONTEXT.md` — project state
-3. Read `agent/TASKS.md` — current tasks
-4. Read `agent/PLANS.md` — architecture
+1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences
+2. Read `agent/AGENT.md` — project config, stack, rules
+3. Read `agent/AGENT_CONTEXT.md` — project state
+4. Read `agent/REQS.md` — requirements
+5. Read `agent/SPECS.md` — features
+6. Read `agent/PLANS.md` — architecture
+7. Read `agent/RESEARCH.md` — active research questions
+8. Read `agent/DESIGN.md` — design overview
+9. Read `agent/TASKS.md` — current tasks
 
 ## Update AGENT_CONTEXT.md When:
 1. After completing a significant batch of work (feature built, tests passing)
@@ -2259,27 +2285,60 @@ None
 - **Summary:** Project initialized
 ```
 
+**agent/REQS.md:**
+```markdown
+# REQS.md — <Project Name>
+
+> **Purpose:** Business requirements in client/stakeholder language.
+> Raw input preserved in reqs/. Technical requirements go in PLANS.md.
+> **Role:** First pipeline stage — WHAT is needed.
+
+## Requirements
+| # | Requirement | Type | Priority | Source | Status | Created | Approved by | Approved date | Depends | Research | Raw Ref |
+|---|-------------|------|----------|--------|--------|---------|-------------|---------------|---------|----------|---------|
+
+<!-- Type: Functional / Non-functional / Constraint -->
+<!-- Status: Draft → Approved → Implemented → Verified -->
+<!-- Created: when requirement first captured -->
+<!-- Approved by: user, client name, "team" -->
+<!-- Depends: R{N} or — -->
+<!-- Research: link to research/reqs/r{N}.md or — -->
+
+## Assumptions
+| # | Assumption | Impact if wrong | Verified | Verified date |
+|---|-----------|----------------|----------|--------------|
+
+## Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
+<!-- Type: mutual / user-override / user-direct / agent-recommended / constraint-driven -->
+
+## Scope Changes
+| Date | Type | Req | Description | Reason |
+|------|------|-----|-------------|--------|
+<!-- Type: DROP / ADD / MODIFY / REPLACE -->
+```
+
 **agent/SPECS.md:**
 ```markdown
 # SPECS.md — <Project Name>
 
-> **Purpose:** What to build — requirements, features, acceptance criteria.
-> **Role:** Defined before dev, refined during development.
+> **Purpose:** Features mapped from requirements. R→F traceability.
+> Requirements live in REQS.md.
+> **Role:** Second pipeline stage — WHAT to build.
 
 ## Overview
 Brief description of what this project does and who it's for.
 
-## Requirements
-- Requirement 1
-- Requirement 2
-
 ## Features
-| # | Feature | Req | Priority | Status | Tests |
-|---|---------|-----|----------|--------|-------|
-| F1 | | R1 | High | [ ] | — |
-| F2 | | R2 | Medium | [x] | tests/feature.test.js |
+| # | Feature | Req | Priority | Size | Depends | Status | Completed | Design | Tests |
+|---|---------|-----|----------|------|---------|--------|-----------|--------|-------|
+| F1 | | R1 | High | M | — | [ ] | — | — | — |
 
-<!-- Tests column: leave — when pending. Add test file path when done: tests/auth.test.js or tests/auth.test.js::login_flow -->
+<!-- Size: S / M / L -->
+<!-- Depends: F{N} or — -->
+<!-- Completed: YYYY-MM-DD when [x] -->
+<!-- Design: link to design/f{N}.md or — -->
 
 ## Scope
 - **In scope:**
@@ -2292,102 +2351,135 @@ Brief description of what this project does and who it's for.
 - [ ] Criterion 2
 - [ ] Edge case: what happens when X is empty
 
-### F2 — Another Feature
-- [ ] Criterion 1
+## Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
 ```
 
 **agent/PLANS.md:**
 ```markdown
 # PLANS.md — <Project Name>
 
-> **Purpose:** How to build it — architecture, phases, data model, tech decisions, methodology & research.
-> **Role:** Defined before dev starts. Updated when architecture changes or new research informs decisions.
+> **Purpose:** System-level architecture. Tech stack. Technical requirements. ADL.
+> **Role:** Third pipeline stage — HOW the system is built (macro).
 
 ## Stack
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| | | |
+
+## Technical Requirements
+> Technical decisions from client input. Each researched before committing.
+
+| # | Requirement | Source | Req Ref | Status | Research |
+|---|-------------|--------|---------|--------|----------|
+<!-- Req Ref: links back to REQS.md R{N}. Status: Stated → Researched → Confirmed / Overridden -->
 
 ## Architecture
 High-level system design.
 
-## Directory Structure
-\`\`\`
-src/
-├── ...
-\`\`\`
-
 ## Data Model
 | Table/Type | Key Fields |
 |------------|-----------|
-| | |
 
 ## API Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| | | |
 
 ## Security
 - Key security considerations for this project
 
-## Build Phases
-### Phase 1: Foundation
-1. Task 1
-2. Task 2
-
-### Phase 2: Features
-1. Task 1
-2. Task 2
-
-## Plans Directory
-
-> Per-feature design plans. Every feature in SPECS.md gets a plan here. Created automatically when features are added.
-
-| Plan | Feature | Status | File |
-|------|---------|--------|------|
-<!-- | F1 — Feature Name | Brief description | Plan only / In progress / Done | [agent/design/f1-feature-name.md](design/f1-feature-name.md) | -->
+## Research
+> Full research index lives in RESEARCH.md.
+> See [RESEARCH.md](RESEARCH.md) for all investigations across all stages.
 
 ## Architecture Decision Log
 
-> Record every significant technical decision here — stack choices, pattern changes, methodology shifts. One row per decision. Newest first. Decisions made in feature plans link back via Plan Ref.
+> Newest first. Research column links to research file. Plan Ref links to design plan.
 
-| # | Date | Decision | Options Considered | Chosen | Why | Impact | Plan Ref |
-|---|------|----------|-------------------|--------|-----|--------|----------|
-| ADR-001 | YYYY-MM-DD | | | | | | — |
+| # | Date | Decision | Options | Chosen | Why | Impact | Research | Plan Ref |
+|---|------|----------|---------|--------|-----|--------|----------|----------|
 
-## Methodology & Research
-### Approaches Evaluated
-<!-- What options were considered and why -->
-
-### Research Notes
-<!-- Key findings, benchmarks, comparisons. Detailed research files go in research/ directory -->
-
-### References
-<!-- Papers, articles, docs, benchmarks that informed decisions -->
+## Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
 
 ## Verification
 - How to test the system end-to-end
+```
+
+**agent/RESEARCH.md:**
+```markdown
+# RESEARCH.md — <Project Name>
+
+> **Purpose:** Research overview — all investigations across all pipeline stages.
+> Per-topic research files in research/{stage}/ subdirectories.
+> **Role:** Support file — feeds into any stage when decisions need data.
+
+## Active Questions
+| # | Question | Stage | Urgency | Status |
+|---|---------|-------|---------|--------|
+<!-- Questions currently being investigated -->
+
+## Research Index
+| # | Topic | Stage | Depth | Status | File |
+|---|-------|-------|-------|--------|------|
+<!-- Stage: reqs / specs / plans / design / tasks / releases -->
+<!-- Depth: None / Quick / Standard / Deep -->
+
+## Research Principles
+- Cost-effectiveness: every tech choice must justify cost vs alternatives
+- Performance: every choice must consider latency, throughput, scaling
+- Modern stack: prefer current, well-maintained tech
+- Evidence-based: decisions backed by data, not habit
+
+## Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
+```
+
+**agent/DESIGN.md:**
+```markdown
+# DESIGN.md — <Project Name>
+
+> **Purpose:** Design overview — how features are built within the architecture.
+> Per-feature designs in design/ subdirectory.
+> **Role:** Fourth pipeline stage — HOW each feature works (micro).
+
+## Design Principles
+Key patterns and conventions across all features.
+
+## Design Index
+| Feature | Design | Status |
+|---------|--------|--------|
+
+## Cross-Cutting Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
 ```
 
 **agent/TASKS.md:**
 ```markdown
 # TASKS.md — <Project Name>
 
-> **Purpose:** Task tracking — organized by release version.
-> **Role:** Updated during development. Add tasks FIRST, then work.
+> **Purpose:** Task tracking by release version.
+> **Role:** Fifth pipeline stage — BUILD.
 
 ## v0.1 — Current
-- [x] Project setup
-- [ ] Task 1 @username          ← assign tasks with @username (optional)
-- [ ] Task 2 @username @other   ← multiple owners allowed
-- [ ] Task 3                    ← unassigned
+- [x] Project setup @username (YYYY-MM-DD)
+- [ ] Task 1 @username
+- [ ] Task 2
+
+<!-- Completion date (YYYY-MM-DD) added automatically when marked [x] -->
 
 ### Blocked
-<!-- Tasks waiting on external dependencies -->
+<!-- Tasks waiting on dependencies -->
 
 ## Backlog (Future Releases)
 - [ ] Future feature 1
-- [ ] Future feature 2
+
+## Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
 
 ## Progress Summary
 | Version | Tasks Done | Tests | Status |
@@ -2399,220 +2491,37 @@ src/
 ```markdown
 # RELEASES.md — <Project Name>
 
-> **Purpose:** Version history — changelog, deployments, test results.
-> **Role:** Updated at end of each release version.
+> **Purpose:** Published release notes — what shipped, user-facing summary.
+> Full traceability details in releases/ subdirectory.
+> **Role:** Sixth pipeline stage — RELEASE.
 
 ## v0.1 — Title (Date)
-Kit: vX.X.X
+Released by: @username
+Full details: [releases/v0.1-release-summary.md](releases/v0.1-release-summary.md)
 
-### Summary
-Brief description of what this version delivers.
+### What's New
+- Feature 1 — one-line description
+- Feature 2 — one-line description
 
-### Changes
-- **Frontend:** ...
-- **Backend:** ...
-- **AI:** ...
-- **Infrastructure:** ...
+### Improvements
+- Improvement description
+
+### Bug Fixes
+- Fix description
 
 ### Tests
-- X tests passing, Y% coverage
+- X tests passing
 
-### Deployment
-- Deployed to: URL
-- Date: YYYY-MM-DD
+### Breaking Changes
+- (none, or list)
 
-### Known Issues
-<!-- Any known issues in this version -->
+## Decisions
+| # | Decision | Type | Why | Research |
+|---|----------|------|-----|----------|
 ```
 
 **tests/test-release-check.sh:**
-```bash
-#!/bin/bash
-# =============================================================
-# release-check.sh — Pre-Release R→F→T Validation
-#
-# Reads SPECS.md → for every done feature (Fn marked [x]):
-#   1. Checks a test reference exists in the Tests column
-#   2. Checks the referenced test file exists on disk
-#   3. Attempts to run the tests (auto-detects runner)
-#   4. Reports: feature → test coverage + pass/fail
-#
-# Usage:
-#   bash tests/test-release-check.sh                  # uses agent/SPECS.md
-#   bash tests/test-release-check.sh path/to/SPECS.md # custom path
-#
-# Exit codes:
-#   0 = all done features have passing tests (release ready)
-#   1 = missing test refs, missing files, or test failures
-# =============================================================
-
-SPECS="${1:-agent/SPECS.md}"
-
-if [ ! -f "$SPECS" ]; then
-  echo "Error: SPECS.md not found at $SPECS"
-  echo "Usage: bash tests/test-release-check.sh [path/to/SPECS.md]"
-  exit 1
-fi
-
-TOTAL_DONE=0
-REF_PRESENT=0
-FILE_EXISTS=0
-TESTS_PASSED=0
-MISSING_REFS=0
-MISSING_FILES=0
-TESTS_FAILED=0
-
-# Cache: each unique test file is run only once — result reused for all features referencing it
-TEST_CACHE_FILE=$(mktemp)
-trap "rm -f $TEST_CACHE_FILE" EXIT
-
-detect_runner() {
-  local test_file="$1"
-  if [ -f "package.json" ] && grep -q "jest\|vitest" "package.json" 2>/dev/null; then
-    echo "jest"
-  elif [ -f "pytest.ini" ] || [ -f "pyproject.toml" ] || [ -f "setup.cfg" ]; then
-    echo "pytest"
-  elif [ -f "go.mod" ]; then
-    echo "go"
-  elif echo "$test_file" | grep -q "\.sh$"; then
-    echo "bash"
-  elif echo "$test_file" | grep -q "\.py$"; then
-    echo "python"
-  elif echo "$test_file" | grep -q "\.test\.js$\|\.spec\.js$\|\.test\.ts$\|\.spec\.ts$"; then
-    echo "jest"
-  else
-    echo "unknown"
-  fi
-}
-
-run_test() {
-  local test_ref="$1"
-
-  # Return cached result if this file was already run
-  local cached
-  cached=$(grep "^${test_ref}:" "$TEST_CACHE_FILE" 2>/dev/null | tail -1 | cut -d: -f2)
-  if [ -n "$cached" ]; then return "$cached"; fi
-
-  local runner result
-  runner=$(detect_runner "$test_ref")
-
-  case "$runner" in
-    jest)
-      if command -v npx >/dev/null 2>&1; then
-        npx jest "$test_ref" --passWithNoTests 2>/dev/null && result=0 || result=1
-      else result=2; fi ;;
-    pytest)
-      if command -v pytest >/dev/null 2>&1; then
-        pytest "$test_ref" -q 2>/dev/null && result=0 || result=1
-      elif command -v python3 >/dev/null 2>&1; then
-        python3 -m pytest "$test_ref" -q 2>/dev/null && result=0 || result=1
-      else result=2; fi ;;
-    go)
-      if command -v go >/dev/null 2>&1; then
-        go test "./$test_ref/..." 2>/dev/null && result=0 || result=1
-      else result=2; fi ;;
-    bash)
-      bash "$test_ref" >/dev/null 2>&1 && result=0 || result=1 ;;
-    python)
-      python3 "$test_ref" 2>/dev/null && result=0 || result=1 ;;
-    *)
-      result=2 ;;
-  esac
-
-  echo "${test_ref}:${result}" >> "$TEST_CACHE_FILE"
-  return $result
-}
-
-check_stub_complete() {
-  local test_ref="$1"
-  local todo_count
-  # Match standalone TODO comments and skip/placeholder assertions at line start
-  # All patterns anchored to avoid false positives inside grep pattern strings
-  todo_count=$(grep -cE "^[[:space:]]*(#[[:space:]]*TODO|//[[:space:]]*TODO|test\.skip\(|it\.skip\(|xit\(|xtest\(|expect\(true\)\.toBe\(false\)|assert False|t\.Skip\()" "$test_ref" 2>/dev/null || echo 0)
-  if [ "$todo_count" -gt 0 ]; then
-    echo "${test_ref}:stubs_incomplete:${todo_count}" >> "$TEST_CACHE_FILE"
-    return 1
-  fi
-  return 0
-}
-
-echo ""
-echo "════════════════════════════════════════════════════════════"
-echo "  RELEASE READINESS — R→F→T Coverage Check"
-echo "  Specs: $SPECS"
-echo "════════════════════════════════════════════════════════════"
-echo ""
-printf "  %-5s %-32s %-8s %s\n" "Fn" "Feature" "Status" "Tests"
-printf "  %-5s %-32s %-8s %s\n" "-----" "--------------------------------" "--------" "-------"
-
-while IFS= read -r line; do
-  if echo "$line" | grep -q "^| F[0-9]" && echo "$line" | grep -q "\[x\]"; then
-    fn=$(echo "$line" | awk -F'|' '{gsub(/ /,"",$2); print $2}')
-    feature=$(echo "$line" | awk -F'|' '{gsub(/^ +| +$/,"",$3); print $3}' | cut -c1-30)
-    test_ref=$(echo "$line" | awk -F'|' '{
-      for (i=NF; i>1; i--) {
-        gsub(/^ +| +$/, "", $i)
-        if ($i !~ / / && length($i) > 0 && ($i ~ /^tests\// || $i ~ /\.test\.|\.spec\.|\.sh$|\.py$|\.ts$|\.js$/)) {
-          print $i; exit
-        }
-      }
-    }')
-    TOTAL_DONE=$((TOTAL_DONE + 1))
-    if [ -z "$test_ref" ]; then
-      printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "⚠  NO TEST REFERENCE"
-      MISSING_REFS=$((MISSING_REFS + 1))
-    elif [ ! -f "$test_ref" ] && [ ! -d "$test_ref" ]; then
-      printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FILE NOT FOUND: $test_ref"
-      REF_PRESENT=$((REF_PRESENT + 1))
-      MISSING_FILES=$((MISSING_FILES + 1))
-    else
-      REF_PRESENT=$((REF_PRESENT + 1))
-      FILE_EXISTS=$((FILE_EXISTS + 1))
-      if ! check_stub_complete "$test_ref"; then
-        stub_count=$(grep "^${test_ref}:stubs_incomplete:" "$TEST_CACHE_FILE" | cut -d: -f3)
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  STUBS NOT FILLED ($stub_count TODO markers): $test_ref"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        continue
-      fi
-      run_test "$test_ref"; run_result=$?
-      if [ "$run_result" -eq 0 ]; then
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✓  $test_ref"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-      elif [ "$run_result" -eq 2 ]; then
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "~  $test_ref (exists, run manually)"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-      else
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FAILED: $test_ref"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-      fi
-    fi
-  fi
-done < "$SPECS"
-
-echo ""
-echo "────────────────────────────────────────────────────────────"
-printf "  Features complete:       %d\n" "$TOTAL_DONE"
-printf "  With test references:    %d / %d\n" "$REF_PRESENT" "$TOTAL_DONE"
-printf "  Test files found:        %d / %d\n" "$FILE_EXISTS" "$TOTAL_DONE"
-printf "  Tests passing:           %d\n" "$TESTS_PASSED"
-printf "  Tests failing:           %d\n" "$TESTS_FAILED"
-printf "  Missing test refs:       %d\n" "$MISSING_REFS"
-printf "  Missing test files:      %d\n" "$MISSING_FILES"
-echo "────────────────────────────────────────────────────────────"
-ISSUES=$((MISSING_REFS + MISSING_FILES + TESTS_FAILED))
-if [ "$TOTAL_DONE" -eq 0 ]; then
-  echo "  ⚠  No completed features found in SPECS.md"; echo ""; exit 1
-elif [ "$ISSUES" -eq 0 ]; then
-  echo "  ✅ RELEASE READY — $TOTAL_DONE features, 100% test coverage"; echo ""; exit 0
-else
-  COVERAGE=$(( (FILE_EXISTS * 100) / TOTAL_DONE ))
-  echo "  ❌ NOT READY — $ISSUES issue(s) found ($COVERAGE% coverage)"
-  [ "$MISSING_REFS" -gt 0 ] && echo "     → Add test references in SPECS.md Tests column for $MISSING_REFS feature(s)"
-  [ "$MISSING_FILES" -gt 0 ] && echo "     → Create missing test files for $MISSING_FILES reference(s)"
-  [ "$TESTS_FAILED" -gt 0 ]  && echo "     → Fix $TESTS_FAILED failing test(s) before release"
-  echo ""; exit 1
-fi
-```
+> Script validates R→F→T coverage: every done feature must have passing test reference. Full script at `tests/test-release-check.sh` (distributed with kit). When setting up new projects, copy from existing `tests/test-release-check.sh`, not from this template.
 
 ### New Project Setup Procedure
 
@@ -2622,7 +2531,7 @@ When user asks to create a new project, follow these steps IN ORDER:
 ```bash
 mkdir -p <project>/{agent,ard,input,output,cache,src,tests,docs}
 ```
-Create all 6 agent files using the templates above.
+Create all 9 agent files using the templates above.
 - `tests/test-release-check.sh` — R→F→T validation script (use template above), then `chmod +x tests/test-release-check.sh`
 - `README.md` — project overview (see README template below)
 - `.gitignore` — general ignores (node_modules, .env, cache/, __pycache__, .next, etc.). **Do NOT add `agent/` for team or open-source projects** — commit it for AI-powered onboarding. For solo/private projects, add comment: `# agent/ — commit this for team projects`

@@ -1734,7 +1734,7 @@ section "46. Persistent Memory Architecture"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Persistent Memory Architecture\|Persistent Memory" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: framework introduces Persistent Memory Architecture concept" || fail "PersistentMem: concept MISSING"
-grep -q "6 agent files.*Persistent Memory\|agent files.*persistent memory\|AGENT_CONTEXT.*SPECS.*memory" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: 6 agent files = persistent memory" || fail "PersistentMem: 6 files = memory definition MISSING"
+grep -q "9 agent files.*Persistent Memory\|agent files.*persistent memory\|AGENT_CONTEXT.*SPECS.*memory" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: 9 agent files = persistent memory" || fail "PersistentMem: 9 files = memory definition MISSING"
 grep -q "Durable.*git\|durable.*persists.*git\|git.*durable" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Durable property defined (git)" || fail "PersistentMem: Durable property MISSING"
 grep -q "Shared.*any agent\|shared.*any.*machine\|any agent.*reads" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Shared property defined (any agent)" || fail "PersistentMem: Shared property MISSING"
 grep -q "Portable.*Claude.*Cursor\|portable.*Copilot\|works with.*Claude.*Cursor" "$PROJ/portable-spec-kit.md" && pass "PersistentMem: Portable property defined (multi-agent)" || fail "PersistentMem: Portable property MISSING"
@@ -2290,6 +2290,124 @@ grep -qi "Milestone acknowledgment" "$PROJ/portable-spec-kit.md" \
 grep -q "Tour completed" "$PROJ/portable-spec-kit.md" \
   && pass "Tour: tour_completed flag in config template" \
   || fail "Tour: tour_completed flag MISSING from config template"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 56: REQUIREMENTS PIPELINE (15 tests)
+# ═══════════════════════════════════════════════════════════════════════════════
+section "56. Requirements Pipeline"
+
+grep -q "agent/REQS.md" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: REQS.md referenced in framework" \
+  || fail "Reqs: REQS.md MISSING from framework"
+
+grep -q "Requirement.*Type.*Priority.*Source.*Status" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: requirements table format defined" \
+  || fail "Reqs: requirements table format MISSING"
+
+grep -qi "Draft.*Approved.*Implemented.*Verified" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: status lifecycle defined" \
+  || fail "Reqs: status lifecycle MISSING"
+
+grep -q "## Scope Changes" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: scope changes section defined" \
+  || fail "Reqs: scope changes MISSING"
+
+grep -q "REQS.md.*require" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: pipeline shows REQS.md as first stage" \
+  || fail "Reqs: REQS.md not in pipeline"
+
+grep -q "9 management files\|9 agent files" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: file count updated to 9" \
+  || fail "Reqs: file count not updated"
+
+grep -qi "Approved by.*Approved date" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: approval tracking columns defined" \
+  || fail "Reqs: approval tracking MISSING"
+
+grep -q "## Assumptions" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: assumptions section defined" \
+  || fail "Reqs: assumptions MISSING"
+
+grep -qi "Functional.*Non-functional.*Constraint" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: requirement types defined" \
+  || fail "Reqs: requirement types MISSING"
+
+grep -qi "Requirements live in.*REQS.md\|Requirements live in \`REQS.md\`" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: SPECS.md references REQS.md" \
+  || fail "Reqs: SPECS.md doesn't reference REQS.md"
+
+grep -qi "Raw Ref\|raw.*input.*preserved" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: raw input preservation rule defined" \
+  || fail "Reqs: raw input preservation MISSING"
+
+grep -q "reqs/" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: reqs/ subdirectory referenced" \
+  || fail "Reqs: reqs/ subdir MISSING"
+
+grep -qi "Technical Requirements" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: technical requirements in PLANS.md defined" \
+  || fail "Reqs: tech requirements MISSING"
+
+grep -qi "Req Ref" "$PROJ/portable-spec-kit.md" \
+  && pass "Reqs: PLANS.md Tech Requirements links back to REQS.md" \
+  || fail "Reqs: Req Ref column MISSING"
+
+[ -f "$PROJ/agent/REQS.md" ] \
+  && pass "Reqs: agent/REQS.md file exists" \
+  || fail "Reqs: agent/REQS.md MISSING"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 57: RESEARCH + DESIGN OVERVIEW + DECISION TRACEABILITY (12 tests)
+# ═══════════════════════════════════════════════════════════════════════════════
+section "57. Research + Design + Decisions"
+
+grep -q "agent/RESEARCH.md" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: RESEARCH.md referenced in framework" \
+  || fail "Research: RESEARCH.md MISSING from framework"
+
+grep -q "research/" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: research/ directory referenced" \
+  || fail "Research: research/ dir MISSING"
+
+grep -qi "None.*Quick.*Standard.*Deep" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: depth levels defined" \
+  || fail "Research: depth levels MISSING"
+
+grep -qi "cost-effectiveness\|Cost.*impact" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: cost-effectiveness mandate defined" \
+  || fail "Research: cost-effectiveness MISSING"
+
+grep -q "agent/DESIGN.md" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: DESIGN.md referenced in framework" \
+  || fail "Research: DESIGN.md MISSING"
+
+grep -qi "Design Index\|Design Principles" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: DESIGN.md template has index + principles" \
+  || fail "Research: DESIGN.md template incomplete"
+
+grep -qi "mutual.*user-override.*user-direct\|user-direct.*agent-recommended" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: decision types defined" \
+  || fail "Research: decision types MISSING"
+
+grep -q "## Decisions" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: decisions section in pipeline templates" \
+  || fail "Research: decisions section MISSING"
+
+grep -qi "Definition of Done" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: Definition of Done defined" \
+  || fail "Research: Definition of Done MISSING"
+
+[ -f "$PROJ/agent/RESEARCH.md" ] \
+  && pass "Research: agent/RESEARCH.md file exists" \
+  || fail "Research: agent/RESEARCH.md MISSING"
+
+[ -f "$PROJ/agent/DESIGN.md" ] \
+  && pass "Research: agent/DESIGN.md file exists" \
+  || fail "Research: agent/DESIGN.md MISSING"
+
+grep -qi "feedback.*loop\|iterate.*backwards\|upstream.*first" "$PROJ/portable-spec-kit.md" \
+  && pass "Research: feedback loop rule defined" \
+  || fail "Research: feedback loop MISSING"
 
 # ═══════════════════════════════════════════════════════════════
 # RESULTS
