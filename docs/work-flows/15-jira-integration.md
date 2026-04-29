@@ -2,6 +2,8 @@
 
 Sync TASKS.md to Jira Cloud. Explicit only — never automatic.
 
+This flow documents the **Jira Cloud integration** surface of the kit: `sync to jira`, credential handling, R→F→Epic→Story→Task hierarchy auto-creation, and the psk-tracker daemon. Companion scripts: `agent/scripts/psk-jira-sync.sh` and `agent/scripts/psk-tracker.sh`.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  USER SAYS "sync to jira"                                   │
@@ -44,7 +46,7 @@ Sync TASKS.md to Jira Cloud. Explicit only — never automatic.
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│  STEP 5: HOURS CONFIRMATION UI                              │
+│  STEP 5: HOURS CONFIRMATION UI (Automatic hours tracking)   │
 │     Show per-task: ticket, hours, grade, confidence         │
 │     ├─ User accepts (Enter) → proceed                       │
 │     ├─ User edits ("1 2.5") → adjust                        │

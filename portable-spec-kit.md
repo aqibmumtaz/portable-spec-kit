@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.5.5 -->
+<!-- Framework Version: v0.6.15 -->
 
-**Version:** v0.5.5 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 875 (730 framework + 145 benchmarking)
+**Version:** v0.6.15 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1747 (1602 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -13,6 +13,106 @@
 > **Purpose:** The single source of truth for how the user works — dev practices, coding standards, testing rules, project setup procedures, and AI interaction guidelines. Read this FIRST on every session.
 >
 > **Role:** Portable across all projects. Drop this file into any repo and the AI agent follows these standards immediately. Project-specific rules go in `agent/AGENT.md`. Workspace state goes in `WORKSPACE_CONTEXT.md` (auto-created on first session).
+
+---
+
+## Bootstrap-first rule (MANDATORY on any new project)
+
+**Before doing ANY work in a project — before creating `agent/` files, before running `prepare release`, before invoking reflex — verify the kit is installed by running:**
+
+```bash
+bash agent/scripts/psk-bootstrap-check.sh --quiet || bash <path-to-kit>/install.sh --yes --from <path-to-kit>
+```
+
+**If the user asks an agent (Copilot, Claude, Cursor, etc.) to "set up a new project with requirements X" and follow up with "prepare release" or "run reflex":** the agent MUST install the kit FIRST as the very first step. The kit's machinery (scripts, hooks, skills, config) only works if `install.sh` has been run. Running `install.sh` is idempotent — safe on fresh and partially-installed projects.
+
+**Why this rule exists:** without install, `agent/scripts/` is empty, `.git/hooks/pre-commit` is missing, skills are not cached, `.portable-spec-kit/config.md` does not exist. Prep-release + reflex will fail-fast with a bootstrap error at Step 0 / Gate 0a, but that wastes a round-trip — install first, build second.
+
+**Canonical install commands:**
+```bash
+# Option 1 — from a local kit checkout (recommended for dev):
+bash <kit-path>/install.sh --yes --from <kit-path>
+
+# Option 2 — one-shot network install (no local kit):
+curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash
+
+# Option 3 — auto-remediation if bootstrap check exists:
+bash agent/scripts/psk-bootstrap-check.sh --remediate
+```
+
+**After install completes:** `CLAUDE.md` / `.cursorrules` / `.windsurfrules` / `.clinerules` / `.github/copilot-instructions.md` all symlink to `portable-spec-kit.md`. Every AI agent that reads those entry-points sees the kit's rules immediately.
+
+---
+
+## Reliability Architecture
+
+The kit uses three enforcement layers to prevent agents from skipping steps or shipping inconsistent content. The agent cannot bypass these — they are structural, not trust-based.
+
+**Reliability model — dual critic at the end of each workflow, not per step.** A workflow runs its steps normally; at the end it enters a single validation gate that pairs two critics. Both must pass. Either failure blocks the workflow from completing.
+
+**Layer 2A — Bash Critic (`psk-sync-check.sh`) — deterministic, always on:** Runs 11 structural checks (version, test count, flow doc count, feature count, SPECS staleness, R→F→T gate, script permissions, required directories, CHANGELOG/RELEASES content, ARD content, AGENT.md stack). Returns exit 0 (clean) or exit 1 with specific file:line mismatches and PSK error codes. Fires during workflow steps and again at the final validation gate.
+
+**Layer 2B — Sub-Agent Critic (`psk-critic-spawn.sh`) — semantic, at workflow end:** At the final validation gate, the workflow script writes `agent/.release-state/critic-task.md` and exits AWAITING_CRITIC. The agent spawns a fresh sub-agent via Task tool with that exact prompt — no inherited context from the main session. The sub-agent reads files independently and writes `critic-result.md` with `CURRENT:` / `STALE:` verdicts. The script verifies the result file is fresh (mtime ≥ RUN_ID) and contains no `STALE:` lines before marking the gate passed. Iteration cap: 5 attempts. The `critic-result.md` from prior workflow runs is deleted automatically at `prepare` so stale reports cannot satisfy a new run.
+
+**Layer 3 — Hooks (outside agent control):** PostToolUse hook runs `psk-sync-check.sh --quick` after every Write/Edit (silent on clean, warns on drift). PreCommit hook runs `psk-sync-check.sh --full` and BLOCKS bad commits. Agent physically cannot bypass — hooks fire automatically.
+
+**Critic protocol rule (MANDATORY):** When any workflow's final validation step exits with AWAITING_CRITIC, the agent MUST read `critic-task.md`, spawn a sub-agent via Task tool with that exact prompt, write the sub-agent's response to `critic-result.md`, then re-run the workflow `next` command. The gate re-reads the result file, verifies freshness and content, and advances only on a clean result.
+
+**Workflow coverage — dual gate at end of every executable workflow:** All six executable workflows terminate in the same dual-gate validation step via the shared `agent/scripts/psk-validate.sh <workflow>` helper. Workflows covered: `release` · `feature-complete` · `init` · `reinit` · `new-setup` · `existing-setup`. Each maps to a dedicated critic template (`STEP_9_VALIDATION`, `FEATURE_COMPLETE`, `INIT`, `REINIT`, `NEW_SETUP`, `EXISTING_SETUP`) inside `psk-critic-spawn.sh`. Agent MUST run the helper at the end of any workflow that modifies `agent/*` or project scaffold — no workflow marks complete until both critics pass.
+
+**MANDATORY rule — agent behavior:** When ending any executable workflow (release, feature completion, init, reinit, new/existing project setup), agent runs `bash agent/scripts/psk-validate.sh <workflow>`. Exit 0 = workflow complete. Exit 2 = `AWAITING_CRITIC` — agent reads `agent/.release-state/critic-task.md`, spawns fresh sub-agent via Task tool with that exact prompt, writes sub-agent response to `agent/.release-state/critic-result.md`, re-runs validate. Exit 1 or 3 = a critic failed; fix flagged issues and re-run.
+
+**Emergency bypass:** `PSK_SYNC_CHECK_DISABLED=1` bypasses the bash critic; `PSK_CRITIC_DISABLED=1` bypasses the sub-agent critic; `git commit --no-verify` bypasses the PreCommit hook. All three are for genuine emergencies only — each breaks a gate and should be explicit.
+
+> **Skill: Hooks & Critics** — Full protocol, error codes, customization in `.portable-spec-kit/skills/hooks-and-critics.md`. Loaded when interacting with reliability infrastructure.
+
+---
+
+## Skill-Based Architecture
+
+This file is the **core brain** — behavioral rules loaded every session. Procedural details live in **skill files** loaded on demand:
+
+| Trigger | Skill file loaded |
+|---------|------------------|
+| Creating/restructuring agent files | `.portable-spec-kit/skills/templates.md` |
+| Python project detected (Python-only legacy) | `.portable-spec-kit/skills/python-environment.md` |
+| **Any stack-runtime command when env not yet selected** (pip / npm / pytest / cargo / go test / etc.) — generic Python · Node · Ruby · Go · Rust | `.portable-spec-kit/skills/env-management.md` |
+| Project setup (init) / auto-scan / existing project | `.portable-spec-kit/skills/project-setup.md` |
+| Source code structures by project type | `.portable-spec-kit/skills/source-structures.md` |
+| First session (no profile) | `.portable-spec-kit/skills/profile-setup.md` |
+| First session (tour) / presence / onboarding | `.portable-spec-kit/skills/onboarding-tour.md` |
+| Release / generating docs | `.portable-spec-kit/skills/document-generation.md` |
+| New project (test script) | `.portable-spec-kit/skills/test-release-check-template.md` |
+| Reliability / hooks / critics | `.portable-spec-kit/skills/hooks-and-critics.md` |
+| Progress / dashboard / burndown | `.portable-spec-kit/skills/dashboard.md` |
+| My tasks / assign / delegate | `.portable-spec-kit/skills/multi-agent.md` |
+| Jira / time tracking | `.portable-spec-kit/skills/jira-integration.md` |
+| Help / commands / guidance | `.portable-spec-kit/skills/self-help.md` |
+| Enable CI / CI setup | `.portable-spec-kit/skills/ci-setup.md` |
+| Config contract / commands / edge cases | `.portable-spec-kit/skills/config-details.md` |
+| Losing context / "where was I" / branching / conversation-stack | `.portable-spec-kit/skills/session-trace.md` |
+| Integration tests / end-to-end tests / FastAPI tests / subprocess fixtures / live-server | `.portable-spec-kit/skills/test-templates.md` |
+| **"Create a project for X" / "build me an app" / "make it a full working project" / "generate the app from these requirements"** | `.portable-spec-kit/skills/project-orchestration.md` (full 10-phase pipeline — research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature impl → release-prep → reflex audit → handoff) |
+| Domain research + REQS expansion (loose req → R1-R30+) | `.portable-spec-kit/skills/requirement-research.md` |
+| Polished UI design system (palette, type scale, 12 component primitives, dark mode, a11y) | `.portable-spec-kit/skills/ui-design-system.md` |
+| Security baseline (OWASP Top 10, auth scaffolding, middleware stack, input validation) | `.portable-spec-kit/skills/security-baseline.md` |
+| **`/optimize` · `psk optimize` · `optimize tokens` · `clean up bloat`** — token-bloat sweep with safety contract (no rule loss) | `.portable-spec-kit/skills/optimize.md` |
+
+Skills are downloaded from GitHub on first use, cached in `.portable-spec-kit/skills/`. Install is unchanged (one curl command).
+
+### Project orchestration (v0.6.14+ — natural-language preferred)
+
+When the user provides any actual requirement (formal or informal, single sentence or paragraph), the kit's project-orchestration skill drives a full 10-phase pipeline that turns loose requirements into a polished, secure, working, audited application.
+
+**Trigger phrases (any of these):** *"create a project for X"* · *"build me an app that does Y"* · *"make this a full working project"* · *"generate the app from these requirements"* · *"make it polished / professional / production-ready / secure / research-based"*
+
+**Behind the scenes:** the agent invokes `bash agent/scripts/psk-orchestrate.sh "<raw req>"`. The orchestrator chains 10 phases: capture → 7-dim research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature implementation (one feature per atomic commit) → release ceremony → reflex audit (until convergence) → final handoff with `HANDOFF.md`. Each phase has a confirm-with-user gate where the user can redirect.
+
+**Output:** a working app with secure backend, polished frontend (design tokens, 12+ components, WCAG AA, dark mode), input validation at every boundary, auth scaffolding (Argon2id + JWT + email verify + reset), CI workflow, R→F→T traceability, reflex GRANTED audit verdict, and `HANDOFF.md` with run instructions. **The user does not have to QA the result manually — reflex did that.**
+
+**Full flow doc:** [`docs/work-flows/18-project-orchestration.md`](docs/work-flows/18-project-orchestration.md).
+
+**Scaffold-only fallback:** if the user prefers the lightweight legacy flow (just create empty `agent/` files, no generation), they say *"just scaffold"* / *"empty setup"* / *"don't generate code"* — the kit falls back to `project-setup.md`'s scaffold-only branch.
 
 ---
 
@@ -30,11 +130,44 @@ This file is the **Portable Spec Kit** framework. It is distributed as `portable
 
 **All point to the same source file** — `portable-spec-kit.md`. Edit one, all agents read the update.
 
-**NEVER edit symlink files directly** (`CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`). Always edit `portable-spec-kit.md` — the symlinks are read-only pointers. Editing a symlink file edits the source underneath it, but doing so by name causes confusion about which file is authoritative. All framework changes go to `portable-spec-kit.md` only.
+**NEVER edit symlink files directly** (`CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`). Always edit `portable-spec-kit.md` — the symlinks are read-only pointers.
+
+### Rule Persistence (MANDATORY — agent files only)
+
+Everything the agent persists across sessions goes to a committed `agent/*` file. Personal auto-memory is not used. If it's worth remembering, it's worth committing.
+
+**Detect context first** (one check, by file type):
+
+| `portable-spec-kit.md` is a... | Context | Permission |
+|---|---|---|
+| Regular file | **Kit-dev** (kit author in canonical kit checkout) | May edit `portable-spec-kit.md` |
+| Symlink (`ls -la` shows `→`) | **End-user** (project that installed the kit) | `portable-spec-kit.md` is **read-only** |
+
+**Write destination by context:**
+
+| Context | Rule / convention / config | State / observation / anything else |
+|---|---|---|
+| **End-user** (default — most sessions) | `agent/AGENT.md` | `agent/AGENT_CONTEXT.md` |
+| **Kit-dev** (kit author only) | `portable-spec-kit.md` + ADR + CHANGELOG + RELEASES | kit's own `agent/AGENT_CONTEXT.md` |
+
+End-user surface is **exactly those two files** — nothing else, ever. Default to `agent/AGENT_CONTEXT.md` when unclear (state is more inclusive than rules).
+
+**No personal memory at all.** The agent's per-user auto-memory (whatever store the host agent uses) is per-user, per-machine, per-agent, not committed — invisible to other contributors / machines / other AI agents, prunable by the runtime, no git audit trail. Earlier versions of this rule allowed "ephemeral / sparingly" memory use; that exemption leaked and was removed.
+
+**Migration of existing memory entries:** classify → move kit-wide rules to `portable-spec-kit.md` (kit-dev only) or project entries to `agent/AGENT.md` / `agent/AGENT_CONTEXT.md` → delete memory entry once the move is committed.
+
+**Read-only contract:** the existing "version field is kit-author-only" rule extends to the entire `portable-spec-kit.md` file. End-user projects never edit the symlinked kit copy.
+
+**Framework writing principles:**
+- **Generic, not version-specific.** Rules must work across all framework versions. Never hardcode file counts, feature counts, test counts, or version numbers in behavioral rules. Use dynamic references ("all pipeline files" not "9 files"). Specific counts belong only in badges, documentation headers, and summary tables that are updated during consistency sweep.
+- **No duplicate instructions.** Every rule has ONE authoritative location. If the same topic is covered in multiple places, consolidate. Cross-reference with "see Section X" instead of repeating.
+- **Self-validating.** The system validation step catches remaining gaps as a safety net — the user should never have to find issues manually.
+- **Learn from mistakes.** When the agent skips a step or misses a gap, don't just fix it — add enforcement so it can't happen again. If a rule exists but was skipped, the fix is enforcement (script, test, or gate), not another rule.
+- **Rule-revision post-mortem (learning-from-churn).** If any framework rule is revised ≥3 times in a single session, the agent MUST record an ADL entry in `agent/PLANS.md` (in the kit repo) titled `ADL-YYYY-MM-DD — rule-churn: <rule-name>`. The entry captures: (a) the three (or more) variants the rule cycled through, (b) the signal that each prior variant was wrong, (c) the final landed variant, and (d) the root cause of the churn (unclear requirement, missing user context, over-generalization, etc.). Churn is a signal that either the rule's scope is fuzzy or a deeper design assumption is wrong — ignoring it hides the lesson. This meta-rule applies only to kit-framework changes, not to user project work.
 
 On first session, the agent also auto-creates:
 - `WORKSPACE_CONTEXT.md` — workspace environment and project listing
-- `agent/` directory in each project — with 9 management files (REQS.md, SPECS.md, PLANS.md, RESEARCH.md, DESIGN.md, TASKS.md, RELEASES.md, AGENT.md, AGENT_CONTEXT.md)
+- `agent/` directory in each project — with all pipeline and support files as defined by the current framework version
 - `README.md` — structured project overview
 
 **If the user asks any question about the kit — installation, features, setup, examples, changelog, methodology, or how anything works:**
@@ -67,23 +200,7 @@ Known GitHub sources (fetch only when local can't answer):
 > **Purpose:** Tells the AI agent WHO it's working with — expertise level, communication preferences, and autonomy expectations. The agent uses this to tailor response depth, technical language, analogies, and how much it does autonomously vs. asks for confirmation.
 
 ### Profile Storage
-```
-Global (home directory — asked once, works everywhere):
-~/.portable-spec-kit/user-profile/
-└── user-profile-{username}.md
-
-Workspace (committed — persists across pulls, per-user):
-workspace/.portable-spec-kit/user-profile/
-├── user-profile-{username}.md
-├── user-profile-teammate.md
-└── ...
-```
-
-**Cross-OS home directory:**
-- macOS/Linux: `~/.portable-spec-kit/user-profile/`
-- Windows: `%USERPROFILE%\.portable-spec-kit\user-profile\`
-
-**Username detection:** `git config user.name` → slugified (lowercase, spaces → dashes). Use `gh api user` for fetching full name/bio for greeting, not for filename.
+Profile locations, cross-OS paths, and username detection — see `.portable-spec-kit/skills/profile-setup.md`.
 
 ### Profile Lookup Order
 1. `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md` → local, per-user, committed
@@ -91,49 +208,7 @@ workspace/.portable-spec-kit/user-profile/
 3. Neither → first-time setup
 
 ### First Session — Profile Setup (no profile found anywhere)
-1. Detect username: `git config user.name` → slugified (lowercase, spaces → dashes) — used for filename
-2. Fetch GitHub profile via `gh api user` for full name/bio (if available and authenticated — if not, ask user manually)
-3. Greet user by full name: "Welcome, {Name}! Let me set up your development profile."
-4. Ask 3 preference questions (Enter = use recommended, or type custom):
-
-   **Communication style?**
-   - (a) direct and concise ← RECOMMENDED
-   - (b) direct, data-driven, prefers comprehensive analysis with tables and evidence
-   - (c) conversational and collaborative, prefers discussing ideas and thinking through problems together
-   - (or type your own)
-   - Press Enter to use recommended (a)
-
-   **Working pattern?**
-   - (a) iterative — starts brief, expands scope, builds ambitiously over time ← RECOMMENDED
-   - (b) plan-first — defines full specs and architecture before writing any code
-   - (c) prototype-fast — gets something working quickly, then refines and polishes
-   - (or type your own)
-   - Press Enter to use recommended (a)
-
-   **AI delegation?**
-   - (a) AI does 70%, user guides 30% — AI proposes approach, user approves before execution ← RECOMMENDED
-   - (b) AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
-   - (c) 50/50 collaboration — discuss and decide together before each major step
-   - (or type your own)
-   - Press Enter to use recommended (a)
-
-5. Show profile summary: "Your profile: ... Looks good? (Enter = yes, or type changes)"
-6. Save to `~/.portable-spec-kit/user-profile/user-profile-{username}.md` (global)
-7. Copy to `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md` (committed)
-
-### New Project Setup (profile exists in global)
-1. Load profile from global `~/.portable-spec-kit/user-profile/user-profile-{username}.md`
-2. Show profile to user: "Using your profile: ..."
-3. "Keep or customize for this project? (Enter = keep)"
-   - **(a) Keep** → copy to `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md` as-is
-   - **(b) Customize** → ask 3 questions with CURRENT answer highlighted + RECOMMENDED:
-     - Each question shows current global answer as CURRENT and framework default as RECOMMENDED
-     - Press Enter to keep current
-     - Or pick a/b/c or type custom
-     - Show summary → confirm
-     - Save to `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md`
-
-### Every Session
+> **Skill: Profile Setup** — First session profile setup, preference questions, new project flow in `.portable-spec-kit/skills/profile-setup.md`. Loaded on first session when no profile found.### Every Session
 1. Load profile from `workspace/.portable-spec-kit/user-profile/user-profile-{username}.md`
 2. If workspace copy not found → load from global, show profile to user, ask keep or customize (same as New Project Setup flow) → save to workspace
 3. If workspace copy found → use directly, no questions
@@ -152,15 +227,7 @@ workspace/.portable-spec-kit/user-profile/
 - RECOMMENDED and CURRENT are same answer → show as `← RECOMMENDED · CURRENT`
 
 ### Profile Format
-```
-# User Profile
-> Auto-created on first session. Edit anytime.
-
-- **Name** — Education. Expertise.
-- Communication style: {selected or custom}
-- Working pattern: {selected or custom}
-- AI delegation: {selected or custom}
-```
+Profile markdown format — see `.portable-spec-kit/skills/profile-setup.md`.
 
 ---
 
@@ -178,46 +245,8 @@ workspace/.portable-spec-kit/
 
 **One config per project.** Lives alongside user profiles in `.portable-spec-kit/`. Committed to git — team shares the same config. Not in `agent/` (config is kit infrastructure, not project management).
 
-### Config Format
-```markdown
-# Project Config
-> Auto-created on first session. Edit anytime.
-> Review: say "show config" or "review config"
-
-## CI/CD
-- **Enabled:** false
-- **Provider:** github-actions
-- **Badge in README:** false
-
-## Jira Integration
-- **Enabled:** false
-
-## Time Tracking
-- **psk-tracker installed:** false
-
-## Code Review
-- **Auto on feature completion:** true
-- **In release pipeline:** true
-
-## Scope Drift Detection
-- **Auto on session start:** true
-- **In release pipeline:** true
-
-## Onboarding
-- **Tour completed:** false
-```
-
-### Config Defaults (all new projects)
-| Setting | Default | Why |
-|---------|---------|-----|
-| CI/CD enabled | `false` | Requires GitHub Actions billing; user enables when ready |
-| CI badge in README | `false` | No badge until CI is actually working |
-| Jira enabled | `false` | Optional feature; needs credentials first |
-| psk-tracker installed | `false` | Optional; updated automatically by install-tracker.sh |
-| Code review auto | `true` | Advisory, non-blocking — safe default |
-| Code review in pipeline | `true` | Advisory — adds value at no cost |
-| Scope drift auto | `true` | Advisory, non-blocking — safe default |
-| Scope drift in pipeline | `true` | Advisory — adds value at no cost |
+### Config Format & Defaults
+Project config template and default values — see `.portable-spec-kit/skills/config-details.md`.
 
 ### Config Creation
 **Auto-created** on first session if `.portable-spec-kit/config.md` doesn't exist — uses defaults above. No questions asked. User can review and change anytime.
@@ -264,104 +293,7 @@ This is a **single gateway** — not per-step checks. Every automatic trigger, e
 
 **Integrity rule:** If a toggle exists in Config Contract, there must be ZERO places in the framework where that action runs without checking the toggle. To verify: `grep` the framework for the action name — every hit must have a config gate or be a manual command.
 
-### Config Contract (Single Source of Truth)
-
-This table is the **exhaustive** list of what each toggle controls. If an action is not in this table, it runs unconditionally. If it IS in this table, the agent must check config before running it.
-
-| Toggle | Action | Where it runs | If disabled |
-|--------|--------|---------------|-------------|
-| `CI/CD.Enabled` | Create `.github/workflows/ci.yml` | Project setup Step 7.5 | Skip — no workflow files |
-| `CI/CD.Enabled` | Create/update CI workflow | `enable ci` command | N/A — command enables it |
-| `CI/CD.Badge in README` | Show CI badge | README generation, consistency sweep | Hide in HTML comment |
-| `Jira.Enabled` | `sync to jira` (full 8-step flow) | Explicit command | "Jira disabled. Enable: `enable jira`" |
-| `Jira.Enabled` | `jira status` | Explicit command | Same message |
-| `Jira.Enabled` | `jira setup` | Explicit command | Allow — this is how you enable it |
-| `Jira.Enabled` | `link jira` / `unlink jira` | Explicit command | "Jira disabled." |
-| `Jira.Enabled` | Track B from psk-tracker logs | Hours reconciliation | Fall back to git/mtime |
-| `Code Review.Auto on feature completion` | Run `psk-code-review.sh` + AI review | After feature marked done, before [x] | Skip — feature marked [x] without review |
-| `Code Review.In release pipeline` | Run `psk-code-review.sh` | Prepare release Step 2 | Skip — show "disabled in config" in summary |
-| `Code Review.In release pipeline` | Run `psk-code-review.sh` | Refresh release Step 2 | Skip — same |
-| `Code Review.In release pipeline` | Run `psk-code-review.sh` | **Any future pipeline that includes code review** | Skip — same |
-| `Scope Drift.Auto on session start` | Run `psk-scope-check.sh --quick` | Session start | Skip silently |
-| `Scope Drift.Auto on session start` | Run `psk-scope-check.sh` | Before `sync to jira` | Skip silently |
-| `Scope Drift.In release pipeline` | Run `psk-scope-check.sh` | Prepare release Step 3 | Skip — show "disabled in config" in summary |
-| `Scope Drift.In release pipeline` | Run `psk-scope-check.sh` | Refresh release Step 3 | Skip — same |
-| `Scope Drift.In release pipeline` | Run `psk-scope-check.sh` | **Any future pipeline that includes scope check** | Skip — same |
-
-**Manual commands always work regardless of config.** `"review code"`, `"check scope"`, `"hours summary"` — these run when the user explicitly asks, even if the toggle is off. Config controls **automatic** behavior, not what you can ask for.
-
-**Future-proofing:** The rows marked "Any future pipeline" mean: if code review or scope check gets added to a new trigger (e.g., push gate, PR creation), it MUST check the same config toggle. The contract is the authority — not the individual step.
-
-### Config Commands
-
-**One command for all config — generic, works for any toggle:**
-
-| Command | What it does |
-|---------|-------------|
-| `"show config"` / `"config"` | Show all toggles + interactive toggle by number or name |
-| `"enable [name]"` / `"disable [name]"` | Quick toggle any setting: `enable ci`, `disable jira`, etc. |
-
-**`show config` interactive flow:**
-```
-══════════════════════════════════════════
-  PROJECT CONFIG
-══════════════════════════════════════════
-  #  Setting                  Status
-  ─  ───────────────────────  ──────
-  1  CI/CD                    pushdisabled
-  2  CI Badge in README       disabled
-  3  Jira Integration         disabled
-  4  Code Review (auto)       enabled
-  5  Code Review (pipeline)   enabled
-  6  Scope Check (auto)       enabled
-  7  Scope Check (pipeline)   enabled
-──────────────────────────────────────────
-  Toggle: type number or name. Done: Enter
-══════════════════════════════════════════
-```
-User types `1` → toggled → show updated table. Types `4` → toggled. Enter → done. Side effects applied automatically (CI enabled → workflow created; CI disabled → workflow removed).
-
-**Quick toggle:** `"enable ci"`, `"disable scope check"` — agent matches name to config field, toggles, confirms. Same as interactive but faster for one change.
-
-**Generic — new configs auto-appear.** Agent reads all fields from `.portable-spec-kit/config.md`. Adding a new field to config.md automatically makes it show in `show config`. No new command needed.
-
-**All toggles take effect immediately.** No restart. Agent reads config before every config-dependent action.
-
-### Config Value Parsing
-- `true` (case-insensitive: `true`, `True`, `TRUE`) = enabled
-- Everything else (`false`, `no`, `0`, empty, missing) = disabled
-- Agent normalizes values on write: always writes lowercase `true` or `false`
-
-### Config Read Timing
-- **Per-step, not per-session.** Each pipeline step and each auto-trigger reads config independently. If you change config between Step 1 and Step 2 of prepare release, Step 2 sees the new value.
-- **In-progress operations complete.** If an operation is already running (e.g., `sync to jira` mid-way through Step 6), it finishes. Config changes don't abort running operations — they affect the NEXT trigger.
-
-### Edge Cases
-
-**Config file:**
-- Config file missing → create with defaults, no questions
-- Config file empty → treat as missing, recreate
-- Config has unknown fields → preserve them (user may have custom settings)
-- Config file corrupted (not valid markdown) → recreate with defaults, warn user
-
-**Timing:**
-- Setting changed mid-session → takes effect at next config-dependent action (not retroactive)
-- Toggle enabled mid-session after session-start trigger already fired → won't re-run session-start check. User can run manually: `"check scope"`
-- Toggle changed during multi-step pipeline (prepare release) → each step reads fresh config. Later steps see the change.
-- Long-running operation already in progress (sync, release) → completes with the config that was active when it started. Config change affects next operation, not current one.
-
-**Remote state:**
-- CI disabled locally but remote still has ci.yml → red X continues until next push. Agent warns: "CI disabled locally. Push to remove workflow from remote: `push`"
-- CI enabled locally but not yet pushed → workflow only active after push
-
-**Safety warnings:**
-- All safety steps disabled (code review + scope check both off) at prepare release → agent warns before Step 4: "⚠ Code review and scope check are both disabled. Releasing without quality gates. Continue? (y/n/enable)"
-- Single safety step disabled → show "disabled in config" in release summary (no prompt, just visibility)
-
-**Team:**
-- Team member has different config preference → config is per-project not per-user; discuss and agree
-- Config committed by one team member, pulled by another → takes effect immediately for the puller
-- CI enabled but no billing → workflow created but checks fail; agent detects and suggests: "CI checks failing — disable CI until billing fixed? (`disable ci`)"
+> **Config Contract, Commands, and Edge Cases** — see `.portable-spec-kit/skills/config-details.md`. Loaded when config is accessed.
 
 ---
 
@@ -379,7 +311,7 @@ User types `1` → toggled → show updated table. Types `4` → toggled. Enter 
 - **Pre-push gate** — check if any files were modified since the last `prepare release` completed (use `git diff` against the last release commit):
   - **No changes since last prepare release** → push immediately, no tests needed
   - **Changes exist** → run **Test Execution Flow**. If all pass → warn user: "Changes were made after the last prepare release — flow docs, ARD, version bump, PDFs, RELEASES, CHANGELOG may be out of date. Proceed anyway? (y/n)". User yes → push. Do NOT attempt any release steps — push is not a substitute for prepare release.
-- **Push = `bash agent/scripts/sync.sh "message"`** — that's it. sync.sh handles copying files and pushing to `aqibmumtaz/portable-spec-kit`.
+- **Push** = `git push` to remote. If the project has a custom sync script (`agent/scripts/sync.sh`), use it instead — it may handle additional tasks like copying files between repos, creating GitHub releases, or updating tags.
 
 ### Test Execution Flow (used by all commands that run tests)
 
@@ -400,187 +332,20 @@ Whenever any command triggers a test run (run tests, prepare release, update rel
 ### Release Process (EXPLICIT SIGNALS ONLY)
 Never automatically run tests, update counts, bump versions, regenerate PDFs, or commit after every change. The user may have more changes coming. Wait for explicit signals:
 - **"run tests"** → run Test Execution Flow. No commits, no version changes.
-- **"prepare release"** / **"update release"** → steps 1–9 only (tests → code review → scope check → flows → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md) + show release summary. **No commit. No push.** Changes sit staged for user review.
+- **"prepare release"** / **"update release"** → steps 1–10 only (tests → code review → scope check → validation → flows → counts → version bump → PDFs → RELEASES.md → CHANGELOG.md) + show release summary. **No commit. No push.** Changes sit staged for user review.
 - **"refresh release"** → same as prepare release but no version bump. **No commit. No push.**
 - **"commit"** → commit staged changes
 - **"push"** → push to remote (pre-push gate applies)
-- **"prepare release and push"** / **"prepare release, commit and push"** → steps 1–9 + commit all release changes + push via `bash agent/scripts/sync.sh` + show release summary. No confirmation needed between steps — user has given the full instruction.
+- **"prepare release and push"** / **"prepare release, commit and push"** → steps 1–10 + commit all release changes + push to remote (via `git push` or project sync script) + show release summary. No confirmation needed between steps — user has given the full instruction.
 - **"refresh release and push"** / **"refresh release, commit and push"** → same as above but no version bump.
 - **"init"** → scan project thoroughly, create/fill all agent/ files from codebase
 - **"reinit"** → re-scan project, sync all agent files to current codebase state
 
-**"prepare release" / "update release" sequence (steps 1–9, no commit/push):**
-1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop release.
-2. **Run code review** — check `.portable-spec-kit/config.md` → `Code Review.In release pipeline`. If enabled → run `bash agent/scripts/psk-code-review.sh`. Issues found → show report, ask user to fix or skip. Advisory — does not block release, but flagged in summary. If disabled → skip, show "Code review: disabled in config" in summary.
-3. **Run scope drift check** — check `.portable-spec-kit/config.md` → `Scope Drift.In release pipeline`. If enabled → run `bash agent/scripts/psk-scope-check.sh`. Drift score > 0 → show report, recommend review. Advisory — does not block release, but flagged in summary. If disabled → skip, show "Scope check: disabled in config" in summary.
-4. **Update flow docs** — scan `docs/work-flows/`:
-   - **Update** any existing flow doc that describes a process that changed this release
-   - **Create** a new flow doc for any new process or feature implemented this release that doesn't have one yet
-   - **Order check** — verify the numeric prefix order (`01-`, `02-`, ...) reflects the logical sequence a user would follow (e.g. setup flows before development flows, development before release). If adding a new flow breaks logical order, renumber affected files to restore it. When renumbering: `grep -r` entire repo for every old filename and update every reference (README flow table, Section 19 tests, ARD HTML flow table, CHANGELOG, RELEASES, all other flow docs that cross-link) in the same session. No stragglers.
-   - Box-style format required for all flow docs. No tree-style connectors. All box lines 63 chars wide.
-5. **Consistency sweep — update ALL counts and references across ALL files.** This is the most error-prone step. Check every file type against a single source of truth:
-   - **Counts to verify (must all agree):** test count, flow doc count, section count, feature count, version number
-   - **Files to check:** README (badges, "What's New" section, flow table, orchestration table), all `ard/*.html` files (version badge, footer, Key Highlights, changelog section), `agent/SPECS.md` (Overall line), `agent/TASKS.md` (Progress Summary table — no "TBD"), `agent/PLANS.md` (Plans Directory — every feature with a design file is listed), `agent/AGENT_CONTEXT.md` (phase description matches current features), `CHANGELOG.md`, `agent/RELEASES.md`
-   - **README "What's New" section:** If releasing a new minor version (v0.N), add a "What's New in v0.N" section at top. List highlights + table of changes.
-   - **ARD audit (MANDATORY):** Update ALL HTML files in `ard/*.html`. For every file: version badge, footer version, version field. For Technical Overview: Key Highlights version + flow count + test count, Version Changelog section (bump Kit range, update counts). **Check historical entries are not contaminated** by version bump (e.g., v0.4 range should stay v0.4.x, not change to current version). Never update one file and skip others.
-   - **Design plan completeness:** Every feature (Fn) marked `[x]` in SPECS.md that has a design file in `agent/design/` → verify it's listed in PLANS.md Plans Directory table. Any missing → add.
-   - **Test assertion sync:** If test files contain hardcoded counts (flow count, section count), verify they match current values. Stale assertions = false failures on next run.
-   - **Guidance freshness check:** Verify no hardcoded counts, version numbers, or feature-specific examples appear in the Kit Self-Help section or guidance tables. All guidance must be dynamic (derived at runtime from framework/config/project state). If a hardcoded value is found → replace with a dynamic instruction (e.g., "read from SPECS.md" not "66 features").
-6. Bump version — increment patch in `agent/AGENT_CONTEXT.md` (e.g. v0.1.4 → v0.1.5) + README badge. **Also update phase description** in AGENT_CONTEXT.md to reflect current features (not just version number).
-7. Regenerate PDFs — **mandatory on every prepare release** (ARD HTML always changes when version bumps). Run WeasyPrint for every `ard/*.html` file:
-   ```bash
-   for f in ard/*.html; do
-     weasyprint "$f" "${f%.html}.pdf"
-   done
-   ```
-   Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
-8. Update `agent/RELEASES.md` — add or update entry for this version: title, Kit range, all changes grouped by category, test counts
-9. Update `CHANGELOG.md` — single grouped entry per minor release (v0.N), covering all patches in the release cycle. Format: `## v0.N — Title (Month Year)` · `**Built over:** v0.N.1 — v0.N.x` · Highlights + Framework Changes + README/Docs + Tests table. Completed releases show minor only; never separate entries per patch
-10. **Show the release summary block** (see format below) — GitHub and Tag rows show `⏳ pending push`
+**Release execution:** Agent runs `bash agent/scripts/psk-release.sh prepare` (or `refresh`), then repeats `bash agent/scripts/psk-release.sh next` until all steps complete. Automated steps (tests, code review, scope check, counts, version bump, PDFs) are executed by the script. Agent-required steps (flow docs, releases) pause with instructions — the agent does the work, sub-agent critic verifies, then `bash agent/scripts/psk-release.sh done` to proceed. No step can be skipped. Validation is Step 9 (final gate).
 
-**"prepare release and push" / "prepare release, commit and push" sequence (steps 1–9 + commit + push):**
-- Run steps 1–9 above in full
-- Then: stage and commit all release changes with descriptive message
-- Then: run `bash agent/scripts/sync.sh "commit message"` — handles: copying portable-spec-kit.md (root → project → examples), syncing all files to public repo, creating/updating GitHub Release from CHANGELOG.md, updating the v0.N tag. If `gh` not authenticated → run `gh auth login` first.
-- Then: verify version on `aqibmumtaz/portable-spec-kit` matches current version
-- Then: **Show the release summary block** — GitHub and Tag rows show `✅`
+> **Skill: Release Process** — Full prepare/refresh release sequences (10 steps), release summary format, release notes publishing, edge cases, prepare+push flow in `.portable-spec-kit/skills/release-process.md`. Loaded on `prepare release` / `refresh release` / `push` command.
 
-**"refresh release" sequence (same version, no bump, no commit/push):**
-1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop.
-2. **Run code review** — check config → `Code Review.In release pipeline`. If enabled → run `bash agent/scripts/psk-code-review.sh`. If disabled → skip.
-3. **Run scope drift check** — check config → `Scope Drift.In release pipeline`. If enabled → run `bash agent/scripts/psk-scope-check.sh`. If disabled → skip.
-4. **Update flow docs** — scan `docs/work-flows/`:
-   - **Update** any existing flow doc that describes a process that changed
-   - **Create** a new flow doc for any new process implemented that doesn't have one yet
-   - **Order check** — verify numeric prefix order reflects logical user sequence. Renumber if needed; update every reference repo-wide (README, tests, ARD, CHANGELOG, RELEASES, cross-links) in the same session.
-   - Box-style format. All lines 63 chars wide.
-5. **Consistency sweep** — same as prepare release Step 5. Verify all counts agree across README, ARD, SPECS, TASKS, PLANS, CHANGELOG, RELEASES, AGENT_CONTEXT. Check design plan completeness, test assertion sync, README "What's New" section. ARD audit mandatory.
-6. **No version bump** — version stays the same
-7. Regenerate PDFs — mandatory. Run WeasyPrint for every `ard/*.html` file:
-   ```bash
-   for f in ard/*.html; do
-     weasyprint "$f" "${f%.html}.pdf"
-   done
-   ```
-   Verify each PDF was written (non-zero file size). GLib warnings in output are harmless — ignore them.
-8. Update `agent/RELEASES.md` — update the current version entry with any new changes and corrected counts
-9. Update `CHANGELOG.md` — update the current version entry (same patch range, updated content)
-10. **Show the release summary block** (see format below) — GitHub and Tag rows show `⏳ pending push`
-
-**"refresh release and push" / "refresh release, commit and push" sequence:**
-- Run steps 1–9 above in full
-- Then: stage and commit all release changes
-- Then: run `bash agent/scripts/sync.sh "commit message"` to push. If `gh` not authenticated → run `gh auth login` first.
-- Then: verify version on `aqibmumtaz/portable-spec-kit` matches current version
-- Then: **Show the release summary block** — GitHub and Tag rows show `✅`
-
-**Release summary (shown at end of every prepare/refresh release command):**
-```
-══════════════════════════════════════════════
-  RELEASE SUMMARY — v0.N.x
-══════════════════════════════════════════════
-  1. Tests        <Suite>: X passed ✅  <Suite>: X passed ✅
-                  Total: X/X passing ✅
-  2. Code Review  X passed, Y issues (advisory) ✅/⚠  (or: disabled in config)
-  3. Scope Check  drift score: N ✅/⚠              (or: disabled in config)
-  4. Flows        docs/work-flows/ current ✅
-  5. Counts       README, ARD, RELEASES, CHANGELOG, TASKS ✅
-  6. Version      v0.N.x-1 → v0.N.x ✅           (prepare/update only)
-                  unchanged — v0.N.x —             (refresh only)
-  7. PDFs         all ard/*.pdf regenerated ✅                
-  8. RELEASES.md  updated ✅
-  9. CHANGELOG.md updated ✅
-  10. GitHub      ⏳ pending — run: commit and push   (prepare release)
-                  published ✅                        (prepare release and push)
-  11. Tag         ⏳ pending — run: commit and push   (prepare release)
-                  updated ✅                          (prepare release and push)
-══════════════════════════════════════════════
-```
-Do not finalize the release (version bump) if any suite has failures.
-
-**Release notes publishing (only when committing and pushing):**
-
-Applies only when running `prepare release and push` / `prepare release, commit and push` (or `refresh release and push`). CHANGELOG.md is always updated as part of step 9 above — it is the universal fallback. GitHub Releases are the additional layer published during the push step.
-
-During the push step, check `gh auth status` and proceed:
-- **If `gh` authenticated** → automatically: commit all release changes + run `bash agent/scripts/sync.sh` to push + create/update GitHub release with CHANGELOG.md notes for this version (`--latest`). No prompt needed.
-- **If `gh` not authenticated** → ask user:
-  ```
-  gh CLI not authenticated. GitHub Releases require auth.
-  (a) Connect now — run `gh auth login` then continue
-  (b) Commit and push only — skip GitHub release this time
-  ```
-  - User picks (a) → run `gh auth login`, re-check auth, then proceed with full publish
-  - User picks (b) → commit + push via git, skip GitHub release creation
-- CHANGELOG.md is always updated in step 7 regardless of auth state — never skip it
-
-**Edge cases:**
-- **No test suites exist** → show `No test suites configured — skipping test run` in summary block and proceed. Tests are required before v1.0.
-- **New suite added this session** → include it in the summary automatically
-- **Test failures exist** → run all suites to completion first, then show failure summary (suite, test name, error) + fix plan (one-line diagnosis + proposed fix per failure). Ask user to approve. Fix → re-run → only proceed when all pass. Never skip failures.
-- **release-check.sh shows untested features** → **do not finalize the release**. Add test references to the SPECS.md Tests column, ensure those tests pass, then re-run prepare release. A feature is not done until it has a test ref.
-- **New flow needed** → create in `docs/work-flows/` during step 2. Choose its number based on logical position in the user journey — not just "next highest". If inserting mid-sequence, renumber subsequent files and update all references repo-wide before proceeding.
-- **PDFs** → always regenerate all `ard/*.html` files to PDF on every prepare release using WeasyPrint (`weasyprint`). Use the loop form: `for f in ard/*.html; do weasyprint "$f" "${f%.html}.pdf"; done`. Verify non-zero output file sizes. GLib warnings are harmless.
-- **GitHub release already exists for this version** → update it (not create new) — use `gh release edit`
-- **CHANGELOG.md missing entry for this version** → add it before publishing
-- **Release notes scope** — only include changes that are committed and visible in the repo. Never mention files, features, or work that is excluded from the public repo (e.g. private docs/, research papers, local-only scripts)
-- **No git tags in use** → skip the tag update step; note it
-
-Batch all changes first, then trigger the release process once when the user is ready.
-
-**"init" — Project initialization:**
-Explicit trigger for full project scan and agent file setup. Handles any kit status (New, Partial, or already Mapped).
-
-1. Confirm project directory — list visible dirs, ask: "Which directory is your project? (Enter = current)"
-2. Show current kit status (✅ Mapped / ⚠ Partial / 🔍 New)
-3. If already Mapped → show: "Project already initialized (vX.X.X). Running full re-scan to refresh agent files." then continue.
-4. Announce: "Scanning project — stack, source files, config, dependencies..."
-5. **Deep scan** — read all config files (`package.json`, `requirements.txt`, `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tsconfig.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `*.xcodeproj`, `pubspec.yaml`, `README.md`) + all top-level dirs + sample `src/` files. Build a complete picture before touching anything.
-6. Create `agent/` dir + all 9 agent files if missing — fill every field from scan. Never leave TBD if the answer is visible in the code.
-7. Create `README.md`, `.gitignore`, `.env.example` if missing.
-8. Present scan summary + optional changes checklist:
-   ```
-   Scan complete. Detected: <stack> · Port <X>
-
-   [x] agent/ — 6 files created/updated (pre-filled from scan)
-   [ ] CI/CD — disabled by default (say `enable ci` when ready)
-   [ ] .env.example              — env var template
-   [ ] README.md                 — restructure to kit template
-
-   Which optional changes? (all / none / list numbers)
-   ```
-9. Apply selected changes.
-10. Show init summary:
-    ```
-    ✅ Init complete — <project-name>
-    Stack:  <detected>
-    Files:  X created · Y updated
-    Status: ✅ Mapped
-    ```
-
-**"reinit" — Re-scan and sync agent files:**
-Re-scans the entire project and brings all agent files in sync with the current codebase. Use when significant code changes have been made since the last scan and agent files are stale.
-
-1. Announce: "Re-scanning — syncing agent files to current codebase..."
-2. Read current `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` as baseline.
-3. **Deep scan** — same scope as `init` step 5. Read source files, config files, directory structure.
-4. **Update `agent/AGENT.md`** — update only fields that changed (stack versions, new tools, port, conda env). Note what changed.
-5. **Rebuild `agent/AGENT_CONTEXT.md`** — rewrite from current codebase state:
-   - Phase — inferred from TASKS.md progress + codebase completeness
-   - What's done — `[x]` tasks + visible completed code
-   - What's next — `[ ]` tasks
-   - Blockers — TODO/FIXME markers in source, missing deps, failing tests
-   - File structure — current directory tree
-6. **SPECS.md staleness check** — count `[x]` tasks in TASKS.md vs features in SPECS.md. If completed tasks are not represented in SPECS → list them: "3 completed tasks not in SPECS.md — add as features? (y/n)"
-7. **PLANS.md vs code** — if architecture visible in the code differs from PLANS.md → flag it: "PLANS.md may be stale — <field> shows <X> in code but <Y> in PLANS. Update? (y/n)"
-8. Show reinit summary:
-   ```
-   ✅ Reinit complete — <project-name>
-   AGENT.md:      <fields updated, or "no changes">
-   AGENT_CONTEXT: rebuilt — phase: <X> · <Y> tasks pending
-   SPECS.md:      <N stale features> / current ✅
-   PLANS.md:      <stale fields flagged> / current ✅
-   ```
+> **Skill: Init/Reinit Process** — Full `init` (10 steps) and `reinit` (9 steps) procedures in `.portable-spec-kit/skills/init-process.md`. Loaded on `init` / `reinit` command.
 
 ### Critical Operations (ALWAYS ASK FIRST)
 - Creating or deleting repositories
@@ -711,54 +476,20 @@ Kit: v0.2.1 — v0.2.7
 - Future tasks go under `## Backlog (Future Releases)`
 - Design decisions and architectural plans go in `PLANS.md` — architecture summary, ADL, and stack decisions
 - **Feature plans (MANDATORY)** — every feature (F{N}) in SPECS.md gets a plan file in `agent/design/f{N}-feature-name.md`. Small features get a small plan; large features get a large plan. Same template, same location.
-  - **Three triggers:**
+  - **Four triggers:**
     - **Explicit** — user says "plan F3" / "plan this feature" / "design F3" → agent creates/opens the plan file
     - **Auto on SPECS.md** — feature added to SPECS.md → agent auto-creates plan stub in `agent/design/`
     - **Implementation gate** — user says "implement F3" / "start F3" → agent checks plan exists. If not → creates + fills first, confirms with user, then implements
-  - **Plan template:**
-    ```markdown
-    # Plan: F{N} — Feature Name
-
-    ## Context
-    What + why. Requirement ref (Rn).
-
-    ## Approach
-    Architecture, tech choices, high-level design.
-
-    ## Decisions
-    | Decision | Options Considered | Chosen | Why |
-    |----------|-------------------|--------|-----|
-    Auto-flows to PLANS.md ADL with link back to this file.
-
-    ## Data Model / Syntax
-    Schema, formats, config. (skip if none)
-
-    ## Edge Cases
-    (filled during design or implementation)
-
-    ## Commands
-    New commands. (skip if none)
-
-    ## Config Changes
-    AGENT.md, .env, framework. (skip if none)
-
-    ## Scope Exclusions
-    What this does NOT do and why.
-
-    ## Files to Modify
-    New + existing.
-
-    ## Tests
-    Maps to SPECS.md acceptance criteria.
-
-    ## Implementation Order
-    Build sequence with dependencies.
-
-    ## Current State
-    Plan only / In progress / Done
-    ```
-  - **ADL integration** — decisions recorded in plan `## Decisions` table are auto-extracted to PLANS.md ADL with a `Plan Ref` column linking back to the plan file. The plan is the **source of truth** for decision rationale; ADL is the **index**.
-  - `agent/PLANS.md` stays as the architecture summary + ADL index only; `agent/design/` holds the per-feature depth.
+    - **Plan-mode → implementation transition (MANDATORY)** — when a plan-mode planning session transitions to implementation (plan mode exits, user says "implement it", or user approves the plan for execution), agent automatically executes the **plan-to-pipeline sync**:
+      1. **Save the plan** to `agent/design/f{N}-feature-name.md` (if the plan was in an ephemeral location such as the IDE's local plans directory) — this makes the plan part of the repo history
+      2. **Add SPECS.md entry** — new F{N} row in features table with acceptance criteria subsection (`### F{N}` with `- [ ]` items)
+      3. **Add TASKS.md entries** — tasks for each implementation phase/milestone under the current or next version heading, assigned per multi-agent rules
+      4. **Update AGENT_CONTEXT.md phase** — describe the current phase of work (the new F{N} being built)
+      5. **Add PLANS.md ADL entries** — one row per significant decision in the plan's Decisions section, with `Plan Ref` link to the design file
+      6. **If requirement-level** — add R{N} to REQS.md if the plan addresses a new client/business requirement not previously recorded
+      These six updates happen together, in one commit if possible, so the pipeline is never left partially in sync after a major planning session.
+  - **Plan template:** See `.portable-spec-kit/skills/templates.md` for the full 12-section plan template (Context, Approach, Decisions, Data Model, Edge Cases, Commands, Config, Scope Exclusions, Files, Tests, Implementation Order, State).
+  - **ADL integration** — decisions in plan `## Decisions` auto-extracted to PLANS.md ADL with `Plan Ref` column. Plan is source of truth for rationale; ADL is index. `agent/design/` holds depth; `agent/PLANS.md` is the summary.
 - Keep `TASKS.md` and `PLANS.md` in sync — update both when work is completed
 - Maintain a **Progress Summary** table at the bottom of TASKS.md showing tasks done, tests, and status per version
 
@@ -791,22 +522,22 @@ Kit: v0.2.1 — v0.2.7
   - Build phases adjusted → update Build Phases section
   - New methodology or research findings → add to Methodology & Research section
   - If PLANS.md is empty after stack is chosen → fill architecture from current codebase
-- **Architecture Decision Log (ADL)** — add a row to `## Architecture Decision Log` in PLANS.md for every significant technical decision:
-  - **Format:** `| ADR-NNN | YYYY-MM-DD | Decision | Options Considered | Chosen | Why | Impact | Plan Ref |`
-  - **Plan Ref** — if the decision was made in a feature plan, link to it: `[F63](design/f63-jira-integration.md#decisions)`. This connects the one-line ADR summary to the full rationale in the plan file. Leave `—` if decision has no associated plan.
-  - **ADR numbering:** Sequential, 3-digit zero-padded (ADR-001, ADR-002, …). First decision = ADR-001.
-  - **Date:** ISO 8601 (YYYY-MM-DD). Convert relative dates ("last Thursday") to absolute.
-  - **Impact:** What files, components, or systems are affected.
-  - **Newest first:** most recent decision at top (prepend, don't append).
-  - **ADL is immutable history** — never delete or modify past decisions. If a decision is superseded → add a new row: "ADR-005 supersedes ADR-002".
-  - **When to add:** stack chosen/replaced, database schema changed, API pattern changed, test framework changed, methodology adopted, architecture pattern changed, security approach changed.
-  - **NOT for:** bug fixes, small implementation choices, variable names, content changes, feature additions with no architecture impact.
+- **Architecture Decision Log (ADL)** — add a row to `## Architecture Decision Log` in PLANS.md for every significant technical decision. ADL format, numbering rules, date format, immutability rules, and scope rules — see `.portable-spec-kit/skills/templates.md` (ADL Format Details section).
 - **AGENT.md** — update when project config changes:
   - Stack changed → update Stack table
   - Brand colors or fonts changed → update Brand section
   - AI provider or model changed → update AI Config
   - Dev server port changed → update port
-- **Sync rule:** When completing a feature, update **all pipeline + support files** in the same session: REQS.md (requirement status), SPECS.md (feature status + Completed date), PLANS.md (ADL if decisions), DESIGN.md + `design/f{N}.md` (mark Done), TASKS.md (mark [x] with date), RELEASES.md (if version complete) + RESEARCH.md (index if research done). Don't leave them out of sync.
+- **Sync rule:** When completing a feature, update **all affected pipeline + support files** in the same session. Check each file — if this feature's completion changes its state, update it:
+  - REQS.md → requirement status (Implemented/Verified if all features for this req done)
+  - SPECS.md → feature status [x] + Completed date + Tests column
+  - PLANS.md → ADL entry if architectural decisions were made
+  - RESEARCH.md → research index if research was done
+  - DESIGN.md → design index status. `design/f{N}.md` → Current State = Done
+  - TASKS.md → mark [x] with completion date
+  - RELEASES.md → add to current version entry (if version complete)
+  - AGENT_CONTEXT.md → update phase, what's done, what's next
+  - Don't leave files out of sync. If you changed one, check all others.
 
 ### Testing (MANDATORY)
 - **Always think about edge cases** when creating test cases — empty data, max data, boundary values, null/undefined, single item vs many
@@ -973,131 +704,11 @@ Before any deployment:
 - Enable branch protection on `main` (GitHub Settings → Branches → require status checks)
 
 ### CI & Community Contributions
+> **Skill: CI/CD Setup** — CI badge rule, branch protection, PR workflow, contribution validation, ci.yml template, stack-aware test commands in `.portable-spec-kit/skills/ci-setup.md`. Loaded on `enable ci` or project setup.
 
-**CI status badge rule:** Every public GitHub repo using the kit should show a CI badge in README.md reflecting the main branch test status. Badge format:
-`[![CI](https://github.com/{owner}/{repo}/actions/workflows/ci.yml/badge.svg)](https://github.com/{owner}/{repo}/actions/workflows/ci.yml)`
+### Python Environment
 
-**Branch protection guidance:** Enable branch protection on `main` (GitHub Settings → Branches → Add rule). Require status checks to pass before merging — select the CI workflow. Prevents pushes with failing tests reaching main.
-
-**PR workflow rule:** When a contributor opens a PR, do not merge until all CI checks are green. Review for portability (any project / any language / any agent?) before merging.
-
-**Contribution validation rule:** Before merging any PR — from any contributor including yourself — CI must be green. Green CI is the minimum bar; code review is additional, not a substitute.
-
-**ci.yml template for user projects:** When setting up CI for a project, generate `.github/workflows/ci.yml` using this template. Fill in `{TEST_COMMAND}` and `{SETUP_STEPS}` based on the detected stack from `agent/AGENT.md`. Always include `test-release-check.sh agent/SPECS.md` as the final step — this enforces the R→F→T gate in CI.
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      {SETUP_STEPS}
-      - name: Run tests
-        run: {TEST_COMMAND}
-      - name: R→F→T validator
-        run: bash tests/test-release-check.sh agent/SPECS.md
-```
-
-**Stack-aware test command detection** (fill `{TEST_COMMAND}` and `{SETUP_STEPS}` from `agent/AGENT.md` Stack table):
-
-| Stack | `{TEST_COMMAND}` | `{SETUP_STEPS}` |
-|-------|-----------------|----------------|
-| Node.js + Jest | `npx jest --passWithNoTests` | `uses: actions/setup-node@v4` + `run: npm ci` |
-| Node.js + Vitest | `npx vitest run` | same as Jest |
-| Node.js + generic | `npm test` | same as Jest |
-| Python + pytest | `python -m pytest` | `uses: actions/setup-python@v4` + `run: pip install -r requirements.txt` |
-| Go | `go test ./...` | (none) |
-| Bash scripts only | (omit Run tests step — test-release-check.sh covers it) | (none) |
-| Unknown / not detected | `echo "Configure test command in ci.yml"` + warn user | (none) |
-
-**New Project Setup Step 7.5 — CI workflow (config-aware):** After stack is confirmed (Step 7), check `.portable-spec-kit/config.md` → `CI/CD.Enabled`. If `true` → create `.github/workflows/ci.yml` using the template above, add CI badge to README.md. If `false` (default) → skip CI workflow creation. Tell user: "CI/CD is disabled by default. Enable anytime: say `enable ci`".
-
-**Existing project CI setup:** During existing project onboarding (scan checklist), include:
-`[ ] Enable CI/CD (disabled by default — say `enable ci` when ready)`
-Agent fills in the test command from the detected stack. Always includes `bash tests/test-release-check.sh agent/SPECS.md`.
-
-**Existing project onboarding — agent/ commit check:** During existing project scan, if project is team/open-source, check if `agent/` is in `.gitignore`. If yes → suggest: `[ ] Remove agent/ from .gitignore (enables AI-powered onboarding for contributors)`.
-
-### Python Environment (MANDATORY — Conda)
-- **Every Python project MUST have its own conda environment** — never install packages into `base` or system Python
-- **Default env name** = project directory name, lowercase, kebab-case (e.g., `aiiu`, `speech-ai-rd`, `my-api`)
-
-#### Conda Installation (if not found)
-Before any environment setup, verify conda is installed:
-1. Check: `which conda` or `conda --version`
-2. If not found → install Miniconda automatically:
-   - **macOS:** `brew install --cask miniconda` (if Homebrew available) OR download from https://docs.conda.io/en/latest/miniconda.html
-   - **Linux:** `wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && bash /tmp/miniconda.sh -b -p $HOME/miniconda3`
-   - **Windows:** download installer from Miniconda website, ask user to run it
-3. After install → initialize: `conda init zsh` (or `bash`)
-4. Verify: `conda --version`
-5. If automated install fails → tell user: "Conda is required. Install Miniconda from https://docs.conda.io/en/latest/miniconda.html and restart terminal."
-
-#### Environment Selection (New Project + Existing Project Setup)
-This flow runs in **two scenarios**:
-- **New project setup** — when creating a new Python project from scratch
-- **Existing project setup** — when installing the spec kit on an existing Python project (during the guided setup checklist)
-
-In both cases, **always confirm with the user** before creating or selecting an environment:
-
-1. List existing conda envs: `conda env list`
-2. Ask the user:
-   ```
-   "This project needs a Python environment. Options:
-   (a) Create new conda env '<project-name>' (recommended)
-   (b) Use an existing env (select from list below)
-
-   Existing envs:
-     1. aiiu (Python 3.11)
-     2. research (Python 3.10)
-     3. speech-ai-rd (Python 3.9)
-     ...
-
-   Select (a/b or env name): "
-   ```
-3. **If (a) — Create new:**
-   - Use default name `<project-name>` or let user type a custom name
-   - Ask Python version: "Python version? (Enter = 3.11)" — default to 3.11
-   - Create: `conda create -n <env-name> python=<version> -y`
-   - If existing project has `requirements.txt` → install deps: `pip install -r requirements.txt`
-4. **If (b) — Use existing:**
-   - User picks from the list by number or name
-   - Verify the env works: `conda run -n <env-name> python --version`
-   - If existing project has `requirements.txt` → check if deps are installed, install missing ones
-5. Record the chosen env name in `agent/AGENT.md` under Stack table (e.g., `Conda Env: aiiu`)
-
-#### Edge Cases
-- **Env name already exists** → ask user: "Env `<name>` already exists. Use it, or create with a different name?"
-- **No existing envs** (only `base`) → skip option (b), go straight to create new
-- **`requirements.txt` install fails** (version conflicts, missing packages) → show error, ask user to resolve. Don't silently skip failed installs
-- **Project uses `pyproject.toml` or `setup.py` instead of `requirements.txt`** → use `pip install -e .` or `pip install .` as appropriate
-- **Project uses `environment.yml`** (conda env file) → ask user: "Found environment.yml. Create env from it? (`conda env create -f environment.yml`)" — this takes priority over `requirements.txt`
-- **User has `venv`/`virtualenv` already in the project** → ask: "Found existing venv at `<path>`. Switch to conda env, or keep venv?" — respect user's choice. If keeping venv, record it in AGENT.md and skip conda setup
-- **Python version mismatch** → existing env has Python 3.9 but project needs 3.11 (e.g., from `pyproject.toml` or `runtime.txt`) → warn user before proceeding
-- **Env recorded in AGENT.md but doesn't exist on disk** → re-run environment selection flow, don't auto-create silently
-- **Multiple Python projects in monorepo** → each subdirectory project can have its own env. Ask per project, don't assume one env for all
-
-#### On Every Session
-- Activate the project's conda env before running any Python commands
-- Check `agent/AGENT.md` for the env name if unsure
-- If env was deleted or missing → re-run the environment selection flow above
-
-#### Rules
-- **All `pip install` commands** must run inside the project's conda env — never use `--break-system-packages` or install globally
-- **`requirements.txt`** must be maintained at project root — update after every `pip install`:
-  ```bash
-  pip freeze > requirements.txt
-  ```
-- **Shebang lines** in Python scripts: use `#!/usr/bin/env python3` (relies on active conda env, not hardcoded paths)
-- **`.gitignore`** should include conda env artifacts but NOT `requirements.txt` (commit it)
-- **Never hardcode** conda env paths in scripts — use `#!/usr/bin/env python3` or `conda run -n <env>`
+Superseded by §Environment Selection — the generic env-management rule covers Python (conda · venv · poetry · uv) and every other supported stack. Legacy `python-environment.md` skill kept for backward compat with older projects; new work uses `env-management.md`.
 
 ### Dependencies
 - Prefer well-maintained, widely-used packages
@@ -1111,12 +722,14 @@ In both cases, **always confirm with the user** before creating or selecting an 
 1. User profile (workspace `.portable-spec-kit/user-profile/` → global `~/.portable-spec-kit/user-profile/`) — adapt behavior to preferences
 2. `agent/AGENT.md` — project config, stack, rules
 3. `agent/AGENT_CONTEXT.md` — project state (what's done, what's next)
-4. `agent/REQS.md` — requirements
-5. `agent/SPECS.md` — features
-6. `agent/PLANS.md` — architecture
-7. `agent/RESEARCH.md` — active research questions
-8. `agent/DESIGN.md` — design overview
-9. `agent/TASKS.md` — current tasks
+4. `.session-stack.md` (if present) — live conversation-branch tree; restores in-session context from the previous turn
+5. `agent/REQS.md` — requirements
+6. `agent/SPECS.md` — features
+7. `agent/PLANS.md` — architecture
+8. `agent/RESEARCH.md` — active research questions
+9. `agent/DESIGN.md` — design overview
+10. `agent/TASKS.md` — current tasks
+11. `agent/RELEASES.md` — version history (scan for last release state)
 
 **Two-tier update rule:**
 
@@ -1143,68 +756,7 @@ In both cases, **always confirm with the user** before creating or selecting an 
 ---
 
 ## Document Generation (ARD / Technical Docs)
-
-### Flow Documentation (`docs/work-flows/`)
-
-**All flow diagrams use box-style ASCII diagrams.** Never use tree-style connectors (bare `│/▼` on standalone lines). Every flow doc in `docs/work-flows/` must follow this format:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  STEP NAME                                                   │
-│     Detail line 1                                           │
-│     Detail line 2                                           │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│  NEXT STEP                                                   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-Rules:
-- Each step in a flow = one box (`┌─...─┐` / `│` / `└─...─┘`)
-- Boxes connect with `└──────┬──────┘` → `┌──────▼──────┐` connectors
-- Decision branches go inside the box as `├─ Yes → ... / └─ No → ...`
-- Inner content boxes (showing file states, examples) nest with 2-space indent inside outer box
-- No standalone `│` or `▼` lines between steps
-- When updating a flow doc, convert any remaining tree-style sections to box-style in the same session
-- Every box line (`│...│`) must be exactly 63 display characters wide — pad trailing spaces to align the right `│` border
-
-**Architecture change rule:** When any agent behavior, process, or setup flow changes — new step added, trigger modified, rule removed — update the relevant `docs/work-flows/` file in the same session. A process change without a matching flow doc update is incomplete.
-
-**Release gate for flow docs:** As part of every `prepare release` Step 2 — scan `docs/work-flows/` and verify each flow reflects current behavior. If any flow describes a process that changed this release, update it before finalizing. Box-style format required. No tree-style connectors. All box lines 63 chars wide.
-
-### Document Structure (Standard Order)
-1. Title Page (cover — readable text, professional styling)
-2. Executive Summary + Key Highlights
-3. Version Changelog (detailed per-version with categorized changes)
-4. Table of Contents
-5. Full document sections (each TOC heading starts on new page)
-
-### Changelog Format
-- Each version: `v0.X — Title (Date)`
-- Group changes by category (e.g., Frontend, Backend, AI, Infrastructure)
-- List specific features with technical detail
-- Reference file paths, APIs, and technologies used
-
-### Styling Rules
-- HTML source → convert to PDF via browser print or PDF generation tool
-- `@page { size: A4; margin: 22mm 20mm; }`
-- Professional fonts: Segoe UI / system-ui
-- Brand colors: defined per project in `agent/AGENT.md`
-- Tables with dark header, alternating row colors
-- Code blocks with monospace font, light background
-- Page breaks before each major section (`page-break-before: always`)
-
-### Presentations
-- Landscape slides: `@page { size: 297mm 210mm; }`
-- Content vertically centered on each slide
-- Consistent slide themes: dark, light, accent, gray
-- Footer gradient bar on light slides
-- Slide numbers in bottom-right corner
-
----
-
-## Project Organization
+> **Skill: Document Generation** — ARD HTML styling, presentations, changelog format in `.portable-spec-kit/skills/document-generation.md`. Loaded during release or when generating documents.## Project Organization
 
 - Read the relevant project's `agent/AGENT.md` based on user's current task
 - Do not mix context between projects
@@ -1229,67 +781,10 @@ Rules:
   - **`agent/scripts/`** — all bash scripts: sync, Jira sync, tracker daemon, installer/uninstaller, report generators. Never place `.sh` files at the `agent/` root.
 
 ### AI-Powered Onboarding
+> **Skill: Onboarding** — Commit agent/ rules, CONTRIBUTING.md guidance, .gitignore defaults, sensitive content check in `.portable-spec-kit/skills/onboarding-tour.md`. Already loaded with tour skill.
 
-**Commit `agent/` for team and open-source projects (MANDATORY):** For any project with multiple contributors or a public GitHub repo — commit the `agent/` directory to git. Never add `agent/` to `.gitignore` for team or open-source projects.
-
-When a contributor clones the repo, their agent reads the 6 spec files and is fully briefed without any verbal handoff, onboarding call, or wiki hunt:
-1. Agent detects `agent/` exists → reads all 6 files (Mapped state)
-2. Shows: "✅ Spec Kit: Project mapped (vX.X.X) — briefed from spec files"
-3. Presents: stack, current version, phase, top pending tasks
-4. Contributor starts working immediately — fully context-aware
-
-This is the Persistent Memory Architecture applied to contributor onboarding. Any agent (Claude, Cursor, Copilot, Cline) reads the same files — briefing is agent-agnostic.
-
-**What stays gitignored (unchanged):** `.env`, `cache/`, `output/`, `logs/` — these are still excluded. The 6 `agent/` management files contain project structure, not secrets.
-
-**Solo project exception:** If definitively single-developer and private, `agent/` may be gitignored. But if in doubt — commit it. Cost of committing: near zero. Cost of not committing when a collaborator joins: full manual re-onboarding.
-
-**CONTRIBUTING.md guidance for open-source projects:** Add this note:
-> "This project uses Portable Spec Kit. Your AI agent will be briefed automatically when you clone — open a session and it will read `agent/` to understand the project state, current version, and pending tasks."
-
-**Sensitive content check:** Before committing `agent/`, verify no sensitive data has been added (passwords, API keys, personal info). Agent files contain project structure — not secrets. If secrets found in an agent file → remove them and add to `.env` instead.
-
-**`.gitignore` default on new project setup:**
-- Team/open-source detected → `.gitignore` does NOT include `agent/`; tell user: "Committing `agent/` enables AI-powered onboarding — contributors briefed automatically on clone."
-- Solo/private → add comment: `# agent/ — commit this for team projects`
-
-**`agent/` already gitignored warning:** If existing project has `agent/` in `.gitignore` and the project has contributors → warn: "agent/ is gitignored — contributors won't be briefed on clone. Remove from .gitignore for team projects?"
-
-**AI-Powered Onboarding edge cases:**
-- New contributor uses different AI agent → all agents read same files (Cursor, Copilot, Cline, Claude) — briefing works regardless
-- Forked open-source project → forker clones with `agent/` → briefed on upstream project state; can diverge from there
-- User wants agent files private → valid for private projects; explain trade-off
-- Mono-repo with multiple `agent/` dirs → each subproject decides independently
-
-### File Creation/Update Rule (applies to ALL auto-managed files)
-
-This rule applies to: `WORKSPACE_CONTEXT.md`, `README.md`, and all `agent/` files. **Check immediately when version change is detected** — don't wait for next session. When the framework is updated (user pulls new version), restructure immediately in the current conversation.
-
-- **If file does not exist** → create it using the standard template, fill in known details
-- **If file exists but doesn't match template structure** → restructure to match template while **retaining all existing content and key details** — never lose data, only reorganize into standard sections
-- **If framework was updated** → compare `<!-- Framework Version -->` in portable-spec-kit.md against `**Kit:**` in agent/AGENT_CONTEXT.md. If different, OR if `**Kit:**` field is missing (first time after kit update):
-  1. **Do NOT ask** — kit version updates are automatic, not optional. Restructure immediately.
-  2. Restructure all agent/ files against current templates — preserve all existing content
-  3. Update `**Kit:**` version in AGENT_CONTEXT.md to match `<!-- Framework Version -->`
-  4. **Scan the user's project immediately** — before showing any summary to the user. Read the project's own source code, config files (`package.json`, `requirements.txt`, `Dockerfile`, etc.), and directory structure. Update the project's `agent/AGENT.md` (stack, tech, ports) and `agent/AGENT_CONTEXT.md` (current state, phase, what's done) from the actual codebase. This step is mandatory and must complete before the user sees any output.
-     - **Edge cases:**
-       - Project has no source files (new/empty project) → skip deep scan, note in summary "No source files found — context will populate when development starts"
-       - Very large project (100+ files) → scan config files and top-level dirs, sample src/ — don't read every file
-       - agent/AGENT.md already accurate (no TBD fields) → still refresh AGENT_CONTEXT.md phase/status
-       - Document/research project (no code) → scan plan/, docs/, research/ for current state instead
-       - Kit updated but no project directory confirmed yet → skip scan, run on next project entry
-  5. Show user a single combined summary (scan results + kit changes together):
-     ```
-     "Portable Spec Kit updated to vX.X.
-
-     Your project: [stack detected] · [phase] · [X tasks pending]
-     Agent files updated: AGENT.md (stack refreshed), AGENT_CONTEXT.md (state refreshed)
-
-     What's new in vX.X:
-     - [list changes from CHANGELOG.md for this version]"
-     ```
-  6. Continue conversation — zero interruption
-- **If file already matches template** → leave as-is
+### File Creation/Update Rule
+> **Skill: File Management** — Auto-managed file creation/update rules, framework update migration, scan-before-summary rule in `.portable-spec-kit/skills/project-setup.md`. Already loaded with project setup skill.
 
 ### First Session in New Workspace
 
@@ -1305,107 +800,10 @@ If `WORKSPACE_CONTEXT.md` does not exist:
 If the user skips or defers profile setup ("skip", "later", "not now") → apply default profile and continue. **Never pause or block project scan waiting for profile completion.** Kit status display (Step 0) and project setup always run regardless of whether profile setup was completed or skipped.
 
 ### Onboarding Tour (First Session Only)
-
-After profile setup + project scan completes on the VERY FIRST session, the agent gives a brief interactive tour. This is the user's introduction to the kit — make it welcoming, practical, and quick. The tour is NOT a documentation dump. It's a guided walkthrough that gets the user productive in under 2 minutes.
-
-**Tour trigger:** First session ever (no `agent/AGENT_CONTEXT.md` exists yet, or its `Last Updated` field is empty). Once the tour completes, the agent writes `tour_completed: true` to `.portable-spec-kit/config.md`. Tour never runs again.
-
-**Tour flow (agent shows one step at a time, waits for user between steps):**
-
-```
-═══════════════════════════════════════════════
-  Welcome to Portable Spec Kit, {Name}! 🎉
-  Quick tour — 4 steps, takes about 1 minute.
-  (Skip anytime: say "skip tour")
-═══════════════════════════════════════════════
-
-Step 1 of 4: YOUR PROJECT
-  Your project is set up with 9 management files in agent/.
-  The kit tracks your specs, plans, tasks, and releases automatically.
-  → Say "what's the status?" anytime to see where you are.
-  (Enter to continue)
-
-Step 2 of 4: HOW TO WORK
-  Just talk naturally. Say things like:
-    "build a login page"  →  I'll plan, build, test, and track it
-    "fix the auth bug"    →  I'll add it to tasks, fix it, mark done
-    "what's next?"        →  I'll show your pending work
-  I handle the tracking — you focus on building.
-  (Enter to continue)
-
-Step 3 of 4: YOUR SETTINGS
-  Your project config (.portable-spec-kit/config.md):
-    Code review:  enabled (I'll review after each feature)
-    Scope check:  enabled (I'll check alignment at session start)
-    CI/CD:        disabled (enable anytime: "enable ci")
-    Jira:         disabled (enable anytime: "enable jira")
-  → Say "show config" to change any setting.
-  (Enter to continue)
-
-Step 4 of 4: GETTING HELP
-  At any point, just ask:
-    "help"         →  I'll show what you can do right now
-    "how do I...?" →  I'll walk you through step by step
-    "show config"  →  Review and change your settings
-  I'll also suggest features when they're relevant.
-  (Enter to finish tour)
-
-═══════════════════════════════════════════════
-  Tour complete. Ready to build!
-  Start by describing what you want to create,
-  or say "help" if you need guidance.
-═══════════════════════════════════════════════
-```
-
-**Tour rules:**
-- **Show one step at a time.** Wait for user to press Enter or respond before showing next step.
-- **User says "skip tour" at any point** → stop immediately, mark tour_completed in config.
-- **Steps adapt to config state.** Step 3 reads actual config values — not hardcoded. If Jira is already enabled (from global config), show "Jira: enabled".
-- **Steps adapt to project state.** If project already has features in SPECS.md (existing project with kit added), Step 1 says "I found X existing features" instead of "start by describing what to build".
-- **Brief, not comprehensive.** 4 steps maximum. Each step is 4-5 lines. Total tour under 1 minute of reading. Deep details come from `help` later.
-- **Never repeat.** Once `tour_completed: true` is in config, tour never runs again — even across sessions, machines, or agent switches.
-
-**Tour edge cases:**
-- Existing project (has code, agent/ exists) → skip Step 1 project intro, show "Your project is already tracked" instead
-- User immediately starts giving tasks before tour finishes → stop tour, handle the task, mark tour completed
-- Agent context window too small for full tour → show abbreviated 2-step version (just Steps 2 + 4)
-- Team project (another user already ran tour) → config has tour_completed → skip for this user. BUT if this user has no profile → run profile setup, skip tour, show: "Project already configured. Say 'help' for a quick overview."
-- User says "tour" or "show tour" → re-run tour even if completed (for refresher)
+> **Skill: Onboarding Tour** — Tour flow (4 steps), trigger conditions, tour rules, edge cases in `.portable-spec-kit/skills/onboarding-tour.md`. Loaded on first session when no tour_completed in config.
 
 ### Contextual Presence (Always-On Help)
-
-After the tour, the kit stays present throughout the development journey. NOT by interrupting, but by being contextually aware and responsive at every touchpoint.
-
-**Session greeting (every session, not just first):**
-After reading agent files at session start, show a brief one-liner:
-```
-"Welcome back, {Name}. Working on {project} (v0.N). {X tasks pending}. Say 'help' anytime."
-```
-- Derived from AGENT_CONTEXT.md + TASKS.md — always current
-- One line only — never a wall of text
-- If scope drift detected at session start → append: "Heads up: scope check found {N} items to review."
-
-**Milestone acknowledgments:**
-When the user hits natural milestones, the agent acknowledges briefly:
-- First feature marked [x] → "First feature complete! The kit is tracking your progress."
-- First `prepare release` → "First release! Your CHANGELOG and version history are building."
-- 10th task completed → "10 tasks done. Say 'progress' to see your dashboard."
-- All tasks in a version done → "All v0.N tasks complete. Ready to release?"
-
-**Transition guidance (between phases):**
-When the user finishes one phase and the next phase is unclear:
-- All features defined, none designed → "Features defined. Ready to design? Say 'plan F1' to start."
-- All designed, none built → "Designs ready. Say 'implement F1' to start building."
-- All built, no release → "All tasks done. Say 'prepare release' when ready."
-- Post-release → "v0.N released. What's next? Describe new features or check the backlog."
-
-**Error recovery help:**
-When something goes wrong, the agent helps without exposing internals:
-- Test failures → "N tests failed. I'll show the failures and suggest fixes."
-- Push fails → "Push blocked — tests haven't run since last change. Say 'run tests' first."
-- Config issue → "This feature needs configuration. Say 'show config' to set it up."
-
-**Performance rule:** All contextual presence reads from already-loaded agent files (which the agent reads at session start anyway). No extra file reads, no extra computation. The agent already knows the project state — it just surfaces relevant information at the right moment.
+> **Skill: Contextual Presence** — Session greeting, milestone acknowledgments, transition guidance, error recovery in `.portable-spec-kit/skills/onboarding-tour.md`. Loaded alongside tour skill.
 
 **WORKSPACE_CONTEXT.md rules:**
 - Only created once on first session — never overwritten unless user explicitly asks
@@ -1413,75 +811,7 @@ When something goes wrong, the agent helps without exposing internals:
 - Only update when user explicitly requests it
 
 ### Auto-Scan (On Entering Any Project)
-
-**Important: Confirm project directory first.** The workspace root may not be the actual project directory. Before creating `agent/` files:
-1. List visible directories and ask: "Which directory is your project? (Enter = current directory)"
-2. If user picks an existing directory → use it as project root
-3. If user types a new path (e.g., `src/my-app` or `projects/new-api`) → create it and use as project root
-4. If user skips (Enter) → use current workspace root
-5. Once confirmed → set up the project inside that directory (agent/ files, README, .gitignore, etc.) and guide through the full project setup flow
-
-When starting work on a project, scan for `<project>/agent/` directory:
-
-**First — check scan state and show kit status** (see Step 0 in Existing Project Setup below). This runs **once at session start** (when the agent first loads), not on every message.
-
-1. If `agent/` directory is missing → create it **in the confirmed project directory**
-2. Check for required files: `AGENT.md`, `AGENT_CONTEXT.md`, `SPECS.md`, `PLANS.md`, `TASKS.md`, `RELEASES.md`
-3. Apply the **File Creation/Update Rule** to each agent file and `README.md`
-4. Read `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` for project context
-5. Update `agent/AGENT_CONTEXT.md` at end of every session
-
-### Existing Project Setup (IMPORTANT — Guide, Don't Force)
-
-When the kit is installed on an **existing project** with established structure:
-
-**Step 0 — Show kit status (once at session start, not on every message):**
-
-Check the project's scan state and display the status once when the agent first loads:
-
-| State | Condition | Status to show | Action |
-|-------|-----------|----------------|--------|
-| Mapped | `agent/AGENT_CONTEXT.md` exists with real content (not placeholders) | `✅ Spec Kit: Project mapped (vX.X.X) — reading context...` | Read agent/ files, continue normally. Do not re-scan or overwrite. |
-| Partial | `agent/` exists but files are mostly empty or TBD | `⚠ Spec Kit: Partial context — filling in gaps...` | Fill missing fields only. |
-| New | `agent/` missing or all files are template placeholders | `🔍 Spec Kit: Understanding your project — scanning stack, files, and dependencies...` | Full scan (proceed to step 1 below). |
-
-**Full scan flow:**
-
-1. **Announce the scan immediately** — before doing anything else, tell the user:
-   ```
-   "Spec Kit is understanding your project — scanning structure, stack, files, and dependencies..."
-   ```
-2. **Scan the full project thoroughly** — read every directory, all key source files, and config files: `package.json`, `requirements.txt`, `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `tsconfig.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `*.xcodeproj`, `pubspec.yaml`, `README.md`. Build a complete picture before touching anything.
-3. **Fill AGENT.md from what you found** — stack, technologies, dev server port, key scripts, env vars, project type. Never leave fields as TBD if the answer is visible in the code.
-4. **Fill AGENT_CONTEXT.md from what you found** — current state, what appears to be done, directory structure, key decisions visible in the code, phase estimate.
-5. **Never force restructure** — the project may have its own conventions that work well
-6. **Present proposed changes as a checklist with scan summary** — show what was detected and what the kit would add:
-   ```
-   "Scan complete. Here's what I found and what I suggest:"
-
-   Detected: Next.js 14 + TypeScript + Supabase · Node 20 · Port 3000
-
-   [x] Create agent/ directory with 9 management files (pre-filled from scan)
-   [x] Create WORKSPACE_CONTEXT.md
-   [ ] Rename ARD/ → ard/ (to match kit convention)
-   [ ] Create .env.example from existing .env
-   [ ] Restructure README.md to match template
-   [ ] Enable CI/CD (disabled by default — say `enable ci` when ready)
-
-   "Which changes would you like? Select all, some, or none."
-   ```
-7. **Respect user's choices** — if user says "don't restructure README" or "keep my directory names", follow that
-8. **Only create agent/ files by default** — the 9 management files are always safe to add
-9. **Never rename, move, or delete existing files** without explicit user approval
-
-**Scan edge cases:**
-- **No recognizable stack** (no config files found) → ask: "What stack is this project using?"
-- **Multiple stacks detected** (monorepo) → ask which subdirectory to set up first, handle each separately
-- **Conflicting signals** (e.g. package.json says React, tsconfig suggests Angular) → flag to user before filling AGENT.md
-- **.env file present** → read variable names only to document in AGENT.md; never read or expose values
-- **Existing README.md** → read it to supplement scan findings; never overwrite without user approval
-- **Very large project** (100+ files) → scan config files and top-level dirs first, then sample src/ structure; don't read every file
-- **Team project — agent/ files committed by someone else** → treat as already scanned; read and use existing context, don't overwrite
+> **Skill: Project Setup** — Auto-scan rules, existing project setup (guide don't force), kit status detection, scan edge cases in `.portable-spec-kit/skills/project-setup.md`. Loaded on project entry.
 
 ### Project Scenarios (handle each appropriately)
 
@@ -1500,164 +830,16 @@ Check the project's scan state and display the status once when the agent first 
 | **User wants to add kit to one subdir only** | Set up agent/ in that subdir only, don't touch other directories |
 
 ### New Project Setup (MANDATORY)
+When creating a brand new project, create the standard directory structure with all agent files, scripts, README, .gitignore, .env.example, and config.
 
-When creating a **brand new** project, create with ALL of these files and directories:
+**Step 0 (FIRST, before any code or scaffold) — environment selection.** Per §Environment Selection, the agent runs `bash agent/scripts/psk-env.sh detect` on the planned stack, then invokes the `env-management` skill to ask the user which env to use (existing or create new dedicated env for this project). The choice persists in `.portable-spec-kit/env-config.yml` and every subsequent setup step uses the env. **No `pip install` / `npm install` / package operation runs before the env is selected** — that would pollute the user's system tooling, defeating the kit's portability promise.
 
-```
-<project>/
-│
-├── agent/                 ← Project management files (AI reads these)
-│   ├── AGENT.md           ← Project-specific AI instructions (stack, rules)
-│   ├── AGENT_CONTEXT.md   ← Living project state (updated every session)
-│   ├── SPECS.md           ← WHAT to build (requirements, features)
-│   ├── PLANS.md           ← HOW to build it (architecture, ADL index)
-│   ├── TASKS.md           ← Task tracking (checkboxes)
-│   ├── RELEASES.md        ← Version log, deployments, history
-│   ├── design/            ← Per-feature design plans (auto-created per feature)
-│   │   └── f{N}-feature-name.md
-│   └── scripts/           ← All bash scripts (sync, jira, tracker, installer)
-│       ├── sync.sh
-│       ├── psk-jira-sync.sh
-│       ├── psk-tracker.sh
-│       ├── install-tracker.sh
-│       └── uninstall-tracker.sh
-│
-├── .gitignore
-├── .env.example           ← Environment variable template (NO real keys)
-│
-├── ard/                   ← Architecture Reference Documents
-├── input/                 ← User-provided inputs
-├── output/                ← Generated outputs
-├── cache/                 ← Temporary/cached files (.gitignore this)
-│
-├── src/                   ← Source code
-├── tests/                 ← Test files
-├── docs/                  ← Documentation
-│
-│   Created WHEN NEEDED (not at setup):
-├── logs/                  ← Application logs (.gitignore this)
-├── config/                ← Configuration files (Docker, CI/CD, nginx)
-└── assets/                ← Static assets (images, fonts, icons)
-```
+> **Skill: Project Setup** — Full directory structure, file list, and 8-step procedure in `.portable-spec-kit/skills/project-setup.md`.
+
+> **Skill: Environment Management** — env-selection prompt + persistence flow in `.portable-spec-kit/skills/env-management.md`. Loaded as Step 0 of new-project setup AND on first stack-runtime command in any project.
 
 ### Standard Source Code Structures (by project type)
-
-**Web App (Next.js / React):**
-```
-frontend/
-├── src/
-│   ├── app/               ← Pages / routes
-│   ├── components/        ← Reusable UI components
-│   │   ├── ui/            ← Base components (buttons, modals, inputs)
-│   │   ├── layout/        ← Layout components (navbar, footer, sidebar)
-│   │   └── features/      ← Feature-specific components
-│   ├── hooks/             ← Custom React hooks
-│   ├── lib/               ← Utilities, configs, constants
-│   ├── types/             ← TypeScript type definitions
-│   └── styles/            ← Global styles, theme
-├── public/                ← Static assets (images, fonts, downloads)
-└── tests/
-```
-
-**Python Backend (FastAPI / Flask):**
-```
-backend/
-├── app/
-│   ├── main.py            ← App entry point
-│   ├── config.py          ← Settings (Pydantic BaseSettings)
-│   ├── auth.py            ← Authentication middleware
-│   ├── api/               ← Route handlers (grouped by feature)
-│   ├── models/            ← Database models (SQLAlchemy / Pydantic)
-│   ├── schemas/           ← Request/response schemas
-│   ├── services/          ← Business logic (AI, email, PDF gen, etc.)
-│   └── utils/             ← Helpers, formatters
-├── tests/
-├── Dockerfile
-└── requirements.txt
-```
-
-**Mobile App — Cross-Platform (React Native / Flutter):**
-```
-mobile/
-├── src/
-│   ├── screens/           ← Screen components (Home, Profile, Settings)
-│   ├── components/        ← Reusable UI components
-│   │   ├── ui/            ← Base components (buttons, inputs, cards)
-│   │   └── features/      ← Feature-specific components
-│   ├── navigation/        ← Navigation stack, tab config, deep linking
-│   ├── services/          ← API clients, storage, push notifications
-│   ├── hooks/             ← Custom hooks
-│   ├── lib/               ← Utilities, constants, helpers
-│   ├── types/             ← TypeScript type definitions
-│   ├── store/             ← State management (Redux, Zustand, Context)
-│   └── assets/            ← Images, fonts, icons (bundled)
-├── android/               ← Native Android config
-├── ios/                   ← Native iOS config
-├── tests/
-└── app.json               ← App config (name, version, permissions)
-```
-
-**Android Native (Kotlin / Java):**
-```
-app/
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/    ← Source code (activities, fragments, viewmodels)
-│   │   │   ├── ui/              ← Screens, adapters, custom views
-│   │   │   ├── data/            ← Repositories, models, database (Room)
-│   │   │   ├── network/         ← API clients (Retrofit), DTOs
-│   │   │   ├── di/              ← Dependency injection (Hilt/Dagger)
-│   │   │   └── utils/           ← Helpers, extensions, constants
-│   │   ├── res/                 ← Resources (layouts, drawables, strings, themes)
-│   │   └── AndroidManifest.xml  ← Permissions, activities, services
-│   ├── test/                    ← Unit tests
-│   └── androidTest/             ← Instrumented tests
-├── build.gradle.kts             ← App-level build config
-└── gradle/                      ← Gradle wrapper
-```
-
-**iOS Native (Swift / SwiftUI):**
-```
-App/
-├── Sources/
-│   ├── App/                     ← App entry point, app delegate
-│   ├── Views/                   ← SwiftUI views / UIKit view controllers
-│   ├── ViewModels/              ← View models (MVVM)
-│   ├── Models/                  ← Data models, Codable structs
-│   ├── Services/                ← API clients (URLSession/Alamofire), storage
-│   ├── Navigation/              ← Coordinators, router
-│   └── Utils/                   ← Extensions, helpers, constants
-├── Resources/                   ← Assets.xcassets, Localizable.strings, Info.plist
-├── Tests/                       ← Unit tests (XCTest)
-├── UITests/                     ← UI tests
-└── App.xcodeproj                ← Xcode project config
-```
-
-**Full Stack:**
-```
-├── frontend/              ← Web app (Next.js)
-├── backend/               ← API server (FastAPI)
-├── shared/                ← Shared types, constants between frontend/backend
-└── scripts/               ← Build scripts, deployment scripts, data migrations
-```
-
-**Full Stack + Mobile:**
-```
-├── frontend/              ← Web app
-├── mobile/                ← Mobile app (React Native / Flutter)
-├── backend/               ← API server
-├── shared/                ← Shared types, constants across all clients
-└── scripts/               ← Build scripts, deployment scripts
-```
-
-**Document / Research Project (no code):**
-```
-├── plan/                  ← Main deliverables (HTML, Word, PDF)
-├── research/              ← Working data, analysis (not user-facing)
-└── templates/             ← Document templates, email drafts
-```
-
-### Directory Purposes
+> **Skill: Source Structures** — 8 project type templates (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack+Mobile, Document) in `.portable-spec-kit/skills/source-structures.md`. Loaded during project setup.### Directory Purposes
 
 | Directory | Purpose | In .gitignore? |
 |-----------|---------|:-:|
@@ -1693,94 +875,15 @@ App/
 | `ard/` | Generated docs — technical overview (HTML+PDF) | End of each version release |
 
 ### README.md Template
-
-Create this on project setup. Update as the project evolves.
-
-```markdown
-# Project Name
-
-Brief one-line description of what this project does.
-
-## Overview
-2-3 sentences explaining the project's purpose, who it's for, and what problem it solves.
-
-## Tech Stack
-| Layer | Technology |
-|-------|-----------|
-| Frontend | ... |
-| Backend | ... |
-| Database | ... |
-| Hosting | ... |
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Python 3.9+ (if applicable)
-
-### Installation
-\`\`\`bash
-# Clone and install
-npm install
-\`\`\`
-
-### Running Locally
-\`\`\`bash
-npm run dev    # http://localhost:XXXX
-\`\`\`
-
-### Environment Variables
-Copy `.env.example` to `.env` and fill in your keys.
-
-## Project Structure
-\`\`\`
-src/
-├── ...        ← brief description
-\`\`\`
-
-## Features
-- Feature 1
-- Feature 2
-
-## Testing
-\`\`\`bash
-npm test              # run tests
-npm run test:coverage # with coverage
-\`\`\`
-
-## Deployment
-Deployment instructions (added at release time).
-
-## Contributing
-<!-- Contributing guidelines if applicable -->
-
-## Author
-<!-- Author name and contact -->
-
-## License
-<!-- Add license if applicable -->
-```
+Create on project setup, update as project evolves. Full template in `.portable-spec-kit/skills/templates.md`.
 
 ### Development Flow
 
-**6 pipeline stages:**
-```
-REQS.md → SPECS.md → PLANS.md → DESIGN.md → TASKS.md → RELEASES.md
-require    specify    architect    design      build      release
-  │          │          │           │           │          │
-reqs/      specs/    plans/      design/     tasks/    releases/
-```
+**6 pipeline stages:** REQS.md → SPECS.md → PLANS.md → DESIGN.md → TASKS.md → RELEASES.md (require → specify → architect → design → build → release). 3 support files: RESEARCH.md + AGENT.md + AGENT_CONTEXT.md. Full pipeline diagram in `.portable-spec-kit/skills/templates.md`.
 
-**3 support files (feed into all stages):**
-```
-RESEARCH.md + research/   ← investigation — feeds into ANY stage when decisions need data
-AGENT.md                  ← project config, stack, rules, Definition of Done
-AGENT_CONTEXT.md          ← living state — what's done, what's next, blockers
-```
+**Full traceability chain:** Raw Input → R (REQS) → F (SPECS) → Research → Design → ADR (PLANS) → T (tests/) → Release.
 
-**Full traceability chain:** `Raw Input (reqs/) → R (REQS.md) → F (SPECS.md) → Research → Design (DESIGN.md + design/) → ADR (PLANS.md) → T (tests/) → Release (RELEASES.md + releases/)`
-
-**Feedback loops:** Pipeline is logical order, not a gate. Iteration expected — design reveals new requirement → back to REQS.md → flow forward. When iterating backwards, update the upstream file FIRST, then cascade changes forward.
+**Feedback loops:** Pipeline is logical order, not a gate. When iterating backwards, update upstream file FIRST.
 
 ### Agent Guidance Behavior
 
@@ -1796,238 +899,463 @@ The agent is a **helpful guide, not a strict enforcer**. Follow these principles
 
 **Always mention project name when reporting.** When confirming tasks, status, or actions — always include which project it applies to (e.g. "Noted in **ProjectName** agent/TASKS.md").
 
+### Response Format Rule (MANDATORY)
+
+Every agent response follows one of three templates. Scan-optimized so user can read a reply in seconds. **BRIEF and DETAILED share the same section labels** (progressive disclosure). MINIMAL is a fast-path for short answers where a table would be padding.
+
+**Shared section backbone for BRIEF and DETAILED (always in this order):**
+
+`WHAT → WHERE → WHY → FIX → VERIFY → RISK → SUMMARY`
+
+BRIEF shows 5 of the 7 as table rows (omits VERIFY + SUMMARY — those are execute-path, not decide-path). DETAILED shows all 7 as full sections. MINIMAL shows none of them. Pick tier by the shape of the answer, not the shape of the question.
+
+**MINIMAL template (fast path).** Use when the answer is one-dimensional: yes/no, status check, short factual recall, simple acknowledgment after action.
+
+```
+**<Headline = the answer itself>**
+
+<Optional single short paragraph — one or two sentences of context. Skip if not needed.>
+
+→ <next action, 3–7 words>
+```
+
+Pattern: headline → optional paragraph → arrow footer. No badges, no table. Breadcrumb uses full-name form same as BRIEF/DETAILED. **Generation time: ~2 sec. Output: ~100 tokens.** Read time: ~3 sec. Typical length: 4-8 lines total.
+
+**BRIEF template (default for multi-dimensional answers).** Use when the answer has more than one dimension: design proposals, decision points, problem diagnosis, action summaries with context.
+
+```
+**<Headline = the answer itself, not a lead-in>**
+
+`status: <one-word>` · `effort: <~Nmin>` · `impact: <scope>`
+
+| Section | Value |
+|---|---|
+| What  | <one phrase> |
+| Where | <file:line or component> |
+| Why   | <trigger or cause> |
+| Fix   | <one line> |
+| Risk  | <low / medium / high — one phrase> |
+
+→ <next action, 3–7 words>
+```
+
+Pattern: headline → 3-fact badge row → 5-row key/value table (same labels as DETAILED sections) → arrow footer. Breadcrumb uses full-name form. **Generation time: ~8 sec. Output: ~500 tokens.** Read time: ~8 sec.
+
+**DETAILED template (on request).** Use when user says "details" / "explain" / "go deep" / asks a drill-down question.
+
+```
+**<Headline>**
+
+`status: <one-word>` · `effort: <~Nmin>` · `impact: <scope>`
+
+### WHAT
+<1–2 sentence problem statement>
+
+### WHERE
+<file:line citation, bullets if multi-file>
+
+### WHY
+<1–2 sentence root cause>
+
+### FIX
+```<lang>
+<code, diff, or config>
+```
+
+### VERIFY
+```<lang>
+<test command + expected output / assertion>
+```
+
+### RISK
+<severity + why in 1–2 sentences>
+
+### SUMMARY
+| Section | Value |
+|---|---|
+| What  | <one phrase — same shape as BRIEF> |
+| Where | <file:line or component> |
+| Why   | <trigger or cause> |
+| Fix   | <one line> |
+| Risk  | <low / medium / high — one phrase> |
+
+(The SUMMARY table at the end of DETAILED is literally the BRIEF version of the same answer — same 5 labels, same shapes. If a reader got lost mid-body, they re-anchor on this final table.)
+
+→ <next action>
+```
+
+Pattern: headline → badge row → 7 `### LABEL` sections (shared backbone) → SUMMARY recap table → arrow footer. Breadcrumb uses full-name form. **Generation time: ~25 sec. Output: ~2000 tokens.** Read time: ~25 sec.
+
+**Why BRIEF omits VERIFY + SUMMARY (intentional asymmetry):**
+- BRIEF = **decide-surface** (enough to say yes / no / later). VERIFY is an execute-path concern — only matters *after* deciding yes. SUMMARY is a long-doc recap — useless when the doc IS short.
+- Keeping BRIEF at 5 rows preserves ~8-second read time. Adding VERIFY + SUMMARY would push it to ~14 s and blur BRIEF vs DETAILED into one mushy view.
+- Escape hatch: BRIEF footer arrow always offers "details" on demand.
+
+**Hard rules — applies to EVERY response:**
+
+1. **Headline IS the answer.** No prose lead-in ("Let me...", "I'll check...", "First..."). First line is the conclusion.
+2. **Badge row** uses backticks, 3 facts max, separated by `·`. Example: `status: open` · `effort: ~30min` · `impact: kit-wide`.
+3. **Shared-label consistency.** BRIEF table rows and DETAILED section headers use identical label names and ordering. Switching BRIEF → DETAILED reveals depth, never restructures.
+4. **Tables beat bullets beat prose.** In that order of preference. Use prose only when narrative is required.
+5. **One-line `→` footer is mandatory** so the user always knows the next action.
+6. **Every technical claim cites `file:line`** when referencing code, `file:section` when referencing docs.
+7. **Bold only keywords, never whole sentences.** Bold is the eye anchor; overuse destroys it.
+8. **Never mix templates in one reply.** Pick MINIMAL, BRIEF, or DETAILED. One tier per reply.
+9. **Multi-answer replies:** one BRIEF block per sub-topic, separated by `---`. Each block keeps its own headline + badges + table + arrow.
+10. **Code blocks** use triple-backticks with language tag (`bash`, `python`, `yaml`, etc.).
+11. **Never ask the user to pick between too-short and too-long.** Default is BRIEF; they ask for DETAILED when needed. Both templates are pre-designed to be complete-for-their-purpose.
+
+**Pre-send self-check (MANDATORY — run silently before EVERY reply):**
+
+Before emitting any reply in a kit project, agent verifies all four anchors are present:
+
+1. ✓ **Breadcrumb** line at top? (`↳ **Nx** root › ... › **Nz** current` — always render per §Breadcrumb Header Rule, even at depth 1)
+2. ✓ **`---` border** immediately after breadcrumb on its own line?
+3. ✓ **Template body** — MINIMAL paragraph OR BRIEF 5-row table OR DETAILED 7-section block? (not freestyle prose + mixed headers)
+4. ✓ **`→` footer** with a concrete next action?
+
+Any missing → rewrite before sending. **No exemptions** for "let's discuss", "exploratory question", "status update", "short answer", or replies after a conversation-summary compact. Trust-based compliance has failed before; this self-check is the gate. After a context-compact, re-read §Response Format Rule + §Breadcrumb Header Rule before the first reply of the new context.
+
+**Writing Style (MANDATORY — editorial discipline inside templates):**
+
+The scaffolding carries most of the scan: breadcrumb, headline, badges, tables, labels. The prose inside cells and sections is where smoothness actually matters. Five rules apply to every sentence of reply body, regardless of template:
+
+1. **One idea per sentence.** A compound sentence with "; and", "; but", "— which means" usually signals that the sentence should be two. Split it.
+2. **Default terminator is a period, not an em-dash.** Em-dash is for genuine parenthetical emphasis, not a substitute for a sentence break. If a reply has em-dashes in more than one of every three sentences, rewrite for periods.
+3. **Drop semicolons.** They almost always mean a sentence should be two sentences. One rare exception: lists of items that share a head clause, where commas inside items force semicolons as separators.
+4. **Cut parenthetical asides unless load-bearing.** `(see my reply above)` is almost never load-bearing. `(Unix man-page style)` is load-bearing because it disambiguates a term. If the reply reads correctly without the parenthetical, remove it.
+5. **One voice per reply.** Second-person when addressing the user: `you see`, `your reply`. Third-person when describing machinery: `the rule produces`, `the reader scans`. Do not mix voices inside a single section. Pick one per section based on the subject.
+
+The goal is natural prose, not clipped terseness. Sentences can still be long when a long sentence is the right shape. The rules target patterns that hide sloppy thinking behind dense syntax. They are not a word-count cap.
+
+**Design rationale (for future maintainers — do not "normalize away" the asymmetry):**
+Progressive disclosure is the industry standard (Apple docs TL;DR, Wikipedia lead sections, IETF RFC abstracts, Unix man pages, Terraform registry "basic usage" vs "full reference"). All use *one set of labels, two depths*. The shared backbone lets the user's eye find WHAT / WHERE / WHY / FIX / RISK in any reply regardless of depth. Do not add VERIFY or SUMMARY to BRIEF — the asymmetry is the feature. MINIMAL is the pre-progressive-disclosure tier: when there is no progression to disclose, just answer.
+
+**Template dispatch (auto-selection rule — agent picks, user does not specify):**
+
+The agent auto-selects the template per reply based on the shape of the answer. Size the content first, then pick the tier that fits. Fallback on genuine ambiguity is BRIEF.
+
+| Trigger | Template | Gen time | Tokens |
+|---|---|---|---|
+| Yes/no confirmation | MINIMAL | ~2 sec | ~80 |
+| Status check ("are we done?", "is it landed?") | MINIMAL | ~2 sec | ~80 |
+| Short factual recall ("what is N33?") | MINIMAL | ~2 sec | ~80 |
+| Simple acknowledgment after an action | MINIMAL | ~2 sec | ~80 |
+| Multi-dimensional answer with 2+ independent facets | BRIEF | ~8 sec | ~500 |
+| Decision point requiring trade-off analysis | BRIEF | ~8 sec | ~500 |
+| Design proposal, problem diagnosis | BRIEF | ~8 sec | ~500 |
+| Action summary with commit SHA + files + tests | BRIEF | ~8 sec | ~500 |
+| User says "details" / "explain" / "go deep" / "walk through" | DETAILED | ~25 sec | ~2000 |
+| Complex multi-component implementation plan | DETAILED | ~25 sec | ~2000 |
+| Drill-down question after a prior BRIEF | DETAILED | ~25 sec | ~2000 |
+
+**User overrides.** The user can force any tier at any time: `"shorter"` drops one tier, `"more depth"` promotes one tier, `"raw reply"` strips scaffolding entirely for that turn.
+
+This rule is framework-level. Applies to all agent communication in all projects using the kit.
+
+### Breadcrumb Header Rule (MANDATORY when deeply branched)
+
+Passive context anchor rendered at the TOP of every reply when the session-stack current node is ≥ 3 levels deep. Complements the `.session-stack.md` file — stack is read on demand, breadcrumb is always visible.
+
+**Format:**
+
+```
+↳ **N<root-id>** <root-name> › **N<parent-id>** <parent-name> › **N<current-id>** <current-name>
+```
+
+**When to render:**
+
+**Always.** Every reply renders the breadcrumb regardless of depth — perfect-sync orientation. Even at depth 1 (root only), the single-entry breadcrumb anchors the reader to the current root task.
+
+| Current node depth | Breadcrumb rendered? | Form |
+|---|---|---|
+| 1 (root only) | **Yes** | Single entry: `↳ **N1** root-name` |
+| 2 | **Yes** | Two entries: `↳ **N1** root › **N2** current` |
+| 3+ | **Yes** | Three entries: `↳ **N1** root › **Nx** parent › **Nz** current` (intermediate active ancestors collapsed) |
+
+**Placement in reply:**
+- BEFORE the headline of the first block (or any multi-block `---` separators)
+- Always on its own line
+- **Followed by `---` horizontal rule on its own line** (border for visual separation from body)
+- Uses `↳` arrow to indicate "we came from"
+
+Layout:
+```
+↳ **Nx** root › **Ny** parent › **Nz** current
+---
+
+**Headline of first block**
+...reply body...
+```
+
+The `---` border under the breadcrumb is a one-time orientation bar. It does not collide with the multi-block `---` separator because position disambiguates:
+- `---` directly under the breadcrumb line → breadcrumb border
+- `---` between blocks (preceded + followed by blank line + headline) → multi-block separator
+
+**Rules:**
+1. Breadcrumb traces the **CURRENT active chain only** — root-ancestor → parent-active → current-active. Closed (`✓`), abandoned (`✗`), and queued (`·`) nodes **never appear** in the active-chain portion of the breadcrumb. Rule 6a below adds one narrow exception (trailing closed-sibling hint) — do not confuse the two.
+2. Breadcrumb shows **exactly 3 entries** when depth ≥ 3 — root, immediate parent, current. Intermediate active ancestors collapsed; closed nodes skipped entirely.
+3. Names are **truncated to ~30 chars** per entry — full context is in `.session-stack.md`, breadcrumb is the skim-summary.
+4. Node IDs are **bolded** so the user can reference them (`"back to N7"`).
+5. `›` is the separator between entries (not `>` or `→` — reserved for other meanings).
+6. **Always render the breadcrumb on every reply** — perfect-sync orientation regardless of depth. Even at depth 1 the single-entry breadcrumb anchors the reader. Consistency > visual-noise savings.
+6b. **(REVERTED 2026-04-22 — user feedback: IDs-only was unreadable.)** All templates (MINIMAL, BRIEF, DETAILED) render the breadcrumb with full node names. The ~15-token cost is small compared to the clarity loss of bare IDs. Bigger latency wins live in Rules 6c and 6d below, which don't trade readability.
+
+6c. **Consecutive-reply breadcrumb skip (latency optimization).** When the reply uses the MINIMAL template AND the current active node has not changed since the previous reply (no branch, no park, no close, no resume), the breadcrumb + `---` border may be skipped entirely. First MINIMAL reply in a new node renders breadcrumb. Subsequent MINIMAL replies under the same node can start directly at the headline. Saves ~20-30 tokens per reply on conversational threads. BRIEF and DETAILED always render breadcrumb regardless. Any node-state change (branch, close, park, resume) forces a breadcrumb on the next reply.
+
+6d. **Arrow footer is optional in MINIMAL.** When the reply is purely informational with no concrete next action to propose (e.g. "yes", "3 tiers exist", "the answer is X"), the `→ <next action>` footer may be omitted. Saves ~10-15 tokens. BRIEF and DETAILED keep the arrow as mandatory since those tiers are decision-surface replies that always have a next step.
+
+6a. **Trailing closed-sibling hint.** After the active-chain breadcrumb, append exactly **one** trailing reference to the most-recently-closed qualifying node, so the reader sees "what just wrapped up here" without opening `.session-stack.md`. Qualification rule:
+    - If the deepest active node has a parent → the most-recently-closed **sibling** of the deepest active (same parent, marker `✓`)
+    - If the deepest active IS root (no parent) → the most-recently-closed **direct child** of root
+
+    **Format:** `› ✓**Nx** <name>` — same `›` separator as active entries; `✓` prefix distinguishes from active. Name truncated to ~25 chars. No `closed:` prefix or other label — the `✓` mark alone signals closed-reference semantics.
+
+    **Lifecycle:**
+    - **Replaced** when a newer qualifying sibling closes → the newer `✓`-node takes the slot. Older closes fall out by being out-competed, not by aging.
+    - **Never dropped** otherwise — the slot always shows *the most recent* close at the current level.
+    - **Re-evaluated** when the active node itself moves (branch deeper, resume a parked node, switch roots) — the new deepest active determines the new hint scope.
+    - **Session archive** resets the breadcrumb naturally (new tree = no prior closes).
+
+    **Edge case:** if no qualifying closed node exists yet (e.g. first sub-topic in a fresh session), emit no hint — breadcrumb stays active-chain-only.
+
+    **Depth interaction:** the hint appends after the active chain regardless of depth. A full depth-3 breadcrumb with hint reads `↳ **N1** root › **Ny** parent › **Nz** current › ✓**Nw** last-sibling-of-Nz`. Four entries maximum; breadcrumb still fits a scan.
+
+**Why this works with the rest of the Response Format Rule:**
+- BRIEF template already targets 8-second reads. Breadcrumb (active chain + up to one hint) adds ~1-2 seconds. Still within budget.
+- DETAILED template targets 25-second reads. Breadcrumb is negligible overhead.
+- No breadcrumb pollution when conversation is linear (depth ≤ 2, no prior closes) — the rule self-suppresses.
+- The hint is a convenience signal, not a history log — `.session-stack.md` remains the authoritative trail. One ✓-node at a time keeps the breadcrumb from drifting into full-history territory.
+
+**Example (this very conversation):**
+
+```
+# Active chain only (no closed sibling yet):
+↳ **N1** AVACR eval
+
+# Active chain + trailing hint (after N36 closed as direct child of root N1):
+↳ **N1** AVACR eval + Kit evolution › ✓**N36** G1-G15 kit gaps
+
+# Depth-3 active chain + hint:
+↳ **N1** AVACR eval › **N7** Kit evolution › **N24** Breadcrumb rule fix › ✓**N23** Session-stack demo
+```
+
+### Session Stack (`.session-stack.md`) — Conversation Branching Trace (MANDATORY)
+
+Long conversations branch into sub-topics; users lose the original task. `.session-stack.md` is the real-time branching log — a mid-granularity layer between `agent/AGENT.md` (static) and `agent/AGENT_CONTEXT.md` (across-session).
+
+**File location (project-root, gitignored):**
+- `.session-stack.md` — live index + current active session tree at bottom
+- `.session-archive/YYYY-MM-DD-HH-MM.md` — frozen per-session trees
+
+**Strict vocabulary segregation from `agent/TASKS.md` — zero-collision guarantee:**
+
+| File | Markers used | Status words used |
+|---|---|---|
+| `agent/TASKS.md` | `[x]` `[ ]` `[~]` | done · pending · acknowledged |
+| `.session-stack.md` | `→` `⏸` `✓` `·` `✗` | current · parked · closed · queued · abandoned |
+
+**Never cross-use.** Agent physically cannot use `[x]` in the stack file or `→` in TASKS.md. Grep-safe: no marker or status word appears in both files.
+
+**Node format:** `N{id} <marker> HH:MM │ <short description>`. Example: `N5 → 11:50 │ Session stack design ← CURRENT`.
+
+**Auto-triggers (agent MUST detect these in user messages and update stack BEFORE responding):**
+
+| User signal | Stack action |
+|---|---|
+| New sub-topic (branch) | Current `→` → `⏸`; new child appended as `→` |
+| `"back to <name\|ID>"` / `"resume <name\|ID>"` | Current `→` → `⏸`; target → `→` |
+| `"done"` / `"next"` + no new topic | Current `→` → `✓` (with commit SHA if available); parent → `→` |
+| `"skip"` / `"abandon"` | Current `→` → `✗`; parent → `→` |
+| `"where was I"` / `"status"` / `"context"` / `"stack"` | Agent renders current tree + runs drift check |
+
+**Invariant:** exactly one `→` per tree at any moment. Violation = drift, surfaced on next `where was I`.
+
+**Ambiguity rule:** if `"back to <name>"` matches 0 or >1 parked branches, agent asks for clarifying ID. Never silent guess.
+
+**Integration with other rules:**
+- **Task Tracking (MANDATORY):** `agent/TASKS.md` remains source of truth for PROJECT tasks. `.session-stack.md` is conversation-branching only. Entries never migrate between files.
+- **Response Format Rule:** after a switch-back, agent's reply need NOT include the tree unless user explicitly asked via `"where was I"`. Silent auto-updates keep replies clean.
+- **Overhead budget:** ~1 ms per transition, <10 KB per session, zero user friction — all writes are agent-managed.
+
+**Promotion rule — closed stack node → durable TASKS.md entry:** When a node closes with `✓` (optionally with commit SHA) AND represents durable project work (a feature built, a doc shipped, a bug fixed), agent MUST propose promoting it to `agent/TASKS.md` under the current version heading before the session ends. This converts transient session progress into persistent project record without breaking vocabulary segregation — the stack entry stays `✓`; a *separate* new `[x]` task is added to TASKS.md referencing the same commit SHA. Skip promotion for nodes that are purely navigational (e.g., "demo", "walk-through", "context restore") — those die with the session. Ambiguous? Ask the user once: `"N12 closed — promote to TASKS.md under v0.6? (y/n)"`. Never silent-skip a node that contained code/doc changes.
+
+**Long-session scalability (3-tier compaction):** single very long sessions can accumulate 100+ nodes. Three tiers prevent unbounded growth: (T1) auto-collapse 3+ consecutive `✓` siblings into `Nx–Ny ✓ <summary>` range lines; (T2) default-render only active chain + siblings on `"where was I"` (full tree on `"show full stack"`); (T3) when live file ≥ 15 KB or ≥ 80 nodes, rotate oldest fully-closed sub-trees into `.session-archive/YYYY-MM-DD-chapter-NN.md` with a one-line `[chapter-NN: Nx–Ny, N nodes closed]` reference left in live file. All three tiers are reversible — chapter files permanent, T1/T2 render-only. Full rules in the Session Trace skill.
+
+**Opt-out:** project config can set `session_stack: disabled` for linear conversations where branching is rare.
+
+> **Skill: Session Trace** — full file format, state-transition rules, drift-detection logic, archive rotation, and long-session compaction tiers in `.portable-spec-kit/skills/session-trace.md`. Loaded when user mentions losing context / branching / "where was I".
+
+### Kit-vs-Project Scope Separation (MANDATORY)
+
+When working in a project that has the kit installed, every fix the agent makes must land in the correct repo. Two repos coexist in any kit-enabled workspace: the **project repo** (the user's app — features, business logic, project-specific config) and the **kit repo** (`portable-spec-kit/` — generic machinery shared across all projects via symlinked `portable-spec-kit.md`, scripts in `agent/scripts/`, the `reflex/` framework, skill files, templates).
+
+**Genericity test — apply before any commit:** ask "would this exact change be correct for *every* project that installs the kit?"
+
+| Test outcome | Land the fix in |
+|---|---|
+| Yes — change is correct for all kit users | **Kit repo** |
+| No — change is shaped by this project's stack / features / files / acceptance criteria | **Project repo** |
+| Mixed — root cause is generic but the user-visible bug is in the project | **Split commits** — kit commit for the generic root-cause fix, project commit for the project-side mitigation |
+
+**Examples by category:**
+
+| Project repo (project-specific) | Kit repo (generic) |
+|---|---|
+| Feature implementation (F1-F12 of an app) | Reflex orchestrator logic in `reflex/run.sh` / `reflex/lib/loop.sh` |
+| CVE upgrade in `package.json` | Sync-check rules in `agent/scripts/psk-sync-check.sh` |
+| Project's CSP / auth / route handlers | Skill files in `.portable-spec-kit/skills/` |
+| Project's README / HANDOFF / TASKS.md | Kit's own README / CHANGELOG / RELEASES.md |
+| Project's TS hygiene (tsconfig excludes for project's own paths) | Kit-level prompts in `reflex/prompts/` |
+| Project's `.env.example` for project's secrets | Kit's installer / updater scripts |
+| Tightening security headers for the user's app surface | New ADR rule that affects how every project handles security |
+
+**Why this matters:** the kit is portable across projects. A change shaped by one project's accidental properties (e.g. one app's specific Next.js version, Postgres schema, Twilio webhook structure, Tailwind palette) over-fits the kit and either breaks or misleads other projects. The kit's value is its genericity — every project pulls the latest kit and inherits well-tested, project-agnostic machinery. Project-specific fixes leaking into the kit pollute that contract.
+
+**Default behavior when in doubt:** land the fix in the **project repo**. Promote to the kit only after the fix is independently verified as generic — i.e., the same fix would help two or more unrelated projects. One-off observations stay in the project; only validated patterns become kit changes.
+
+**Cross-cutting work — split commits cleanly:** when a bug surfaces via one project but the root cause is in kit machinery (a generic bug in `reflex/`, `agent/scripts/`, a skill, a template), the agent MUST split:
+1. **Kit commit** — the generic root-cause fix, kit-version bumped, kit's own ADR / RELEASES updated, regression test added in `tests/sections/`.
+2. **Project commit** — the project-side mitigation or revalidation that proves the kit fix works in this project.
+
+Never bundle project-shaped code into a kit commit. Never bundle kit-machinery edits into a project commit.
+
+**Allowed kit-touching work without genericity proof:**
+- Kit's own version-consistency sweeps (badges, ARD, examples, count drift) when a kit version bump lands — these are kit-internal and generic by definition.
+- Regression tests added in `tests/sections/` that lock in a kit-level fix already proven generic.
+- ADR / RELEASES / CHANGELOG entries documenting a kit-level decision.
+
+**This rule is the general superset.** The `Reflex Finding Classification` section below applies the same principle specifically to reflex/AVACR findings (where the QA-Agent attaches a `scope:` field machine-routing to project vs kit). The kit-vs-project rule here applies to every form of work — manual fixes, plan-mode implementations, refactors, doc work — not just reflex outputs.
+
+### Environment Selection (MANDATORY before any stack-runtime command)
+
+The kit owns runtime-environment selection across every project, every stack, every agent. Without explicit env management, the agent silently falls back to system Python / system Node / whatever's on PATH — which works on the agent's machine but breaks for every other contributor on a different machine.
+
+**The contract:**
+1. **Auto-detect on session start.** Agent runs `bash agent/scripts/psk-env.sh detect` to enumerate project stacks (Python / Node / Ruby / Go / Rust based on file presence: `requirements.txt`, `package.json`, `Gemfile`, `go.mod`, `Cargo.toml`).
+2. **Prompt if not configured.** For each detected stack with no entry in `.portable-spec-kit/env-config.yml`, the agent invokes the `env-management` skill — interactive prompt offering existing envs (conda envs, project venv, system runtime) AND a "create new dedicated env" option. **The prompt is mandatory** before any stack-runtime command runs in this project.
+3. **User picks existing or creates new.** If user picks "create new", the agent runs the manager's create command (`conda create -n <name>`, `python3 -m venv .venv`, `nvm install <version>`, etc.) with explicit confirmation before destructive operations.
+4. **Persist the choice.** `psk-env.sh set <stack> <manager> <name-or-version>` writes the entry to `.portable-spec-kit/env-config.yml` (committed — every contributor pulls the same env choice).
+5. **Use the env for EVERY command thereafter.** The agent prefixes every stack-runtime command with the activation prefix from `psk-env.sh activate-cmd <stack>`. This applies to:
+   - Project commands the user requested (`pytest`, `npm test`, `prisma migrate dev`, etc.)
+   - Agent-internal scripts that import project code
+   - Dev-server starts (`npm run dev`, `flask run`, `cargo run`, etc.)
+   - Package installs (`pip install`, `npm install`, `bundle install`, `cargo build`, etc.)
+   - Lint / format / typecheck commands (ruff, eslint, prettier, mypy, etc.)
+6. **Verify before invocation.** First time per session, agent runs `psk-env.sh check` to confirm the saved env still works (e.g., conda env wasn't deleted between sessions). If broken → re-prompt user, do not silently fall back to system.
+
+**The agent runs in the project's env, always.** Every command the agent invokes that touches project runtime executes inside the env — not just user-invoked commands. There is no "informal" path where the agent uses system tools while the user's stuff uses the env. If the env is selected, the env is used universally.
+
+**No env yet selected (pre-prompt state):** the agent does NOT silently invoke the runtime — it raises the prompt first, then runs. Refusing to run is the correct behavior here. Skipping the prompt would lock the project to whatever tool happens to be on PATH at that moment, which is exactly the problem env-config solves.
+
+**Manual triggers:** user can re-prompt anytime with `"reset env"` / `"choose env"` / `"switch env"` — agent re-invokes the env-management skill, walks the menu again, overwrites the entry.
+
+**Disable / bypass:** `PSK_ENV_AUTO_DETECT=0` env var skips the auto-detect (for kit's own self-tests, CI scenarios where env is pre-configured by the runner). The check is opt-out, not opt-in — defaults to ON.
+
+**Performance impact:** ~10ms per command for the activation-prefix lookup (single YAML read). Detect runs once per session start (~10ms). Negligible compared to actual runtime.
+
+**Manifest contract (companion to detect):** the same files §Environment Selection uses for detection are the **required manifests** for every project running that stack — `package.json` for Node, `pyproject.toml` / `requirements.txt` / `setup.py` / `Pipfile` for Python, `Gemfile` for Ruby, `go.mod` for Go, `Cargo.toml` for Rust. New-project setup creates the appropriate manifest as part of Step 0 (with `engines.node` / Python version / Ruby version aligned to the chosen env). Existing-project setup blocks if a stack is detected but its manifest is missing — silent fallback would let "works on my machine" become the project's only deployment story. Verify with `bash agent/scripts/psk-env.sh check` (existing command — already validates env + manifest cohesion).
+
+> **Skill: Environment Management** — full procedural flow (detect → list → prompt → pick → save → verify), edge cases (multiple stacks, missing manager, deleted env), schema definition, performance budget — in `.portable-spec-kit/skills/env-management.md`. Loaded the first time a stack-runtime command needs to run in a session.
+
+### Optimization Health Indicator (MANDATORY when state file exists)
+
+The kit tracks optimization health in `.portable-spec-kit/optimize-state.yml` (committed to repo, updated by every `bash agent/scripts/psk-optimize.sh --scan` invocation, read by `--health` flag and by agents at session start). The state encodes: last scan timestamp, candidate count by category, recommended-next-scan date, and a status field (optimized / review / stale).
+
+**Agent behavior — read state, append to breadcrumb:**
+
+At session start (cost: ~5ms — one file read + 3 awk parses) the agent reads `.portable-spec-kit/optimize-state.yml` if present. If state exists, append a one-token health indicator to the breadcrumb header on EVERY reply, immediately after the active chain + any closed-sibling hint:
+
+```
+↳ **N1** root › **Nz** current · opt: 🟢 optimized
+↳ **N1** root › **Nz** current · opt: 🟡 review (3 candidates)
+↳ **N1** root › **Nz** current · opt: 🔴 stale (45d, 8 candidates)
+```
+
+**Status thresholds (combine candidate count + days-since-scan):**
+
+| Status | Indicator | Trigger |
+|---|---|---|
+| 🟢 optimized | `opt: 🟢 optimized [(N deferred)]` | 0-2 candidates AND scan within 30 days. Trailing `(N deferred)` if there are explicitly-deferred candidates (e.g., qa-agent.md prompt). |
+| 🟡 review | `opt: 🟡 review (N candidates)` | 3-9 candidates OR scan 30-60 days old |
+| 🔴 stale | `opt: 🔴 stale (Nd, M candidates — sweep recommended)` | 10+ candidates OR scan >60 days OR no scan ever |
+
+**Suppression:** if `.portable-spec-kit/optimize-state.yml` is missing (older project, never scanned), suppress the indicator entirely rather than triggering a scan from breadcrumb context. The user runs `/optimize` or `--scan` when ready; the indicator becomes visible after the first scan creates the state file.
+
+**Manual probe:** `bash agent/scripts/psk-optimize.sh --health` prints the same one-liner the agent renders in the breadcrumb. Use it in shell scripts, CI, or to verify the indicator state out-of-band.
+
+**Refresh discipline:** the state file is only as fresh as the last `--scan`. Prep-release Step 10 runs `--scan` automatically (advisory, non-blocking), so projects on a normal release cadence keep the state fresh without manual effort. Long-quiet projects show the age-escalation honestly (yellow at 30d, red at 60d) so the user knows to refresh.
+
+### Reflex Finding Classification (MANDATORY)
+
+Every reflex/AVACR finding carries a `scope:` field that classifies where the fix belongs. Three categories — the kit evolves empirically via this mechanism.
+
+| Scope | What it targets | Who fixes it | Fix lands in |
+|---|---|---|---|
+| `target-project` | User's project code / tests / docs / config | Dev-Agent (auto) | User's repo |
+| `kit` | Kit scripts (`reflex/`, `agent/scripts/`), kit prompts, skills, templates, flow-docs | Kit maintainer (human-routed) | `portable-spec-kit` repo |
+| `meta` | Kit's research output (papers, methodology claims, public positioning, ADL rationale) | Kit maintainer (human-routed) | `portable-spec-kit` repo |
+
+**QA-Agent classification rule:** every finding in `findings.yaml` MUST include `scope`. Default is `target-project`. Set `kit` when the fix belongs in kit scripts/prompts/skills/templates. Set `meta` when the fix is about a claim the kit makes to the world (paper, README, methodology doc, competitive positioning).
+
+**Routing at `file-bugs.sh`:**
+- `scope: target-project` → append as `@reflex-dev` task in user's `agent/TASKS.md` (current behavior).
+- `scope: kit` → append as `@kit-maintainer` task at `agent/tasks/Gxx-<slug>.md` in the kit repo AND single-line entry in kit's `agent/TASKS.md` under the active v0.x backlog. Do NOT route to the Dev-Agent of the running project.
+- `scope: meta` → same destination as `kit`, but also tag `meta` in the task title so later batch-review can sort.
+
+**Dev-Agent rule:** only auto-fix findings with `scope: target-project`. `kit` and `meta` findings are informational to Dev-Agent — they are routed to the kit repo for maintainer review, not silently applied.
+
+**Kit-Evolution Protocol — how reflex findings become kit improvements:**
+1. QA surfaces finding → classifies scope → file-bugs routes.
+2. Kit maintainer (not Dev-Agent) reviews `agent/tasks/Gxx-*.md` batch before a kit release.
+3. Proposed fix verified generic — must hold true for any user project, not just the one that surfaced it. Fixes that over-fit one project are rejected or reframed.
+4. Approved fixes land in kit via normal R→F→T + ADL + mechanical-gate discipline. Commit message references source: `[source: avacr-eval-<project>/pass-NNN/Gxx]`.
+5. Rejected fixes stay in `agent/tasks/rejected/Gxx-*.md` with rationale — audit trail of "why not."
+
+**Net effect:** every user running AVACR on their own project contributes (optionally) to kit improvement — the kit is continuously stress-tested by real-world use, not just by maintainer self-testing. `agent/tasks/` becomes the empirical record of how the kit evolves.
+
+**Execution isolation — three invariants (MANDATORY):**
+
+1. **QA-Agent runs in a sandbox worktree** at `reflex/sandbox/cycle-NN/pass-NNN/` with `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` physically removed. QA cannot read Dev's narrative.
+2. **Dev-Agent runs on an isolated branch** `reflex/dev-cycle-NN-pass-NNN` off the current HEAD. Fix commits land there; the user's main branch is untouched during the pass. On GRANTED verdict, run.sh fast-forward merges to main (falls back to no-ff merge on divergence) and deletes the dev branch. On DENIED / REGRESSION the branch is retained for review (last-3 pattern, prune-history.sh enforces).
+3. **Protected-files write-ban: reflex never modifies AGENT.md / AGENT_CONTEXT.md (3-layer enforcement).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Layer 1: `reflex/prompts/dev-agent.md` mandates the constraint. Layer 2: `reflex/lib/gates.sh` fails any commit on a `reflex/dev-*` branch that touches them. Layer 3: `psk-sync-check.sh check_reflex_protected_files` blocks the commit at the pre-commit hook when on a reflex branch. If a finding's recommendation would touch these files, Dev-Agent files it as Bucket D (QA scope violation) + routes the underlying concern to human-arbitration via a `QA-<ID>-ARB` task in `agent/TASKS.md`.
+
+**Autoloop — one command for kit + user projects:** `bash reflex/run.sh` (default mode = autoloop; `--autoloop` / `--loop` / `--kit-loop` flag aliases retained for backward compat) chains prep-release → reflex pass → iterate **until convergence** (GRANTED / REGRESSION / findings-floor / plateau / fix-rate drop). The `convergence.max_iterations_safety` ceiling (default 20) is an escape hatch, not the primary stop. Use `bash reflex/run.sh single` for single-pass mode. Works identically on the kit itself, new projects, existing projects, and any user project — kit-identity auto-detection routes `scope: kit | meta` findings to `agent/tasks/Gxx-*.md` when the target is the kit; otherwise findings append to the target's `agent/TASKS.md`.
+
+**History retention (bounded disk use):** `reflex/history/REFLEX_EVAL_TRACE.md` (register) and `summary.csv` are kept forever. Per-pass directories are capped at `history_retention.pass_dirs_keep` (default 10) in `reflex/config.yml`. Dev branches are capped at `dev_branches_keep` (default 3, unhappy paths only). QA sandbox worktrees at `qa_sandbox_keep` (default 3). Pruning runs automatically at the start of every pass. Pruned passes remain in the register with an `_(archived)_` marker — status still resolvable via `agent/TASKS.md` lookup, drill-down links removed. Manual clean slate: `bash reflex/run.sh --purge-history --confirm`.
+
+**v0.6.2 reflex refinements (in addition to the execution-isolation rules above):**
+
+- **Nested per-cycle layout (v0.6.13+):** per-pass directories are `cycle-NN/pass-NNN/` (autoloop) or `standalone/pass-NNN/` (single-pass). The per-cycle parent dir hosts a `summary.md` aggregator. Pass numbers globally monotonic. Sandbox worktrees mirror the same layout: `reflex/sandbox/cycle-NN/pass-NNN/`. Flat identity (`cycle-NN-pass-NNN`) is reserved for git branches, CSV pass id, and `[source: ...]` commit trailers.
+- **Cycle metadata + grouped register render:** each pass directory gets a `.cycle-meta` file at creation (cycle id + iteration + mode + started timestamp). `reflex/lib/update-eval-trace.sh` groups register blocks by Reflex cycle with `## Reflex cycle N` headings and `iter N` labels per pass.
+- **All per-pass artifacts committed:** every file QA / Dev produces per pass — `findings.yaml`, `signoff.md`, `verdict.md`, `investigation-log.md`, `coverage.md`, `pass-plan.md`, `project-understanding.md`, `qa-summary.md`, `qa-usage.yaml`, `test-plan.md`, `dev-trace.md`, `deferred-decisions.md`, `regression-diff.md`, `gates-result.md`, `.cycle-meta` — is now committed. Only `reflex/sandbox/` stays gitignored.
+- **Sandbox purge after QA:** `reflex/lib/file-bugs.sh` purges the current pass's sandbox worktree the moment findings are extracted into `reflex/history/<pass>/`. Dev physically cannot read QA's private workspace — structural enforcement, not trust-based. Previous 2 sandboxes retained for QA's own cross-pass debugging.
+- **Entry consolidation — single CLI surface:** `bash reflex/run.sh` is the sole public entry; default mode is autoloop. The old wrapper scripts (`reflex/autoloop.sh`, `reflex/kit-loop.sh`, `reflex/self-test.sh`, top-level `reflex/loop.sh`) are retired. Use positional `single` (or `--single`) for single-pass mode. `reflex/lib/loop.sh` remains as the internal state-machine library.
+
+**Trace files (reviewer surface):** three committed artifacts live under `reflex/history/`:
+
+| File | Scope | Written by |
+|---|---|---|
+| `<pass-name>/findings.yaml` | one pass · structured evidence (id · priority · scope · dimension · citable_quote · regression_vector · recommendation) | QA-Agent peer-exchange |
+| `<pass-name>/signoff.md` | one pass · verdict (GRANTED / DENIED) + deferred decisions + human-arbitration list | `reflex/lib/spawn-qa.sh` + QA-Agent |
+| `REFLEX_EVAL_TRACE.md` | **all** passes · cross-pass findings register (one block per pass · one row per finding · id · severity · scope · status · one-line summary) | `reflex/lib/update-eval-trace.sh` (auto-refresh on every pass filing + every kit-loop iteration) |
+
+Open `REFLEX_EVAL_TRACE.md` to review every finding across every pass with current status (`[x]` closed · `[ ]` open · `[~]` acknowledged · `[?]` untracked). Drill into a pass via its `signoff.md` (narrative + verdict) or `findings.yaml` (structured evidence with invocation_verbatim + expected_assertion for re-execution). Do not edit `REFLEX_EVAL_TRACE.md` by hand — edit the pass's `findings.yaml` or the matching `agent/TASKS.md` entry, then re-run `bash reflex/lib/update-eval-trace.sh`.
+
 ### Kit Self-Help (Built-in Guidance)
+The kit is self-sufficient — the user should never need to memorize commands. The agent guides naturally.
 
-The kit is self-sufficient — the user should never need to memorize commands, features, or processes. The agent guides the user through the kit naturally. The user just works; the agent knows the kit and helps at every step.
+**Strict rule: NEVER expose kit internals to the user.** Explain WHAT and HOW — never WHY, section numbers, rule names, or enforcement logic.
 
-**Strict rule: NEVER expose kit internals to the user.** Explain WHAT the user can do and HOW to do it — never WHY the kit was designed a certain way, section numbers, rule names, or enforcement logic.
+**All guidance is dynamic — never hardcoded.** Agent derives help by reading current framework, project files, and config at request time.
 
-**All guidance is dynamic — never hardcoded.** The agent derives all help content by reading the current state of the framework, project files, and config at the time of the request. No static command lists, no hardcoded counts, no version-specific examples. This ensures guidance stays correct across all framework versions without manual updates.
-
-**Dynamic guidance sources:**
-
-| What the agent needs to know | Where it reads from |
-|------------------------------|---------------------|
-| Available commands | Scan this framework file for command tables — extract dynamically |
-| Current project state | `agent/AGENT_CONTEXT.md` + `agent/TASKS.md` + `agent/SPECS.md` |
-| What's configured | `.portable-spec-kit/config.md` — show only features that are enabled |
-| Release process steps | Scan the "prepare release" sequence in this framework — count steps dynamically |
-| Test counts | Run or read last test results — never hardcode a number |
-| Feature list | Read `agent/SPECS.md` features table — always current |
-| Design plan status | Read `agent/design/` directory — list what exists |
-
-**Help triggers — user asks, agent answers:**
-
-| User says | Agent does |
-|-----------|-----------|
-| `"help"` / `"what can I do?"` | Read project state → show only relevant next actions |
-| `"how do I [action]?"` | Read the process from framework → walk through step by step |
-| `"what's next?"` | Read TASKS.md + AGENT_CONTEXT.md → suggest next pending action |
-| `"explain [feature]"` | Explain what it does and how to use it — not how it's built |
-| `"show commands"` / `"what can I say?"` | Scan framework for commands relevant to current state + enabled config |
-
-**Contextual help — derived from project state, not static:**
-
-The agent reads current files and shows ONLY what applies:
-- No `agent/` → suggest `init`
-- SPECS.md empty → suggest defining features
-- Features defined, no `agent/design/` plans → suggest `plan F{N}`
-- Features designed, TASKS.md empty → suggest building
-- Tasks in progress → show progress, suggest `what's the status?`
-- All tasks `[x]` → suggest `prepare release`
-- Config has Jira disabled + user asks about Jira → suggest `enable jira`
-- Config has feature enabled but user hasn't used it → nudge once
-
-**Process walkthroughs — read from framework, guide step by step:**
-
-When user asks "how do I release?" or "how do I set up Jira?", the agent reads the actual process definition from this framework file and walks through it one step at a time. Never hardcode step counts or content — read the current sequence.
-
-**Command discovery — filtered by state + config:**
-
-When user asks "what can I say?", the agent scans the framework for all commands, then filters by:
-1. **Project state** — don't show release commands if nothing is built
-2. **Config state** — don't show Jira commands if Jira is disabled
-3. **Relevance** — show general commands (help, progress, config) always
-
-**Proactive nudges — derived from observation, not a static list:**
-
-The agent observes user behavior and suggests kit features when naturally relevant:
-- Used a kit feature? → Don't nudge about it
-- Hasn't used an enabled feature in a while? → Nudge once
-- Doing something manually that the kit automates? → Suggest the automated way
-- Config has defaults since setup? → Suggest reviewing config
-
-**Nudge rules:**
-- Each nudge shown **once per session** — never repeat
-- Only when **naturally relevant** — don't interrupt workflow
-- User says "stop suggesting" or "no tips" → stop all nudges for session
-- Brief — one line, not a paragraph
-
-**What to NEVER tell the user:**
-- Framework section numbers, rule names, or internal structure
-- How rules are enforced or how the agent checks compliance
-- Config Contract, Config Gateway Rule, or enforcement logic
-- How tests validate framework rules
-- Internal step numbers (say "I'll handle the release steps" not "Step 5 is...")
-- Why the framework was designed a certain way
-- Script internals or implementation details
-
-**Version upgrade resilience:**
-
-All guidance is derived at runtime from the current framework file. When the kit updates:
-- New commands automatically appear in `show commands` (agent re-scans framework)
-- New config toggles automatically appear in `show config` (agent reads config.md)
-- New pipeline steps automatically appear in process walkthroughs (agent reads sequence)
-- New features automatically appear in contextual help (agent reads SPECS.md + config)
-- Removed features automatically disappear (not in framework = not shown)
-- **No manual guidance updates needed on version upgrade** — the agent reads what's current
-
-**Help layer consistency (enforced at release):**
-
-The three help layers (local framework, local project files, GitHub repo) must agree. Consistency is checked during prepare release Step 5 (consistency sweep):
-- README orchestration table commands must match commands defined in this framework file
-- README "What's New" must reflect CHANGELOG entries for the current version
-- Config commands shown in `show config` must match toggles in `.portable-spec-kit/config.md`
-- Flow doc count in README must match actual count in `docs/work-flows/`
-- Any new framework feature must be discoverable via `help` (agent reads it from this file)
-
-**Self-help is NOT a separate system.** It's the agent reading THIS file + project files + config. If the framework is correct, self-help is correct. If the framework is stale, self-help is stale — the consistency sweep catches this.
-
-**Always track silently.** Even if the user doesn't follow the process:
-- User says "build me X" → add to TASKS.md, then build it
-- User says "fix this bug" → add to TASKS.md, fix it, mark done
-- User says "what's the status?" → show from TASKS.md and AGENT_CONTEXT.md
-- User says "progress", "dashboard", or "burndown" → read TASKS.md and generate a progress dashboard (see Progress Dashboard below)
-- User comes back after weeks → read AGENT_CONTEXT.md, summarize where they left off
-- User says "keep noted" or "note this" → add to the appropriate agent/ file (TASKS.md for future work, PLANS.md for decisions, AGENT_CONTEXT.md for current state) — never to external memory systems
+> **Skill: Kit Self-Help** — Dynamic guidance sources, help triggers, contextual help, command discovery, proactive nudges, version upgrade resilience in `.portable-spec-kit/skills/self-help.md`. Loaded when user asks for help.
 
 ### Progress Dashboard
-
-**Progress dashboard trigger:** When the user says `progress`, `dashboard`, `burndown`, `status report`, `how are we doing`, or `what's left` — generate a progress dashboard immediately from `agent/TASKS.md`. No scripts required. Agent reads TASKS.md directly and computes all metrics inline.
-
-**Dashboard output format:**
-```
-══════════════════════════════════════════════════════════
-  PROGRESS DASHBOARD — <Project Name>  (v0.N.x)
-══════════════════════════════════════════════════════════
-  Version: v0.N — <Theme>
-
-  OVERALL
-  ───────────────────────────────────────────────────────
-  Done:     X tasks   [████████████░░░░░░░░]  XX%
-  Pending:  Y tasks
-  Total:    Z tasks
-
-  BY VERSION
-  ───────────────────────────────────────────────────────
-  v0.0  ████████████████████  8/8   100% ✅ Done
-  v0.1  ████████████████████  14/14 100% ✅ Done
-  v0.4  ████████░░░░░░░░░░░░  7/16   44% 🔄 Current
-
-  CURRENT VERSION TASKS (v0.N)
-  ───────────────────────────────────────────────────────
-  [x] Task 1
-  [x] Task 2
-  [ ] Task 3
-  [ ] Task 4
-
-  BLOCKERS
-  ───────────────────────────────────────────────────────
-  (none)
-
-  NEXT ACTIONS
-  ───────────────────────────────────────────────────────
-  1. <next pending task>
-  2. <next pending task>
-══════════════════════════════════════════════════════════
-```
-
-If `@username` tags are present in TASKS.md, add a BY CONTRIBUTOR section:
-```
-  BY CONTRIBUTOR
-  ───────────────────────────────────────────────────────
-  @aqib      ████████████░░░░░░░░  6/8   75%
-  @sara      ████░░░░░░░░░░░░░░░░  2/6   33%
-  Unassigned ████░░░░░░░░░░░░░░░░  2/10  20%
-```
-
-**Dashboard computation rules:**
-- Parse every `- [x]` and `- [ ]` line under each version heading in TASKS.md
-- Count done vs total per version group
-- Compute percentage: `done / total * 100`
-- Build progress bar: each `█` = 5% of 100%. Bar width = 20 chars. Right-pad with `░`.
-- Use ✅ for 100% complete versions, 🔄 for in-progress versions, 🔲 for not-started versions
-- Current version = heading marked `— Current` (or last non-Backlog heading if no marker present)
-- Backlog items are never counted in progress — they are future scope
-- Blocked items (under `### Blocked`) count as pending but are listed separately in BLOCKERS
-
-**Dashboard is read-only:** Never auto-show. Never modify any files. Generated on-demand only.
-
-**Dashboard edge cases:**
-- TASKS.md missing → "No TASKS.md found — run `init` to set up the project"
-- No version headings detected → show flat list of all done/pending tasks
-- All tasks done → "🎉 All tasks complete — ready for release"
-- Current version has 0 tasks → "No tasks added for this version yet"
-- Very long task list (50+ items) → truncate CURRENT VERSION TASKS to first 10 done + all pending; add "(X more done tasks — see TASKS.md)"
-- No `### Blocked` section → omit BLOCKERS row entirely
-- Progress bar max = 20 chars — never exceed
-- Backlog: show count only ("Backlog: N tasks in future scope") — do not enumerate
+> **Skill: Dashboard** — Dashboard format, computation rules, BY CONTRIBUTOR section, edge cases in `.portable-spec-kit/skills/dashboard.md`. Loaded on `progress` / `dashboard` / `burndown` trigger.
 
 ### Multi-Agent Task Tracking
-
-**@username ownership syntax:** Tasks in TASKS.md can be tagged with `@username` to assign an owner. Username format = slugified `git config user.name` (lowercase, spaces → dashes — same format as user profile filenames). Multiple owners allowed. Tag anywhere in the task line (end preferred). Untagged tasks = unassigned.
-
-```markdown
-- [ ] Implement login API @aqib
-- [ ] Write frontend tests @sara
-- [ ] Review database schema @aqib @sara   ← shared task
-- [ ] Deploy to staging                     ← unassigned
-```
-
-**Per-user task view trigger:** When user says `my tasks`, `tasks for @username`, `what do I have`, or `my workload` — detect current user from `git config user.name` (slugified), filter TASKS.md for tasks tagged `@{current-user}`, show per-user task view:
-
-```
-══════════════════════════════════════════════════════════
-  TASKS — @aqib  (v0.N — <project>)
-══════════════════════════════════════════════════════════
-  v0.N — Current
-  ───────────────────────────────────────────────────────
-  [ ] Implement login API
-  [ ] Review database schema  (shared with @sara)
-  [x] Setup project structure
-
-  ASSIGNED TO @aqib: 3 tasks (1 done, 2 pending)
-══════════════════════════════════════════════════════════
-```
-
-**Delegation rule:** When user says `assign [task] to @username` or `delegate [task] to @username`:
-- Find the task line in TASKS.md by feature number or keyword match
-- Add `@username` tag to that line
-- Confirm: "Assigned '[task]' to @username in **ProjectName** TASKS.md"
-- If already assigned → skip, confirm: "Already assigned to @username"
-
-**Unassign rule:** When user says `unassign @username from [task]`:
-- Remove that `@username` tag from the task line
-- If it was the only owner → task becomes unassigned
-- Confirm: "Removed @username from '[task]' — now unassigned"
-
-**Cross-agent coordination rule:** When two users share a git repo and each has their own AI agent — the agents coordinate through TASKS.md, not direct communication. Agent A assigns task → commits → pushes. Agent B pulls → sees the new assignment → shows task in per-user view. No APIs. No real-time connection. This is Persistent Memory Architecture applied to team task management.
-
-**Shared task rule:** A task tagged `@a @b` is shared — counts as pending for both users until the task is marked `[x]`. The last person to mark it done completes it for both.
-
-**Dashboard integration:** If any task in TASKS.md has `@username` tags, the Progress Dashboard automatically includes a BY CONTRIBUTOR section (see Progress Dashboard above).
-
-**TASKS.md remains human-readable:** `@username` tags are visible plain markdown. Anyone reading TASKS.md sees who owns what — no tooling required.
-
-**Multi-agent edge cases:**
-- User not in any task → "No tasks assigned to @username. Unassigned tasks: N"
-- Typo in `@username` → show as-is; never silently drop
-- `@username` on a blocked task → still visible in per-user view, labeled "(blocked)"
-- All tasks assigned to one user → note: "All tasks owned by @username — consider distributing"
-- No tags yet (fresh project) → show all unassigned tasks + hint: "No tasks tagged to you yet. Add @{your-username} to any task to claim ownership"
-- Git user not configured → fall back: "What's your username? (used for task filtering)"
-- Shared task `@a @b`: if @a marks done but @b hasn't → still `[ ]` in @b's view; shown as "(shared with @b — pending their confirmation)" in @a's view
-- Very long task list → truncate per-user view to 20 items, show "(N more — see TASKS.md)"
+> **Skill: Multi-Agent** — @username syntax, per-user task view, delegation/unassign, cross-agent coordination, shared tasks in `.portable-spec-kit/skills/multi-agent.md`. Loaded on `my tasks` / `assign` / `delegate` trigger.
 
 **Fill gaps proactively.** Don't wait for the user to ask — detect and fill:
 - SPECS.md empty after 3+ tasks completed → retroactively fill from what's been built
@@ -2064,61 +1392,7 @@ This is the core innovation of SPD beyond spec persistence. Just as Spec-Persist
 **Persistent Memory vs. agent memory/context:** Agent memory (like Claude Code's conversation history) is ephemeral — lost when the session ends. Persistent Memory lives in git. It survives across sessions, across agents, and across team members. Always tracking silently = always writing to Persistent Memory.
 
 ### Jira Integration (Optional)
-
-Connect TASKS.md to Jira Cloud — sync completed tasks, hours, and logs to Jira's hierarchy via explicit `sync to jira` command. Everything is optional: works without Jira configured, tags ignored silently.
-
-**Core rules:**
-- **TASKS.md is single source of truth.** Jira is a mirror. No two-way sync. Ever.
-- **Explicit signals only.** Never sync automatically. Only on `sync to jira` command.
-- **Zero-install, optional.** Works without Jira configured — tags ignored silently. No breakage.
-- **One connection method: Jira REST API v3 via `psk-jira-sync.sh`.** Agent calls the script; script calls Jira. Consistent across all agents and IDEs. Requires `curl` only.
-- **Never post worklogs without user confirmation.** Hours confirmation UI is mandatory, not skippable.
-- **Hierarchy auto-created** from R→F→T chain on first sync (Epic from Rn, Story from Fn). Existing tickets reused if pre-mapped in AGENT.md.
-- **Secrets:** `JIRA_EMAIL`, `JIRA_API_TOKEN` in `.env` only — never commit. **Structural config:** `JIRA_URL`, `JIRA_PROJECT_KEY`, username/epic/version mappings in `agent/AGENT.md` (safe to commit — no sensitive values).
-- **Jira Cloud only.** REST API v3 targets Jira Cloud. Jira Server / Data Center uses v2 — not supported in this release.
-
-**TASKS.md inline tags** (backward compatible — ignored if Jira not configured):
-```markdown
-- [x] Implement login API @aqib [PROJ-101] [story] ~2.5h
-```
-| Tag | Format | Meaning |
-|-----|--------|---------|
-| Jira ticket ID | `[PROJ-123]` | Links task to Jira ticket. Pattern: `[A-Z]+-[0-9]+`. One per task |
-| Issue type | `[epic]` `[story]` `[task]` `[subtask]` | Explicit Jira type (inferred if absent) |
-| Parent ticket | `^PROJ-456` | Explicit parent in Jira hierarchy |
-| Auto hours | `~2.5h` | Tracked hours — `~` = unconfirmed, dropped after sync |
-
-**Jira commands:**
-| Command | What it does |
-|---------|-------------|
-| `"sync to jira"` | Full sync flow — reconcile hours, confirm, push to Jira |
-| `"jira status"` | Read-only: show tasks pending sync + hours (no API calls) |
-| `"link jira PROJ-123"` | Tag active task with Jira ticket ID |
-| `"unlink jira from [task]"` | Remove Jira ticket tag |
-| `"jira setup"` | Interactive: validate .env, test connection, map issue types |
-| `"hours summary"` | Show Track A + Track B breakdown for current session |
-
-### Time Tracking (Automatic)
-
-Hours are tracked automatically from two sources, combined, and presented to user before any Jira post.
-
-**Track A — Agent session time:** Wall-clock from first message to last, minus gaps > idle threshold (default 15 min). Every moment engaged with the agent counts.
-
-**Track B — Direct work time:** Time project window was frontmost (from `psk-tracker` daemon log), minus overlap with Track A. Falls back to git/mtime detection if psk-tracker not installed.
-
-**psk-tracker is optional.** Without it, Track B falls back to git log + file mtime detection. Install improves accuracy; absence does not break anything.
-
-**psk-tracker commands:**
-| Command | What it does |
-|---------|-------------|
-| `"install tracker"` | Run `bash agent/scripts/install-tracker.sh` — sets up OS daemon + registers project |
-| `"uninstall tracker"` | Stops daemon, removes OS service |
-| `"tracker status"` | Show daemon status, last event, today's Track B minutes |
-| `"start working on [task]"` | Explicit task-start marker — improves time attribution confidence |
-
-**Deduplication:** When Track A and Track B overlap, count once. Track A takes precedence during active agent turns. `Final = Track A + (Track B − overlap)`.
-
-**Idle threshold:** Default 15 min, configurable in `agent/AGENT.md`: `- **Time tracking idle threshold:** 15 min`
+> **Skill: Jira Integration** — TASKS.md tags, Jira commands, sync flow, hours tracking, psk-tracker in `.portable-spec-kit/skills/jira-integration.md`. Loaded on `sync to jira` / `jira` / `install tracker` trigger.
 
 ### Auto Code Review
 
@@ -2171,393 +1445,11 @@ Proactive detection of scope drift across 5 dimensions. Ensures the project stay
 
 Use these exact templates when creating `agent/` files. Replace `<Project Name>` with actual name.
 
-**agent/AGENT.md:**
-```markdown
-# AGENT.md — <Project Name>
-
-> **Purpose:** Project-specific AI instructions — stack, rules, brand, key decisions.
-> **Role:** Read at start of every session. Rarely changes after setup.
-
-## Project Location
-`<path>`
-
-## On Every Session Start:
-1. Read user profile from `.portable-spec-kit/user-profile/` — user preferences
-2. Read `agent/AGENT.md` — project config, stack, rules
-3. Read `agent/AGENT_CONTEXT.md` — project state
-4. Read `agent/REQS.md` — requirements
-5. Read `agent/SPECS.md` — features
-6. Read `agent/PLANS.md` — architecture
-7. Read `agent/RESEARCH.md` — active research questions
-8. Read `agent/DESIGN.md` — design overview
-9. Read `agent/TASKS.md` — current tasks
-
-## Update AGENT_CONTEXT.md When:
-1. After completing a significant batch of work (feature built, tests passing)
-2. After committing — commit is a natural checkpoint
-3. Before any push — context must be current before code reaches remote
-
-## Stack
-| Layer | Technology |
-|-------|-----------|
-| Frontend | TBD |
-| Backend | TBD |
-| Database | TBD |
-| Hosting | TBD |
-| Conda Env | TBD (Python projects only) |
-
-## Brand
-- Primary: `#000000`
-- Accent: `#000000`
-- Fonts: system-ui
-
-## AI Config
-- Provider: TBD (OpenAI / Claude / other)
-- Models: TBD
-- Dev Server Port: TBD (auto-assigned)
-
-## Key Rules
-- All secrets in `.env` only — NEVER commit API keys
-- Test before deploy — all test cases must pass
-
-## Jira Config (optional)
-<!-- Remove this section if not using Jira integration -->
-- **JIRA_URL:** https://yourorg.atlassian.net
-- **JIRA_PROJECT_KEY:** MYPROJ
-- **Default Issue Type:** Task
-- **Time tracking idle threshold:** 15 min
-
-### Username → Jira Email Mapping
-| @username | Jira Email |
-|-----------|-----------|
-<!-- | @aqib | aqib@company.com | -->
-
-### Transition Mapping (optional — auto-detects if not set)
-| Kit Status | Jira Transition Name |
-|-----------|---------------------|
-| done      | Done                |
-
-## Deployment
-<!-- Added at release time -->
-```
-
-**agent/AGENT_CONTEXT.md:**
-```markdown
-# AGENT_CONTEXT.md — <Project Name>
-
-> **Purpose:** Living project state — what's done, what's next, key decisions, blockers.
-> **Role:** Read at session start. Updated after significant work, after commits, and before any push.
-
-## Current Status
-- **Version:** v0.1.0
-- **Kit:** vX.X.X
-- **Phase:** Setup
-- **Status:** Initializing
-
-## What's Done
-- [ ] Project initialized
-
-## What's Next
-- [ ] Define specs
-- [ ] Choose tech stack
-
-## Key Decisions
-| Decision | Choice | Why |
-|----------|--------|-----|
-| | | |
-
-## Blockers
-None
-
-## File Structure
-\`\`\`
-<project>/
-├── agent/
-├── src/
-└── ...
-\`\`\`
-
-## Project-Specific Rules
-<!-- Must-do and must-not-do rules specific to this project -->
-
-## Last Updated
-- **Date:** YYYY-MM-DD
-- **Summary:** Project initialized
-```
-
-**agent/REQS.md:**
-```markdown
-# REQS.md — <Project Name>
-
-> **Purpose:** Business requirements in client/stakeholder language.
-> Raw input preserved in reqs/. Technical requirements go in PLANS.md.
-> **Role:** First pipeline stage — WHAT is needed.
-
-## Requirements
-| # | Requirement | Type | Priority | Source | Status | Created | Approved by | Approved date | Depends | Research | Raw Ref |
-|---|-------------|------|----------|--------|--------|---------|-------------|---------------|---------|----------|---------|
-
-<!-- Type: Functional / Non-functional / Constraint -->
-<!-- Status: Draft → Approved → Implemented → Verified -->
-<!-- Created: when requirement first captured -->
-<!-- Approved by: user, client name, "team" -->
-<!-- Depends: R{N} or — -->
-<!-- Research: link to research/reqs/r{N}.md or — -->
-
-## Assumptions
-| # | Assumption | Impact if wrong | Verified | Verified date |
-|---|-----------|----------------|----------|--------------|
-
-## Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-<!-- Type: mutual / user-override / user-direct / agent-recommended / constraint-driven -->
-
-## Scope Changes
-| Date | Type | Req | Description | Reason |
-|------|------|-----|-------------|--------|
-<!-- Type: DROP / ADD / MODIFY / REPLACE -->
-```
-
-**agent/SPECS.md:**
-```markdown
-# SPECS.md — <Project Name>
-
-> **Purpose:** Features mapped from requirements. R→F traceability.
-> Requirements live in REQS.md.
-> **Role:** Second pipeline stage — WHAT to build.
-
-## Overview
-Brief description of what this project does and who it's for.
-
-## Features
-| # | Feature | Req | Priority | Size | Depends | Status | Completed | Design | Tests |
-|---|---------|-----|----------|------|---------|--------|-----------|--------|-------|
-| F1 | | R1 | High | M | — | [ ] | — | — | — |
-
-<!-- Size: S / M / L -->
-<!-- Depends: F{N} or — -->
-<!-- Completed: YYYY-MM-DD when [x] -->
-<!-- Design: link to design/f{N}.md or — -->
-
-## Scope
-- **In scope:**
-- **Out of scope (future):**
-
-## Feature Acceptance Criteria
-
-### F1 — Feature Name
-- [ ] Criterion 1 (what a passing state looks like)
-- [ ] Criterion 2
-- [ ] Edge case: what happens when X is empty
-
-## Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-```
-
-**agent/PLANS.md:**
-```markdown
-# PLANS.md — <Project Name>
-
-> **Purpose:** System-level architecture. Tech stack. Technical requirements. ADL.
-> **Role:** Third pipeline stage — HOW the system is built (macro).
-
-## Stack
-| Layer | Technology | Why |
-|-------|-----------|-----|
-
-## Technical Requirements
-> Technical decisions from client input. Each researched before committing.
-
-| # | Requirement | Source | Req Ref | Status | Research |
-|---|-------------|--------|---------|--------|----------|
-<!-- Req Ref: links back to REQS.md R{N}. Status: Stated → Researched → Confirmed / Overridden -->
-
-## Architecture
-High-level system design.
-
-## Data Model
-| Table/Type | Key Fields |
-|------------|-----------|
-
-## API Endpoints
-| Method | Path | Description |
-|--------|------|-------------|
-
-## Security
-- Key security considerations for this project
-
-## Research
-> Full research index lives in RESEARCH.md.
-> See [RESEARCH.md](RESEARCH.md) for all investigations across all stages.
-
-## Architecture Decision Log
-
-> Newest first. Research column links to research file. Plan Ref links to design plan.
-
-| # | Date | Decision | Options | Chosen | Why | Impact | Research | Plan Ref |
-|---|------|----------|---------|--------|-----|--------|----------|----------|
-
-## Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-
-## Verification
-- How to test the system end-to-end
-```
-
-**agent/RESEARCH.md:**
-```markdown
-# RESEARCH.md — <Project Name>
-
-> **Purpose:** Research overview — all investigations across all pipeline stages.
-> Per-topic research files in research/{stage}/ subdirectories.
-> **Role:** Support file — feeds into any stage when decisions need data.
-
-## Active Questions
-| # | Question | Stage | Urgency | Status |
-|---|---------|-------|---------|--------|
-<!-- Questions currently being investigated -->
-
-## Research Index
-| # | Topic | Stage | Depth | Status | File |
-|---|-------|-------|-------|--------|------|
-<!-- Stage: reqs / specs / plans / design / tasks / releases -->
-<!-- Depth: None / Quick / Standard / Deep -->
-
-## Research Principles
-- Cost-effectiveness: every tech choice must justify cost vs alternatives
-- Performance: every choice must consider latency, throughput, scaling
-- Modern stack: prefer current, well-maintained tech
-- Evidence-based: decisions backed by data, not habit
-
-## Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-```
-
-**agent/DESIGN.md:**
-```markdown
-# DESIGN.md — <Project Name>
-
-> **Purpose:** Design overview — how features are built within the architecture.
-> Per-feature designs in design/ subdirectory.
-> **Role:** Fourth pipeline stage — HOW each feature works (micro).
-
-## Design Principles
-Key patterns and conventions across all features.
-
-## Design Index
-| Feature | Design | Status |
-|---------|--------|--------|
-
-## Cross-Cutting Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-```
-
-**agent/TASKS.md:**
-```markdown
-# TASKS.md — <Project Name>
-
-> **Purpose:** Task tracking by release version.
-> **Role:** Fifth pipeline stage — BUILD.
-
-## v0.1 — Current
-- [x] Project setup @username (YYYY-MM-DD)
-- [ ] Task 1 @username
-- [ ] Task 2
-
-<!-- Completion date (YYYY-MM-DD) added automatically when marked [x] -->
-
-### Blocked
-<!-- Tasks waiting on dependencies -->
-
-## Backlog (Future Releases)
-- [ ] Future feature 1
-
-## Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-
-## Progress Summary
-| Version | Tasks Done | Tests | Status |
-|---------|:----------:|:-----:|--------|
-| v0.1 | 1 | 0 | In Progress |
-```
-
-**agent/RELEASES.md:**
-```markdown
-# RELEASES.md — <Project Name>
-
-> **Purpose:** Published release notes — what shipped, user-facing summary.
-> Full traceability details in releases/ subdirectory.
-> **Role:** Sixth pipeline stage — RELEASE.
-
-## v0.1 — Title (Date)
-Released by: @username
-Full details: [releases/v0.1-release-summary.md](releases/v0.1-release-summary.md)
-
-### What's New
-- Feature 1 — one-line description
-- Feature 2 — one-line description
-
-### Improvements
-- Improvement description
-
-### Bug Fixes
-- Fix description
-
-### Tests
-- X tests passing
-
-### Breaking Changes
-- (none, or list)
-
-## Decisions
-| # | Decision | Type | Why | Research |
-|---|----------|------|-----|----------|
-```
+> **Skill: Project Setup** — Full templates for all 9 agent files (REQS.md, SPECS.md, PLANS.md, RESEARCH.md, DESIGN.md, TASKS.md, RELEASES.md, AGENT.md, AGENT_CONTEXT.md) are in `.portable-spec-kit/skills/templates.md`. Agent reads this file when creating or restructuring agent files.
 
 **tests/test-release-check.sh:**
 > Script validates R→F→T coverage: every done feature must have passing test reference. Full script at `tests/test-release-check.sh` (distributed with kit). When setting up new projects, copy from existing `tests/test-release-check.sh`, not from this template.
 
-### New Project Setup Procedure
+<!-- §New Project Setup Procedure removed — duplicate of §New Project Setup at line 829. Single-source-of-truth: that section already loads .portable-spec-kit/skills/project-setup.md. -->
 
-When user asks to create a new project, follow these steps IN ORDER:
-
-**Step 1: Create Directory Structure + All Agent Files (DO THIS IMMEDIATELY — no questions)**
-```bash
-mkdir -p <project>/{agent,ard,input,output,cache,src,tests,docs}
-```
-Create all 9 agent files using the templates above.
-- `tests/test-release-check.sh` — R→F→T validation script (use template above), then `chmod +x tests/test-release-check.sh`
-- `README.md` — project overview (see README template below)
-- `.gitignore` — general ignores (node_modules, .env, cache/, __pycache__, .next, etc.). **Do NOT add `agent/` for team or open-source projects** — commit it for AI-powered onboarding. For solo/private projects, add comment: `# agent/ — commit this for team projects`
-- `.env.example` — empty placeholder
-
-**Step 2: First Commit (only if user has said "commit" or "initialize git")**
-- Stage all files
-- Commit with message: "Initialize <project-name> — v0.1 setup"
-- Do NOT push (wait for user to say "push")
-- If user has not mentioned committing → skip this step, show files created and wait
-
-**Step 3: Report to User**
-- Show: directory structure created, files list
-- Do NOT ask questions — user will start specs discussion when ready
-
-**Then (when user is ready):**
-
-**Step 4:** Specs discussion → write `agent/SPECS.md`. For each feature, add acceptance criteria under `## Feature Acceptance Criteria / ### F{n} — Feature Name`. Agent generates test stubs immediately for any forward-flow feature that has criteria written (see Spec-Based Test Generation rules).
-
-**Step 5:** Recommend tech stack → user approves
-
-**Step 6:** Write `agent/PLANS.md` — architecture, phases. Deployment deferred to release time.
-
-**Step 7:** Initialize stack — install deps, update `.gitignore`, assign dev server port automatically
-
-**Step 7.5:** Create GitHub Actions CI workflow — generate `.github/workflows/ci.yml` using the CI template (see CI & Community Contributions section). Detect test command from stack. Add CI badge to README.md as first badge. Tell user: "CI will run on every push and PR. Enable branch protection in GitHub Settings → Branches to require CI checks before merge."
-
-**Step 8:** Start development — update `agent/TASKS.md`, begin building
 

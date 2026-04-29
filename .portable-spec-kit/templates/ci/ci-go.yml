@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test + Portable Spec Kit gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -v -race ./...
+
+      - name: Ensure kit scripts executable
+        run: chmod +x agent/scripts/*.sh tests/*.sh 2>/dev/null || true
+
+      - name: R→F→T gate
+        run: |
+          if [ -f tests/test-release-check.sh ]; then
+            bash tests/test-release-check.sh agent/SPECS.md
+          fi
+
+      - name: PSK sync-check (incl. PSK011 secrets)
+        run: bash agent/scripts/psk-sync-check.sh --full
+
+      - name: No gate bypasses in committed code
+        run: |
+          if [ -f agent/.bypass-log ]; then
+            cat agent/.bypass-log
+            exit 1
+          fi

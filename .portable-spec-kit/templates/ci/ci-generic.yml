@@ -1,0 +1,42 @@
+name: CI
+
+# Generic template — kit gates only. Drop in your own project's test steps
+# as additional jobs or before the kit steps below.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  kit-gates:
+    name: Portable Spec Kit gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure kit scripts executable
+        run: chmod +x agent/scripts/*.sh tests/*.sh 2>/dev/null || true
+
+      - name: R→F→T gate (every done feature has a test)
+        run: |
+          if [ -f tests/test-release-check.sh ]; then
+            bash tests/test-release-check.sh agent/SPECS.md
+          fi
+
+      - name: PSK sync-check (version, counts, R→F→T, secrets, ...)
+        run: bash agent/scripts/psk-sync-check.sh --full
+
+      - name: No gate bypasses in committed code
+        run: |
+          if [ -f agent/.bypass-log ]; then
+            echo "⚠ agent/.bypass-log present — gate bypass was recorded"
+            cat agent/.bypass-log
+            exit 1
+          fi

@@ -25,6 +25,16 @@ if [ ! -f "$SPECS" ]; then
   exit 1
 fi
 
+# Closes QA-REL-NONDETERM-01 (v0.6.11): self-cleaning rft-cache invalidation.
+# Without this, sequential invocations could read a stale cache value written
+# by an earlier run and report different results on the same HEAD. gates.sh
+# already clears the cache for its own callsites; this makes the script
+# self-cleaning for ALL callers regardless of context. Bypass via
+# PSK_RFT_KEEP_CACHE=1 when intentionally testing cached path.
+if [ "${PSK_RFT_KEEP_CACHE:-0}" != "1" ]; then
+  rm -f agent/.release-state/rft-cache.txt 2>/dev/null
+fi
+
 TOTAL_DONE=0
 REF_PRESENT=0
 FILE_EXISTS=0
@@ -33,9 +43,24 @@ MISSING_REFS=0
 MISSING_FILES=0
 TESTS_FAILED=0
 
-# Cache: each unique test file is run only once — result reused for all features referencing it
-TEST_CACHE_FILE=$(mktemp)
-trap "rm -f $TEST_CACHE_FILE" EXIT
+# Cache: each unique test file is run only once — result reused for all features referencing it.
+# Closes QA-PERF-PHASE0-01 (v0.6.11): persisted across invocations (was mktemp-per-call,
+# meaning every call re-ran every referenced test from scratch). Now uses a persistent
+# cache file that gets mtime-invalidated when any tests/*.sh changes. Effect: back-to-back
+# invocations of this script in Phase 0 + sync-check no longer re-run the whole test suite,
+# dropping Phase 0 wall-clock from ~74s to <10s on the kit. Bypass via PSK_TEST_REF_NO_CACHE=1.
+TEST_REF_CACHE="agent/.release-state/test-ref-cache.txt"
+TEST_CACHE_FILE="$TEST_REF_CACHE"
+mkdir -p "$(dirname "$TEST_REF_CACHE")" 2>/dev/null || true
+# Invalidate cache if any tests/*.sh is newer than it
+if [ -f "$TEST_REF_CACHE" ] && [ "${PSK_TEST_REF_NO_CACHE:-0}" != "1" ]; then
+  newer=$(find tests -type f -name "*.sh" -newer "$TEST_REF_CACHE" 2>/dev/null | head -1)
+  [ -n "$newer" ] && rm -f "$TEST_REF_CACHE"
+elif [ "${PSK_TEST_REF_NO_CACHE:-0}" = "1" ]; then
+  rm -f "$TEST_REF_CACHE"
+fi
+touch "$TEST_REF_CACHE" 2>/dev/null || true
+# No EXIT trap — file persists for next invocation by design
 
 # Detect test runner from project root
 detect_runner() {

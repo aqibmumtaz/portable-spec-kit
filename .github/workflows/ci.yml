@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Framework + Benchmarking + Release + Sync-Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for git-grep in check_secrets
+
+      - name: Set up WeasyPrint dependencies (optional — skipped if PDFs not regenerated)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip libpango-1.0-0 libpangoft2-1.0-0 || true
+
+      - name: Ensure scripts are executable
+        run: chmod +x agent/scripts/*.sh tests/*.sh
+
+      - name: Run framework test suite
+        run: bash tests/test-spec-kit.sh
+
+      - name: Run SPD benchmarking suite
+        run: bash tests/test-spd-benchmarking.sh
+
+      - name: Run R→F→T release-check
+        run: bash tests/test-release-check.sh agent/SPECS.md
+
+      - name: Run sync-check (12 deterministic checks incl. PSK011 secrets)
+        run: bash agent/scripts/psk-sync-check.sh --full
+
+      - name: Verify zero stale bypass entries in last 24h
+        run: |
+          if [ -f agent/.bypass-log ]; then
+            echo "⚠ bypass-log present — gate bypasses were used"
+            cat agent/.bypass-log
+            echo "Expected: no bypass-log on pushed/PR code."
+            exit 1
+          fi
+          echo "✓ No gate bypasses recorded"

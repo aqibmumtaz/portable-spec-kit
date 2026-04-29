@@ -8,3 +8,11 @@ logs/
 .DS_Store
 __pycache__/
 *.pyc
+
+# Reflex ephemeral artifacts
+reflex/history/pass-*/project-understanding.md
+reflex/history/pass-*/test-plan.md
+reflex/history/pass-*/qa-summary.md
+reflex/history/pass-*/dev-trace.md
+reflex/history/pass-*/deferred-decisions.md
+reflex/sandbox/

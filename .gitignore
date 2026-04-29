@@ -13,3 +13,48 @@ logs/
 agent/.jira-sync.lock
 agent/.agent-context.lock
 agent/SYNC_RESULT.json
+
+# Reflex ephemeral artifacts — per v0.6.2 design, ALL per-pass outputs are
+# now committed (findings.yaml, signoff.md, verdict.md, investigation-log.md,
+# coverage.md, pass-plan.md, project-understanding.md, qa-summary.md,
+# qa-usage.yaml, test-plan.md, dev-trace.md, deferred-decisions.md,
+# regression-diff.md, gates-result.md, .cycle-meta). Retention policy bounds
+# disk growth (last 10 pass dirs on disk per reflex/config.yml history_retention).
+# Only the sandbox worktree stays gitignored (ephemeral QA scratch).
+reflex/sandbox/
+
+# Playground: self-contained demo projects with their own git repos
+psk-playground/
+
+# Session stack — in-conversation branching trace (per skills/session-trace.md)
+.session-stack.md
+.session-archive/
+
+# Reflex loop orchestrator runtime state (per reflex/lib/loop.sh)
+agent/.release-state/loop-state.yml
+agent/.release-state/loop-state.aborted-*.yml
+agent/.release-state/kit-loop-state.yml
+agent/.release-state/kit-loop-state.aborted-*.yml
+agent/.release-state/adl-drafts.md
+
+# Prep-release + validate runtime artifacts (ephemeral, should not be committed)
+agent/.bypass-log
+agent/.release-state/.validate-stamp
+agent/.release-state/critic-task.md
+agent/.release-state/critic-result.md
+agent/.release-state/dev-task.md
+agent/.release-state/.dev-invoke-stamp
+agent/.release-state/state
+agent/.release-state/qa-task.md
+agent/.release-state/qa-result.md
+agent/.release-state/.qa-invoke-stamp
+agent/.release-state/dev-result.md
+agent/.release-state/critic-iterations
+agent/.release-state/.validate-stamp
+agent/.release-state/reflex-auto-submit-consent
+agent/.release-state/rft-cache.txt
+agent/.release-state/last-prep-release
+agent/.release-state/test-ref-cache.txt
+agent/.release-state/reflex.lock
+agent/.release-state/test-ref-cache.txt
+tests/.psk-optimize-counts.cache

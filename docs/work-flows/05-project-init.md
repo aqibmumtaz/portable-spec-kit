@@ -146,3 +146,37 @@
 | `reinit` on New/Partial project | Redirect: "agent/ files not fully set up — run `init` instead" |
 | AGENT.md already accurate | Note "no changes needed" in summary — never overwrite accurate content |
 | SPECS.md empty after 3+ [x] tasks | Flag in reinit: "SPECS.md is empty but TASKS.md has X completed tasks — fill it? (y/n)" |
+
+## Final Validation (MANDATORY — dual gate)
+
+At the end of `init` (first-time population of `agent/*` from codebase) or `reinit` (re-sync of an existing agent/ state), agent MUST run the dual-gate validation:
+
+```bash
+# After init
+bash agent/scripts/psk-validate.sh init
+
+# After reinit
+bash agent/scripts/psk-validate.sh reinit
+```
+
+**Init critic** verifies all 9 `agent/*.md` files exist, are populated from the codebase (not empty templates), Stack matches repo facts, features retroactively mapped from commits.
+
+**Reinit critic** additionally verifies no content was lost during re-sync (no [x] tasks deleted, no ADL rows dropped) and newly added pipeline files (e.g. `DESIGN.md`, `RESEARCH.md`) are present and populated.
+
+Both must pass before `init`/`reinit` is complete.
+
+### Orchestrators (optional ergonomic wrappers)
+
+```bash
+bash agent/scripts/psk-init.sh start       # init preflight: source count, agent/ emptiness
+bash agent/scripts/psk-init.sh complete    # run dual gate after init work done
+
+bash agent/scripts/psk-reinit.sh start     # reinit preflight: snapshot agent/*.md byte counts
+bash agent/scripts/psk-reinit.sh complete  # content-loss check + dual gate
+```
+
+Each orchestrator adds workflow-specific preflight checks before the dual gate:
+- **`psk-init.sh`** warns if source count is too low (init may be trivial) or agent/ already has content (should use reinit)
+- **`psk-reinit.sh`** snapshots byte counts on `start`, then on `complete` flags any agent/*.md file that shrank >20% (content loss detection)
+
+Using orchestrators is equivalent to running `psk-validate.sh init` or `psk-validate.sh reinit` directly, with extra early-failure protection.

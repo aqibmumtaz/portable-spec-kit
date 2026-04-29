@@ -103,8 +103,32 @@ Before every push — enforced by the agent:
 |---------|--------|
 | New project setup | Step 7.5 — after stack confirmed |
 | Existing project onboarding | Checklist item — if ci.yml missing |
-| User says "add CI" / "set up CI" | On demand |
+| User says "add CI" / "set up CI" / "enable ci" | On demand |
+
+## CI Templates Shipped With the Kit (v0.5.16+)
+
+The kit installs 4 stack-aware GitHub Actions templates at `.portable-spec-kit/templates/ci/`:
+
+| Template | Stack | What it runs |
+|----------|-------|--------------|
+| `ci-node.yml` | Node / TypeScript | `npm ci` → lint → typecheck → test → R→F→T → sync-check |
+| `ci-python.yml` | Python | `pip install` → ruff → mypy → pytest → R→F→T → sync-check |
+| `ci-go.yml` | Go | `go build` → `go vet` → `go test -race` → R→F→T → sync-check |
+| `ci-generic.yml` | Other / mixed | Kit gates only (add your own test steps separately) |
+
+**Kit gates run in every template** (ensures server-side enforcement matches local PreCommit hook):
+- R→F→T gate (`bash tests/test-release-check.sh agent/SPECS.md`)
+- `psk-sync-check.sh --full` — 15 structural checks including PSK011 secret scanning (blocks commits of real credentials)
+- Bypass-log detector — fails CI if `agent/.bypass-log` is present (any local `PSK_*_DISABLED=1` or `--no-verify` bypass would surface here)
+
+## Installation — agent copies the right template
+
+On `"enable ci"`, the agent:
+1. Detects stack from `agent/AGENT.md` Stack table
+2. Copies matching template from `.portable-spec-kit/templates/ci/ci-{stack}.yml` → `.github/workflows/ci.yml`
+3. Substitutes project-specific fields (test command, branch name)
+4. Adds CI badge to README.md
 
 ## Files Created
-- `.github/workflows/ci.yml` — runs on every push + PR
+- `.github/workflows/ci.yml` — copied from template matching your stack; runs on every push + PR
 - `README.md` — CI badge added as first badge

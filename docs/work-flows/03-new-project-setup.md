@@ -72,15 +72,37 @@ User says "create a new project" or agent detects missing `agent/` directory.
    - Ask user: create new env `<project-name>` or use existing
    - Install deps from `requirements.txt` / `pyproject.toml` / `environment.yml` if present
    - Record env name in `agent/AGENT.md` Stack table
-6. **Create CI workflow** → generate `.github/workflows/ci.yml` using the ci.yml template
+6. **Create CI workflow** → `.github/workflows/ci.yml created` from the ci.yml template
    - Detect test command from confirmed stack (Jest / pytest / Go / Bash)
    - Always include `bash tests/test-release-check.sh agent/SPECS.md` as final step (R→F→T gate)
    - Add CI badge to README.md as first badge
    - Tell user: "CI will run on every push and PR. Enable branch protection in GitHub Settings → Branches."
 7. Start development → update `agent/TASKS.md`, begin building
 
-## Files Created
+## Files Created — Agent directory structure
 - `agent/` — 6 management files
 - `README.md`, `.gitignore`, `.env.example`
 - `src/`, `tests/`, `docs/`, `ard/`, `input/`, `output/`
 - `.portable-spec-kit/user-profile/user-profile-{username}.md` (if not already present)
+
+## Final Validation (MANDATORY — dual gate)
+
+After the scaffold is complete, agent MUST run the dual-gate validation:
+
+```bash
+bash agent/scripts/psk-validate.sh new-setup
+```
+
+This runs both critics:
+1. **Bash critic** — `psk-sync-check.sh --full` verifies file presence, structure, version consistency
+2. **Sub-agent critic** — spawns fresh sub-agent via Task tool with `NEW_SETUP` prompt; reads `agent/*`, `README.md`, `.gitignore`, config files; reports `CURRENT:` or `STALE:` per file
+
+Both must pass. Exit code `2 = AWAITING_CRITIC` means agent must spawn sub-agent, write `critic-result.md`, and re-run. Do not mark setup complete until both gates are clean.
+
+### Orchestrator (optional ergonomic wrapper)
+
+```bash
+bash agent/scripts/psk-new-setup.sh         # runs preflight + dual gate
+```
+
+The orchestrator adds workflow-specific preflight checks before the dual gate. Using it is equivalent to running `psk-validate.sh new-setup` directly, with extra early-failure protection.

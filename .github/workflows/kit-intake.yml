@@ -1,0 +1,77 @@
+name: Kit Intake (weekly community-trace review)
+
+# N38 — weekly intake pipeline.
+# Fetches open `avacr-eval` issues, drafts agent/tasks/Gxx-*.md from
+# kit/meta-scope findings, and opens a PR for maintainer review. See
+# reflex/README.md §"Intake automation" for the full workflow.
+
+on:
+  schedule:
+    # Monday 09:00 UTC (11:00 CET, 03:00 PDT). Adjust if needed.
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {}           # manual trigger from Actions UI
+
+permissions:
+  contents: write                 # push branch + commit drafts
+  issues: read                    # read avacr-eval labeled issues
+  pull-requests: write            # open intake review PR
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "kit-intake-bot"
+          git config user.email "kit-intake-bot@users.noreply.github.com"
+
+      - name: Create intake branch
+        id: branch
+        run: |
+          BRANCH="intake/$(date -u +%Y-W%V)"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Run intake pipeline
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash reflex/lib/intake.sh
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "has_drafts=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_drafts=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit drafts + summary
+        if: steps.diff.outputs.has_drafts == 'true'
+        run: |
+          git add agent/tasks/G*.md reflex/history/intake-summary.md reflex/history/intake-log.csv || true
+          git commit -m "intake: week $(date -u +%Y-W%V) — auto-drafted from avacr-eval issues"
+          git push origin "${{ steps.branch.outputs.name }}"
+
+      - name: Open intake review PR
+        if: steps.diff.outputs.has_drafts == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ steps.branch.outputs.name }}" \
+            --title "[intake] week $(date -u +%Y-W%V) — drafts for review" \
+            --label "intake-review-pending" \
+            --body-file reflex/history/intake-summary.md
+
+      - name: No-op notice
+        if: steps.diff.outputs.has_drafts == 'false'
+        run: |
+          echo "No kit/meta-scope drafts this run. Either no open avacr-eval issues"
+          echo "or all findings this week were target-project scope. Next run in 7 days."

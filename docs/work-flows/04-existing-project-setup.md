@@ -113,3 +113,23 @@
 - `agent/SPECS.md`, `PLANS.md`, `TASKS.md`, `RELEASES.md` — from templates
 - `WORKSPACE_CONTEXT.md` — if not already present
 - `.github/workflows/ci.yml` — if user selects it (see CI/CD Setup flow)
+
+## Final Validation (MANDATORY — dual gate)
+
+After retroactive fill is complete, agent MUST run the dual-gate validation:
+
+```bash
+bash agent/scripts/psk-validate.sh existing-setup
+```
+
+Bash critic (psk-sync-check.sh) + sub-agent critic (EXISTING_SETUP template) run in sequence. The sub-agent checks that (a) no existing project files were destructively modified, (b) `agent/*` is populated from the actual codebase (not placeholders), and (c) Stack detection matches `package.json` / `requirements.txt` / `go.mod` / etc.
+
+Both must pass. Exit code `2 = AWAITING_CRITIC` means agent must spawn sub-agent via Task tool, write `critic-result.md`, and re-run.
+
+### Orchestrator (optional ergonomic wrapper)
+
+```bash
+bash agent/scripts/psk-existing-setup.sh         # runs preflight + dual gate
+```
+
+The orchestrator adds workflow-specific preflight checks before the dual gate. Using it is equivalent to running `psk-validate.sh existing-setup` directly, with extra early-failure protection.

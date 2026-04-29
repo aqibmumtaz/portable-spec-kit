@@ -137,3 +137,33 @@ The user doesn't HAVE to follow this flow sequentially:
 | `PLANS.md` | Architecture, data model, phases, methodology | Before dev + when architecture evolves |
 | `TASKS.md` | Version-based task tracking | Before and after every task |
 | `RELEASES.md` | Version changelog, test results | End of version release |
+
+## Feature Completion — Final Validation (MANDATORY — dual gate)
+
+Before marking a feature `[x]` in SPECS.md and TASKS.md, the agent MUST run the dual-gate validation:
+
+```bash
+bash agent/scripts/psk-validate.sh feature-complete
+```
+
+**Bash critic** — `psk-sync-check.sh --full` runs 15 deterministic checks (PSK001–PSK015) including: R→F→T gate, SPECS staleness, AGENT.md Stack drift, ARD content freshness, README structural consistency (agent table row count, flow table row count, install list counts), and **secret scanning (PSK011)** that blocks commits of real-format credentials.
+
+**Sub-agent critic** (`FEATURE_COMPLETE` template) — spawns fresh sub-agent that verifies the feature being closed has:
+- `[x]` in SPECS.md with Completed date + populated Tests column
+- Matching `[x]` task in TASKS.md with completion date
+- Non-stub test file (no `TODO`, no `test.skip`, no `assert False`)
+- `agent/design/f{N}.md` with Current State = Done
+- ADL entry in PLANS.md for any design decision (with Plan Ref link)
+- Updated AGENT_CONTEXT.md (What's Done + What's Next)
+
+**Verbatim-quote gate (v0.5.15):** every `CURRENT:` verdict from the sub-agent must include a `QUOTE:` line on the next line with a verbatim string (≥20 chars) from the named file. Bash `grep -F` verifies the quote actually exists — fabricated quotes exit 3, blocked. This closes the "sub-agent claimed without reading" failure mode.
+
+Both gates must pass before the `[x]` is considered final. Exit code `2 = AWAITING_CRITIC` means agent must spawn the sub-agent via Task tool, write `critic-result.md`, and re-run.
+
+### Orchestrator (optional ergonomic wrapper)
+
+```bash
+bash agent/scripts/psk-feature-complete.sh         # runs preflight + dual gate
+```
+
+The orchestrator adds workflow-specific preflight checks before the dual gate. Using it is equivalent to running `psk-validate.sh feature-complete` directly, with extra early-failure protection.

@@ -1,0 +1,27 @@
+#!/bin/bash
+# =============================================================
+# PSK pre-commit hook template
+# Installed by psk-install-hooks.sh to .git/hooks/pre-commit
+#
+# Blocks commits if psk-sync-check.sh reports issues.
+#
+# Emergency bypass:
+#   PSK_SYNC_CHECK_DISABLED=1 git commit -m "..."
+#
+# Full bypass (not recommended):
+#   git commit --no-verify
+# =============================================================
+
+if [ "${PSK_SYNC_CHECK_DISABLED:-0}" = "1" ]; then
+  exit 0
+fi
+
+SCRIPT="$(git rev-parse --show-toplevel)/agent/scripts/psk-sync-check.sh"
+
+# If script missing, don't block (may be a fresh clone without full install)
+if [ ! -x "$SCRIPT" ]; then
+  exit 0
+fi
+
+bash "$SCRIPT" --full
+exit $?

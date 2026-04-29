@@ -91,7 +91,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.5.5</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.15</div>
     <div><strong style="color:#dce4f0;">Date:</strong> April 2026</div>
   </div>
 </div>
@@ -125,7 +125,7 @@
   </div>
 </div>
 
-<h3>10 Core Strengths</h3>
+<h3>11 Core Strengths</h3>
 <table>
   <tr><th>Strength</th><th>What It Means</th></tr>
   <tr><td><strong>🪶 Lightweight</strong></td><td>Single markdown file. Zero dependencies. Zero install.</td></tr>
@@ -136,9 +136,178 @@
   <tr><td><strong>🧠 Context-Persistent</strong></td><td>AGENT_CONTEXT.md carries state across sessions. Pick up after weeks. Never lose context.</td></tr>
   <tr><td><strong>🔒 Secure</strong></td><td>Never expose API keys — even if asked. Strict .env rules. Code security enforced.</td></tr>
   <tr><td><strong>🔄 Non-Blocking</strong></td><td>Code first, specs later. Agent tracks silently. Never blocks the developer.</td></tr>
-  <tr><td><strong>🏗️ Self-Scaffolding</strong></td><td>Auto-creates 6 agent files, README, workspace context. 8 stack templates built-in. Ready to code in seconds.</td></tr>
+  <tr><td><strong>🏗️ Self-Scaffolding</strong></td><td>Auto-creates 9 agent files, README, workspace context. 8 stack templates built-in. Ready to code in seconds.</td></tr>
   <tr><td><strong>✅ Self-Validating</strong></td><td>Agent tests everything. Fixes before presenting. 98%+ coverage target.</td></tr>
+  <tr><td><strong>🛡️ Reliably Enforced</strong></td><td>3-layer enforcement: bash sync-check (18 deterministic checks, PSK001–PSK017), sub-agent critic (verbatim-quote gate), git + Claude Code hooks (block bad commits). Agent cannot skip quality gates. Works across all AI agents.</td></tr>
 </table>
+
+<h3>Reliability Architecture (v0.5.8+)</h3>
+<p>The kit guarantees consistency through three independent enforcement layers:</p>
+<ul>
+  <li><strong>Bash critic:</strong> <code>psk-sync-check.sh</code> runs 18 deterministic checks PSK001–PSK017 (version consistency across 10+ files, test counts, feature counts, SPECS staleness, R→F→T gate, script permissions, required directories, CHANGELOG/RELEASES content, ARD content, AGENT.md stack, README Latest Release + install list + agent table + flow table, flow doc content, critic prompts meta-check, secrets scanning). Mode auto-detection adapts checks to project type (kit/node/python/go/rust/generic). Runs in under 500ms. Silent on clean. Emergency bypass via <code>PSK_SYNC_CHECK_DISABLED=1</code> env variable.</li>
+  <li><strong>Sub-agent critic:</strong> <code>psk-critic-spawn.sh</code> uses a file-based protocol to spawn fresh-context sub-agents that verify semantic correctness — flow docs describe current state, release notes match actual changes. Five-iteration cap with human escalation.</li>
+  <li><strong>Hooks:</strong> <code>.claude/settings.json</code> PostToolUse warns on every edit if drift detected. <code>.git/hooks/pre-commit</code> blocks commits that fail sync-check. These run outside agent control — the agent physically cannot bypass them during commits.</li>
+</ul>
+<p>Install: <code>curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash</code> — delivers the complete reliability infrastructure to your project. Uninstall: <code>bash agent/scripts/psk-uninstall.sh</code> (preserves your pipeline files).</p>
+
+<h3>v0.5.23 — Full-Surface Documentation Coverage Analyzer</h3>
+<p><code>agent/scripts/psk-doc-sync.sh</code> is the release-time tool that catches documentation drift <em>structurally</em> rather than by agent inspection. It extracts every feature from the current-minor CHANGELOG entry and checks its presence across five documentation surfaces: <code>agent/*.md</code> (architecture), <code>docs/work-flows/*.md</code> (user-facing workflows), <code>docs/research/*.md</code> (methodology paper), <code>ard/*.html</code> (architecture reference), and <code>README.md</code> (public overview). Each feature is classified COVERED (≥2 surfaces), PARTIAL (1 surface), or MISSING (0 surfaces) with a surface-legend code <code>[AFPDR]</code> and a heuristic-suggested target doc per gap.</p>
+<p>The analyzer is mandatory at release Step 4 (Update Docs). The <code>STEP_4_FLOW_DOCS</code> and <code>STEP_9_VALIDATION</code> critic prompts now include an "AUTOMATED COVERAGE TOOL" clause that makes the sub-agent critic run the analyzer and treat every MISSING entry as STALE. Run with <code>--strict</code> for CI-style behavior (exit 1 on any gap). This addresses the structural reason v0.5.13–v0.5.18 shipped with flow-doc drift: critic prompts were only catching contradictions, never omissions.</p>
+
+<h3>v0.6.0 — AVACR: Reflex Evolves to Adversarial Goals + Sandbox Isolation + Peer-Exchange</h3>
+<p>F70 Reflex evolves from cooperative VACR (Verbal Actor-Critic Refinement) to <strong>AVACR — Adversarial Verbal Actor-Critic Refinement Loop</strong>. The loop gains explicit asymmetric goals, physical sandbox isolation, and machine-parseable peer-to-peer YAML exchange so humans read only the final signoff, never agent working output.</p>
+<ul>
+  <li><strong>Adversarial goals with collaborative convergence:</strong> QA-Agent's explicit goal is to FAIL the release (hunt exhaustively across 14 dimensions; default DENIED). Dev-Agent's goal is to FOOLPROOF the release against QA's hunt (fix findings + audit + harden sibling-class weaknesses). Convergence is QA hunting hard and finding zero blockers — not "Dev says it's done."</li>
+  <li><strong>Physical sandbox worktree isolation:</strong> QA operates in a git worktree at <code>reflex/sandbox/qa-pass-NNN/</code> with <code>agent/AGENT.md</code> and <code>agent/AGENT_CONTEXT.md</code> physically removed. Dev's project rules + living session narrative cannot bias QA's fresh-context investigation. Dev retains full-repo access. Dual-rooted access: <code>REFLEX_QA_WORKTREE</code> for reads, <code>REFLEX_QA_PROJECT</code> for invocations.</li>
+  <li><strong>Peer-to-peer YAML exchange:</strong> QA writes <code>findings.yaml</code> (priority + dimension + blast_radius + confidence + reproducibility + escalation + citable_quote + regression_vector + standard + recommendation per finding). Dev returns <code>dev-result.yaml</code> (fixed / rebuttals / routed_to_human / escalated / deferred). Human reads only <code>signoff.md</code> (GRANTED or DENIED with exit criteria).</li>
+  <li><strong>14-dimension adversarial hunt:</strong> functional / edge-case / cross-pipeline / workflow / research-backed-quality / superficiality / production-readiness / security (OWASP) / performance / architectural-compliance / documentation / test-quality / tech-debt / readiness-affirmation.</li>
+  <li><strong>4-persona testing:</strong> every feature exercised as new-user / power-user / malicious-user / accessibility-user — different personas surface different failure classes.</li>
+  <li><strong>Research capability + citable-quote honesty gate:</strong> QA may invoke WebSearch/WebFetch for RFCs, OWASP Top 10, CVEs, benchmarks, academic papers. Every finding requires a citable quote with file:line reference + verbatim text that bash grep can verify. No hallucinated standards.</li>
+  <li><strong>Dev peer-fixer protocol:</strong> 4-bucket diagnosis (A/B/C/D with Bucket-D requiring counter-citation rebuttal); human-arbitration routing for cross-cutting / ADL-amendment findings (Dev does not auto-fix those); flaky-vs-deterministic distinction; sibling-class hardening mandated (fix the class, not just the instance).</li>
+  <li><strong>Coverage declaration + regression-vector re-execution:</strong> QA writes <code>coverage.md</code> listing tested × dimensions AND untested surface with reasons. Regression vectors preserved per-finding and re-executed verbatim each pass; failure upgrades priority one level (catches surface-patch vs root-cause fixes).</li>
+  <li><strong>CHANGELOG truth-check mandate:</strong> every bullet in current version's CHANGELOG must have a test case and observable evidence; unverifiable claims block signoff.</li>
+  <li><strong>Consistency sweep:</strong> <code>cycle</code> → <code>pass</code> (~30 refs), <code>Refine</code> → <code>Reflex</code> (3 stragglers with real install/update bugs surfaced and fixed).</li>
+  <li><strong>Paper target:</strong> <em>"Adversarial Verbal Actor-Critic Refinement (AVACR): Multi-Agent Verbal Reinforcement Learning with Asymmetric Goals for Spec-Grounded Post-Release Program Repair"</em> (ICSE / FSE / ASE). Note: "Adversarial" refers to inference-time asymmetric goals / red-teaming, not adversarial training (no gradient updates).</li>
+</ul>
+
+<h3>v0.6.1 — Kit self-evolution loop + MINIMAL template tier + 14 framework-gap closures</h3>
+<p>Dual-track release closing the empirical-kit-evolution loop end-to-end and adding a third response-template tier.</p>
+<ul>
+  <li><strong>N33 adopter-side auto-submit:</strong> consent-gated dispatcher opens anonymized kit issues at pass-end. Three modes (manual / prompt / auto) with four guards (consent, pass filter, 24h rate limit, anonymizer).</li>
+  <li><strong>N38 maintainer-side intake automation:</strong> weekly GitHub Action parses <code>avacr-eval</code> issues, drafts <code>agent/tasks/Gxx-*.md</code> kit tasks.</li>
+  <li><strong>N44/N45 general-purpose runner:</strong> mode-less <code>reflex/run.sh [--target &lt;path&gt;]</code>; <code>--kit-loop</code> chains prep-release + self-test with max 3 iterations.</li>
+  <li><strong>Per-pass canonical trace (Q1) + trace continuity:</strong> structured <code>findings.yaml</code> + verdict <code>signoff.md</code> per pass; next QA reads prior <code>findings.yaml</code> + <code>signoff.md</code> + cross-pass register at Phase 1.</li>
+  <li><strong>MINIMAL response-format tier + Writing Style sub-section + breadcrumb rules 6a/6c/6d + pre-send self-check.</strong></li>
+  <li><strong>Session-stack 3-tier scalability + promotion rule.</strong></li>
+  <li><strong>14 framework-gap closures (G1-G15 less G11).</strong></li>
+</ul>
+
+<h3>v0.6.2 — Dev-branch isolation + protected-files write-ban + autoloop + history retention</h3>
+<p>Closes the reflex execution-model loop. QA was sandboxed; Dev now runs on an isolated branch with a 3-layer write-ban on the two spec-persistent-owned files. Autoloop unifies the iterate-until-GRANTED command for kit + user projects.</p>
+<ul>
+  <li><strong>Dev-branch isolation:</strong> every reflex pass runs Dev on <code>reflex/dev-cycle-NN-pass-NNN</code>. Fast-forward merge on GRANTED + auto-delete; unhappy branches retained (last 3) for review.</li>
+  <li><strong>Protected-files write-ban (3-layer):</strong> <code>agent/AGENT.md</code> and <code>agent/AGENT_CONTEXT.md</code> unmodifiable by reflex — prompt constraint + <code>gates.sh</code> diff check + <code>psk-sync-check.sh</code> pre-commit hook on reflex dev branches.</li>
+  <li><strong>Sandbox purge after QA:</strong> <code>file-bugs.sh</code> removes the current pass's sandbox immediately after findings extraction — Dev physically cannot read QA's workspace.</li>
+  <li><strong>Autoloop generalization:</strong> <code>bash reflex/run.sh</code> (default = autoloop) chains prep-release + pass + iterate until GRANTED. Single CLI surface; wrapper scripts retired.</li>
+  <li><strong>Unified cycle-NN-pass-NNN naming:</strong> every pass gets a cycle id (ad-hoc runs auto-assign one); single directory scheme.</li>
+  <li><strong>History retention + reset:</strong> <code>history_retention</code> config bounds disk (last 10 pass dirs + 3 dev branches + 3 sandboxes; register + summary.csv forever). <code>bash reflex/run.sh --reset [--confirm]</code> for full wipe.</li>
+  <li><strong>Concurrency + empty-pass + intake parser update.</strong></li>
+</ul>
+
+<h3>v0.6.3 — Autonomous reflex run validation</h3>
+<p>Mechanical patch minted from an autonomous end-to-end reflex run on the v0.6.2 consolidation. Prep-release validated the full reflex architecture through the kit's own prepare-release pipeline — Dev-branch isolation, protected-files write-ban, autoloop, history retention, reset command, unified cycle naming all verified green. No feature changes.</p>
+
+<h3>v0.6.4 — Reflex convergence stopping + loop-resume fix + gates cache fix + token tracking</h3>
+<ul>
+  <li><strong>Convergence-based stopping (N56)</strong> replaces "max 3 iterations" with real signals: GRANTED, REGRESSION, findings_floor, plateau (<code>patience_passes</code>), fix-rate drop (<code>min_fix_rate</code>), safety cap.</li>
+  <li><strong><code>--loop --resume</code> collision fix:</strong> deferred flag resolution in <code>run.sh</code>; <code>--loop --resume</code> now routes correctly to <code>loop-resume</code> mode instead of hijacking to <code>resume-qa</code>.</li>
+  <li><strong><code>gates.sh</code> cache-order bug:</strong> rft-cache cleared at gate-runner entry so sequential gates don't see stale data.</li>
+  <li><strong>Token tracking (<code>reflex/lib/track-tokens.sh</code>):</strong> per-pass tokens aggregated into <code>reflex/history/token-usage.csv</code> with <code>tokens_per_finding</code> metric + per-pass / per-cycle budget warnings.</li>
+  <li><strong>Iteration auto-chain on gate-fail:</strong> spurious gate failures no longer abort the autoloop — only REGRESSION + verdict signals halt.</li>
+</ul>
+
+<h3>v0.6.5 — Kit-bootstrap integrity gate (4-layer defense against un-installed-kit projects)</h3>
+<p>Closes the failure mode where a non-kit-aware agent (Copilot, plain-Claude) scaffolds a project manually, commits a <code>v0.N.N:</code> subject that satisfies reflex Gate 2, and proceeds end-to-end through prep-release + reflex — all while the project has zero kit scripts, no hooks, no skills, no CLAUDE.md, no <code>.portable-spec-kit/config.md</code>. Surfaced by an audit of the <code>psk-playground/urdu-stt-distillation</code> project which passed 3 reflex GRANTED verdicts despite being infrastructurally empty.</p>
+<ul>
+  <li><strong>Layer 1 — <code>install.sh</code></strong> (unchanged, canonical installer).</li>
+  <li><strong>Layer 2 — <code>psk-release.sh</code> Step 0:</strong> <code>run_bootstrap_gate()</code> fires before <code>init_state</code> on <code>prepare</code> / <code>refresh</code>. FAIL exits 1 with full bootstrap report + remediation command — no release state written.</li>
+  <li><strong>Layer 3 — <code>reflex/lib/preconditions.sh</code> Gate 0a:</strong> runs after Gate 0 (self-test identity) and before Gate 1 (clean tree). Script resolution prefers target's own copy, falls back to kit's copy — catches the exact case where target has zero scripts.</li>
+  <li><strong>Layer 4 — QA-Agent Dimension 16 "Kit-bootstrap integrity":</strong> new mandatory dimension in <code>reflex/prompts/qa-agent.md</code>. Runs FIRST (before Phase 1 Plan). Halts pass with <code>QA-BOOTSTRAP-NN CRITICAL</code> finding on any C1-C7 fail.</li>
+  <li><strong>New <code>agent/scripts/psk-bootstrap-check.sh</code></strong> (298 lines, shared helper). 7 checks (C1-C7): framework file + entry-point symlink, <code>.portable-spec-kit/config.md</code>, core 6 kit scripts executable, ≥10 cached skill files, pre-commit hook wired to psk-sync-check, all 9 <code>agent/*.md</code> pipeline files, test harness. Modes: default report, <code>--quiet</code>, <code>--json</code>, <code>--remediate</code> (auto-invokes parent install.sh). Kit-self auto-detected — skips symlink/config checks for the kit repo.</li>
+  <li><strong>Register format improvements</strong> in <code>reflex/lib/update-eval-trace.sh</code>: parses cycle from pass-name when <code>.cycle-meta</code> has stale <code>cycle=0</code>, adds <code>coverage.md</code> drill-down, extracts "Tests exercised:" summary line per pass (regression vectors + dimensions).</li>
+</ul>
+<p>Bypass for genuine emergencies: <code>PSK_BOOTSTRAP_CHECK_DISABLED=1</code>. Impact: structurally impossible now for an un-bootstrapped project to run prep-release or reflex.</p>
+
+<h3>v0.6.6 — Reflex Phase 0 pre-compute (claim-driven probing + reference-state diff + assumption surfacing)</h3>
+<p>Closes the meta-gap surfaced in v0.6.5 review: reflex's QA-Agent ran 3 GRANTED passes on an infrastructurally-empty project yet missed every kit-infrastructure gap because its probe set was a closed 16-dimension checklist from the AVACR paper. Adding dimensions reactively (Dim-15, Dim-16) fixes one case each but does not prevent the NEXT unknown class — QA always misses the bug outside its list. v0.6.6 moves reflex from "fixed checklist" to "probe-set derived from the project itself," <strong>while keeping the 16-dim checklist as a safety net</strong>. Three modes compose (each deterministic bash pre-compute — &lt;1s, &lt;100 tokens):</p>
+<ul>
+  <li><strong>Mode A — Claim-driven probing (<code>reflex/lib/extract-claims.sh</code>):</strong> walks every public doc (README, portable-spec-kit.md, SPECS, CHANGELOG, RELEASES, AGENT_CONTEXT, qa-agent.md) and extracts every claim with <code>probe_type</code> + <code>probe_target</code>. QA verifies each or files a finding. Unverified or vague claim = finding. Probe types: version-match, test-count, feature-count, capability-exists, file-count, install-works, dimension-count.</li>
+  <li><strong>Mode B — Reference-state comparison (<code>reflex/lib/state-diff.sh</code> + <code>reflex/reference-state/speckit-project.yaml</code>):</strong> static definition of what a complete speckit project must contain (required files + pipeline files + dirs + git hooks + entry-point symlinks + retired-file exclusions). State-diff compares actual vs reference; deltas pre-classified by severity; CRITICAL deltas auto-promote to findings. Kit-self auto-detected — skips user-project-only checks.</li>
+  <li><strong>Mode C — Assumption surfacing (in <code>reflex/prompts/qa-agent.md</code>):</strong> every pass writes <code>assumptions.md</code> listing implicit assumptions ("kit is installed," "test harness exits 0 on green," "every [x] feature actually implemented"). Each assumption gets a probe. Unverifiable assumption = MAJOR <code>QA-ASSUMPTION-NN</code> finding.</li>
+  <li><strong>QA Phase 0 wiring:</strong> both helpers run in <code>reflex/lib/spawn-qa.sh</code> BEFORE sandbox creation so <code>claims.yaml</code> + <code>state-diff.yaml</code> land in the pass directory pre-populated. QA reads these in Phase 0 — no LLM cost to re-derive. The 16-dim checklist runs as a safety net. CRITICAL state-diff short-circuits the 16-dim sweep of a structurally-broken project.</li>
+  <li><strong>Dev-Agent expanded scope (in <code>reflex/prompts/dev-agent.md</code>):</strong> Dev closes three gap classes per pass — (a) findings from <code>findings.yaml</code>, (b) unverified claims from <code>claims.yaml</code>, (c) state-diff deltas from <code>state-diff.yaml</code>. "Build, don't just patch" — restore missing infrastructure, build unfulfilled capabilities, add structure that makes assumptions self-verifying. Scope guardrails preserved (no out-of-SPECS features, protected files banned).</li>
+</ul>
+<p><strong>Design discipline:</strong> extension within AVACR/Reflex, NOT a new framework. QA is still Critic, Dev is still Actor, adversarial-with-collaborative-outcome loop unchanged. What changed: QA's probe-set derivation (paper-defined → project-derived) and Dev's scope (patch-only → patch + build + remediate).</p>
+
+<h3>v0.6.7 — Reflex 7-layer Senior/Principal-level QA system</h3>
+<p>The user must NOT be QA of their own project. Reflex now operates with a 7-layer Senior/Principal-level QA system that derives all probes from the project's spec pipeline + kit toolkit + running system — zero human-curated lists. Builds on v0.6.6 Phase 0 pre-compute by adding four new verification layers and codifying Senior/Principal philosophies in the prompts.</p>
+<ul>
+  <li><strong>Layer 1 — R→F→T pipeline integrity</strong> (<code>reflex/lib/check-rft-integrity.sh</code>, deterministic bash, Phase 0). For every <code>[x]</code> feature in SPECS.md: maps to Rn in REQS.md (R→F traceability), has acceptance criteria block, has <code>agent/design/f{N}-*.md</code> design plan, Tests column references real test file, test contains non-trivial assertions (no <code>toBeDefined</code> trivia / <code>test.skip</code> / TODO markers), test exits 0, has <code>[x]</code> mark in TASKS.md. Each break = CRITICAL finding. Output: <code>rft-integrity.yaml</code>.</li>
+  <li><strong>Layer 2 — Bidirectional doc ↔ code consistency</strong> (<code>reflex/lib/doc-code-diff.sh</code>, deterministic bash, Phase 0). Doc-to-code: every named file/script/version/count/capability claim → grep code for backing. Code-to-doc: every kit script + every <code>[x]</code> feature → at least one doc surface mentions it. Numerical-claim cross-check (test count consistency). Drift = finding. Output: <code>doc-code-diff.yaml</code>.</li>
+  <li><strong>Layer 3 — Behavioral per-feature verification</strong> (qa-agent.md Phase 2 mandate, LLM). Per <code>[x]</code> feature: 1 happy + 5 edge cases + 3 adversarial inputs + 1 integration scenario. <strong>Independence rule</strong>: design own test BEFORE reading Dev's. Output: <code>behavioral-tests/F{N}-*</code>.</li>
+  <li><strong>Layer 4 — Test-quality audit</strong> (qa-agent.md Phase 3 mandate, LLM). After Layer 3, audit Dev's test: would it catch QA's adversarial inputs? Are mocks honest? Coverage adequate? Inadequate Dev test = MAJOR <code>QA-TEST-INADEQUATE-F{N}</code> even if currently passing. Output: <code>test-quality-audit.yaml</code>.</li>
+  <li><strong>Layer 5 — Cross-feature integration probes</strong> (qa-agent.md Phase 2 mandate). Identifies pairs of <code>[x]</code> features that interact (auth × data, search × permissions). Surfaces compose-time bugs single-feature tests miss. Output: <code>integration-probes.md</code>.</li>
+  <li><strong>Layer 6 — Production readiness via kit tools</strong> (<code>reflex/lib/spawn-qa.sh</code> Phase 0 capture). Invokes <code>psk-sync-check.sh --full</code>, <code>psk-doc-sync.sh</code>, <code>tests/test-release-check.sh agent/SPECS.md</code>, <code>psk-code-review.sh</code>. Every PSK error code, MISSING in doc-sync, R→F→T break in release-check becomes evidence. Output: <code>kit-tools-output/{sync-check,doc-sync,release-check,code-review}.txt</code>.</li>
+  <li><strong>Layer 7 — External reality check</strong> (qa-agent.md Phase 2 mandate, LLM + WebSearch/WebFetch). For code touching network/dependencies/standards: cross-check OWASP Top 10, CVE feeds, framework deprecations (e.g., transformers <code>as_target_processor()</code> removed in v4.44), best-practice patterns. Output: <code>external-research.md</code>.</li>
+  <li><strong>Senior/Principal-level philosophies</strong> codified in qa-agent.md ("the user MUST NOT be QA of their own project") and dev-agent.md ("Senior/Principal engineer who closes gaps QA surfaces and hardens implementation against future passes"). 7 operating principles each, 4 forbidden moves, three gap classes per pass for Dev (fix findings + build unfulfilled claims + remediate state-diff deltas).</li>
+  <li><strong>Architecture plan committed:</strong> <code>agent/design/f70-reflex-senior-engineer-qa.md</code> documents context, philosophies, all 7 layers, what stays from v0.6.5/v0.6.6, what was discarded, v0.6.7-v0.6.13 sequencing. Companion Dev plan at <code>agent/design/f70-reflex-senior-engineer-dev.md</code>. Layer 4 hardening log shipped (<code>reflex/history/hardening-log.md</code>).</li>
+</ul>
+<p><strong>Short-circuit rule:</strong> if Layer 1 (rft-integrity) or Mode B (state-diff) shows CRITICAL deltas indicating structural break, halt the pass with those findings and skip the 16-dim sweep — fix structure first, behaviors second.</p>
+
+<h3>v0.6.8 — Reflex 7-layer full implementation: Layer 3/5/7 QA seed-helpers + Layer 7 Dev ADL extraction</h3>
+<p>Completes v0.6.7's architecture by shipping deterministic helpers for Layers 3, 5, 7 (QA) and Layer 7 (Dev). All 7 layers now have deterministic-bash seed-helpers wherever possible — LLM creative work goes to genuine reasoning, not derivation.</p>
+<ul>
+  <li><strong><code>reflex/lib/scaffold-behavioral-tests.sh</code> (QA Layer 3):</strong> for every <code>[x]</code> feature in <code>agent/SPECS.md</code>, generates <code>behavioral-tests/F{N}-test-plan.md</code> skeleton with the 1+5+3+1 structure (1 happy + 5 edge + 3 adversarial + 1 integration). Pulls acceptance criteria from <code>### F{N}</code> blocks; flags missing criteria as Layer 1 finding. QA fills TODOs with concrete probes — independence rule: design BEFORE reading Dev's test. Skeleton saves ~5K tokens/pass.</li>
+  <li><strong><code>reflex/lib/identify-integration-probes.sh</code> (QA Layer 5):</strong> scans SPECS for feature interactions via design-plan + criteria-block cross-references. Emits <code>integration-probes.md</code> with candidate pairs. QA validates pairs, drops spurious, designs scenarios. Includes "common integration patterns" reference.</li>
+  <li><strong><code>reflex/lib/external-research.sh</code> (QA Layer 7):</strong> scans project manifests (<code>package.json</code>, <code>requirements.txt</code>, <code>pyproject.toml</code>, <code>go.mod</code>, <code>Cargo.toml</code>, <code>Dockerfile</code>) and emits <code>external-research.md</code> with seeded WebSearch/WebFetch queries: per-dependency CVE searches, framework-changelog URLs, OWASP Top 10 mapping for project class. Stack-specific recent-vulnerability-class hints (e.g., prompt injection per OWASP LLM Top 10).</li>
+  <li><strong><code>reflex/lib/auto-extract-adl.sh</code> (Dev Layer 7):</strong> post-pass, scans Dev's commits for substantive bodies (≥200 chars) containing rationale keywords. Drafts ADL entries to <code>agent/.release-state/adl-drafts.md</code> for kit-maintainer review.</li>
+  <li><strong>Phase 0 produces 8 artifacts:</strong> <code>spawn-qa.sh</code> invokes all helpers BEFORE sandbox creation. Pass dir contains <code>claims.yaml</code>, <code>state-diff.yaml</code>, <code>rft-integrity.yaml</code>, <code>doc-code-diff.yaml</code>, <code>behavioral-tests/</code>, <code>integration-probes.md</code>, <code>external-research.md</code>, <code>kit-tools-output/</code> when QA spawns.</li>
+  <li><strong>Field-tested on kit-self:</strong> Layer 3 produces 70 test-plan skeletons in &lt;1s · Layer 5 finds 77 candidate pairs · Layer 7 QA gracefully detects stack signals · Layer 7 Dev drafts ADL entries when commits have rationale.</li>
+</ul>
+
+<h3>v0.6.9 — The kit is audited and improved by the reflex it built</h3>
+<p>The architecture built across v0.6.5-v0.6.8 — Phase 0 deterministic helpers + Senior/Principal-level QA philosophy + paired Dev operating system — was designed to find drift in user projects. v0.6.9 turned that exact machinery on the kit itself. The same QA-Agent that catches bugs in your code caught real bugs in the code that builds the QA-Agent.</p>
+<ul>
+  <li><strong>Phase 0 helpers ran on kit-self</strong> and exposed <strong>180 mechanical drift items</strong> the kit's own existing mechanical gates had passed clean for months: 170 R→F→T pipeline breaks (55 features missing <code>### F{N}</code> blocks, 45 missing design plans) + 10 doc↔code drifts including 1 LIVE rename incompleteness from v0.6.2 entry consolidation.</li>
+  <li><strong>QA-Agent was spawned</strong> against the kit and filed <strong>5 findings</strong> (3 MAJOR + 2 MINOR), prioritized for the field-test scope.</li>
+  <li><strong>Dev-Agent closed 2 inline:</strong> <code>QA-DOC-FT-02</code> live <code>kit-loop-state.yml</code> → <code>loop-state.yml</code> rename (4 files); <code>QA-TEST-INADEQUATE-F1</code> Layer-4 hardening shipping new <code>PSK018</code> per-feature pairwise check (advisory by default; <code>PSK_FEATURE_CRITERIA_STRICT=1</code> promotes to hard fail). The PSK018 hardening would have caught a "69 of 70 acceptance-criteria blocks deleted" silent ship under the existing shallow gate.</li>
+  <li><strong>Dev deferred 3 to v0.6.13 ARB</strong> in <code>agent/TASKS.md</code>: <code>QA-PIPE-FT-01-ARB</code> (backfill 55 missing criteria blocks — kit's own RFT debt) + <code>QA-INT-F70-F52-ARB</code> + <code>QA-INT-F70-F1-ARB</code> (behavioral integration probes need full QA+Dev pass, not field-test scope).</li>
+  <li><strong>Layer 5 hub-suppression added</strong> in <code>reflex/lib/identify-integration-probes.sh</code>: features appearing in ≥10 candidate pairs are hubs (e.g. F64 design pipeline cross-refs everything; F70 reflex links many) — pairs involving hubs are mostly noise, suppressed into a separate callout. Result on kit-self: 77 → 13 pairs.</li>
+  <li><strong>Field-test artifacts committed</strong> in <code>reflex/history/field-test-v0.6.8/</code> as permanent evidence: claims, state-diff, rft-integrity, doc-code-diff, behavioral-tests/, integration-probes, external-research, kit-tools-output, findings, signoff, dev-trace.</li>
+  <li><strong>Hardening event H-001 logged</strong> in <code>reflex/history/hardening-log.md</code>.</li>
+</ul>
+<p><em>A tool sufficient to audit user projects must be sufficient to audit the project that built it — v0.6.9 proved that proposition. v0.6.13 then closed the kit's own RFT debt + flipped PSK018 strict, locking in the standard the architecture proved.</em></p>
+
+<h3>v0.6.13 — Nested per-cycle history layout + Dim 23 + cycle-summary aggregator + autoloop convergence</h3>
+<p>Closes the meta-gap class user surfaced in cycle-01 trace audit (5 issues + 4 sub-gaps), formalizes Dim 23 so QA self-evolves to catch the class going forward, migrates reflex history to a nested per-cycle directory layout, and drops the hard-3-iter autoloop cap in favor of convergence-based stopping.</p>
+<ul>
+  <li><strong>Dim 23 — Auditor-output hygiene (MANDATORY):</strong> five new probes (register hygiene · cost data persistence · parallel-directory disambiguation · cross-surface terminology consistency · self-output validation loop) catch the meta-gap class previous 22 dimensions didn't probe. <code>reflex/prompts/qa-agent.md</code> v0.6.13 grows from 22 → 23 dimensions; QA's own self-evolution loop (Dim 18) is now the mechanism by which new dimensions are added.</li>
+  <li><strong>Nested per-cycle history layout:</strong> <code>reflex/history/cycle-NN-pass-NNN/</code> → <code>cycle-NN/pass-NNN/</code> (autoloop) and <code>standalone/pass-NNN/</code> (single-pass). Sandbox mirrors history layout. Per-cycle parent dir hosts a <code>summary.md</code> aggregator (<code>reflex/lib/cycle-summary.sh</code>). Flat identity (<code>cycle-NN-pass-NNN</code>) reserved for git branches, CSV pass id, and <code>[source: ...]</code> commit trailers — decouples branch/identity from on-disk layout.</li>
+  <li><strong>Autoloop runs until convergence:</strong> hard 3-iter cap dropped. Primary stops are convergence-based (GRANTED · REGRESSION · findings_floor · plateau · fix-rate drop). <code>convergence.max_iterations_safety</code> default 20 is escape hatch only.</li>
+  <li><strong>Cycle-01 trace audit fixes (9/9):</strong> pass-002 visible in register as INCOMPLETE (was silently dropped); "Autoloop cycle" → "Reflex cycle" terminology unified; sandbox-vs-history disambiguation in <code>17-reflex.md</code>; <code>score.sh</code> <code>grep -c || echo 0</code> multi-line bug fixed (<code>head -1</code>); <code>doc-code-diff.sh</code> path-with-spaces fix (10× scan coverage 12 → 120 docs); <code>psk-doc-sync.sh --strict</code> tightened (Missing&gt;0 only).</li>
+  <li><strong>First successful Dev-Agent run end-to-end:</strong> <code>cycle-01-pass-004</code> closed <code>QA-NOISE-RE-01</code> bucket A (NOISE_RE backtick-prefix SHA gap), 1 commit, all 6 mechanical gates green, fast-forward auto-merge to main — first time QA→Dev→merge loop closed without manual intervention.</li>
+  <li><strong>3-layer QA→Dev contract enforcement:</strong> <code>resume-qa</code> requires <code>findings.yaml</code> + <code>signoff.md</code>; <code>resume-dev</code> requires <code>dev-trace.md</code>; <code>loop.sh</code> Phase 4 INCOMPLETE detection. Closes "Dev never spawned on partial QA timeout" silent-skip pattern observed in <code>cycle-01-pass-002</code>.</li>
+  <li><strong>Tests:</strong> 1633 passing (1488 framework + 145 benchmarking). Sync-check 19/19. Release-check 70/70 features pass with R→F→T coverage.</li>
+  <li><strong>Tagline:</strong> <em>Auditor-output hygiene formalized as Dim 23; reflex history reshaped per-cycle; autoloop runs to convergence.</em></li>
+</ul>
+
+<h3>v0.6.12 — Reflex iter-1 convergence anchor + close all 15 v0.6.11 audit findings</h3>
+<p>Anchor version for the reflex iter-1 convergence cycle. Consolidates 8 refresh-release commits from v0.6.11 baseline. All 15 audit findings (5 pre-existing ARBs + 10 iter-1 QA findings) resolved or properly deferred; kit's own QA infrastructure self-validated end-to-end via reflex iter-1 self-test on kit-self.</p>
+<ul>
+  <li><strong>All 10 iter-1 QA findings closed:</strong> QA-REL-NONDETERM-01 (CRITICAL — self-cleaning rft-cache), QA-KIT-RFT-01 (anchored regex, 70 false-positives → 0), QA-KIT-DCD-02 (DOC_SURFACES expanded 6→11), QA-PERF-PHASE0-01 (persistent test-ref cache, 10.9× speedup), plus 5 MINOR + Option C thematic test-suite split (closes QA-TEST-COUPLING-01).</li>
+  <li><strong>5 pre-existing ARBs closed:</strong> QA-ARCH-01 (Chrome → WeasyPrint per ADR-006), G2/G5 (verified already-shipped), QA-INT-F70-F1-ARB (C1.5 symlink target validation), QA-INT-F70-F52-ARB (layered R→F→T documented as intentional).</li>
+  <li><strong>Cost/perf wins:</strong> persistent test-ref cache cold 54s → warm 5s = 10.9× speedup. Phase 0 wall-clock 74s → ~25s on subsequent invocations. Dim 17 cost/perf audit + Dim 18 philosophy self-audit added to QA prompt + Dev mirror principles 8/9. pass_score (Dim 17 ranking) v3 summary.csv schema.</li>
+  <li><strong>Tests:</strong> 1621 passing.</li>
+  <li><strong>Tagline:</strong> <em>Iter-1 self-audit complete — kit closed every finding it surfaced about itself.</em></li>
+</ul>
+
+<h3>v0.6.11 — Reset allowlist + iter-aware refresh-release optimization</h3>
+<p>Two kit-infrastructure improvements driven by usage friction noticed during v0.6.10 wrap-up. Both reduce maintenance burden + cost without changing reflex semantics.</p>
+<ul>
+  <li><strong>Reset reflex — allowlist-based collection:</strong> <code>reflex/lib/reset.sh</code> switched from hardcoded glob lists to allowlist-based <code>find -mindepth 1 -maxdepth 1</code> traversal. New <code>HISTORY_KEEP=("hardening-log.md")</code> allowlist preserves kit's structural-defense audit memory across resets. Symmetric <code>--reset-hardening</code> flag for true clean-slate.</li>
+  <li><strong>Iter-aware release-prep:</strong> <code>reflex/lib/loop.sh</code> Phase 1 branches on <code>ITER</code>: iter 1 = <code>prepare</code> (version bump), iter 2+ = <code>refresh</code> (no bump). Single converged reflex cycle no longer inflates versions.</li>
+  <li><strong>Doc-coverage backfill:</strong> new "v0.6 Capability Reference" section in <code>docs/work-flows/17-reflex.md</code>. Closes 24 cumulative <code>psk-doc-sync.sh</code> coverage gaps from v0.6.5-v0.6.10.</li>
+</ul>
+
+<h3>v0.6.10 — Closing v0.6.9 ARBs: kit's own RFT debt backfilled + PSK018 strict by default</h3>
+<p>v0.6.9's field-test surfaced that the kit itself had accumulated RFT (Requirements → Features → Tests) debt: 55 of 70 features lacked their per-feature <code>### F{N}</code> acceptance criteria block in <code>agent/SPECS.md</code>. The new Layer-4 hardening shipped in v0.6.9 (<code>PSK018</code>) caught it as advisory; v0.6.10 acted on it.</p>
+<ul>
+  <li><strong>Backfilled all 55 missing <code>### F{N}</code> acceptance criteria blocks</strong> in <code>agent/SPECS.md</code> (F1–F55, 3-5 testable bullets each, ~200 lines), closing <code>QA-PIPE-FT-01-ARB</code>. F56–F70 blocks already existed and were preserved unchanged.</li>
+  <li><strong>Flipped <code>PSK018</code> advisory → strict-by-default</strong> in <code>agent/scripts/psk-sync-check.sh</code>. Default: <code>local strict="${PSK_FEATURE_CRITERIA_STRICT:-1}"</code>. Future commits adding an <code>[x]</code> feature without matching <code>### F{N}</code> block now fail pre-commit. Opt-out via <code>PSK_FEATURE_CRITERIA_STRICT=0</code> for genuine emergencies.</li>
+  <li><strong>Layer 1 R→F→T integrity on kit-self:</strong> 55 C2-criteria breaks → 0. Total drift items 170 → 110 (remaining are C1 R→F + C3 design-plan + minor edges, addressable in future versions).</li>
+  <li><strong>Tests:</strong> 1604 passing (1459 framework + 145 benchmarking). Sync-check 19/19. Release-check 70/70 features pass with R→F→T coverage.</li>
+  <li><strong>Still deferred (v0.6.13+ ARB):</strong> <code>QA-INT-F70-F52-ARB</code> (reflex × test-harness behavioral integration probe) + <code>QA-INT-F70-F1-ARB</code> (reflex × framework-file behavioral integration probe). Both require full QA + Dev pass scope — not field-test scope. Tracked in <code>agent/TASKS.md</code>.</li>
+</ul>
 
 <h2>What the Framework File Contains</h2>
 
@@ -159,7 +328,7 @@
   <tr><td>Spec-Based Test Generation</td><td>Forward-flow stub generation, per-feature acceptance criteria format, stack-aware stubs, stub completion gate</td></tr>
   <tr><td>Dependencies</td><td>Bundle size checks, lock files, audit, avoid unnecessary deps</td></tr>
   <tr><td>Project Templates</td><td>6 agent files + README + 8 source code structures (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Auto-Scan</td><td>Detects existing projects, creates missing files, restructures to standard — 13 work flow docs</td></tr>
+  <tr><td>Auto-Scan</td><td>Detects existing projects, creates missing files, restructures to standard — 16 work flow docs</td></tr>
   <tr><td>Agent Behavior</td><td>Guide don't enforce, silent tracking, retroactive spec-filling, R→F→T traceability</td></tr>
 </table>
 
@@ -602,7 +771,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.5.5 &bull; April 2026
+  Portable Spec Kit &bull; v0.6.15 &bull; April 2026
 </div>
 
 </div>
@@ -620,7 +789,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.5.5 &bull; April 2026</div>
+    <div class="badge">v0.6.15 &bull; April 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test + Portable Spec Kit gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e .; fi
+
+      - name: Lint (ruff/flake8 if present)
+        run: |
+          pip install ruff 2>/dev/null && ruff check . || true
+
+      - name: Type check (mypy if present)
+        run: |
+          if [ -f mypy.ini ] || grep -q 'mypy' pyproject.toml 2>/dev/null; then
+            pip install mypy && mypy . || true
+          fi
+
+      - name: Test
+        run: pytest -v
+
+      - name: Ensure kit scripts executable
+        run: chmod +x agent/scripts/*.sh tests/*.sh 2>/dev/null || true
+
+      - name: R→F→T gate
+        run: |
+          if [ -f tests/test-release-check.sh ]; then
+            bash tests/test-release-check.sh agent/SPECS.md
+          fi
+
+      - name: PSK sync-check (incl. PSK011 secrets)
+        run: bash agent/scripts/psk-sync-check.sh --full
+
+      - name: No gate bypasses in committed code
+        run: |
+          if [ -f agent/.bypass-log ]; then
+            cat agent/.bypass-log
+            exit 1
+          fi

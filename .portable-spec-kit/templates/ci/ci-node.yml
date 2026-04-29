@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test + Portable Spec Kit gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for psk-sync-check secret scanner
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Type check
+        run: npm run typecheck --if-present
+
+      - name: Test
+        run: npm test --if-present
+
+      - name: Ensure kit scripts executable
+        run: chmod +x agent/scripts/*.sh tests/*.sh 2>/dev/null || true
+
+      - name: R→F→T gate (every done feature has a test)
+        run: |
+          if [ -f tests/test-release-check.sh ]; then
+            bash tests/test-release-check.sh agent/SPECS.md
+          fi
+
+      - name: PSK sync-check (12 deterministic checks, incl. PSK011 secrets)
+        run: bash agent/scripts/psk-sync-check.sh --full
+
+      - name: No gate bypasses in committed code
+        run: |
+          if [ -f agent/.bypass-log ]; then
+            echo "⚠ agent/.bypass-log present — gate bypass was recorded"
+            cat agent/.bypass-log
+            exit 1
+          fi

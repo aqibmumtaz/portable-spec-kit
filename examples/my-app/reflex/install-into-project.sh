@@ -1,0 +1,199 @@
+#!/bin/bash
+# reflex/install-into-project.sh
+#
+# Copies the refine machinery (run.sh, lib/, prompts/) from the canonical
+# source (this kit's reflex/ dir) into any target speckit project and
+# generates a project-tailored config.yml.
+#
+# Usage:
+#   bash reflex/install-into-project.sh <target-dir>
+#   bash reflex/install-into-project.sh --update <target-dir>   # refresh machinery only
+#
+# Behavior:
+#   - Refuses if target isn't a speckit project (no agent/AGENT_CONTEXT.md)
+#   - Refuses if target already has reflex/ unless --update
+#   - Copies run.sh, lib/, prompts/ verbatim (generic code, no kit-specific paths)
+#   - Generates reflex/config.yml from target's existing test infrastructure
+#     (detects npm/jest, pytest, bash tests, adds psk-sync-check if present)
+#   - Creates reflex/history/ and reflex/sandbox/ as needed
+#   - Appends refine ignores to target's .gitignore if not already present
+#   - Prints next-steps guidance
+
+set -uo pipefail
+
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The canonical reflex/ lives at source_dir (this script's dir)
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+
+UPDATE_MODE=false
+TARGET=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --update) UPDATE_MODE=true ;;
+    -h|--help)
+      echo "Usage: $0 [--update] <target-project-dir>"
+      echo
+      echo "  Installs refine into a speckit project. --update refreshes the machinery"
+      echo "  (run.sh, lib/, prompts/) while preserving local config.yml and history/."
+      exit 0
+      ;;
+    *) TARGET="$arg" ;;
+  esac
+done
+
+if [ -z "$TARGET" ]; then
+  echo -e "${RED}✗ Usage: $0 [--update] <target-project-dir>${NC}"
+  exit 1
+fi
+
+# Resolve absolute path
+TARGET="$(cd "$TARGET" 2>/dev/null && pwd)"
+if [ -z "$TARGET" ] || [ ! -d "$TARGET" ]; then
+  echo -e "${RED}✗ target directory does not exist or is not accessible${NC}"
+  exit 1
+fi
+
+# Validate target is a speckit project
+if [ ! -f "$TARGET/agent/AGENT_CONTEXT.md" ]; then
+  echo -e "${RED}✗ target is not a speckit project${NC}"
+  echo -e "   Missing: $TARGET/agent/AGENT_CONTEXT.md"
+  echo -e "   Install speckit first: curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash"
+  exit 1
+fi
+
+# Check for existing refine
+TARGET_REFLEX="$TARGET/refine"
+if [ -d "$TARGET_REFLEX" ] && [ "$UPDATE_MODE" = false ]; then
+  echo -e "${YELLOW}⚠ target already has reflex/ — use --update to refresh the machinery${NC}"
+  exit 1
+fi
+
+echo -e "${CYAN}═══ Installing refine into $TARGET ═══${NC}"
+
+# Copy the generic machinery — run.sh, lib/, prompts/, README.md
+mkdir -p "$TARGET_REFLEX/lib" "$TARGET_REFLEX/prompts" "$TARGET_REFLEX/history" "$TARGET_REFLEX/sandbox"
+
+for f in run.sh install-into-project.sh README.md; do
+  cp "$SOURCE_DIR/$f" "$TARGET_REFLEX/$f"
+  [ "${f##*.}" = "sh" ] && chmod +x "$TARGET_REFLEX/$f"
+done
+
+for f in "$SOURCE_DIR/lib"/*.sh; do
+  cp "$f" "$TARGET_REFLEX/lib/"
+  chmod +x "$TARGET_REFLEX/lib/$(basename "$f")"
+done
+
+for f in "$SOURCE_DIR/prompts"/*.md; do
+  cp "$f" "$TARGET_REFLEX/prompts/"
+done
+
+echo -e "${GREEN}✓ copied machinery${NC} (run.sh, lib/, prompts/, install-into-project.sh, README.md)"
+
+# Generate or preserve config.yml
+if [ -f "$TARGET_REFLEX/config.yml" ] && [ "$UPDATE_MODE" = true ]; then
+  echo -e "${CYAN}· preserving existing config.yml${NC} (use --update; not overwritten)"
+else
+  # Detect project test commands
+  declare -a detected_gates
+  if [ -f "$TARGET/package.json" ] && grep -q '"test"' "$TARGET/package.json" 2>/dev/null; then
+    detected_gates+=("npm test")
+  fi
+  if [ -f "$TARGET/pyproject.toml" ] || [ -f "$TARGET/setup.py" ] || [ -f "$TARGET/requirements.txt" ]; then
+    detected_gates+=("pytest")
+  fi
+  if [ -f "$TARGET/go.mod" ]; then
+    detected_gates+=("go test ./...")
+  fi
+  if [ -d "$TARGET/tests" ]; then
+    for f in "$TARGET/tests"/*.sh; do
+      [ -f "$f" ] || continue
+      base=$(basename "$f")
+      # Skip speckit's standard scripts — they're added below with proper args
+      case "$base" in
+        test-release-check.sh) continue ;;
+      esac
+      detected_gates+=("bash tests/$base")
+    done
+  fi
+  # Always include speckit's own R→F→T gate + sync-check if present (with proper args)
+  [ -f "$TARGET/tests/test-release-check.sh" ] && detected_gates+=("bash tests/test-release-check.sh agent/SPECS.md")
+  [ -f "$TARGET/agent/scripts/psk-sync-check.sh" ] && detected_gates+=("bash agent/scripts/psk-sync-check.sh --full")
+  [ -f "$TARGET/agent/scripts/psk-doc-sync.sh" ] && detected_gates+=("bash agent/scripts/psk-doc-sync.sh")
+
+  gates_yaml=""
+  for g in "${detected_gates[@]:-}"; do
+    [ -z "$g" ] && continue
+    gates_yaml="${gates_yaml}  - ${g}"$'\n'
+  done
+  [ -z "$gates_yaml" ] && gates_yaml="  # No mechanical gates detected; add at least one."$'\n'
+
+  cat > "$TARGET_REFLEX/config.yml" <<EOF
+# Refine config — generated by install-into-project.sh
+
+mode: project
+
+trigger: manual
+
+budget:
+  max_tool_calls_per_cycle: 200
+  max_retries_per_task: 3
+  qa_agent_token_cap: 4000
+  dev_agent_token_cap: 3000
+
+coverage:
+  critical_always: true
+  major_always: true
+  minor_rotation_every_n_cycles: 3
+  nit_rotation_every_n_cycles: 12
+
+mechanical_gates:
+$(printf '%s' "$gates_yaml")
+precondition:
+  # (autogenerated — see reflex/README.md)
+  require_clean_tree: true
+  require_prep_release_marker: true
+
+auto_merge:
+  enabled: false
+  require_progress_positive: true
+
+notifications:
+  write_latest_md: true
+  github_issue_on_regression: false
+EOF
+  echo -e "${GREEN}✓ generated config.yml${NC} with $(printf '%s' "$gates_yaml" | grep -c '^  -') mechanical gate(s) detected"
+fi
+
+# Append .gitignore entries if not present
+if [ -f "$TARGET/.gitignore" ]; then
+  if ! grep -q '^reflex/history/cycle-\*' "$TARGET/.gitignore"; then
+    cat >> "$TARGET/.gitignore" <<'EOF'
+
+# Refine ephemeral artifacts
+reflex/history/cycle-*/project-understanding.md
+reflex/history/cycle-*/test-plan.md
+reflex/history/cycle-*/qa-summary.md
+reflex/history/cycle-*/dev-trace.md
+reflex/history/cycle-*/deferred-decisions.md
+reflex/sandbox/
+EOF
+    echo -e "${GREEN}✓ appended refine entries${NC} to $TARGET/.gitignore"
+  else
+    echo -e "${CYAN}· .gitignore already has refine entries${NC}"
+  fi
+fi
+
+echo ""
+echo -e "${CYAN}═══ Install complete ═══${NC}"
+echo ""
+echo "Next steps:"
+echo "  1. Review: $TARGET_REFLEX/config.yml"
+echo "     — check the mechanical_gates list matches your project's test commands"
+echo "  2. Commit the refine directory to your project"
+echo "     cd $TARGET && git add reflex/ && git commit -m 'Install refine for automated QA+fix cycles'"
+echo "  3. Run your first cycle after your next prep release:"
+echo "     cd $TARGET && bash reflex/run.sh"
+echo ""
+echo "Docs: $TARGET_REFLEX/README.md"

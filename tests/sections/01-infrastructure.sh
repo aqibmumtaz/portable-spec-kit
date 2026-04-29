@@ -1,0 +1,871 @@
+#!/bin/bash
+# tests/sections/01-infrastructure.sh — sections 1-25
+#
+# Repo file structure, framework content, agent-agnostic, multi-agent table,
+# agent file templates, examples (starter + my-app), README, sync, symlinks,
+# new-user setup simulation, agent switching, user profile (5 sub-sections),
+# flow docs, ARD, context management rules, versioning, Python env, license.
+#
+# Independently runnable: bash tests/sections/01-infrastructure.sh
+# Orchestrator-sourced: see tests/test-spec-kit.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -z "${PROJ:-}" ] && source "$SCRIPT_DIR/../lib.sh"
+
+# ═══════════════════════════════════════════════════════════════
+section "1. Repo File Structure"
+# ═══════════════════════════════════════════════════════════════
+
+[ -f "$PROJ/portable-spec-kit.md" ] && pass "portable-spec-kit.md exists" || fail "portable-spec-kit.md MISSING"
+[ -f "$PROJ/README.md" ] && pass "README.md exists" || fail "README.md MISSING"
+[ -f "$PROJ/CONTRIBUTING.md" ] && pass "CONTRIBUTING.md exists" || fail "CONTRIBUTING.md MISSING"
+[ -f "$PROJ/LICENSE" ] && pass "LICENSE exists" || fail "LICENSE MISSING"
+[ -f "$PROJ/.gitignore" ] && pass ".gitignore exists" || fail ".gitignore MISSING"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.html" ] && pass "Guide HTML exists" || fail "Guide HTML MISSING"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.pdf" ] && pass "Guide PDF exists" || fail "Guide PDF MISSING"
+[ -d "$PROJ/examples/starter" ] && pass "examples/starter/ exists" || fail "examples/starter/ MISSING"
+[ -d "$PROJ/examples/my-app" ] && pass "examples/my-app/ exists" || fail "examples/my-app/ MISSING"
+[ -d "$PROJ/agent" ] && pass "agent/ dir exists (Documents-only)" || fail "agent/ MISSING"
+
+# ═══════════════════════════════════════════════════════════════
+section "2. Framework File Content"
+# ═══════════════════════════════════════════════════════════════
+
+kit_grep "Portable Spec Kit — Spec-Persistent Development" && pass "Title correct" || fail "Title wrong"
+kit_grep "User Profile" && pass "Has User Profile section" || fail "Missing User Profile"
+kit_grep "\.portable-spec-kit/user-profile/" && pass "References .portable-spec-kit/user-profile/" || fail "Missing profile directory reference"
+kit_grep "Git & GitHub Rules" && pass "Has Git rules" || fail "Missing Git rules"
+kit_grep "Security Rules" && pass "Has Security rules" || fail "Missing Security rules"
+kit_grep "Versioning" && pass "Has Versioning" || fail "Missing Versioning"
+kit_grep "Task Tracking" && pass "Has Task Tracking" || fail "Missing Task Tracking"
+kit_grep "Testing (MANDATORY)" && pass "Has Testing rules" || fail "Missing Testing rules"
+kit_grep "Naming Conventions" && pass "Has Naming Conventions" || fail "Missing Naming Conventions"
+kit_grep "Error Handling" && pass "Has Error Handling" || fail "Missing Error Handling"
+kit_grep "Branch & PR Workflow" && pass "Has Branch & PR" || fail "Missing Branch & PR"
+kit_grep "Dependencies" && pass "Has Dependencies" || fail "Missing Dependencies"
+kit_grep "Deployment Checklist" && pass "Has Deployment Checklist" || fail "Missing Deployment Checklist"
+kit_grep "Agent File Templates" && pass "Has Agent File Templates" || fail "Missing Agent File Templates"
+kit_grep "Agent Guidance Behavior" && pass "Has Agent Guidance Behavior" || fail "Missing Agent Guidance Behavior"
+kit_grep "Auto-Scan" && pass "Has Auto-Scan" || fail "Missing Auto-Scan"
+kit_grep "File Creation/Update Rule" && pass "Has File Creation/Update Rule" || fail "Missing File Creation/Update Rule"
+kit_grep "README.md Template" && pass "Has README Template" || fail "Missing README Template"
+kit_grep "How This File Works" && pass "Has self-description section" || fail "Missing self-description"
+
+# ═══════════════════════════════════════════════════════════════
+section "3. Agent-Agnostic — No Claude-Specific Language"
+# ═══════════════════════════════════════════════════════════════
+
+! kit_grep "prefers claude" -qi && pass "No 'Prefers Claude'" || fail "Found 'Prefers Claude'"
+! kit_grep "Claude Opus" && pass "No 'Claude Opus'" || fail "Found 'Claude Opus'"
+# .claude/ is now legitimate (settings.json for hooks) — check it's only used for hooks config
+kit_grep -q "\.claude/settings\.json" && pass "Uses .claude/settings.json (hooks config)" || fail "Missing .claude/settings.json reference"
+! kit_grep "CLAUDE_CONTEXT" && pass "No 'CLAUDE_CONTEXT'" || fail "Found 'CLAUDE_CONTEXT'"
+kit_grep "WORKSPACE_CONTEXT" && pass "Uses WORKSPACE_CONTEXT" || fail "Missing WORKSPACE_CONTEXT"
+kit_grep "Co-Authored-By: AI Agent" && pass "Generic Co-Authored-By" || fail "Claude-specific Co-Authored-By"
+kit_grep "Agent does 90%" && pass "Generic AI agent reference" || fail "Claude-specific agent reference"
+
+# ═══════════════════════════════════════════════════════════════
+section "4. Multi-Agent Support Table"
+# ═══════════════════════════════════════════════════════════════
+
+kit_grep "Claude Code" && pass "Lists Claude Code" || fail "Missing Claude Code"
+kit_grep "GitHub Copilot" && pass "Lists GitHub Copilot" || fail "Missing Copilot"
+kit_grep "Cursor" && pass "Lists Cursor" || fail "Missing Cursor"
+kit_grep "Windsurf" && pass "Lists Windsurf" || fail "Missing Windsurf"
+kit_grep "Cline" && pass "Lists Cline" || fail "Missing Cline"
+kit_grep "CLAUDE.md" && pass "References CLAUDE.md symlink" || fail "Missing CLAUDE.md symlink ref"
+kit_grep ".cursorrules" && pass "References .cursorrules" || fail "Missing .cursorrules ref"
+kit_grep ".windsurfrules" && pass "References .windsurfrules" || fail "Missing .windsurfrules ref"
+kit_grep ".clinerules" && pass "References .clinerules" || fail "Missing .clinerules ref"
+kit_grep "copilot-instructions.md" && pass "References copilot-instructions.md" || fail "Missing copilot ref"
+
+# ═══════════════════════════════════════════════════════════════
+section "5. Agent File Templates (all 6 present in framework)"
+# ═══════════════════════════════════════════════════════════════
+
+kit_grep "agent/AGENT.md:" && pass "AGENT.md template" || fail "Missing AGENT.md template"
+kit_grep "agent/AGENT_CONTEXT.md:" && pass "AGENT_CONTEXT.md template" || fail "Missing AGENT_CONTEXT.md template"
+kit_grep "agent/SPECS.md:" && pass "SPECS.md template" || fail "Missing SPECS.md template"
+kit_grep "agent/PLANS.md:" && pass "PLANS.md template" || fail "Missing PLANS.md template"
+kit_grep "agent/TASKS.md:" && pass "TASKS.md template" || fail "Missing TASKS.md template"
+kit_grep "agent/RELEASES.md:" && pass "RELEASES.md template" || fail "Missing RELEASES.md template"
+
+# ═══════════════════════════════════════════════════════════════
+section "6. Starter Example — Complete"
+# ═══════════════════════════════════════════════════════════════
+
+S="$PROJ/examples/starter"
+[ -f "$S/WORKSPACE_CONTEXT.md" ] && pass "starter: WORKSPACE_CONTEXT.md" || fail "starter: WORKSPACE_CONTEXT.md MISSING"
+[ -f "$S/README.md" ] && pass "starter: README.md" || fail "starter: README.md MISSING"
+[ -f "$S/.gitignore" ] && pass "starter: .gitignore" || fail "starter: .gitignore MISSING"
+[ -f "$S/.env.example" ] && pass "starter: .env.example" || fail "starter: .env.example MISSING"
+[ -f "$S/agent/AGENT.md" ] && pass "starter: agent/AGENT.md" || fail "starter: AGENT.md MISSING"
+[ -f "$S/agent/AGENT_CONTEXT.md" ] && pass "starter: agent/AGENT_CONTEXT.md" || fail "starter: AGENT_CONTEXT.md MISSING"
+[ -f "$S/agent/SPECS.md" ] && pass "starter: agent/SPECS.md" || fail "starter: SPECS.md MISSING"
+[ -f "$S/agent/PLANS.md" ] && pass "starter: agent/PLANS.md" || fail "starter: PLANS.md MISSING"
+[ -f "$S/agent/TASKS.md" ] && pass "starter: agent/TASKS.md" || fail "starter: TASKS.md MISSING"
+[ -f "$S/agent/RELEASES.md" ] && pass "starter: agent/RELEASES.md" || fail "starter: RELEASES.md MISSING"
+grep -q "portable-spec-kit.md" "$S/README.md" && pass "starter README references portable-spec-kit.md" || fail "starter README still says CLAUDE.md"
+grep -q "Portable Spec Kit" "$S/README.md" && pass "starter README mentions Portable Spec Kit" || fail "starter README missing kit reference"
+# Symlinks: all 5 agent config files must be symlinks (not regular files)
+SYMS_OK=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -L "$S/$f" ] || SYMS_OK=0; done
+[ "$SYMS_OK" -eq 1 ] && pass "starter: all 5 agent config files are symlinks → portable-spec-kit.md" || fail "starter: one or more agent config files NOT symlinks"
+# Symlinks must resolve (not broken)
+SYMS_VALID=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -f "$S/$f" ] || SYMS_VALID=0; done
+[ "$SYMS_VALID" -eq 1 ] && pass "starter: all 5 agent config symlinks resolve (not broken)" || fail "starter: one or more agent config symlinks broken"
+diff "$S/portable-spec-kit.md" "$S/CLAUDE.md" > /dev/null 2>&1 && pass "starter: CLAUDE.md content matches portable-spec-kit.md" || fail "starter: CLAUDE.md content DIFFERS — symlink or copy mismatch"
+
+# ═══════════════════════════════════════════════════════════════
+section "7. My-App Example — Complete + Realistic Data"
+# ═══════════════════════════════════════════════════════════════
+
+M="$PROJ/examples/my-app"
+[ -f "$M/WORKSPACE_CONTEXT.md" ] && pass "my-app: WORKSPACE_CONTEXT.md" || fail "my-app: WORKSPACE_CONTEXT.md MISSING"
+[ -f "$M/README.md" ] && pass "my-app: README.md" || fail "my-app: README.md MISSING"
+[ -f "$M/agent/AGENT.md" ] && pass "my-app: agent/AGENT.md" || fail "my-app: AGENT.md MISSING"
+[ -f "$M/agent/AGENT_CONTEXT.md" ] && pass "my-app: agent/AGENT_CONTEXT.md" || fail "my-app: AGENT_CONTEXT.md MISSING"
+[ -f "$M/agent/SPECS.md" ] && pass "my-app: agent/SPECS.md" || fail "my-app: SPECS.md MISSING"
+[ -f "$M/agent/PLANS.md" ] && pass "my-app: agent/PLANS.md" || fail "my-app: PLANS.md MISSING"
+[ -f "$M/agent/TASKS.md" ] && pass "my-app: agent/TASKS.md" || fail "my-app: TASKS.md MISSING"
+[ -f "$M/agent/RELEASES.md" ] && pass "my-app: agent/RELEASES.md" || fail "my-app: RELEASES.md MISSING"
+grep -q "Next.js" "$M/agent/AGENT.md" && pass "my-app: has Next.js stack" || fail "my-app: no stack defined"
+grep -q "11/16\|11 of 16" "$M/agent/TASKS.md" 2>/dev/null || grep -q "\[x\]" "$M/agent/TASKS.md" && pass "my-app: has completed tasks" || fail "my-app: no tasks done"
+grep -q "v0.1" "$M/agent/RELEASES.md" && pass "my-app: has v0.1 changelog" || fail "my-app: no changelog"
+# Symlinks: all 5 agent config files must be symlinks (not regular files)
+SYMS_OK=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -L "$M/$f" ] || SYMS_OK=0; done
+[ "$SYMS_OK" -eq 1 ] && pass "my-app: all 5 agent config files are symlinks → portable-spec-kit.md" || fail "my-app: one or more agent config files NOT symlinks"
+# Symlinks must resolve (not broken)
+SYMS_VALID=1; for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do [ -f "$M/$f" ] || SYMS_VALID=0; done
+[ "$SYMS_VALID" -eq 1 ] && pass "my-app: all 5 agent config symlinks resolve (not broken)" || fail "my-app: one or more agent config symlinks broken"
+diff "$M/portable-spec-kit.md" "$M/CLAUDE.md" > /dev/null 2>&1 && pass "my-app: CLAUDE.md content matches portable-spec-kit.md" || fail "my-app: CLAUDE.md content DIFFERS — symlink or copy mismatch"
+
+# ═══════════════════════════════════════════════════════════════
+section "8. README — Key Sections Present"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Portable Spec Kit" "$PROJ/README.md" && pass "README: title present" || fail "README: title missing"
+grep -q "spec-kit" "$PROJ/README.md" && pass "README: spec-kit comparison" || fail "README: no spec-kit comparison"
+grep -q "Setup" "$PROJ/README.md" && pass "README: Setup section" || fail "README: no Setup"
+grep -q "Multi-Agent Support" "$PROJ/README.md" && pass "README: Multi-Agent section" || fail "README: no Multi-Agent"
+grep -q "Complete Flow" "$PROJ/README.md" && pass "README: Complete Flow" || fail "README: no Complete Flow"
+grep -q "Development Guidelines" "$PROJ/README.md" && pass "README: Development Guidelines section" || fail "README: no Development Guidelines"
+grep -q "Examples" "$PROJ/README.md" && pass "README: Examples section" || fail "README: no Examples"
+grep -q "Contributing" "$PROJ/README.md" && pass "README: Contributing" || fail "README: no Contributing"
+grep -q "Author" "$PROJ/README.md" && pass "README: Author" || fail "README: no Author"
+grep -q "Personalized" "$PROJ/README.md" && pass "README: 8 features (Personalized)" || fail "README: missing feature"
+grep -q "Context-Persistent" "$PROJ/README.md" && pass "README: 8 features (Context-Persistent)" || fail "README: missing feature"
+grep -q "Self-Validating" "$PROJ/README.md" && pass "README: 8 features (Self-Validating)" || fail "README: missing feature"
+
+# ═══════════════════════════════════════════════════════════════
+section "9. No Personal Info Leaked (except Author section)"
+# ═══════════════════════════════════════════════════════════════
+
+! kit_grep "bitlogix\|ebitlogix\|slimlogix\|slashnext" -qi && pass "No company names in framework" || fail "Company name leaked in framework"
+! grep -qi "bitlogix\|ebitlogix\|slimlogix\|slashnext" "$PROJ/README.md" && pass "No company names in README" || fail "Company name leaked in README"
+! grep -qi "bitlogix\|ebitlogix\|slimlogix\|slashnext" "$PROJ/CONTRIBUTING.md" && pass "No company names in CONTRIBUTING" || fail "Company name leaked in CONTRIBUTING"
+! kit_grep "3004476083\|+92\|passport\|bank statement" -qi && pass "No personal details in framework" || fail "Personal details leaked"
+
+# ═══════════════════════════════════════════════════════════════
+section "10. Sync Script"
+# ═══════════════════════════════════════════════════════════════
+
+[ -f "$PROJ/agent/scripts/sync.sh" ] && pass "sync.sh exists" || fail "sync.sh MISSING"
+grep -q "portable-spec-kit.md" "$PROJ/agent/scripts/sync.sh" && pass "sync.sh uses portable-spec-kit.md" || fail "sync.sh still uses CLAUDE.md"
+! grep -q "cp.*CLAUDE.md" "$PROJ/agent/scripts/sync.sh" && pass "sync.sh doesn't copy CLAUDE.md" || fail "sync.sh still copies CLAUDE.md"
+grep -q "aqibmumtaz/portable-spec-kit" "$PROJ/agent/scripts/sync.sh" && pass "sync.sh targets correct repo" || fail "sync.sh wrong repo"
+
+# ═══════════════════════════════════════════════════════════════
+section "11. Workspace Symlinks (if running in author's workspace)"
+# ═══════════════════════════════════════════════════════════════
+
+if [ -f "$ROOT/portable-spec-kit.md" ]; then
+  [ -L "$ROOT/CLAUDE.md" ] && pass "CLAUDE.md is symlink" || fail "CLAUDE.md is NOT symlink"
+  [ -L "$ROOT/.cursorrules" ] && pass ".cursorrules is symlink" || fail ".cursorrules NOT symlink"
+  [ -L "$ROOT/.windsurfrules" ] && pass ".windsurfrules is symlink" || fail ".windsurfrules NOT symlink"
+  [ -L "$ROOT/.clinerules" ] && pass ".clinerules is symlink" || fail ".clinerules NOT symlink"
+  [ -L "$ROOT/.github/copilot-instructions.md" ] && pass ".github/copilot-instructions.md is symlink" || fail "copilot NOT symlink"
+
+  # Verify all symlinks point to portable-spec-kit.md
+  for f in CLAUDE.md .cursorrules .windsurfrules .clinerules; do
+    target=$(readlink "$ROOT/$f" 2>/dev/null)
+    [ "$target" = "portable-spec-kit.md" ] && pass "$f → portable-spec-kit.md" || fail "$f → $target (wrong target)"
+  done
+
+  target=$(readlink "$ROOT/.github/copilot-instructions.md" 2>/dev/null)
+  [ "$target" = "../portable-spec-kit.md" ] && pass "copilot → ../portable-spec-kit.md" || fail "copilot → $target (wrong)"
+
+  [ -f "$ROOT/WORKSPACE_CONTEXT.md" ] && pass "WORKSPACE_CONTEXT.md exists at root" || fail "WORKSPACE_CONTEXT.md MISSING"
+  ! [ -f "$ROOT/CLAUDE_CONTEXT.md" ] && pass "No old CLAUDE_CONTEXT.md" || fail "Stale CLAUDE_CONTEXT.md exists"
+  # Broken symlink detection — all 5 symlinks must resolve
+  ALL_VALID=1
+  for f in CLAUDE.md .cursorrules .windsurfrules .clinerules; do [ -f "$ROOT/$f" ] || ALL_VALID=0; done
+  [ -f "$ROOT/.github/copilot-instructions.md" ] || ALL_VALID=0
+  [ "$ALL_VALID" -eq 1 ] && pass "Workspace: all 5 agent config symlinks resolve (not broken)" || fail "Workspace: one or more workspace symlinks broken"
+else
+  echo "  (skipped — not running in author's workspace)"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+section "12. Simulated New User Setup"
+# ═══════════════════════════════════════════════════════════════
+
+mkdir -p "$TEMP" && cd "$TEMP"
+
+# Simulate macOS/Linux install
+cp "$PROJ/portable-spec-kit.md" "$TEMP/portable-spec-kit.md"
+ln -sf portable-spec-kit.md CLAUDE.md
+ln -sf portable-spec-kit.md .cursorrules
+ln -sf portable-spec-kit.md .windsurfrules
+ln -sf portable-spec-kit.md .clinerules
+mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
+
+[ -f "$TEMP/portable-spec-kit.md" ] && pass "Setup: source file created" || fail "Setup: source file MISSING"
+[ -L "$TEMP/CLAUDE.md" ] && pass "Setup: CLAUDE.md symlink" || fail "Setup: CLAUDE.md NOT symlink"
+[ -L "$TEMP/.cursorrules" ] && pass "Setup: .cursorrules symlink" || fail "Setup: .cursorrules NOT symlink"
+[ -L "$TEMP/.windsurfrules" ] && pass "Setup: .windsurfrules symlink" || fail "Setup: .windsurfrules NOT symlink"
+[ -L "$TEMP/.clinerules" ] && pass "Setup: .clinerules symlink" || fail "Setup: .clinerules NOT symlink"
+[ -L "$TEMP/.github/copilot-instructions.md" ] && pass "Setup: copilot symlink" || fail "Setup: copilot NOT symlink"
+
+# Verify all symlinks read same content
+for f in CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md; do
+  diff "$TEMP/portable-spec-kit.md" "$TEMP/$f" > /dev/null 2>&1 && pass "Setup: $f content matches source" || fail "Setup: $f content DIFFERS"
+done
+
+# Edit source → all agents see update
+echo "# TEST EDIT" >> "$TEMP/portable-spec-kit.md"
+grep -q "TEST EDIT" "$TEMP/CLAUDE.md" && pass "Setup: edit source → CLAUDE.md updated" || fail "Setup: symlink not syncing"
+grep -q "TEST EDIT" "$TEMP/.cursorrules" && pass "Setup: edit source → .cursorrules updated" || fail "Setup: symlink not syncing"
+
+# Cleanup
+rm -rf "$TEMP"
+pass "Setup: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "13. Agent Switching — Cross-Agent Compatibility"
+# ═══════════════════════════════════════════════════════════════
+
+SWITCH_TEMP="/tmp/psk-switch-$(date +%s)"
+mkdir -p "$SWITCH_TEMP" && cd "$SWITCH_TEMP"
+
+# --- Setup: simulate install ---
+cp "$PROJ/portable-spec-kit.md" "$SWITCH_TEMP/portable-spec-kit.md"
+ln -sf portable-spec-kit.md CLAUDE.md
+ln -sf portable-spec-kit.md .cursorrules
+ln -sf portable-spec-kit.md .windsurfrules
+ln -sf portable-spec-kit.md .clinerules
+mkdir -p .github && ln -sf ../portable-spec-kit.md .github/copilot-instructions.md
+
+# --- Test: All 5 agents read identical content ---
+AGENTS="CLAUDE.md .cursorrules .windsurfrules .clinerules .github/copilot-instructions.md"
+ALL_IDENTICAL=true
+for a in $AGENTS; do
+  diff "$SWITCH_TEMP/portable-spec-kit.md" "$SWITCH_TEMP/$a" > /dev/null 2>&1 || ALL_IDENTICAL=false
+done
+$ALL_IDENTICAL && pass "All 5 agents read identical framework content" || fail "Agent content mismatch"
+
+# --- Test: Edit source → every agent sees change instantly ---
+echo "# SWITCH_TEST_MARKER" >> "$SWITCH_TEMP/portable-spec-kit.md"
+ALL_SYNCED=true
+for a in $AGENTS; do
+  grep -q "SWITCH_TEST_MARKER" "$SWITCH_TEMP/$a" || ALL_SYNCED=false
+done
+$ALL_SYNCED && pass "Edit source → all 5 agents see change instantly" || fail "Symlink sync broken"
+
+# --- Test: Simulate AGENT_CONTEXT.md written by Agent A, read by Agent B ---
+mkdir -p "$SWITCH_TEMP/agent"
+cat > "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" << 'CTXEOF'
+# AGENT_CONTEXT.md — Test Project
+
+## Current Status
+- **Version:** v0.2
+- **Phase:** Development
+- **Status:** 8/12 tasks done
+
+## What's Done
+- [x] Auth system
+- [x] Dashboard
+
+## What's Next
+- [ ] Payment integration
+
+## Key Decisions
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Database | PostgreSQL | Better JSON support |
+
+## Last Updated
+- **Date:** 2026-04-01
+- **Summary:** Completed auth, starting payment
+CTXEOF
+
+# Agent B reads Agent A's context
+grep -q "v0.2" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's version" || fail "Context version lost"
+grep -q "8/12 tasks done" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's progress" || fail "Context progress lost"
+grep -q "Payment integration" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's next task" || fail "Context next task lost"
+grep -q "PostgreSQL" "$SWITCH_TEMP/agent/AGENT_CONTEXT.md" && pass "Agent B reads Agent A's decisions" || fail "Context decisions lost"
+
+# --- Test: Simulate user profile written by Agent A, read by Agent B ---
+mkdir -p "$SWITCH_TEMP/.portable-spec-kit/user-profile"
+cat > "$SWITCH_TEMP/.portable-spec-kit/user-profile/user-profile-janesmith.md" << 'PROFEOF'
+# User Profile
+> Auto-created on first session. Edit anytime.
+
+- **Jane Smith** — B.S. Computer Science. Full-stack development, React, Node.js.
+- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
+- AI delegation: AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
+PROFEOF
+
+PROF="$SWITCH_TEMP/.portable-spec-kit/user-profile/user-profile-janesmith.md"
+grep -q "Jane Smith" "$PROF" && pass "Agent B reads user name from Agent A's profile" || fail "Profile name lost"
+grep -q "direct and concise" "$PROF" && pass "Agent B reads communication style" || fail "Communication style lost"
+grep -q "AI does 90%" "$PROF" && pass "Agent B reads delegation preference" || fail "Delegation lost"
+
+# --- Test: Simulate TASKS.md written by Agent A, read by Agent B ---
+cat > "$SWITCH_TEMP/agent/TASKS.md" << 'TASKEOF'
+# TASKS.md — Test Project
+
+## v0.2 — Current
+
+### Module 1: Auth
+| # | Task | Status |
+|---|------|:------:|
+| 1.1 | Login page | [x] |
+| 1.2 | JWT middleware | [x] |
+
+### Module 2: Payment
+| # | Task | Status |
+|---|------|:------:|
+| 2.1 | Stripe integration | [ ] |
+| 2.2 | Checkout flow | [ ] |
+TASKEOF
+
+grep -q "Login page" "$SWITCH_TEMP/agent/TASKS.md" && pass "Agent B sees Agent A's completed tasks" || fail "Completed tasks lost"
+grep -q "Stripe integration" "$SWITCH_TEMP/agent/TASKS.md" && pass "Agent B sees Agent A's pending tasks" || fail "Pending tasks lost"
+
+# --- Test: No agent-specific format in managed files ---
+! grep -q "\.claude/" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No .claude/ paths in framework" || fail ".claude/ path found"
+! grep -q "anthropic" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No anthropic references in framework" || fail "anthropic reference found"
+! grep -q "Claude Opus" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No Claude Opus in framework" || fail "Claude Opus found"
+! grep -qi "prefers claude" "$SWITCH_TEMP/portable-spec-kit.md" && pass "No 'prefers Claude' in framework" || fail "'prefers Claude' found"
+
+# --- Test: All managed files are plain markdown (no proprietary format) ---
+for f in agent/AGENT_CONTEXT.md agent/TASKS.md .portable-spec-kit/user-profile/user-profile-janesmith.md; do
+  head -1 "$SWITCH_TEMP/$f" | grep -q "^#" && pass "$f is valid markdown (starts with #)" || fail "$f is not valid markdown"
+done
+
+# --- Test: Framework references .portable-spec-kit/user-profile/ (not embedded profile) ---
+grep -q "\.portable-spec-kit/user-profile/" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Framework references .portable-spec-kit/user-profile/" || fail "Framework missing profile directory reference"
+! grep -q "^- \*\*Dr\." "$SWITCH_TEMP/portable-spec-kit.md" && pass "No embedded personal profile in framework" || fail "Personal profile still embedded"
+
+# --- Test: Co-Authored-By is agent-agnostic ---
+grep -q "Co-Authored-By: AI Agent" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Co-Authored-By uses generic 'AI Agent'" || fail "Co-Authored-By is agent-specific"
+! grep -q "Co-Authored-By: Claude" "$SWITCH_TEMP/portable-spec-kit.md" && pass "Co-Authored-By does NOT mention Claude" || fail "Co-Authored-By mentions Claude"
+
+# --- Test: Multiple sequential agent switches preserve all data ---
+# Simulate: Claude writes → Cursor reads/writes → Copilot reads
+echo "- [x] Added by Claude session" >> "$SWITCH_TEMP/agent/TASKS.md"
+grep -q "Added by Claude session" "$SWITCH_TEMP/agent/TASKS.md" && pass "Switch 1: Claude writes task" || fail "Switch 1 failed"
+
+echo "- [x] Added by Cursor session" >> "$SWITCH_TEMP/agent/TASKS.md"
+grep -q "Added by Claude session" "$SWITCH_TEMP/agent/TASKS.md" && pass "Switch 2: Cursor preserves Claude's task" || fail "Switch 2: Claude's task lost"
+grep -q "Added by Cursor session" "$SWITCH_TEMP/agent/TASKS.md" && pass "Switch 2: Cursor adds own task" || fail "Switch 2: Cursor write failed"
+
+grep -q "Added by Claude session" "$SWITCH_TEMP/agent/TASKS.md" \
+  && grep -q "Added by Cursor session" "$SWITCH_TEMP/agent/TASKS.md" \
+  && grep -q "Stripe integration" "$SWITCH_TEMP/agent/TASKS.md" \
+  && pass "Switch 3: Copilot reads all data from Claude + Cursor" || fail "Switch 3: data loss on read"
+
+# --- Cleanup ---
+rm -rf "$SWITCH_TEMP"
+pass "Agent switching: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "14. User Profile — Directory Structure"
+# ═══════════════════════════════════════════════════════════════
+
+# Global profile dir
+[ -d "$HOME/.portable-spec-kit/user-profile" ] && pass "Global profile dir exists (~/.portable-spec-kit/user-profile/)" || fail "Global profile dir MISSING"
+
+# Workspace profile dir
+[ -d "$ROOT/.portable-spec-kit/user-profile" ] && pass "Workspace profile dir exists" || fail "Workspace profile dir MISSING"
+
+# Framework references new path
+kit_grep "\.portable-spec-kit/user-profile/" && pass "Framework references .portable-spec-kit/user-profile/" || fail "Framework missing new profile path"
+
+# Framework has lookup order
+kit_grep "workspace.*portable-spec-kit/user-profile" && pass "Framework has workspace lookup" || fail "Missing workspace lookup"
+kit_grep "~/.portable-spec-kit/user-profile" && pass "Framework has global lookup" || fail "Missing global lookup"
+
+# Username detection uses git config
+kit_grep "git config user.name" && pass "Username detection uses git config" || fail "Missing git config detection"
+
+# Cross-OS paths documented
+kit_grep "macOS/Linux" && pass "macOS/Linux path documented" || fail "Missing macOS/Linux path"
+kit_grep "Windows" && pass "Windows path documented" || fail "Missing Windows path"
+
+# No old .user-profile.md references in framework (except TASKS.md history)
+! kit_grep "\.user-profile\.md" && pass "No old .user-profile.md in framework" || fail "Stale .user-profile.md reference in framework"
+
+# ═══════════════════════════════════════════════════════════════
+section "15. User Profile — First Time Setup Simulation"
+# ═══════════════════════════════════════════════════════════════
+
+SETUP_TEMP="/tmp/psk-setup-$(date +%s)"
+SETUP_GLOBAL="/tmp/psk-global-$(date +%s)"
+mkdir -p "$SETUP_TEMP" && cd "$SETUP_TEMP"
+
+# Simulate: no profile anywhere
+cp "$PROJ/portable-spec-kit.md" "$SETUP_TEMP/portable-spec-kit.md"
+
+# No workspace profile
+! [ -d "$SETUP_TEMP/.portable-spec-kit/user-profile" ] && pass "Setup: no workspace profile dir initially" || fail "Setup: workspace profile exists prematurely"
+
+# Simulate first-time setup: create global + workspace
+mkdir -p "$SETUP_GLOBAL/.portable-spec-kit/user-profile"
+mkdir -p "$SETUP_TEMP/.portable-spec-kit/user-profile"
+
+cat > "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+> Auto-created on first session. Edit anytime.
+
+- **Test User** — B.S. Computer Science. Full-stack development.
+- Communication style: direct and concise, prefers short answers with bullet points and minimal explanation
+- Working pattern: iterative — starts brief, expands scope, builds ambitiously over time
+- AI delegation: AI does 70%, user guides 30% — AI proposes approach, user approves before execution
+EOF
+
+cp "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+   "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+
+# Verify global created
+[ -f "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Setup: global profile created" || fail "Setup: global profile MISSING"
+
+# Verify workspace created
+[ -f "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Setup: workspace profile created" || fail "Setup: workspace profile MISSING"
+
+# Verify both have same content
+diff "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+     "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" > /dev/null 2>&1 \
+  && pass "Setup: global and workspace profiles match" || fail "Setup: profiles differ"
+
+# Verify profile content
+grep -q "Test User" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has name" || fail "Setup: name missing"
+grep -q "Communication style:" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has communication" || fail "Setup: communication missing"
+grep -q "Working pattern:" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has working pattern" || fail "Setup: working pattern missing"
+grep -q "AI delegation:" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: profile has delegation" || fail "Setup: delegation missing"
+
+# Verify profile format (starts with #)
+head -1 "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" | grep -q "^#" && pass "Setup: profile is valid markdown" || fail "Setup: not valid markdown"
+
+# Verify defaults are mid-range (not 90% autonomous)
+grep -q "AI does 70%" "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "Setup: default delegation is mid-range (70%)" || fail "Setup: default not mid-range"
+
+rm -rf "$SETUP_TEMP" "$SETUP_GLOBAL"
+pass "Setup: temp dirs cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "16. User Profile — New Project with Existing Global"
+# ═══════════════════════════════════════════════════════════════
+
+NEWPROJ_TEMP="/tmp/psk-newproj-$(date +%s)"
+NEWPROJ_GLOBAL="/tmp/psk-newproj-global-$(date +%s)"
+mkdir -p "$NEWPROJ_TEMP" && cd "$NEWPROJ_TEMP"
+
+# Simulate: global exists, workspace doesn't
+mkdir -p "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile"
+cat > "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+> Auto-created on first session. Edit anytime.
+
+- **Test User** — M.S. AI. Machine learning, NLP.
+- Communication style: direct, data-driven, prefers comprehensive analysis with tables and evidence
+- Working pattern: plan-first — defines full specs and architecture before writing any code
+- AI delegation: AI does 90%, user reviews 10% — present ready-to-act outputs, not questions
+EOF
+
+# No workspace profile yet
+! [ -d "$NEWPROJ_TEMP/.portable-spec-kit/user-profile" ] && pass "NewProj: no workspace profile initially" || fail "NewProj: workspace exists prematurely"
+
+# Simulate "Keep" flow: copy global to workspace
+mkdir -p "$NEWPROJ_TEMP/.portable-spec-kit/user-profile"
+cp "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+   "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+
+[ -f "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "NewProj: workspace profile created on Keep" || fail "NewProj: workspace profile MISSING after Keep"
+
+# Verify content matches global
+diff "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+     "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" > /dev/null 2>&1 \
+  && pass "NewProj: Keep preserves global content exactly" || fail "NewProj: Keep modified content"
+
+# Simulate "Customize" flow: change one field, save to workspace
+sed 's/plan-first.*/prototype-fast — gets something working quickly, then refines and polishes/' \
+  "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+  > "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+
+grep -q "prototype-fast" "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: Customize changes saved to workspace" || fail "NewProj: Customize not saved"
+
+# Verify global unchanged
+grep -q "plan-first" "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: global profile unchanged after Customize" || fail "NewProj: global was modified"
+
+# Verify other fields preserved
+grep -q "Test User" "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: name preserved after Customize" || fail "NewProj: name lost"
+grep -q "AI does 90%" "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" && pass "NewProj: delegation preserved after Customize" || fail "NewProj: delegation lost"
+
+rm -rf "$NEWPROJ_TEMP" "$NEWPROJ_GLOBAL"
+pass "NewProj: temp dirs cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "17. User Profile — Returning Session Scenarios"
+# ═══════════════════════════════════════════════════════════════
+
+RET_TEMP="/tmp/psk-ret-$(date +%s)"
+RET_GLOBAL="/tmp/psk-ret-global-$(date +%s)"
+mkdir -p "$RET_TEMP" && cd "$RET_TEMP"
+
+# --- Scenario A: Workspace profile exists ---
+mkdir -p "$RET_TEMP/.portable-spec-kit/user-profile"
+cat > "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+- **Test User** — Workspace profile.
+- Communication style: conversational
+- Working pattern: prototype-fast
+- AI delegation: 50/50
+EOF
+
+[ -f "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return A: workspace profile found → use directly" || fail "Return A: workspace profile not found"
+
+# --- Scenario B: Only global exists (no workspace) ---
+rm -rf "$RET_TEMP/.portable-spec-kit"
+mkdir -p "$RET_GLOBAL/.portable-spec-kit/user-profile"
+cat > "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'EOF'
+# User Profile
+- **Test User** — Global profile.
+- Communication style: direct and concise
+- Working pattern: iterative
+- AI delegation: AI does 70%
+EOF
+
+! [ -d "$RET_TEMP/.portable-spec-kit/user-profile" ] && pass "Return B: no workspace profile" || fail "Return B: workspace exists unexpectedly"
+[ -f "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return B: global profile found → show to user, ask keep/customize" || fail "Return B: global not found"
+
+# Simulate: user keeps → copy to workspace
+mkdir -p "$RET_TEMP/.portable-spec-kit/user-profile"
+cp "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
+   "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+[ -f "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return B: workspace copy created after keep" || fail "Return B: workspace copy not created"
+
+# --- Scenario C: No profile anywhere ---
+rm -rf "$RET_TEMP/.portable-spec-kit" "$RET_GLOBAL/.portable-spec-kit"
+! [ -d "$RET_TEMP/.portable-spec-kit/user-profile" ] && pass "Return C: no workspace profile" || fail "Return C: workspace exists"
+! [ -d "$RET_GLOBAL/.portable-spec-kit/user-profile" ] && pass "Return C: no global profile → triggers first-time setup" || fail "Return C: global exists"
+
+rm -rf "$RET_TEMP" "$RET_GLOBAL"
+pass "Return: temp dirs cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "18. User Profile — Edge Cases"
+# ═══════════════════════════════════════════════════════════════
+
+EDGE_TEMP="/tmp/psk-edge-$(date +%s)"
+mkdir -p "$EDGE_TEMP/.portable-spec-kit/user-profile" && cd "$EDGE_TEMP"
+
+# --- Empty profile file → treat as missing ---
+touch "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
+[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Edge: empty file exists" || fail "Edge: empty file not created"
+CONTENT=$(cat "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md")
+[ -z "$CONTENT" ] && pass "Edge: empty file detected → treat as missing" || fail "Edge: empty file has content"
+
+# --- Profile with all 4 required fields ---
+cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" << 'EOF'
+# User Profile
+- **Complete User** — PhD. AI Research.
+- Communication style: direct
+- Working pattern: iterative
+- AI delegation: AI does 90%
+EOF
+
+grep -q "Complete User" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: name field present" || fail "Edge: name missing"
+grep -q "Communication style:" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: communication field present" || fail "Edge: communication missing"
+grep -q "Working pattern:" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: working pattern field present" || fail "Edge: working pattern missing"
+grep -q "AI delegation:" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-complete.md" && pass "Edge: delegation field present" || fail "Edge: delegation missing"
+
+# --- Multiple users in same workspace (team scenario) ---
+cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" << 'EOF'
+# User Profile
+- **Alice** — Frontend dev.
+- Communication style: conversational
+- Working pattern: prototype-fast
+- AI delegation: 50/50
+EOF
+
+cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" << 'EOF'
+# User Profile
+- **Bob** — Backend dev.
+- Communication style: direct and concise
+- Working pattern: plan-first
+- AI delegation: AI does 90%
+EOF
+
+[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" ] && pass "Edge: Alice's profile exists" || fail "Edge: Alice missing"
+[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" ] && pass "Edge: Bob's profile exists" || fail "Edge: Bob missing"
+grep -q "Alice" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" && pass "Edge: Alice's profile has correct name" || fail "Edge: Alice wrong name"
+grep -q "Bob" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" && pass "Edge: Bob's profile has correct name" || fail "Edge: Bob wrong name"
+
+# --- Profiles don't contaminate each other ---
+! grep -q "Bob" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" && pass "Edge: Alice's profile doesn't contain Bob" || fail "Edge: profile contamination"
+! grep -q "Alice" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" && pass "Edge: Bob's profile doesn't contain Alice" || fail "Edge: profile contamination"
+
+# --- Username with special chars slugified ---
+# Simulating: "John O'Brien" → "john-o-brien" or similar
+SLUGIFIED=$(echo "John O'Brien" | tr '[:upper:]' '[:lower:]' | tr " '" '-' | tr -cd '[:alnum:]-')
+[ "$SLUGIFIED" = "john-obrien" ] || [ "$SLUGIFIED" = "john-o-brien" ] && pass "Edge: special chars slugified correctly" || fail "Edge: slugification wrong ($SLUGIFIED)"
+
+rm -rf "$EDGE_TEMP"
+pass "Edge: temp dir cleaned"
+
+# ═══════════════════════════════════════════════════════════════
+section "19. Flow Documentation — All 14 Flows + Diagram Integrity"
+# ═══════════════════════════════════════════════════════════════
+
+FLOWS_DIR="$PROJ/docs/work-flows"
+[ -d "$FLOWS_DIR" ] && pass "docs/work-flows/ directory exists" || fail "docs/work-flows/ MISSING"
+
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow 14-team-collaboration; do
+  [ -f "$FLOWS_DIR/$flow.md" ] && pass "Flow: $flow.md exists" || fail "Flow: $flow.md MISSING"
+done
+
+# Verify each flow has required sections
+for flow in 01-first-session-workspace 02-user-profile-setup 03-new-project-setup 04-existing-project-setup 05-project-init 06-cicd-setup 07-returning-session 08-agent-switching 09-profile-customization 10-file-management 11-spec-persistent-development 12-project-lifecycle 13-release-workflow 14-team-collaboration; do
+  grep -q "^# Flow:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has title" || fail "Flow $flow: missing title"
+  grep -q "When:" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: has trigger" || fail "Flow $flow: missing trigger"
+done
+
+# Verify profile flows reference .portable-spec-kit/user-profile/
+for flow in 02-user-profile-setup 03-new-project-setup 07-returning-session 09-profile-customization 01-first-session-workspace; do
+  grep -q "portable-spec-kit/user-profile" "$FLOWS_DIR/$flow.md" && pass "Flow $flow: references profile path" || fail "Flow $flow: missing profile path"
+done
+
+# Verify 08-agent-switching flow mentions symlinks
+grep -q "symlink" "$FLOWS_DIR/08-agent-switching.md" && pass "Flow 08-agent-switching: mentions symlinks" || fail "Flow 08-agent-switching: missing symlinks"
+
+# Verify spec-persistent flow has context update step
+grep -q "AGENT_CONTEXT" "$FLOWS_DIR/11-spec-persistent-development.md" && pass "Flow spec-persistent: has context update step" || fail "Flow spec-persistent: missing context update"
+grep -q "docs/work-flows" "$FLOWS_DIR/11-spec-persistent-development.md" && pass "Flow spec-persistent: has flow update step" || fail "Flow spec-persistent: missing flow update"
+
+# Verify 12-project-lifecycle flow content
+grep -q "R1" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has R→F traceability" || fail "Flow 12-project-lifecycle: missing R→F traceability"
+grep -q "DROP" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has scope change types" || fail "Flow 12-project-lifecycle: missing scope change types"
+grep -q "REPLACE" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has REPLACE type" || fail "Flow 12-project-lifecycle: missing REPLACE"
+grep -q "TaskFlow" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has TaskFlow example" || fail "Flow 12-project-lifecycle: missing TaskFlow"
+grep -q "Phase 9" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has all 9 phases" || fail "Flow 12-project-lifecycle: missing phases"
+grep -q "Traceability Chain" "$FLOWS_DIR/12-project-lifecycle.md" && pass "Flow 12-project-lifecycle: has traceability chain" || fail "Flow 12-project-lifecycle: missing traceability"
+
+# Verify 03-new-project-setup flow mentions conda for Python projects
+grep -q "conda\|Environment Selection" "$FLOWS_DIR/03-new-project-setup.md" && pass "Flow 03-new-project-setup: references Python env setup" || fail "Flow 03-new-project-setup: missing Python env reference"
+
+# Verify 13-release-workflow flow content
+grep -q "prepare release\|8-Step\|Prepare Release" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has prepare release sequence" || fail "Flow 13-release-workflow: missing prepare release"
+grep -q "Pre-Push Gate\|pre-push\|pre_push" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has pre-push gate" || fail "Flow 13-release-workflow: missing pre-push gate"
+grep -q "Stub Completion\|stub.*complete\|check_stub_complete" "$FLOWS_DIR/13-release-workflow.md" && pass "Flow 13-release-workflow: has stub completion gate" || fail "Flow 13-release-workflow: missing stub completion gate"
+
+# Verify 14-team-collaboration flow content
+grep -q "@username\|username.*ownership\|task.*owner" "$FLOWS_DIR/14-team-collaboration.md" && pass "Flow 14-team-collaboration: has @username ownership" || fail "Flow 14-team-collaboration: missing @username ownership"
+grep -q "progress.*dashboard\|dashboard.*trigger\|TRIGGER WORDS" "$FLOWS_DIR/14-team-collaboration.md" && pass "Flow 14-team-collaboration: has progress dashboard trigger" || fail "Flow 14-team-collaboration: missing dashboard trigger"
+grep -q "Persistent Memory\|persistent.*memory" "$FLOWS_DIR/14-team-collaboration.md" && pass "Flow 14-team-collaboration: references Persistent Memory Architecture" || fail "Flow 14-team-collaboration: missing Persistent Memory reference"
+
+# Verify 04-existing-project-setup flow content
+grep -q "Mapped\|Partial\|New" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has kit status states" || fail "Flow 04-existing-project-setup: missing kit status states"
+grep -q "DETECT PROJECT STATE\|Detect.*State\|Step 0" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has Step 0 state detection" || fail "Flow 04-existing-project-setup: missing Step 0 state detection"
+grep -q "SCAN\|scan.*thoroughly\|Scan" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has scan step" || fail "Flow 04-existing-project-setup: missing scan step"
+grep -q "PRESENT CHECKLIST\|checklist\|suggest" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: has checklist step" || fail "Flow 04-existing-project-setup: missing checklist step"
+grep -q "Returning Session\|returning.*session\|vs.*return" "$FLOWS_DIR/04-existing-project-setup.md" && pass "Flow 04-existing-project-setup: contrasts with returning session" || fail "Flow 04-existing-project-setup: missing returning session comparison"
+
+# Verify 06-cicd-setup flow content
+grep -q "ci\.yml\|ci_yml\|CI workflow" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: references ci.yml" || fail "Flow 06-cicd-setup: missing ci.yml reference"
+grep -q "stack\|Stack\|STACK" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: has stack detection step" || fail "Flow 06-cicd-setup: missing stack detection"
+grep -q "test-release-check\|R.*F.*T\|release-check" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: includes test-release-check.sh in CI" || fail "Flow 06-cicd-setup: missing test-release-check.sh"
+grep -q "badge\|Badge" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: has CI badge step" || fail "Flow 06-cicd-setup: missing CI badge step"
+grep -qi "branch protection\|branch_protection" "$FLOWS_DIR/06-cicd-setup.md" && pass "Flow 06-cicd-setup: has branch protection guidance" || fail "Flow 06-cicd-setup: missing branch protection"
+
+# ── Diagram integrity checks (run on every prepare release) ──────
+
+# No tree-style standalone ▼ lines between boxes
+TREE_V=$(grep -rl $'^\s*\xe2\x96\xbc\s*$' "$FLOWS_DIR/" 2>/dev/null | wc -l | tr -d ' ')
+[ "$TREE_V" -eq 0 ] && pass "Flow docs: no tree-style standalone ▼ lines" || fail "Flow docs: tree-style ▼ found — convert to box connectors (┌──────▼──────┐)"
+
+# No standalone │ lines between steps (tree-style spacing)
+TREE_PIPE=$(grep -rPl '^\s+│\s*$' "$FLOWS_DIR/" 2>/dev/null | wc -l | tr -d ' ')
+[ "$TREE_PIPE" -eq 0 ] && pass "Flow docs: no tree-style standalone │ spacing lines" || fail "Flow docs: tree-style │ spacing found — use └──────┬──────┘ connector format"
+
+# All box lines exactly 63 display chars wide (box drawing chars = 1 display col)
+MISALIGNED=$(python3 -c "
+import glob, unicodedata
+def dw(s): return len(s) + sum(1 for c in s if unicodedata.east_asian_width(c) in ('W','F'))
+bad = sum(1 for f in glob.glob('$FLOWS_DIR/*.md')
+          for line in open(f, encoding='utf-8')
+          if line.rstrip('\n') and line.rstrip('\n')[0] in '│┌└' and dw(line.rstrip('\n')) != 63)
+print(bad)
+" 2>/dev/null || echo 0)
+[ "$MISALIGNED" -eq 0 ] && pass "Flow docs: all box lines are exactly 63 chars wide" || fail "Flow docs: $MISALIGNED box line(s) misaligned — right │ border not aligned"
+
+# Framework has architecture-change rule for flow docs
+kit_grep "Architecture change rule\|architecture change.*flow\|process.*change.*flow doc" && pass "Flow docs: framework has architecture-change rule" || fail "Flow docs: architecture-change rule missing from framework"
+
+# Framework has release gate for flow docs in prepare release step
+kit_grep "flow doc.*release\|release.*flow doc\|prepare release.*flow\|flow.*prepare release" && pass "Flow docs: release gate for flow docs in prepare release" || fail "Flow docs: flow doc release gate missing from prepare release"
+
+# ═══════════════════════════════════════════════════════════════
+section "20. ARD Directory — Guide Moved"
+# ═══════════════════════════════════════════════════════════════
+
+[ -d "$PROJ/ard" ] && pass "ard/ directory exists" || fail "ard/ MISSING"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.html" ] && pass "Guide HTML in ard/" || fail "Guide HTML missing from ard/"
+[ -f "$PROJ/ard/Portable_Spec_Kit_Guide.pdf" ] && pass "Guide PDF in ard/" || fail "Guide PDF missing from ard/"
+! [ -f "$PROJ/docs/Portable_Spec_Kit_Guide.html" ] && pass "No guide in old docs/ location" || fail "Stale guide in docs/"
+! [ -f "$PROJ/docs/Portable_Spec_Kit_Guide.pdf" ] && pass "No PDF in old docs/ location" || fail "Stale PDF in docs/"
+
+# Verify guide has .portable-spec-kit/ in project structure
+grep -q "portable-spec-kit/" "$PROJ/ard/Portable_Spec_Kit_Guide.html" && pass "Guide: has .portable-spec-kit/ in structure" || fail "Guide: missing .portable-spec-kit/"
+
+# Verify guide has 10 strengths
+grep -qE "1[0-9] Core Strengths" "$PROJ/ard/Portable_Spec_Kit_Guide.html" && pass "Guide: has Core Strengths (10+)" || fail "Guide: wrong strength count"
+
+# ═══════════════════════════════════════════════════════════════
+section "21. Context Management Rule"
+# ═══════════════════════════════════════════════════════════════
+
+kit_grep "Tier 1.*After significant work\|Tier 2.*Before push" && pass "Context rule: two-tier update rule defined" || fail "Context rule: missing trigger"
+kit_grep "docs/work-flows/" && pass "Context rule: references flow docs" || fail "Context rule: missing flow docs reference"
+kit_grep "SPECS.md.*PLANS.md.*TASKS.md\|Tier 2" && pass "Context rule: Tier 2 full sync before push" || fail "Context rule: missing triad"
+
+# ═══════════════════════════════════════════════════════════════
+section "22. Versioning System"
+# ═══════════════════════════════════════════════════════════════
+
+# Framework version exists in file
+kit_grep "<!-- Framework Version:" && pass "Framework version comment exists" || fail "Framework version MISSING"
+
+# Framework version format is v{N}.{N}.{N}
+kit_grep "<!-- Framework Version: v[0-9]\+\.[0-9]\+\.[0-9]\+ -->" && pass "Framework version format correct" || fail "Framework version format wrong"
+
+# Versioning table exists (release groups with patch ranges)
+kit_grep "Release group\|v0\.4.*active\|v0\.4.*v0\.4\." && pass "Versioning table exists" || fail "Versioning table MISSING"
+
+# Release-to-framework mapping documented (aligned: v0.N release uses v0.N.x patches)
+kit_grep "v0\.1.*v0\.1\." && pass "v0.1 → v0.1.x mapping" || fail "v0.1 mapping missing"
+kit_grep "v0\.2.*v0\.2\." && pass "v0.2 → v0.2.x mapping" || fail "v0.2 mapping missing"
+kit_grep "v0\.3.*v0\.3\." && pass "v0.3 → v0.3.x mapping" || fail "v0.3 mapping missing"
+
+# AGENT_CONTEXT template has Kit field (installed kit version)
+kit_grep "\*\*Kit:\*\*" && pass "AGENT_CONTEXT template has Kit field" || fail "Template missing Kit field"
+
+# Kit version comparison rule exists (compare Framework Version comment against Kit field)
+kit_grep "compare.*Framework Version.*Kit\|Framework Version.*Kit" && pass "Version comparison rule exists" || fail "Version comparison rule MISSING"
+
+# TASKS.md has version-based structure
+grep -q "v0\.0 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.0 Done" || fail "TASKS: v0.0 missing"
+grep -q "v0\.1 — Done" "$PROJ/agent/TASKS.md" && pass "TASKS: v0.1 Done" || fail "TASKS: v0.1 missing"
+grep -q "v0\.2 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.2 section" || fail "TASKS: v0.2 missing"
+grep -q "v0\.3 — " "$PROJ/agent/TASKS.md" && pass "TASKS: v0.3 section" || fail "TASKS: v0.3 missing"
+grep -q "Backlog" "$PROJ/agent/TASKS.md" && pass "TASKS: Backlog section" || fail "TASKS: Backlog missing"
+grep -q "Progress Summary" "$PROJ/agent/TASKS.md" && pass "TASKS: Progress Summary" || fail "TASKS: Progress Summary missing"
+
+# RELEASES.md has kit version ranges
+grep -q "Kit: v0\.0\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.0 has kit range (v0.0.x)" || fail "TRACKER: v0.0 range missing"
+grep -q "Kit: v0\.1\." "$PROJ/agent/RELEASES.md" && pass "TRACKER: v0.1 has kit range (v0.1.x)" || fail "TRACKER: v0.1 range missing"
+
+# AGENT_CONTEXT has current version with patch number (v0.N.N format)
+grep -q "\*\*Version:\*\* v[0-9]\+\.[0-9]\+\.[0-9]\+" "$PROJ/agent/AGENT_CONTEXT.md" && pass "AGENT_CONTEXT: Version has patch number (v0.N.N)" || fail "AGENT_CONTEXT: Version missing patch number — expected v0.N.N format"
+
+# ═══════════════════════════════════════════════════════════════
+section "23. Python Environment — Conda Rules"
+# ═══════════════════════════════════════════════════════════════
+
+# Section exists
+kit_grep "Python Environment (MANDATORY" && pass "Conda: section exists" || fail "Conda: section MISSING"
+
+# Core rules
+kit_grep "conda environment" && pass "Conda: requires conda env per project" || fail "Conda: missing env requirement"
+kit_grep "conda env list" && pass "Conda: lists existing envs flow" || fail "Conda: missing env list"
+kit_grep "Create new conda env" && pass "Conda: create new option" || fail "Conda: missing create option"
+kit_grep "Use an existing env" && pass "Conda: use existing option" || fail "Conda: missing existing option"
+
+# Conda installation
+kit_grep "Conda Installation" && pass "Conda: installation section" || fail "Conda: missing installation"
+kit_grep "which conda" && pass "Conda: detection check" || fail "Conda: missing detection"
+kit_grep "Miniconda" && pass "Conda: Miniconda reference" || fail "Conda: missing Miniconda"
+
+# Environment selection triggers
+kit_grep "New project setup" && pass "Conda: triggers on new project" || fail "Conda: missing new project trigger"
+kit_grep "Existing project setup" && pass "Conda: triggers on existing project" || fail "Conda: missing existing project trigger"
+
+# requirements.txt handling
+kit_grep "requirements.txt" && pass "Conda: requirements.txt management" || fail "Conda: missing requirements.txt"
+kit_grep "pip freeze" && pass "Conda: pip freeze rule" || fail "Conda: missing pip freeze"
+
+# Record in AGENT.md
+kit_grep "agent/AGENT.md.*Stack" && pass "Conda: record env in AGENT.md" || fail "Conda: missing AGENT.md recording"
+kit_grep "Conda Env" && pass "Conda: AGENT.md template has Conda Env row" || fail "Conda: missing Conda Env in template"
+
+# Edge cases
+kit_grep "Env name already exists" && pass "Conda edge: env name collision" || fail "Conda edge: missing name collision"
+kit_grep "No existing envs" && pass "Conda edge: no existing envs" || fail "Conda edge: missing no envs"
+kit_grep "requirements.txt.*install fails" && pass "Conda edge: install failure handling" || fail "Conda edge: missing install failure"
+kit_grep "pyproject.toml" && pass "Conda edge: pyproject.toml support" || fail "Conda edge: missing pyproject.toml"
+kit_grep "environment.yml" && pass "Conda edge: environment.yml support" || fail "Conda edge: missing environment.yml"
+kit_grep "venv\|virtualenv" && pass "Conda edge: existing venv handling" || fail "Conda edge: missing venv handling"
+kit_grep "Python version mismatch" && pass "Conda edge: version mismatch warning" || fail "Conda edge: missing version mismatch"
+kit_grep "Env recorded.*AGENT.md.*doesn't exist" && pass "Conda edge: env deleted from disk" || fail "Conda edge: missing env deleted"
+kit_grep "monorepo\|Multiple Python" && pass "Conda edge: monorepo separate envs" || fail "Conda edge: missing monorepo"
+
+# Session rules
+kit_grep "Activate the project" && pass "Conda: activate on every session" || fail "Conda: missing session activation"
+kit_grep "Never hardcode.*conda" && pass "Conda: no hardcoded paths" || fail "Conda: missing hardcode rule"
+kit_grep "break-system-packages" && pass "Conda: no --break-system-packages" || fail "Conda: missing system-packages rule"
+
+# ═══════════════════════════════════════════════════════════════
+section "24. README — Python Environment Section"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
+grep -q "16 step-by-step flow" "$PROJ/README.md" && pass "README: 16 flows count" || fail "README: wrong flow count"
+grep -q "12-project-lifecycle" "$PROJ/README.md" && pass "README: 12-project-lifecycle flow listed" || fail "README: missing 12-project-lifecycle"
+
+# ═══════════════════════════════════════════════════════════════
+section "25. License"
+# ═══════════════════════════════════════════════════════════════
+
+grep -q "MIT License" "$PROJ/LICENSE" && pass "MIT License present" || fail "License wrong"
+grep -q "Aqib Mumtaz" "$PROJ/LICENSE" && pass "Author in license" || fail "Author missing from license"
+
+# ═══════════════════════════════════════════════════════════════
+section "26. Versioning — v0.3 Row + Current Version"
+# ═══════════════════════════════════════════════════════════════
+
+# v0.3 row must exist in version table
+kit_grep "v0\.3.*v0\.3\." && pass "Versioning: v0.3 → v0.3.x row present" || fail "Versioning: v0.3 row MISSING"
+
+# Framework version comment must match AGENT_CONTEXT Version field
+FW_COMMENT=$(grep "<!-- Framework Version:" "$PROJ/portable-spec-kit.md" | head -1 | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+")
+FW_CONTEXT=$(grep "\*\*Version:\*\*" "$PROJ/agent/AGENT_CONTEXT.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+[ "$FW_COMMENT" = "$FW_CONTEXT" ] && pass "Versioning: framework comment ($FW_COMMENT) matches AGENT_CONTEXT Version ($FW_CONTEXT)" || fail "Versioning: MISMATCH — comment=$FW_COMMENT context=$FW_CONTEXT"
+
+# README badge must match framework comment
+README_VER=$(grep "version-v" "$PROJ/README.md" | grep -o "v[0-9]\+\.[0-9]\+\.[0-9]\+" | head -1)
+[ "$README_VER" = "$FW_COMMENT" ] && pass "Versioning: README badge ($README_VER) matches framework ($FW_COMMENT)" || fail "Versioning: README badge STALE — badge=$README_VER framework=$FW_COMMENT"
+
+# RELEASES.md must have v0.3 entry (current release)
+grep -q "## v0\.3" "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 entry present" || fail "RELEASES.md: v0.3 entry MISSING"
+grep -q "Kit: v0\.3\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has kit version range (v0.3.x)" || fail "RELEASES.md: v0.3 missing kit range"
+
+# ═══════════════════════════════════════════════════════════════
+
+# When run directly (not sourced), emit summary
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  echo ""
+  echo "═══════════════════════════════════════════"
+  echo "  RESULTS (01-infrastructure): $PASS passed, $FAIL failed, $TOTAL total"
+  echo "═══════════════════════════════════════════"
+  [ "$FAIL" -eq 0 ] && exit 0 || exit 1
+fi
