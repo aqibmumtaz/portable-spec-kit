@@ -376,7 +376,7 @@ install_reflex() {
     check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
     cycle-summary.sh doc-code-diff.sh external-research.sh extract-claims.sh \
     identify-integration-probes.sh intake.sh log-hardening.sh loop.sh \
-    prune-history.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
+    prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
     state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
   for f in "${lib_files[@]}"; do
     if [ -n "$LOCAL_SOURCE" ] && [ -f "$LOCAL_SOURCE/reflex/lib/$f" ]; then

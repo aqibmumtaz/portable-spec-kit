@@ -42,6 +42,7 @@ TESTS_PASSED=0
 MISSING_REFS=0
 MISSING_FILES=0
 TESTS_FAILED=0
+IRRELEVANT_TESTS=0  # v0.6.29 G21 — count of test files that don't mention their feature
 
 # Cache: each unique test file is run only once — result reused for all features referencing it.
 # Closes QA-PERF-PHASE0-01 (v0.6.11): persisted across invocations (was mktemp-per-call,
@@ -139,6 +140,35 @@ run_test() {
   return $result
 }
 
+check_test_relevance() {
+  # v0.6.29 fix (G21 — QA-KIT-RELEASE-CHECK-01): verify the cited test file
+  # actually exercises the named feature. Previously release-check validated
+  # only "file exists + tests pass" — projects could cite any green test for
+  # any feature and pass with ✅ RELEASE READY. Now we require the test file
+  # to reference the feature ID (case-insensitive, e.g. "F1" / "f1") OR a
+  # feature-specific symbol the agent extracts from the SPECS row.
+  #
+  # Strategy: pass if the test file contains either:
+  #   1. The feature ID literally (`F1`, `f1`)
+  #   2. A keyword from the feature description (≥4-char meaningful tokens)
+  #
+  # Permissive on purpose — false-negative cost is high, and stub-marker
+  # check below already catches the most common "wrong test" symptom.
+  local test_ref="$1"
+  local fn="$2"        # feature ID e.g. F1
+  local feature="$3"   # feature description for keyword match
+  if [ -z "$fn" ] || [ -z "$test_ref" ]; then return 0; fi
+  # Quick win: feature ID literal
+  if grep -qiE "\\b${fn}\\b" "$test_ref" 2>/dev/null; then return 0; fi
+  # Fallback: keyword match (any meaningful 4+-char word from feature description)
+  local keyword
+  keyword=$(echo "$feature" | grep -oE '[A-Za-z]{4,}' | head -1)
+  if [ -n "$keyword" ] && grep -qiE "\\b${keyword}\\b" "$test_ref" 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
 check_stub_complete() {
   local test_ref="$1"
   local todo_count
@@ -202,6 +232,11 @@ while IFS= read -r line; do
         continue
       fi
 
+      # v0.6.29 G21 — relevance check: warn (not fail) if test doesn't reference feature
+      if ! check_test_relevance "$test_ref" "$fn" "$feature"; then
+        IRRELEVANT_TESTS=$((IRRELEVANT_TESTS + 1))
+      fi
+
       run_test "$test_ref"
       run_result=$?
 
@@ -228,6 +263,9 @@ printf "  Tests passing:           %d\n" "$TESTS_PASSED"
 printf "  Tests failing:           %d\n" "$TESTS_FAILED"
 printf "  Missing test refs:       %d\n" "$MISSING_REFS"
 printf "  Missing test files:      %d\n" "$MISSING_FILES"
+if [ "$IRRELEVANT_TESTS" -gt 0 ]; then
+  printf "  ⚠  Possibly-irrelevant:    %d (test file doesn't reference feature ID or keyword)\n" "$IRRELEVANT_TESTS"
+fi
 echo "────────────────────────────────────────────────────────────"
 
 ISSUES=$((MISSING_REFS + MISSING_FILES + TESTS_FAILED))

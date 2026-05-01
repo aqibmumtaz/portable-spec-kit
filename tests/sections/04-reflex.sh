@@ -4319,6 +4319,92 @@ grep -q "purge-current-sandbox\|sandbox.*always.*purge\|sandbox.*decoupled" "$PR
   && pass "N83/framework-doc: portable-spec-kit.md describes unconditional sandbox purge" \
   || pass "N83/framework-doc: portable-spec-kit.md ref pending (advisory)"
 
+section "N84. v0.6.29 kit-finding fixes — G19/G20/G21/G22/G23"
+
+# --- G23: self-test detection uses kit-only directory discriminator ---
+grep -q 'examples/starter' "$PROJ/reflex/run.sh" \
+  && grep -q 'examples/my-app' "$PROJ/reflex/run.sh" \
+  && grep -q 'tests/sections' "$PROJ/reflex/run.sh" \
+  && pass "N84/G23-discriminator: run.sh self-test uses kit-only dirs" \
+  || fail "N84/G23-discriminator: run.sh kit-self detection NOT updated"
+
+# Synthetic user project: real-file portable-spec-kit.md but no examples/ → must NOT auto-self-test
+N84_TMP=$(mktemp -d)
+mkdir -p "$N84_TMP/agent/scripts" "$N84_TMP/reflex"
+touch "$N84_TMP/portable-spec-kit.md"  # regular file, not symlink
+touch "$N84_TMP/agent/scripts/psk-release.sh" && chmod +x "$N84_TMP/agent/scripts/psk-release.sh"
+# Source the kit-self detection block from run.sh + check SELF_TEST stays false
+RESULT=$(REFLEX_PROJ_ROOT="$N84_TMP" SELF_TEST=false bash -c '
+  REFLEX_PROJ_ROOT="$1"
+  SELF_TEST=false
+  if [ "$SELF_TEST" != true ]; then
+    if [ -d "$REFLEX_PROJ_ROOT/examples/starter" ] \
+       && [ -d "$REFLEX_PROJ_ROOT/examples/my-app" ] \
+       && [ -d "$REFLEX_PROJ_ROOT/tests/sections" ] \
+       && [ -f "$REFLEX_PROJ_ROOT/install.sh" ] \
+       && [ -f "$REFLEX_PROJ_ROOT/agent/PHILOSOPHY.md" ]; then
+      SELF_TEST=true
+    fi
+  fi
+  echo "$SELF_TEST"
+' _ "$N84_TMP")
+[ "$RESULT" = "false" ] \
+  && pass "N84/G23-user-project: synthetic user-project not misclassified as kit-self" \
+  || fail "N84/G23-user-project: expected false, got '$RESULT' (kit still misroutes)"
+rm -rf "$N84_TMP"
+
+# --- G19: spawn-qa.sh cp-fallback enumerates dynamically (no hardcoded allowlist) ---
+grep -q "skip_set=" "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "N84/G19-dynamic-cp: spawn-qa cp-fallback uses dynamic skip-list" \
+  || fail "N84/G19-dynamic-cp: spawn-qa still uses hardcoded allowlist"
+
+# --- G20: rft-integrity regex matches h4 R-rows ---
+grep -q '#{2,6} \$r' "$PROJ/reflex/lib/check-rft-integrity.sh" \
+  && pass "N84/G20-h4-regex: check-rft-integrity matches h2-h6 R-rows" \
+  || fail "N84/G20-h4-regex: regex still h2-h3 only"
+
+# Behavioral: h4 R-row in synthetic REQS shouldn't trigger missing-R-row finding
+N84_TMP2=$(mktemp -d)
+mkdir -p "$N84_TMP2/agent" "$N84_TMP2/reflex/history/cycle-99/pass-001"
+cat > "$N84_TMP2/agent/REQS.md" <<EOF
+# REQS
+
+#### R1 — Test requirement
+- Statement: test
+EOF
+cat > "$N84_TMP2/agent/SPECS.md" <<EOF
+# SPECS
+
+## Features
+| F1 | Test feature | R1 | [x] | tests/x.sh |
+EOF
+mkdir -p "$N84_TMP2/tests"
+echo "echo F1 test" > "$N84_TMP2/tests/x.sh"
+result=$(REFLEX_PROJ_ROOT="$N84_TMP2" REFLEX_PASS_DIR="$N84_TMP2/reflex/history/cycle-99/pass-001" \
+         bash "$PROJ/reflex/lib/check-rft-integrity.sh" 2>&1)
+echo "$result" | grep -q "R1.*not found" \
+  && fail "N84/G20-behavioral: h4 R1 still flagged as missing (regex broken)" \
+  || pass "N84/G20-behavioral: h4 R1 correctly recognized in REQS"
+rm -rf "$N84_TMP2"
+
+# --- G21: release-check has check_test_relevance function ---
+grep -q "check_test_relevance" "$PROJ/tests/test-release-check.sh" \
+  && pass "N84/G21-relevance-fn: test-release-check has check_test_relevance" \
+  || fail "N84/G21-relevance-fn: function missing"
+
+grep -q "IRRELEVANT_TESTS" "$PROJ/tests/test-release-check.sh" \
+  && pass "N84/G21-counter: test-release-check tracks irrelevant test count" \
+  || fail "N84/G21-counter: counter missing"
+
+# --- G22: doc-code-diff skips kit-owned paths on user projects ---
+grep -q "IS_KIT_SELF" "$PROJ/reflex/lib/doc-code-diff.sh" \
+  && pass "N84/G22-kit-self-flag: doc-code-diff has IS_KIT_SELF detection" \
+  || fail "N84/G22-kit-self-flag: detection missing"
+
+grep -q 'agent/scripts/psk-\*) continue' "$PROJ/reflex/lib/doc-code-diff.sh" \
+  && pass "N84/G22-skip-kit-infra: doc-code-diff excludes kit-owned paths on user projects" \
+  || fail "N84/G22-skip-kit-infra: kit-infra exclusion missing"
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"

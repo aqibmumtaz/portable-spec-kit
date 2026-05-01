@@ -8,7 +8,21 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.27 · **Tests:** 1880 (1735 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.28 · **Tests:** 1756 (1611 framework + 145 benchmarking)
+
+### v0.6.28 — User-project reflex correctness (G19-G23 from searchsocialtruth field-test) (May 2026)
+
+**Kit-evolution protocol's first user-project field-test results land.** Reflex run on searchsocialtruth (v0.1.1) surfaced 5 kit-machinery bugs filed as `scope: kit`. All 5 fixes shipped:
+
+- **ADR-041 (G23):** kit-self detection uses kit-only directory discriminator (examples/starter + examples/my-app + tests/sections + install.sh + agent/PHILOSOPHY.md). Cascade fix unblocking correct routing for every other QA-KIT-* finding.
+- **ADR-042 (G19):** sandbox cp-fallback enumerates dynamically — catches src/, app/, components/, packages/ on Next.js / monorepo projects (was empty before).
+- **ADR-043 (G20):** rft-integrity regex now matches h2-h6 R-rows. Kit's own requirement-research.md skill recommends h4 — projects following recommendation no longer get false missing-R-row findings.
+- **ADR-044 (G21):** release-check `check_test_relevance()` advisory check. Misassigned tests no longer slip through with `✅ RELEASE READY 100% coverage`.
+- **ADR-045 (G22):** doc-code-diff `IS_KIT_SELF` detection skips kit-installed paths on user projects. Eliminates >30 false-positive drift entries per pass.
+
+**Test coverage.** 1756 tests passing. New N84 regressions: 9 sub-tests covering G19-G23.
+
+`[source: avacr-eval-searchsocialtruth/cycle-01/pass-001]`
 
 ### v0.6.27 — Symmetric self-evolution + Tier 3 + bookend release + finding closure + cycle rule relaxation (May 2026)
 

@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.27 &bull; April 2026</div>
+    <div class="badge">v0.6.28 &bull; April 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.27</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 1880 passing (1735 framework + 145 benchmarking), 93 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.28</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 1880 passing (1735 framework + 145 benchmarking), 94 sections</div>
   </div>
 </div>
 
@@ -83,7 +83,7 @@
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.6.27</td></tr>
+  <tr><td>Current version</td><td>v0.6.28</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (912 lines, 54% reduced from 1998)</td></tr>
   <tr><td>Skill files</td><td>17 (loaded JIT at peak attention)</td></tr>
   <tr><td>Reliability scripts</td><td>12 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker)</td></tr>
@@ -105,7 +105,7 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.27</p>
+<p>Kit: v0.6.28</p>
 <ul>
   <li><strong>v0.6.0 — F70 Reflex evolves to AVACR (Adversarial Verbal Actor-Critic Refinement Loop):</strong> Architectural shift within F70 Reflex from cooperative VACR to adversarial goals with collaborative convergence. <em>QA-Agent</em> goal = FAIL the release (hunt exhaustively across 14 dimensions; default DENIED). <em>Dev-Agent</em> goal = FOOLPROOF the release against QA's hunt (fix findings + harden sibling-class weaknesses). Convergence = QA hunted hard and cannot find a blocker, not "Dev says it's done."
     <ul>
@@ -153,6 +153,7 @@
       <li><strong>v0.6.7 — Reflex 7-layer Senior/Principal-level QA system:</strong> the user must NOT be QA of their own project. Reflex now operates with a 7-layer Senior/Principal-level QA system that derives all probes from the project's spec pipeline + kit toolkit + running system — zero human-curated lists. <strong>Layer 1</strong> (<code>reflex/lib/check-rft-integrity.sh</code>): R→F→T pipeline integrity per <code>[x]</code> feature (Rn map + criteria block + design plan + non-trivial test + TASKS mark). <strong>Layer 2</strong> (<code>reflex/lib/doc-code-diff.sh</code>): bidirectional doc↔code consistency. <strong>Layers 3-5/7</strong>: qa-agent.md mandates (behavioral 1+5+3+1 per feature / test-quality audit / cross-feature integration / external CVE+OWASP+deprecation research). <strong>Layer 6</strong>: spawn-qa.sh captures <code>psk-sync-check</code>, <code>psk-doc-sync</code>, <code>test-release-check</code>, <code>psk-code-review</code> outputs as research input. Senior/Principal-level philosophies codified in qa-agent.md + dev-agent.md prompts. 16-dim checklist preserved as safety net; CRITICAL signals from Layer 1/6 short-circuit it. Architecture plan committed at <code>agent/design/f70-reflex-senior-engineer-qa.md</code>. Companion Dev plan at <code>agent/design/f70-reflex-senior-engineer-dev.md</code>. Layer 4 hardening log shipped (<code>reflex/history/hardening-log.md</code> + <code>reflex/lib/log-hardening.sh</code>).</li>
       <li><strong>v0.6.8 — Reflex 7-layer full implementation: Layer 3/5/7 QA seed-helpers + Layer 7 Dev ADL extraction:</strong> completes the v0.6.7 architecture by shipping deterministic helpers for Layers 3, 5, 7 (QA) and Layer 7 (Dev). All 7 layers now have deterministic-bash seed-helpers wherever possible — LLM creative work goes to genuine reasoning. <strong>scaffold-behavioral-tests.sh</strong> generates 1+5+3+1 test-plan skeletons per <code>[x]</code> feature with criteria pulled from <code>### F{N}</code> blocks. <strong>identify-integration-probes.sh</strong> finds feature-pair candidates from design-plan + criteria-block cross-references. <strong>external-research.sh</strong> scans manifests (package.json / requirements.txt / go.mod / Dockerfile) and seeds CVE / framework-changelog / OWASP queries; includes stack-specific recent-vuln hints (e.g. prompt injection per OWASP LLM Top 10). <strong>auto-extract-adl.sh</strong> drafts ADL entries from Dev's commit-body rationale post-pass. <code>spawn-qa.sh</code> Phase 0 produces 8 pre-populated artifacts. Field-tested on kit-self: 70 test-plan skeletons in &lt;1s, 77 candidate pairs found.</li>
       <li><strong>v0.6.9 — The kit is audited and improved by the reflex it built:</strong> the architecture built across v0.6.5-v0.6.8 was designed to find drift in user projects. v0.6.9 turned that exact machinery against the kit itself. The same QA-Agent that catches bugs in your code caught real bugs in the code that builds the QA-Agent — Phase 0 exposed 180 mechanical drift items (170 R→F→T pipeline breaks + 10 doc↔code drifts) the kit's own existing mechanical gates had passed clean for months; QA filed 5 findings; Dev closed 2 inline (live <code>kit-loop-state.yml</code> → <code>loop-state.yml</code> rename incompleteness from v0.6.2 + Layer-4 hardening shipping new <code>PSK018</code> per-feature pairwise check that would have caught 69-of-70-criteria-blocks-deleted under the existing shallow gate). Layer 5 hub-suppression added (77→13 pairs after F64+F70 hubs filtered). Field-test artifacts committed in <code>reflex/history/field-test-v0.6.8/</code> as permanent evidence. <em>A tool sufficient to audit user projects must be sufficient to audit the project that built it — v0.6.9 proved that proposition.</em></li>
+      <li><strong>v0.6.28 — User-project reflex correctness — 5 fixes G19-G23 from searchsocialtruth field-test:</strong> first user-project field-test results land via the kit-evolution protocol. Reflex run on searchsocialtruth (v0.1.1) surfaced 5 kit-machinery bugs filed as <code>scope: kit</code>. <strong>ADR-041 (G23):</strong> kit-self detection uses kit-only directory discriminator (examples/starter + examples/my-app + tests/sections + install.sh + agent/PHILOSOPHY.md) — replaces broken symlink-vs-real-file heuristic. Cascade fix unblocking correct routing for every other QA-KIT-* finding. <strong>ADR-042 (G19):</strong> sandbox cp-fallback enumerates dynamically — catches <code>src/</code>, <code>app/</code>, <code>components/</code>, <code>packages/</code> on Next.js / monorepo projects. <strong>ADR-043 (G20):</strong> rft-integrity regex matches h2-h6 R-rows. <strong>ADR-044 (G21):</strong> release-check <code>check_test_relevance()</code> advisory check. <strong>ADR-045 (G22):</strong> doc-code-diff <code>IS_KIT_SELF</code> skip clause for kit-installed paths on user projects. 1756 tests passing (1611 framework + 145 benchmarking); 9 N84 regression sub-tests cover all 5 fixes. <code>[source: avacr-eval-searchsocialtruth/cycle-01/pass-001]</code></li>
       <li><strong>v0.6.27 — Symmetric self-evolution + Tier 3 auto-probe-synthesis + bookend release ceremony + finding-closure helper + cycle-id rule relaxation:</strong> major kit-evolution release closing the v0.6.7+ residual auto-evolving-QA backlog plus a structural blind spot the user surfaced after Mode C iteration (kit was biased toward addition and blind to consolidation). <strong>ADR-038 — Tier 3 auto-probe-synthesis:</strong> <code>agent/scripts/psk-blind-spot-synthesize.sh</code> (~280 LOC) reads <code>qa-blind-spots.md</code> open entries, classifies target into 5 buckets, scaffolds PR-style proposals at <code>agent/tasks/proposed/Gxx-&lt;slug&gt;.md</code>. <strong>ADR-039 — Reflex bookend release ceremony:</strong> iter 1 = prep-release · iters 2+ skip ceremony entirely · GRANTED runs ONE final refresh-release. N-iteration cycle now runs ceremony exactly 2× (was N×). <strong>ADR-040 — Symmetric Self-Evolution (P9):</strong> 5 layers — <code>agent/PHILOSOPHY.md</code> P9 principle · <code>psk-coverage-overlap-check.sh</code> (~210 LOC) · <code>/optimize</code> cat 14 (probe redundancy) · Phase 6 evolution-gauntlet Gate G · QA Dim 24 (3 probes filing <code>QA-OVERLAP-NN</code>) · Phase 5 mandate ≥1 audit-coverage OVERLAP observation · <code>OL-NNN</code> registry parallel to <code>BS-NNN</code>. <code>psk-close-finding.sh</code> closes findings without YAML hand-edit. Cycle-id rule relaxed to verdict-agnostic (closes DENIED-then-externally-fixed trap). Kit bug fix: <code>psk-bootstrap-check.sh</code> C7 kit-self detection. Backlog cleanup 48→17. 1879 tests (1734 framework + 145 benchmarking); 22/20 sync-check; new N80 (12) + N81 (6) + N82 (15) regressions plus 8 cycle-04 regressions. <em>Closes auto-evolving-QA loop; kit now self-detects probe redundancy alongside probe gaps.</em></li>
       <li><strong>v0.6.26 — Per-cycle pass numbering + summary.csv schema v5 + reflex self-test convergence:</strong> closes user-reported "cycle 2 showing pass 3,4,5 instead of 1,2,3" bug. Pass numbers reset per cycle (each cycle starts fresh at <code>pass-001</code>); composite key <code>(cycle, pass)</code> gives unique row identity in <code>summary.csv</code> (schema v5 adds <code>cycle</code> column). Lifts ADR-037 (reflex self-test 8-finding closure landing in v0.6.25 patches) into a formal release.</li>
       <li><strong>v0.6.25 — Post-merge soak gauntlet + Tier 1/4/5 auto-evolving QA:</strong> ADR-035 ships <code>agent/scripts/psk-soak-schedule.sh</code> (Phase 6 (e) post-merge 48h soak, deferred from v0.6.24). ADR-036 closes Tier 1 (BS-NNN registry seeding), Tier 4 (auto-promote OPEN → CLOSED on Gxx merge), Tier 5 (count-based gauntlet probes for blind-spot density tracking). ADR-037 (reflex self-test 8-finding closure landing in patch series).</li>
@@ -1370,7 +1371,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.6.27 &bull; April 2026
+  Portable Spec Kit — Technical Overview &bull; v0.6.28 &bull; April 2026
 </div>
 
 </div>
@@ -1388,7 +1389,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.27 &bull; April 2026</div>
+    <div class="badge">v0.6.28 &bull; April 2026</div>
   </div>
 </div>
 
