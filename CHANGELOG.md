@@ -8,7 +8,105 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.15 · **Tests:** 1747 (1602 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.27 · **Tests:** 1880 (1735 framework + 145 benchmarking)
+
+### v0.6.27 — Symmetric self-evolution + Tier 3 + bookend release + finding closure + cycle rule relaxation (May 2026)
+
+**Problem.** Three structural blind spots user surfaced: (1) Mode C 12-row seed shipped duplicate coverage with zero structural alarm — kit was biased toward addition, blind to consolidation; (2) DENIED-then-externally-fixed cycles couldn't advance because cycle-id rule required GRANTED verdict; (3) marking findings closed required hand-editing YAML.
+
+**Fix.**
+- ADR-038: Tier 3 auto-probe-synthesis (`psk-blind-spot-synthesize.sh`).
+- ADR-039: reflex bookend release ceremony — prep at iter 1, skip iter 2+, final refresh on GRANTED.
+- ADR-040: Symmetric Self-Evolution (P9) — `psk-coverage-overlap-check.sh` + Dim 24 + /optimize cat 14 + Phase 6 Gate G + Phase 5 overlap mandate + OL-NNN registry. Closes the meta-bug: kit's auto-evolution was asymmetric.
+- `psk-close-finding.sh` helper marks findings closed with one command.
+- Cycle-id rule: cycle advances on 0-unclosed-findings + signoff-present (verdict-agnostic).
+- Bonus: `psk-bootstrap-check.sh` C7 kit-self detection bug fix; backlog audit cleanup (48 → 17 items).
+
+**Test coverage.** 1880 tests passing (1735 framework + 145 benchmarking). New regressions: N80 (12 sub-tests Tier 3), N81 (6 sub-tests bookend), N82 (15 sub-tests symmetric self-evolution); cycle-04 added 8 more regression tests covering QA-REL-NONDETERM-02 (cwd in test-ref-cache key), QA-KIT-OVERLAP-CHECK-01 (psk-coverage-overlap-check.sh --json clean), QA-AUDIT-CSV-01 (summary.csv completeness sync-check), QA-RECOVER-ENV-01 (G4 test isolation), QA-MERGE-CASE-01 (auto-merge case fix).
+
+### v0.6.26 — Per-cycle pass numbering + summary.csv schema v5 + reflex self-test convergence (April 2026)
+
+**Problem.** User reported "cycle 2 showing pass 3,4,5 instead of 1,2,3." Globally-monotonic pass numbering leaked the previous cycle's tail. Plus pass-005 of the v0.6.25 reflex self-test had 1 MINOR finding (`probe_coverage_pct` empty in older summary.csv rows) needing honest closure.
+
+**Fix.** `reflex/run.sh find_next_pass_dir()` now scopes pass counter to the resolved cycle dir — was scanning all cycles globally. `summary.csv` schema v4 → v5 with new `cycle` first column. `score.sh` auto-migrates v1-v4 → v5; idempotency key is now `(cycle, pass, date)` composite. Existing `cycle-02/pass-003/004/005` renamed to `pass-001/002/003`; sandbox worktrees mirrored. Doc updates in `portable-spec-kit.md` + `docs/work-flows/17-reflex.md`.
+
+**ADR-037 lift.** The 8-finding reflex self-test closure landed in v0.6.25 patches is formalized here. `BS-003` in `qa-blind-spots.md` is now `status: probed` — registry-driven blind-spot promotion loop demonstrated end-to-end. Three reflex passes converged: pass-001 DENIED 8 findings → pass-002 DENIED 9 findings (caught wiring gaps) → pass-003 GRANTED with 1 MINOR (closed by documentation).
+
+**Test coverage.** 1836 tests still passing. G15 score.sh schema test updated for v5 (17 cols, cycle as first column).
+
+### v0.6.25 — All open kit backlog closed (P01 post-merge soak + Tier 1/4/5 auto-evolving QA) (April 2026)
+
+**Problem.** After v0.6.24 hygiene release, three backlog clusters remained: Phase 6 (e) post-merge soak gauntlet (deferred since v0.6.22), three Tier items from the v0.6.7+ auto-evolving-QA residual plan (Tier 1 blind-spots registry, Tier 4 probe-coverage metric, Tier 5 claim-extraction extensions), and the v0.6.9 SPECS criteria backfill. User flagged "fix everything."
+
+**Fix.** Three of the four backlog clusters land in this version. (v0.6.9 SPECS backfill stays `[~]` acknowledged-deferral — 55 features need per-feature acceptance-criteria authoring not suitable for autonomous mode.)
+
+**ADR-035 — Post-merge soak gauntlet.** `agent/scripts/psk-soak-schedule.sh` + `.github/workflows/postmerge-gauntlet-soak.yml`. Daily 09:00 UTC cron scans the last 9 days of main for `[proposal: ...]` commits in the 9-to-2-day soak window, re-runs `psk-evolution-gauntlet.sh --quick` on each. Failures append `revert-Pxx` tasks to TASKS.md backlog, open labelled GitHub issue. Bypass `PSK_SOAK_DISABLED=1`. Closes Phase 6 (e) deferred since v0.6.22.
+
+**ADR-036 — Auto-evolving QA residual.** Tier 1: `reflex/history/qa-blind-spots.md` append-only YAML registry of human-flagged QA misses with status flow open → probed → retired; `reflex/prompts/qa-agent.md` Phase 0 Step 0.0 mandates QA reads at every pass start (skip = `QA-BLIND-SKIP-NN` finding); three seed entries on landing. Tier 4: `reflex/lib/score.sh` schema v3 → v4 adds `probe_coverage_pct` column with auto-migration. Tier 5: `reflex/lib/extract-claims.sh` four new probe_types (`api-route`, `perf-budget`, `error-message-text`, `security-rule`).
+
+**Test coverage.** 1836 tests still passing. G15 score.sh schema test updated to expect 16 columns (was 15) + new probe_coverage_pct field. Smoke test of psk-soak-schedule.sh --dry-run confirms clean exit on empty soak window.
+
+### v0.6.24 — Self-evolving-plan gap-closure (April 2026)
+
+**Problem.** A re-audit of the v0.6.16-23 self-evolving plan surfaced 9 sub-deliverables that headline commits had claimed-shipped but were absent. Most critical: install.sh referenced 15 of 28 actual scripts and 17 of 25 actual skills — a fresh `curl | bash` install would not get the self-evolution layer.
+
+**Fix (3 rounds).** Round 1 (commit 6e250e1) closed 7 phase sub-deliverables: Phase 3 Phase-0 helper, Phase 6 flow doc + task dirs, Phase 7 (a/b/d) skill + sync-check upgrades. Round 2 (commit 76fb244) closed install.sh + state-file gaps — install now copies all scripts, all skills, all reflex/lib helpers, plus PHILOSOPHY.md. Round 3 (this version) closes 5 flow-doc omissions caught by the prep-release Step 4 critic.
+
+**Phase 6 (e) deferral.** Post-merge 48h soak gauntlet kept as v0.6.25 work — needs GitHub Actions cron, beyond this hygiene-release scope. Filed as `agent/tasks/proposed/P01-postmerge-soak-gauntlet.md` with full proposal.
+
+**Honest framing.** Documented why the misses happened: initial commit cadence prioritized headline deliverables (the script, the prompt change, the test); companion artifacts (Phase 0 helpers, flow docs, holding directories, install.sh updates) were claimed in commit messages but actually slipped. Recorded in `agent/plans/active-execution-state.md` so the pattern is not repeated.
+
+**Test coverage.** No new regression tests in this version — pure hygiene. Verification by fresh install in /tmp (`bash install.sh --yes --install-reflex`) confirms 28 scripts, 25 skills, 30 reflex/lib helpers, PHILOSOPHY.md all installed. `psk-sync-check.sh --full` reports 19/19 (added flow doc 19 + new sync-check increased coverage from 18 to 19).
+
+### v0.6.23 — Rule-Conflict Detection (deterministic v1) (April 2026)
+
+**Problem.** Rules accumulated across kit versions; no automated way to spot contradictions before they cause silent stoppers. User flagged: *"as I do more development, things change and I don't remember if existing rule could be creating conflicts."*
+
+**Fix.** New `agent/scripts/psk-rule-conflicts.sh` with `--scan` / `--health` / `--json` modes. Scans MUST/MANDATORY/NEVER/ALWAYS rules across portable-spec-kit.md + skills. 14 subjects checked for always/never overlap (commit · push · `.env` · secrets · personal memory · auto-commit · cycle id · scope change · etc.). Output: `potential-always-never-overlap` findings with severity: advisory. Bypass `PSK_RULE_CONFLICTS_DISABLED=1`.
+
+**v1 deterministic-only.** LLM-probe layer for ambiguous pairs (Haiku judging contextual conflict) deferred to v0.6.18+ release iteration. Real-kit validation caught 4 potential conflicts. ADR-030.
+
+**Test coverage.** N75 regression suite (9 sub-tests) — script exists + 3 modes work + bypass + ≥10 subjects + LLM deferral documented.
+
+### v0.6.19 — REQS-Coverage Gate (April 2026)
+
+**Problem.** Phases 1-2 added cognitive layer to QA-Agent (philosophy + self-reflection). But cognitive checks are slow + non-deterministic + cost tokens every pass. Kit needs a deterministic structural floor.
+
+**Fix.** Two complementary additions:
+(a) `psk-sync-check.sh check_reqs_coverage` — fast (<2s) function in sync-check `--full` path. Extracts R-ids from REQS.md, checks each `Maps to:` line, flags Cross-cut-orphans + invalid F-targets. Skips silently when REQS.md doesn't follow R{N} pattern.
+(b) `reflex/lib/check-reqs-coverage.sh` — Phase 0 helper produces `reqs-coverage.yaml` (per-R coverage status + numeric drift detection + findings auto-promoted to QA as `QA-COVERAGE-R{N}` MAJOR).
+
+**Validation.** searchsocialtruth: caught 9 uncovered R-rows + 5 numeric drifts in <1s. Same gap class that 4 prior Reflex passes missed cognitively, now caught mechanically. ADR-031.
+
+**Test coverage.** N76 regression suite (11 sub-tests) — helper exists + executable · sync-check function defined + invoked · bypass env var · synthetic test verifies covered + cross-cut-orphan + maps-to-missing-F detection · prose-format REQS skipped silently.
+
+**Bypass.** `PSK_REQS_COVERAGE_DISABLED=1`.
+
+### v0.6.17 — Self-Reflection Mandate (April 2026)
+
+**Problem.** Phase 1 (v0.6.16) introduced kit philosophy in `agent/PHILOSOPHY.md`. QA now reasons from principles. But QA never proposes new dimensions for gap classes its 16+ dimensions don't probe. Kit improvements depended on author intuition, not audit experience.
+
+**Fix.** Add §Phase 5 — Self-Reflection on audit coverage to `reflex/prompts/qa-agent.md`. Mandatory ≥3 audit-coverage gap observations per Reflex pass. Each cites ≥3 evidence points. CRITICAL/MAJOR gaps auto-file as `scope: kit, dimension: audit-framework-gap` findings (route to kit-maintainer queue per ADR-018). Output schema in `philosophy-gaps.md` §Audit-Coverage-Gaps section. 6 common gap classes documented as anchors. ADR-029.
+
+**Test coverage.** N74 regression suite (14 sub-tests) verifies Phase 5 section · 3-gap floor · output schema with 5 required fields · scope:kit routing · 6 gap classes documented · false-positive guards · ADR-029 entry · budget allocation · Phase 6 integration reference.
+
+**Self-evolution loop.** Phase 5 outputs feed later Phase 6 Regression Gauntlet for kit-rule proposals. Kit evolves from real audit experience.
+
+### v0.6.16 — Kit Philosophy Primer (April 2026)
+
+**Problem.** Kit's QA-Agent (Reflex) audits SPECS-vs-code but never reasons from kit's underlying principles. searchsocialtruth audit (2026-04-30) found 47 of 109 REQS acceptance bullets dropped between REQS and SPECS authoring — undetected by 4 prior Reflex passes. QA had no notion of "principle violation" — only enumerated dimensions. The 47 gaps were structurally invisible.
+
+**Fix.** Establish kit's evolving constitution. New `agent/PHILOSOPHY.md` codifies 8 principles seeded from existing kit: P1 Spec-Persistent · P2 Truth-First · P3 Persistent Memory · P4 **Bidirectional R→F→T** (the load-bearing principle that searchsocialtruth violated) · P5 Generic Not Version-Specific · P6 Structural Enforcement Over Trust · P7 Convergence By Exhaustion · P8 **Client-Grade Output by Default** (the polished-UI guarantee). Each principle includes: The principle · What this rules out · Violations look like · Evidence base.
+
+**Mutation policy.** PHILOSOPHY.md is NEVER edited directly. Mutations happen only via Phase 6 Regression Gauntlet (later phase). Hard cap of 12 active principles forces clarity. Adding a 13th requires retiring one. ADR-028.
+
+**Cognitive layer.** New §Kit Philosophy section at top of `reflex/prompts/qa-agent.md` references PHILOSOPHY.md and instructs QA: "When you observe behavior violating a principle but no enumerated dimension covers it: file a finding with `scope: kit, dimension: principle-violation, principle: P{N}` and propose a new dimension." This unlocks principle-aware reasoning without adding explicit dimensions for every possible gap class.
+
+**Test coverage.** N73 regression suite (20 sub-tests) verifies PHILOSOPHY.md exists with all 8 principles · each principle has required structure (The principle / What rules out / Violations / Evidence) · mutation policy declared · 12-principle hard cap documented · qa-agent.md references philosophy · principle-based reasoning instruction present · ADR-028 entry · synthetic P4 violation pattern detectable.
+
+**Compatibility.** Backward-compatible — existing dimensional probes still run as before. Philosophy is additive cognitive context, not replacement.
+
+**Part of plan.** First phase of `agent/plans/self-evolving-kit-v0.6.23-22.md` (7-phase plan v0.6.23 → v0.6.23). Subsequent phases: P2 Self-Reflection · P3 Rule-Conflict Detection · P4 REQS-Coverage Gate · P5 /optimize cat 10/11/12 · P6 Regression Gauntlet · P7 Client-Grade Output Guarantee.
 
 ### v0.6.15 — Cycle-id continuation rule simplified to findings-first semantics (April 2026)
 

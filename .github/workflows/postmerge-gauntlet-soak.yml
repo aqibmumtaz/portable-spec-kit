@@ -1,0 +1,86 @@
+name: Post-merge gauntlet soak
+
+# Phase 6 (e) of the self-evolving plan. Runs daily at 09:00 UTC,
+# scans main for proposal-bearing commits in the 9-to-2-day soak
+# window, re-runs psk-evolution-gauntlet.sh on each, and files
+# automatic revert-Pxx tasks on regression.
+#
+# See:
+#   - docs/work-flows/19-kit-evolution-gauntlet.md §Post-merge soak
+#   - agent/scripts/psk-soak-schedule.sh
+#   - agent/PLANS.md ADR-035
+
+on:
+  schedule:
+    # Daily at 09:00 UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'Soak window start (git --since)'
+        default: '9 days ago'
+      until:
+        description: 'Soak window end (git --until)'
+        default: '2 days ago'
+      proposal:
+        description: 'Single proposal id to soak (optional, e.g. P01-name)'
+        default: ''
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name 'kit-maintainer-soak-bot'
+          git config user.email 'noreply@github.com'
+
+      - name: Run soak gauntlet
+        id: soak
+        run: |
+          chmod +x agent/scripts/psk-soak-schedule.sh
+          chmod +x agent/scripts/psk-evolution-gauntlet.sh
+          if [ -n "${{ github.event.inputs.proposal }}" ]; then
+            bash agent/scripts/psk-soak-schedule.sh --proposal "${{ github.event.inputs.proposal }}"
+          else
+            bash agent/scripts/psk-soak-schedule.sh \
+              --since="${{ github.event.inputs.since || '9 days ago' }}" \
+              --until="${{ github.event.inputs.until || '2 days ago' }}"
+          fi
+
+      - name: Commit auto-revert tasks (if any)
+        if: failure()
+        run: |
+          if git diff --quiet agent/TASKS.md; then
+            echo "No TASKS.md changes — soak surfaced no actionable failures"
+            exit 0
+          fi
+          git add agent/TASKS.md
+          git commit -m "soak-bot: file auto-revert task(s) for regressed proposals" \
+                     -m "Filed by .github/workflows/postmerge-gauntlet-soak.yml" \
+                     -m "Kit-maintainer: review TASKS.md backlog and decide fix-or-revert."
+          git push origin main
+
+      - name: Open issue summarizing failures
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            await github.rest.issues.create({
+              owner,
+              repo: repo,
+              title: `Post-merge soak gauntlet detected regression(s) — ${new Date().toISOString().slice(0,10)}`,
+              body: `One or more proposals that landed within the soak window failed the re-run.\n\nSee:\n- agent/TASKS.md backlog (auto-filed revert tasks)\n- workflow run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}\n- gauntlet doc: docs/work-flows/19-kit-evolution-gauntlet.md`,
+              labels: ['kit-evolution', 'soak-regression']
+            });

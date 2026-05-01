@@ -55,6 +55,6 @@ agent/.release-state/reflex-auto-submit-consent
 agent/.release-state/rft-cache.txt
 agent/.release-state/last-prep-release
 agent/.release-state/test-ref-cache.txt
+agent/.release-state/test-ref-cache.key
 agent/.release-state/reflex.lock
-agent/.release-state/test-ref-cache.txt
 tests/.psk-optimize-counts.cache

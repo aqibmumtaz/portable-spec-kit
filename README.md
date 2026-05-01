@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.6.15-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.6.27-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1747%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1880%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -58,13 +58,23 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-sp
 **Or paste to any AI agent (Claude, Cursor, Copilot, Windsurf, Cline):**
 > Install the Portable Spec Kit: run `curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash` then read CLAUDE.md and set up my project.
 
-Installs: `portable-spec-kit.md` (~980 lines) · 19 reliability scripts (+ 3 optional helpers) · 25 skill files (JIT-loaded) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
+Installs: `portable-spec-kit.md` (~980 lines) · 26 reliability scripts (+ 3 optional helpers) · 25 skill files (JIT-loaded) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
 
 Open any AI agent after install — personalized profile, project scan, 4-step guided tour, and you're building in under 2 minutes. **[Full install details ↓](#setup)** · **Uninstall:** `bash agent/scripts/psk-uninstall.sh` (preserves your `agent/*.md` pipeline files).
 
 ---
 
 ## Latest Release
+
+**v0.6.27 (Symmetric self-evolution + Tier 3 + bookend release ceremony):** Major kit-evolution release closing the v0.6.7+ residual auto-evolving-QA backlog plus a structural blind spot the user surfaced after Mode C iteration (kit was biased toward addition and blind to consolidation). **ADR-038 — Tier 3 auto-probe-synthesis:** `agent/scripts/psk-blind-spot-synthesize.sh` (~280 LOC) reads `qa-blind-spots.md` `status: open` entries, classifies target into 5 buckets (extract-claims / reference-state / sync-check / new-helper / unknown), scaffolds PR-style proposals at `agent/tasks/proposed/Gxx-<slug>.md` with target-class-specific code templates + audit-trail trailer. **ADR-039 — Reflex bookend release ceremony:** iter 1 = prep-release, iters 2+ skip release ceremony entirely (just QA → Dev), GRANTED convergence runs ONE final refresh-release. N-iteration cycle now runs ceremony exactly 2× (was N×). **ADR-040 — Symmetric Self-Evolution (P9):** five layers — `agent/PHILOSOPHY.md` P9 principle · `psk-coverage-overlap-check.sh` (~210 LOC, 4 modes scan/health/json/proposal) · `/optimize` cat 14 (probe redundancy) · Phase 6 evolution-gauntlet Gate G (build-time check on every kit-evolution proposal) · QA Dim 24 (3 probes 24.1/24.2/24.3, MEDIUM/MINOR `QA-OVERLAP-NN`) · Phase 5 self-reflection mandate ≥1 audit-coverage OVERLAP observation · `OL-NNN` registry parallel to `BS-NNN`. **`psk-close-finding.sh`** lets users close findings without YAML hand-edit (path-with-spaces safe). **Cycle-id rule relaxation:** new rule advances on 0-unclosed-findings + signoff regardless of verdict (closes DENIED-then-externally-fixed trap). **Bonus:** psk-bootstrap-check C7 kit-self detection bug fixed (uses examples/ + tests/sections/ presence); backlog audit cleanup 48→17. 1880 tests (1735 framework + 145 benchmarking); 22/20 sync-check; new N80 (12) + N81 (6) + N82 (15) regressions plus 8 from cycle-04 reflex pass-001.
+
+**v0.6.26 (Per-cycle pass numbering + summary.csv schema v5 + reflex self-test convergence):** closes the user-reported "cycle 2 showing pass 3,4,5 instead of 1,2,3" bug. Pass numbering now resets per cycle (each cycle starts fresh at `pass-001`); composite key `(cycle, pass)` gives unique row identity in `summary.csv` (schema v5 adds `cycle` column). Lifts ADR-037 (reflex self-test 8-finding closure) from v0.6.25 patches into a formal release.
+
+**v0.6.25 (Post-merge soak gauntlet + Tier 1/4/5 auto-evolving QA):** ADR-035 ships `agent/scripts/psk-soak-schedule.sh` (Phase 6 (e) post-merge 48h soak, deferred from v0.6.24). ADR-036 closes Tier 1 (BS-NNN registry seeding), Tier 4 (auto-promote OPEN → CLOSED on Gxx merge), Tier 5 (count-based gauntlet probes for blind-spot density tracking) of the auto-evolving-QA loop. ADR-037 (reflex self-test 8-finding closure landing in patch series).
+
+**v0.6.24 (Self-evolving-plan gap-closure):** Hygiene release. Three rounds of audit-and-close on the v0.6.16-23 self-evolving plan that surfaced 9 sub-deliverables headline commits had claimed-shipped but were missing. Round 1 closed 7 phase sub-deliverables: Phase 3 `reflex/lib/check-rule-conflicts.sh` Phase 0 helper · Phase 6 `docs/work-flows/19-kit-evolution-gauntlet.md` flow doc + `agent/tasks/proposed/` + `agent/tasks/rejected/` directories · Phase 7 `requirement-research.md` skill upgraded to 7 R-categories with mandatory minimum 12 UI/UX rows · `check_ui_requirements_coverage` (PSK017 + PSK017-UI-MIN) sync-check · `ui-design-system.md` skill upgraded with 8 mandatory client-grade primitives. Round 2 closed `install.sh` gaps that would have left `curl | bash` installs missing the entire self-evolution layer (script list 15→28, skills 17→25, reflex/lib helpers 7→30, PHILOSOPHY.md added to download_framework). Round 3 closed five flow-doc omissions caught by Step 4 critic (Phase 0 helpers + REQS-coverage gate + UI polish check). Phase 6 (e) post-merge 48h soak gauntlet deferred to v0.6.25 with formal proposal P01 filed. 1836 tests still passing; 19/19 sync-check checks green; fresh-install verified.
+
+**v0.6.16-23 (Self-Evolving Kit — 7 phases):** P1 Philosophy Primer (8 principles in `agent/PHILOSOPHY.md`, ADR-028) · P2 Self-Reflection Mandate in QA-Agent (≥3 audit-coverage gaps per pass, ADR-029) · P3 Rule-Conflict Detection (`psk-rule-conflicts.sh`, deterministic v1, ADR-030) · P4 REQS-Coverage Gate (`check_reqs_coverage` + `reflex/lib/check-reqs-coverage.sh`, ADR-031) · P5 `/optimize` cat 10/11/12/13 integration (rule-conflicts · philosophy · audit-coverage · UI polish, ADR-032) · P6 Self-Evolution Regression Gauntlet (`psk-evolution-gauntlet.sh` 6 gates A-F + flow doc 19, ADR-033) · P7 Client-Grade Output Guarantee (`psk-ui-polish-check.sh` 8 client-grade UI elements + 8 mandatory design-system primitives, ADR-034). 81 new framework tests across N73-N79.
 
 **v0.6.13 (Nested per-cycle history layout + Dim 23 + cycle-summary aggregator + autoloop convergence):** closes the meta-gap class user surfaced in cycle-01 trace audit (5 issues + 4 sub-gaps), formalizes Dim 23 — Auditor-output hygiene with five new probes (register hygiene · cost data persistence · parallel-directory disambiguation · cross-surface terminology consistency · self-output validation loop) so QA self-evolves to catch this class going forward. Migrates reflex history from flat `cycle-NN-pass-NNN/` to nested `cycle-NN/pass-NNN/`; sandbox mirrors. Per-cycle parent dir hosts a `summary.md` aggregator (`reflex/lib/cycle-summary.sh`). **Drops the hard 3-iter autoloop cap** in favor of convergence-based stopping (GRANTED · REGRESSION · findings_floor · plateau · fix-rate drop); `max_iterations_safety` (default 20) is escape hatch only. **First successful Dev-Agent run end-to-end:** cycle-01-pass-004 closed `QA-NOISE-RE-01` bucket A, all 6 mechanical gates green, fast-forward auto-merge — first time QA→Dev→merge loop closed without manual intervention. 3-layer QA→Dev contract enforcement closes "Dev never spawned on partial QA timeout" silent-skip pattern from cycle-01-pass-002. `reflex/install-into-project.sh` gitignore template aligned to v0.6.13 layout.
 
@@ -170,7 +180,7 @@ Phase 0 produces 8 pre-populated artifacts in pass dir before QA spawns. LLM bud
 - **Design plan §4-5 and §18:** `agent/design/f70-reflex.md` sections updated for v0.6.1 shape.
 - **Adversarial-goal reframing:** convergence criterion narrowed.
 - **Sandbox mechanism:** dual-rooted access documentation added.
-- **14-dimension adversarial hunt:** carries through from v0.6.0.
+- **24-dimension adversarial hunt:** Dim 1-14 carry through from v0.6.0; v0.6.13 added Dim 23 (Auditor-output hygiene); v0.6.17-25 added Dims 15-22 (cost/perf, philosophy self-audit, Self-Reflection); v0.6.27 added Dim 24 (Coverage-overlap audit, P9 Symmetric Self-Evolution).
 - **4-persona testing:** carries through from v0.6.0.
 - **Coverage declaration + regression-vector re-execution:** findings persist with exact invocation + expected assertion across passes.
 - **Flaky-vs-deterministic distinction:** separates root-cause investigation from patch-retry.
@@ -443,7 +453,7 @@ The agent updates `agent/AGENT_CONTEXT.md` at three natural checkpoints — not 
 
 ### The Agent Directory (auto-created in `agent/`)
 
-**9 agent files** form the Persistent Memory: a 6-stage pipeline + 3 support files.
+**10 agent files** form the Persistent Memory: a 6-stage pipeline + 4 support files.
 
 | Tier | File / Dir | Purpose | Updated When |
 |------|------------|---------|-------------|
@@ -456,6 +466,7 @@ The agent updates `agent/AGENT_CONTEXT.md` at three natural checkpoints — not 
 | Support | `RESEARCH.md` | Research index across all stages | When decisions need data |
 | Support | `AGENT.md` | Project rules, stack, brand, AI config, Jira config | Setup, when stack/config changes |
 | Support | `AGENT_CONTEXT.md` | Living state — done, next, decisions, blockers | Every session + after significant work |
+| Support | `PHILOSOPHY.md` | Kit's evolving constitution — 8 principles guiding all rules (kit-only, evolved via gauntlet) | Only via Phase 6 Regression Gauntlet (see plan v0.6.23-22) |
 | Dirs | `design/` | Per-feature design plans (`f{N}-name.md`) | Auto-created per feature |
 | Dirs | `scripts/` | All bash scripts (sync, release, Jira, tracker, 5 workflow orchestrators) | Created during setup |
 | Local | `.release-state/` | Release state + bypass log + critic protocol files (gitignored) | During workflow execution |
@@ -926,6 +937,7 @@ Detailed step-by-step diagrams for every work flow:
 | 16 | **[Feature Design](docs/work-flows/16-feature-design.md)** | Per-feature design plans, 3 triggers, ADL integration, R→F→Plan→ADR→T traceability |
 | 17 | **[Reflex](docs/work-flows/17-reflex.md)** | Post-prep-release Actor-Critic loop — QA-Agent (black-box) finds gaps, Dev-Agent fixes atomically with per-commit gates; installable into any speckit project |
 | 18 | **[Project Orchestration](docs/work-flows/18-project-orchestration.md)** | Natural-language entry point — turns loose requirements into a polished, secure, audited working product via 10 phases (capture → research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature impl → release-prep → reflex audit → handoff) |
+| 19 | **[Kit Evolution Gauntlet](docs/work-flows/19-kit-evolution-gauntlet.md)** | Self-evolution safety harness — every proposed kit rule passes 6 gates (tests · rule-conflicts · philosophy · reflex fixture · /optimize health · manual approval) before merging; rejected proposals form permanent audit trail in agent/tasks/rejected/ |
 
 ---
 

@@ -1104,6 +1104,36 @@ grep -qE "psk-backup|backup|\.bak" "$PROJ/install.sh" 2>/dev/null \
   && pass "migration: install.sh backs up existing non-symlink files" \
   || fail "migration: install.sh has no backup safety for existing files"
 
+# Closes QA-REL-NONDETERM-02 (v0.6.28): test-ref-cache key must include cwd so
+# running test-release-check.sh from a non-PROJ_ROOT cwd cannot pollute the
+# canonical PROJ_ROOT cache with cwd-relative results.
+grep -q "current_cwd=" "$PROJ/tests/test-release-check.sh" 2>/dev/null \
+  && pass "rft-cache: test-ref-cache key includes cwd (QA-REL-NONDETERM-02)" \
+  || fail "rft-cache: test-ref-cache key missing cwd component (regression risk)"
+
+grep -q 'current_key="\${current_head}|\${current_cwd}"' "$PROJ/tests/test-release-check.sh" 2>/dev/null \
+  && pass "rft-cache: cache key composes head|cwd" \
+  || fail "rft-cache: cache key composition wrong"
+
+# Closes QA-AUDIT-CSV-01 (v0.6.28): summary.csv completeness check + score.sh
+# auto-invoke on close-finding. summary.csv must have a row for every closed
+# reflex pass dir; score.sh must run without awk warnings.
+grep -q "check_summary_csv_completeness" "$PROJ/agent/scripts/psk-sync-check.sh" 2>/dev/null \
+  && pass "audit-csv: psk-sync-check.sh has check_summary_csv_completeness (QA-AUDIT-CSV-01)" \
+  || fail "audit-csv: check_summary_csv_completeness missing"
+
+grep -q 'REFLEX_PASS_DIR="\$TARGET_PASS" bash "\$SCORE_SH"' "$PROJ/agent/scripts/psk-close-finding.sh" 2>/dev/null \
+  && pass "audit-csv: psk-close-finding.sh auto-invokes score.sh on last close" \
+  || fail "audit-csv: psk-close-finding.sh missing score.sh hook"
+
+# Closes QA-AUDIT-SCORE-AWK-01 (v0.6.28): score.sh must emit no awk warnings
+# (was tripping on multi-line "0\n0" produced by `grep -c ... || echo 0`).
+SCORE_AWK_ERR=$(REFLEX_PASS_DIR="$PROJ/reflex/history/cycle-03/pass-001" bash "$PROJ/reflex/lib/score.sh" 2>&1 | grep -c "^awk:" 2>/dev/null)
+SCORE_AWK_ERR="${SCORE_AWK_ERR:-0}"
+[ "$SCORE_AWK_ERR" = "0" ] \
+  && pass "score.sh: no awk warnings (QA-AUDIT-SCORE-AWK-01)" \
+  || fail "score.sh: emits $SCORE_AWK_ERR awk warning lines"
+
 section "60f. Verbatim-Quote Critic Verification (v0.5.15)"
 
 # verify_quotes function present in psk-validate.sh

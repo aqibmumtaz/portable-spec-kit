@@ -50,16 +50,34 @@ TESTS_FAILED=0
 # invocations of this script in Phase 0 + sync-check no longer re-run the whole test suite,
 # dropping Phase 0 wall-clock from ~74s to <10s on the kit. Bypass via PSK_TEST_REF_NO_CACHE=1.
 TEST_REF_CACHE="agent/.release-state/test-ref-cache.txt"
+TEST_REF_CACHE_KEY="agent/.release-state/test-ref-cache.key"
 TEST_CACHE_FILE="$TEST_REF_CACHE"
 mkdir -p "$(dirname "$TEST_REF_CACHE")" 2>/dev/null || true
-# Invalidate cache if any tests/*.sh is newer than it
+# Cache invalidation (v0.6.25 + ADR-037 — closes QA-KIT-CACHE-01):
+# Cache key = git HEAD SHA + cwd. Cache invalidates whenever HEAD changes OR
+# cwd changes (closes QA-REL-NONDETERM-02 v0.6.28: previously running this
+# script from a non-PROJ_ROOT cwd polluted the cache with cwd-relative test
+# results that then "won" against canonical PROJ_ROOT runs) OR any tests/* /
+# agent/scripts/* / src/ file is newer. Previous logic (v0.6.11) only
+# checked tests/*.sh mtime; v0.6.25 added HEAD-SHA gating; v0.6.28 added cwd
+# component to the cache key so per-cwd results don't cross-pollinate.
+current_head=$(git rev-parse HEAD 2>/dev/null || echo "no-git")
+current_cwd=$(pwd 2>/dev/null || echo "no-cwd")
+current_key="${current_head}|${current_cwd}"
 if [ -f "$TEST_REF_CACHE" ] && [ "${PSK_TEST_REF_NO_CACHE:-0}" != "1" ]; then
-  newer=$(find tests -type f -name "*.sh" -newer "$TEST_REF_CACHE" 2>/dev/null | head -1)
-  [ -n "$newer" ] && rm -f "$TEST_REF_CACHE"
+  cached_key=""
+  [ -f "$TEST_REF_CACHE_KEY" ] && cached_key=$(cat "$TEST_REF_CACHE_KEY" 2>/dev/null || echo "")
+  if [ "$current_key" != "$cached_key" ]; then
+    rm -f "$TEST_REF_CACHE"
+  else
+    newer=$(find tests agent/scripts src 2>/dev/null -type f \( -name "*.sh" -o -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.js" \) -newer "$TEST_REF_CACHE" 2>/dev/null | head -1)
+    [ -n "$newer" ] && rm -f "$TEST_REF_CACHE"
+  fi
 elif [ "${PSK_TEST_REF_NO_CACHE:-0}" = "1" ]; then
   rm -f "$TEST_REF_CACHE"
 fi
 touch "$TEST_REF_CACHE" 2>/dev/null || true
+echo "$current_key" > "$TEST_REF_CACHE_KEY" 2>/dev/null || true
 # No EXIT trap — file persists for next invocation by design
 
 # Detect test runner from project root

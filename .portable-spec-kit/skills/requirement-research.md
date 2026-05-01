@@ -136,14 +136,38 @@ After all 7 dimensions are written, generate REQS.md `## Requirements` section. 
 ...
 ```
 
-Categories (use these labels):
-- **Functional** — what the app does (R1-R10)
-- **Non-functional** — perf budgets, scalability, reliability (R11-R15)
-- **Security** — auth, authz, data protection, input validation (R16-R20)
-- **UX/UI** — responsive, dark mode, motion, accessibility (R21-R25)
-- **Operational** — logging, monitoring, error handling, deploy (R26-R30)
+Categories (use these 7 labels — Phase 7 v0.6.23+, P8 Client-Grade Output):
 
-Aim for **20-30 R-rows** for a typical mid-sized app. Smaller projects can have 12-18; larger may hit 35-50. If exceeding 50, group into `## R Group N` sub-sections.
+- **Functional** — what the app does (typically 8-12 rows)
+- **Non-functional** — perf budgets, scalability, reliability (3-5 rows)
+- **Technical** — stack choices, runtime, language, framework version pins (2-4 rows)
+- **Non-technical** — legal, privacy, content, branding, business constraints (1-3 rows)
+- **UI/UX (MANDATORY MINIMUM 12 rows)** — see breakdown below. Capped at 20 rows to avoid over-spec
+- **Operational** — logging, monitoring, error handling, deploy, CI/CD (3-5 rows)
+- **Security** — auth, authz, data protection, input validation (4-6 rows)
+
+### UI/UX 12-bullet minimum coverage (P8 — Client-Grade Output by Default)
+
+Every project that ships UI MUST have R-rows covering these 12 areas. The kit's `psk-ui-polish-check.sh` and `check_ui_requirements_coverage` enforce this — projects that skip rows here ship as half-done products. SearchSocialTruth's first cycle missed 7 of the 12 (no onboarding, no skip-link, no aria-live, no confidence bar, no share button, no manual dark-mode toggle, no WhatsApp QR) — that gap is what motivated this rule.
+
+| # | Area | Example R-row |
+|---|---|---|
+| 1 | Layout / page structure | "Mobile-first responsive layout, breakpoints sm/md/lg/xl" |
+| 2 | Component primitives | "12 design-system primitives ship: Button/Card/Input/Modal/Tabs/Toast/Tooltip/Dropdown/Pagination/Spinner/Badge/Banner" |
+| 3 | Interactions | "Verdict card click reveals sources panel; Esc closes" |
+| 4 | Accessibility (WCAG 2.1 AA) | "Skip-link, aria-live verdicts, focus rings, screen-reader compatibility" |
+| 5 | Responsive | "Touch targets ≥44×44px, single column <768px" |
+| 6 | Dark mode | "Auto + manual toggle, persisted, respects prefers-color-scheme, contrast 4.5:1 / 3:1" |
+| 7 | Animation / motion | "All animations gated by prefers-reduced-motion: reduce" |
+| 8 | Loading / empty / error states | "Every async surface has skeleton + empty hint + error boundary" |
+| 9 | Onboarding | "First-run 3-step tour with always-visible Skip; persisted" |
+| 10 | Brand assets | "Favicon, logo, OG image, theme color in <head>" |
+| 11 | Internationalization | "Top-N locales w/ RTL where needed; Intl.DateTimeFormat" |
+| 12 | Forms | "Inline validation, aria-describedby on errors, helpful empty-state copy" |
+
+If the user's project genuinely has zero UI surface (CLI tool, library, server-only API), the agent surfaces that with a confirm-with-user gate — `"This appears to be a non-UI project. Skip the UI/UX category? (y/n)"` — and only on `y` does the kit drop the 12-row minimum.
+
+Aim for **25-40 R-rows total** for a typical mid-sized app. Smaller projects can have 18-25; larger may hit 50+. If exceeding 60, group into `## R Group N` sub-sections.
 
 ## Honesty rules
 

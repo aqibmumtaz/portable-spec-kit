@@ -1,12 +1,30 @@
 # Flow 17 — Reflex (Adversarial Verbal Actor-Critic Refinement Loop, AVACR)
 
-Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 16 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, fixes atomically on an isolated dev branch with per-commit mechanical gates, and audits sibling-class weaknesses. Convergence = QA hunted hard and cannot find a blocker.
+Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 24 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, fixes atomically on an isolated dev branch with per-commit mechanical gates, and audits sibling-class weaknesses. Convergence = QA hunted hard and cannot find a blocker.
 
 Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operational name: **reflex**. Primary entry: `reflex/run.sh` (see §Commands). Internal machinery: `reflex/lib/spawn-qa.sh`, `reflex/lib/spawn-dev.sh`, `reflex/lib/file-bugs.sh`, `reflex/lib/gates.sh`, `reflex/lib/regression-diff.sh`, `reflex/lib/score.sh`, `reflex/lib/preconditions.sh`, `reflex/lib/loop.sh`, `reflex/lib/update-eval-trace.sh`, `reflex/lib/prune-history.sh`.
 
+**Phase 0 pre-compute helpers (run before QA-Agent spawns):** `reflex/lib/check-reqs-coverage.sh` (v0.6.19+, ADR-031 — REQS-coverage gate emitting `reqs-coverage.yaml`), `reflex/lib/check-rule-conflicts.sh` (v0.6.20+, ADR-030 — rule-conflict scan emitting `rule-conflicts.yaml`), `reflex/lib/check-rft-integrity.sh` (R→F→T deep audit). All three are deterministic, sub-second, free, and run on every pass before the QA-Agent gets context. Findings auto-promote to QA's input so the QA-Agent reasons against pre-computed gaps rather than rediscovering them probabilistically.
+
+**QA blind-spots registry (v0.6.25+, ADR-036):** `reflex/history/qa-blind-spots.md` is an append-only YAML log of every QA miss surfaced by humans. QA reads it at Phase 0 Step 0.0 — before any other input — per `reflex/prompts/qa-agent.md` mandate. Every entry with `status: open` generates a probe in the test plan. Skipping the registry read is itself a finding (`QA-BLIND-SKIP-NN`). Status flow: `open` (probe needed) → `probed` (deterministic kit probe exists) → `retired` (class no longer relevant). Three seed entries on landing — BS-001 REQS-coverage gap class, BS-002 client-grade UI gap class, BS-003 install.sh out-of-sync class.
+
+**Probe-coverage metric (v0.6.25+):** `reflex/history/summary.csv` schema v4 adds `probe_coverage_pct` = (claims with `status: verified` or `status: falsified`) / total claims emitted by `extract-claims.sh`. Empty when claims.yaml absent. Trend upward over passes signals a more verifiable project. Auto-migrates older v1/v2/v3 CSVs in place.
+
+**Mode A claim probe-types (v0.6.25+, extract-claims extensions):** four new claim types alongside the original eight (version-match · test-count · feature-count · capability-exists · file-count · install-works · dimension-count · skill-count). The new four — `api-route` (express/fastify/router-style route registrations in src/lib/app/api/server), `perf-budget` (`<Nms p95` / `<Ns` patterns extracted from REQS/SPECS/PLANS/README), `error-message-text` (15-80 char user-facing strings in agent/REQS.md / SPECS.md / README.md / HANDOFF.md), `security-rule` (anti-pattern absence claims like "no eval", "no pickle", "no shell=True"). Each emitted with a `probe_target` QA must verify or falsify.
+
+**Symmetric self-evolution (v0.6.27+, P9 + ADR-040):** kit hunts for both gaps AND overlaps. `agent/scripts/psk-coverage-overlap-check.sh` extracts coverage signatures from 24 dimensions + Phase 0 helpers + sync-check fns + /optimize cats; reports overlap clusters. Wired into `/optimize` cat 14 + Phase 6 evolution-gauntlet Gate G. New QA `Dimension 24 — Coverage-overlap audit` (3 probes per pass) files `QA-OVERLAP-NN` findings. Phase 5 self-reflection now mandates ≥1 overlap observation. `OL-NNN` registry in `qa-blind-spots.md` tracks human-flagged overlaps. Bypass `PSK_OVERLAP_CHECK_DISABLED=1`.
+
+**Tier 3 auto-probe-synthesis (v0.6.27+, ADR-038):** `agent/scripts/psk-blind-spot-synthesize.sh` reads BS-NNN `status: open` entries, classifies target, scaffolds PR-style proposals at `agent/tasks/proposed/Gxx-<slug>.md`. Closes Tier 3 of v0.6.7+ residual plan.
+
+**Manual finding closure (v0.6.27+):** `agent/scripts/psk-close-finding.sh QA-XXX-NN "rationale"` marks a finding closed without YAML hand-edit.
+
+**Cycle-id rule (v0.6.28 — GRANTED converges, ADR-041):** the cycle advances when the latest pass's signoff verdict is `GRANTED`, regardless of whether non-blocking findings remain. GRANTED is the auditor's "ship-ready" signal; any leftover MINOR / non-blocking findings stay queued for the next cycle, no wasted re-verify pass needed. The v0.6.27 escape hatch (advance on 0 unclosed findings + signoff-present, verdict-agnostic) still applies for DENIED-then-externally-fixed cases — `count_findings_yaml`'s closed-status filter is the audit safeguard. The rule fires identically in `compute_next_cycle_id` (run.sh) and `next_cycle_id` (loop.sh).
+
+**Reflex history retention bloat (v0.6.2+, bounded disk use):** `reflex/lib/prune-history.sh` enforces caps from `reflex/config.yml` `history_retention.*`. Per-pass directories capped at `pass_dirs_keep` (default 10). Dev branches at `dev_branches_keep` (default 3, unhappy paths only). QA sandbox worktrees at `qa_sandbox_keep` (**default 0 since v0.6.28, ADR-043** — current pass purges immediately after QA via `reflex/lib/purge-current-sandbox.sh`; prior sandboxes have no consumer). `REFLEX_EVAL_TRACE.md` and `summary.csv` are kept forever. Pruning runs automatically at the start of every pass — pruned passes remain in the register with an `_(archived)_` marker. Detection: `/optimize` Category 8 flags per-pass dirs >2× retention limit and register >100KB. Manual clean slate: `bash reflex/run.sh --purge-history --confirm`.
+
 ## When to run
 
-Reflex is **decoupled from prep-release cadence** but the end-to-end `autoloop` mode (default) orchestrates release-prep itself. Every iteration starts with a release commit so QA always sees a properly-versioned state — iter 1 runs `prepare` (full version bump), iter 2+ runs `refresh` (no version bump, same critic gates) so a single converged reflex cycle does not inflate versions.
+Reflex is **decoupled from prep-release cadence** but the end-to-end `autoloop` mode (default) orchestrates release-prep itself. **The release-ceremony bookend pattern (ADR-039, v0.6.27+):** iter 1 runs `prepare` (version bump — cycle start) · iters 2+ skip release ceremony entirely (just QA → Dev) · GRANTED convergence runs **one final `refresh`** to capture all the cycle's Dev fixes into `RELEASES.md` + `CHANGELOG.md` + counts/badges/PDFs at once. This means a single converged reflex cycle bumps the version exactly once (start) and updates release notes exactly once (end), with N QA→Dev iterations in between unencumbered by release noise. Bypass `PSK_REFLEX_AUTO_REFRESH=0` to skip the final refresh. Single-pass mode (`reflex/run.sh single`) doesn't auto-bump or auto-refresh — it prints a tip when GRANTED + fixes landed so the user can manually run `bash agent/scripts/psk-release.sh refresh`.
 
 - **Primary (recommended):** `bash reflex/run.sh` — default mode is autoloop. Chains prep-release + QA + Dev + iterate until convergence (GRANTED, REGRESSION, plateau, or other convergence signal).
 - **Single pass (debugging):** `bash reflex/run.sh single` — one pass only, assumes HEAD is already a prep-release commit.
@@ -15,7 +33,7 @@ Reflex is **decoupled from prep-release cadence** but the end-to-end `autoloop` 
 
 ## How QA derives its probe set — 7-layer Senior-Engineer system (v0.6.7+)
 
-Reflex's QA-Agent used to hunt a closed 16-dimension checklist from the AVACR paper. As of v0.6.7 it is a **Senior / Principal-level QA system with 7 verification layers** — probes derive from the project's spec pipeline + kit toolkit + running system, never from a human-curated list. The 16-dimension checklist is preserved as a safety net, not the primary driver.
+Reflex's QA-Agent used to hunt a closed 24-dimension checklist from the AVACR paper. As of v0.6.7 it is a **Senior / Principal-level QA system with 7 verification layers** — probes derive from the project's spec pipeline + kit toolkit + running system, never from a human-curated list. The 24-dimension checklist is preserved as a safety net, not the primary driver.
 
 | # | Layer | Helper / Phase | Output artifact in pass dir |
 |---|---|---|---|
@@ -38,7 +56,7 @@ Plus the v0.6.6 Phase 0 inputs (still active): `claims.yaml` (Mode A) + `state-d
 - **Use the kit toolkit** — psk-* scripts as research instruments (Layer 6)
 - **External reality** — WebSearch CVEs / OWASP / deprecations (Layer 7)
 
-Layers 1, 2, 6 are **deterministic bash pre-compute** (<2s + <200 tokens combined). LLM budget redirects to semantic verification (Layers 3-5, 7) instead of re-deriving project structure. Layer 1 / 6 CRITICAL signals **short-circuit** the 16-dim sweep — fix structural breaks first, behaviors second.
+Layers 1, 2, 6 are **deterministic bash pre-compute** (<2s + <200 tokens combined). LLM budget redirects to semantic verification (Layers 3-5, 7) instead of re-deriving project structure. Layer 1 / 6 CRITICAL signals **short-circuit** the 24-dim sweep — fix structural breaks first, behaviors second.
 
 ## End-to-end flow — one autoloop invocation
 
@@ -80,7 +98,7 @@ Autoloop cycle state lives in `agent/.release-state/loop-state.yml` (records cyc
 │     QA-Agent reads Phase 0 artifacts FIRST, then REQS/      │
 │     SPECS/PLANS/TASKS/docs + running system. Writes 10+     │
 │     files into pass dir (claims + state-diff + assumptions  │
-│     + 16-dim output per v0.6.6). See Artifacts table.       │
+│     + 24-dim output per v0.6.6). See Artifacts table.       │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
@@ -144,7 +162,7 @@ Every pass directory is `reflex/history/cycle-NN/pass-NNN/` (autoloop) or `refle
 | **`claims.yaml`** (v0.6.6+) | `reflex/lib/extract-claims.sh` (pre-compute, LLM-free) | **Phase 0 Mode A** — every public claim extracted from README / portable-spec-kit.md / SPECS / CHANGELOG / RELEASES / AGENT_CONTEXT / qa-agent.md with `probe_type` + `probe_target`. QA verifies each; unverified or vague = finding. |
 | **`state-diff.yaml`** (v0.6.6+) | `reflex/lib/state-diff.sh` (pre-compute, LLM-free) | **Phase 0 Mode B** — actual project state vs `reflex/reference-state/speckit-project.yaml`. Every delta pre-classified by severity (CRITICAL / MAJOR / MINOR). CRITICAL deltas auto-promote to findings. |
 | **`assumptions.md`** (v0.6.6+) | QA sub-agent (Phase 1) | **Phase 0 Mode C** — QA lists every implicit assumption its probes operate under. Each MUST have a probe that verifies or falsifies it. Unverifiable assumption = MAJOR `QA-ASSUMPTION-NN` finding. |
-| `findings.yaml` | QA sub-agent | Structured findings (id · priority · scope · dimension · citable_quote · regression_vector · recommendation) — peer exchange to Dev-Agent. Now includes claim-derived + state-diff + assumption + 16-dim-derived findings. |
+| `findings.yaml` | QA sub-agent | Structured findings (id · priority · scope · dimension · citable_quote · regression_vector · recommendation) — peer exchange to Dev-Agent. Now includes claim-derived + state-diff + assumption + 24-dim-derived findings. |
 | `signoff.md` | `spawn-qa.sh` + QA sub-agent | Verdict (GRANTED / DENIED), blocking findings, deferred decisions, human-arbitration items |
 | `verdict.md` | `run.sh` write_verdict | Machine-parsed pass summary (mode, findings, fixes, gates status, timestamp) |
 | `investigation-log.md` | QA sub-agent | QA's reasoning trail — why each finding was filed; Dev reads this for context + sibling-class hardening |
@@ -160,7 +178,7 @@ Every pass directory is `reflex/history/cycle-NN/pass-NNN/` (autoloop) or `refle
 | `gates-result.md` | `gates.sh` | Mechanical gate PASS/FAIL per gate for this pass |
 | `.cycle-meta` | `run.sh` | Cycle + iteration metadata (`cycle=3 iteration=2 mode=full self_test=true started=...`) |
 
-**The sandbox worktree is gitignored and purged** after QA finishes (structural enforcement — Dev cannot read QA's private workspace). Prior sandboxes (last 3) are retained for QA's own cross-pass debugging only; Dev never reads them.
+**The sandbox worktree is gitignored and purged unconditionally** after QA finishes via `reflex/lib/purge-current-sandbox.sh` (structural enforcement — Dev cannot read QA's private workspace). The purge runs regardless of finding count: both `file-bugs.sh` (when QA filed findings) and `run.sh`'s empty-pass shortcut (when QA filed 0 findings) delegate to the same helper, so empty passes don't leak ~167 MB sandboxes (ADR-042). Default retention `qa_sandbox_keep: 0` since v0.6.28 (ADR-043) — no agent reads prior sandboxes; the disk is reclaimed immediately. Set retention >0 in `reflex/config.yml` only if you want manual cross-pass debug worktrees.
 
 ## The file-based protocol (in-flight)
 
@@ -224,7 +242,7 @@ After 3 autoloop invocations (cycle 1: 3 iters, cycle 2: 2 iters, cycle 3: 3 ite
 
 - On-disk pass dirs capped at `history_retention.pass_dirs_keep` (default 10) via `prune-history.sh`.
 - Older pass dirs pruned, but their rows persist in `summary.csv` + `REFLEX_EVAL_TRACE.md` as `_(archived)_` blocks (status still resolvable from `agent/TASKS.md`, drill-down links removed — no dead links).
-- Pass numbers **globally monotonic**; cycle numbers **monotonic across autoloops**. Each pass's flat identity (`cycle-NN-pass-NNN` or `standalone-pass-NNN`) is unique and alphabetically sortable.
+- Pass numbers **per-cycle** (v0.6.26+ — each cycle starts fresh at `pass-001`); cycle numbers **monotonic across autoloops**. Composite key `(cycle, pass)` gives unique row identity in `summary.csv` (schema v5+). Flat identity (`cycle-NN-pass-NNN` or `standalone-pass-NNN`) remains globally unique because cycle numbers are monotonic.
 
 ## Safety rails
 
@@ -313,7 +331,7 @@ precondition:
 history_retention:
   pass_dirs_keep: 10         # reflex/history/<pass>/ on disk
   dev_branches_keep: 3       # reflex/dev-* unhappy branches (GRANTED deleted immediately)
-  qa_sandbox_keep: 3         # reflex/sandbox/qa-*/ worktrees
+  qa_sandbox_keep: 0         # reflex/sandbox/cycle-NN/pass-NNN/ worktrees (v0.6.28: current purges immediately, no prior retained)
   register_archive_kb: 200   # roll REFLEX_EVAL_TRACE.md into chapter archive past this size
 upstream_submission:
   mode: manual               # manual | prompt | auto
@@ -365,7 +383,7 @@ reflex/lib/external-research.sh (QA Layer 7): scans project manifests (package.j
 
 reflex/lib/auto-extract-adl.sh (Dev Layer 7): post-pass, scans Dev's commits for substantive bodies (≥200 chars) with rationale keywords. Drafts ADL entries to agent/.release-state/adl-drafts.md.
 
-The original 16-dimension checklist is preserved as a safety net — runs after the 7 layers, catches classes the layers might miss. Short-circuit on CRITICAL state-diff: if Phase 0 flags a CRITICAL delta (e.g. install.sh never ran), QA halts with that single finding instead of wasting budget on a 16-dim sweep of a structurally-broken project.
+The original 24-dimension checklist is preserved as a safety net — runs after the 7 layers, catches classes the layers might miss. Short-circuit on CRITICAL state-diff: if Phase 0 flags a CRITICAL delta (e.g. install.sh never ran), QA halts with that single finding instead of wasting budget on a 24-dim sweep of a structurally-broken project.
 
 ### Phase 0 pre-compute — deterministic bash, LLM-free (v0.6.6)
 
@@ -373,7 +391,7 @@ reflex/lib/extract-claims.sh (Mode A): walks README, portable-spec-kit.md, SPECS
 
 reflex/reference-state/speckit-project.yaml + reflex/lib/state-diff.sh (Mode B): static reference defining what a complete speckit project must contain (required files, pipeline files, dirs, git hooks, entry-point symlinks, exclusions). State-diff compares actual vs reference and emits state-diff.yaml with every delta pre-classified by severity. CRITICAL deltas auto-promote to CRITICAL findings. Kit-self auto-detected — skips user-project-only checks.
 
-QA Phase 0 wiring in reflex/lib/spawn-qa.sh: both helpers run BEFORE sandbox creation so claims.yaml + state-diff.yaml land in the pass directory. QA reads these in Phase 0 (no LLM cost to re-derive) and uses them to plan Phase 1. The 16-dim checklist is explicitly labeled "safety net" catching classes the three modes might miss.
+QA Phase 0 wiring in reflex/lib/spawn-qa.sh: both helpers run BEFORE sandbox creation so claims.yaml + state-diff.yaml land in the pass directory. QA reads these in Phase 0 (no LLM cost to re-derive) and uses them to plan Phase 1. The 24-dim checklist is explicitly labeled "safety net" catching classes the three modes might miss.
 
 Assumption surfacing (Mode C) in reflex/prompts/qa-agent.md: every pass writes assumptions.md listing every implicit assumption ("kit is installed," "test harness exits 0 on green," "every [x] feature implemented"). For each, QA MUST write a probe that verifies or falsifies it. Unverifiable assumption = MAJOR QA-ASSUMPTION-NN finding.
 
@@ -442,7 +460,7 @@ Two parallel directories with similar naming have different lifecycles. Confusio
 
 **`reflex/history/cycle-NN/pass-NNN/`** — PERMANENT record. Every pass produces this: `findings.yaml`, `signoff.md`, `verdict.md`, `coverage.md`, `qa-usage.yaml`, `behavioral-tests/`, `philosophy-gaps.md`, etc. Committed to git. Cross-cycle register `REFLEX_EVAL_TRACE.md` indexes these. Pruned only by explicit `bash reflex/run.sh --reset --confirm` or `prune-history.sh` retention cap.
 
-**`reflex/sandbox/cycle-NN/pass-NNN/`** — TRANSIENT debug worktree. Created by `spawn-qa.sh` at pass start with Dev's narrative files (`agent/AGENT.md` + `agent/AGENT_CONTEXT.md`) physically removed for fresh-context isolation. Purged by `file-bugs.sh` immediately after extracting findings into history dir — structural enforcement that Dev-Agent cannot read QA's private workspace. Last 2-3 sandboxes retained for cross-pass debugging (`qa_sandbox_keep` config in `reflex/config.yml`). Gitignored.
+**`reflex/sandbox/cycle-NN/pass-NNN/`** — TRANSIENT debug worktree. Created by `spawn-qa.sh` at pass start with Dev's narrative files (`agent/AGENT.md` + `agent/AGENT_CONTEXT.md`) physically removed for fresh-context isolation. Purged unconditionally by `reflex/lib/purge-current-sandbox.sh` (called from both `file-bugs.sh` post-findings and `run.sh`'s empty-pass shortcut) immediately after QA finishes — structural enforcement that Dev-Agent cannot read QA's private workspace. Default retention `qa_sandbox_keep: 0` (ADR-043, v0.6.28); set >0 in `reflex/config.yml` only if you want prior sandboxes for manual cross-pass debug. Gitignored.
 
 **Why it looks confusing:** sandbox and history layouts mirror each other (same `cycle-NN/pass-NNN/` shape under different roots). After pass-N runs, the sandbox is purged but the history dir is committed. So `ls reflex/sandbox/` shows fewer directories than `ls reflex/history/`. This is correct behavior, not a bug.
 

@@ -36,7 +36,7 @@ The orchestrator drives ten phases sequentially. Each phase has a primary delive
 | 6 | **scaffold** | Source tree + auth scaffolding + middleware stack + input validation + secret hygiene + CI workflow + health endpoint + API versioning | `src/` + `tests/` + `.env.example` + `README.md` | 5-10 min |
 | 7 | **features** | Feature-by-feature loop: design plan → tests (red) → implement (green) → run gates → commit (one feature = one commit) → mark `[x]` | `agent/design/f{N}.md` per feature + commits + tests | 30-90 min |
 | 8 | **release-prep** | Run kit standard release ceremony — `bash agent/scripts/psk-release.sh prepare` then iterate `next` through 10 steps with critic spawns at Step 4 + Step 9 | Version bump + RELEASES + CHANGELOG entries + dual-gate validation | 10-15 min |
-| 9 | **reflex-audit** | Reflex autoloop until convergence (GRANTED / REGRESSION / plateau / fix-rate drop) — QA-Agent + Dev-Agent peer-exchange across 23 dimensions | `reflex/history/cycle-NN/pass-NNN/` | 30-60 min |
+| 9 | **reflex-audit** | Reflex autoloop until convergence (GRANTED / REGRESSION / plateau / fix-rate drop) — QA-Agent + Dev-Agent peer-exchange across 24 dimensions | `reflex/history/cycle-NN/pass-NNN/` | 30-60 min |
 | 10 | **final-handoff** | Verify R→F→T coverage, polish README runtime instructions, generate one-page `HANDOFF.md`, final commit, summary to user | `README.md` + `HANDOFF.md` | 5 min |
 
 **Sequence:** raw-req → capture → research → expand-reqs → specs-plans → ui-system → scaffold → features → release-prep → reflex-audit → final-handoff → polished, secure, working, audited project

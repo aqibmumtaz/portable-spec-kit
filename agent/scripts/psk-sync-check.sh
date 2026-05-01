@@ -1033,6 +1033,240 @@ check_agent_md_stack() {
 # is blocked here. Runs only when the current branch matches the pattern;
 # on main / feature branches this check is a no-op (it would be too
 # aggressive to block all edits to these files everywhere).
+# ───────────────────────────────────────────────────────────────────
+# check_reqs_coverage (v0.6.19+, ADR-031)
+# Enforces P4 — Bidirectional R→F→T (PHILOSOPHY.md). Every R-row in
+# agent/REQS.md maps to ≥1 F-row in agent/SPECS.md (or has a documented
+# scope-change in SPECS.md "Out of scope" section). Numeric drift between
+# REQS-acceptance and SPECS-acceptance / code constants flagged.
+#
+# Skip silently if agent/REQS.md or agent/SPECS.md missing (kit projects
+# may not have user-style REQS structure). Bypass via env:
+#   PSK_REQS_COVERAGE_DISABLED=1
+# ───────────────────────────────────────────────────────────────────
+check_reqs_coverage() {
+  if [ "${PSK_REQS_COVERAGE_DISABLED:-0}" = "1" ]; then
+    return 0
+  fi
+
+  local reqs="$PROJ_ROOT/agent/REQS.md"
+  local specs="$PROJ_ROOT/agent/SPECS.md"
+
+  # Skip if either file missing — kit's own REQS may not follow this pattern
+  if [ ! -f "$reqs" ] || [ ! -f "$specs" ]; then
+    return 0
+  fi
+
+  # Skip if REQS.md doesn't have R{N} pattern (kit's own REQS uses prose, not R{N})
+  if ! grep -qE "^#### R[0-9]+ —|^### R[0-9]+ —|^## R[0-9]+ —" "$reqs" 2>/dev/null; then
+    return 0
+  fi
+
+  # Extract R-row IDs from REQS
+  local r_ids
+  r_ids=$(grep -oE "^#+ R[0-9]+ — " "$reqs" | grep -oE "R[0-9]+" | sort -u)
+  local r_count
+  r_count=$(echo "$r_ids" | wc -l | tr -d ' ')
+
+  # Extract F-row IDs from SPECS
+  local f_ids
+  f_ids=$(grep -oE "^#+ F[0-9]+ — " "$specs" | grep -oE "F[0-9]+" | sort -u)
+  local f_count
+  f_count=$(echo "$f_ids" | wc -l | tr -d ' ')
+
+  # For each R-row, check if it has a "Maps to: F{N}" pointing to an existing F-row
+  # OR if it appears in SPECS "Out of scope" section as scope-change
+  local uncovered_rs=""
+  local uncovered_count=0
+  for rid in $r_ids; do
+    # Find the "Maps to:" line for this R-row
+    local maps_to_line
+    maps_to_line=$(awk -v rid="$rid" '
+      /^#+ '"$rid"' — / { found=1; next }
+      found && /^#+ R[0-9]+ — / { exit }
+      found && /^- \*\*Maps to:\*\*/ { print; exit }
+    ' "$reqs" 2>/dev/null)
+
+    if [ -z "$maps_to_line" ]; then
+      uncovered_rs="$uncovered_rs $rid(no-maps-to)"
+      uncovered_count=$((uncovered_count + 1))
+      continue
+    fi
+
+    # Check if it maps to "Cross-cut" without a real F-row
+    if echo "$maps_to_line" | grep -qiE "Cross-cut|cluster" && ! echo "$maps_to_line" | grep -qoE "F[0-9]+"; then
+      uncovered_rs="$uncovered_rs $rid(cross-cut-orphan)"
+      uncovered_count=$((uncovered_count + 1))
+      continue
+    fi
+
+    # Extract F-id from Maps to: line
+    local f_target
+    f_target=$(echo "$maps_to_line" | grep -oE "F[0-9]+" | head -1)
+    if [ -z "$f_target" ]; then
+      uncovered_rs="$uncovered_rs $rid(no-f-target)"
+      uncovered_count=$((uncovered_count + 1))
+      continue
+    fi
+
+    # Check the F-target actually exists in SPECS
+    if ! echo "$f_ids" | grep -qF "$f_target"; then
+      # F-target referenced but doesn't exist as a feature in SPECS
+      # Check if R-row is documented in SPECS "Out of scope" section as scope-change
+      if ! awk '/^## .*Out of scope/,/^## /' "$specs" 2>/dev/null | grep -qF "$rid"; then
+        uncovered_rs="$uncovered_rs $rid(maps-to-missing-$f_target)"
+        uncovered_count=$((uncovered_count + 1))
+      fi
+    fi
+  done
+
+  if [ "$uncovered_count" -eq 0 ]; then
+    emit_pass "REQS coverage: all $r_count R-rows mapped to existing F-rows in SPECS (P4 Bidirectional R→F→T)"
+  else
+    emit_issue "PSK016" "reqs-coverage" \
+      "$uncovered_count of $r_count R-rows uncovered:$uncovered_rs" \
+      "Either add F-row to SPECS that owns the R-row · OR document scope-change in SPECS §Out of scope · OR fix Maps to: line. Bypass: PSK_REQS_COVERAGE_DISABLED=1"
+  fi
+}
+
+check_ui_requirements_coverage() {
+  if [ "${PSK_UI_REQS_COVERAGE_DISABLED:-0}" = "1" ]; then
+    return 0
+  fi
+
+  local reqs="$PROJ_ROOT/agent/REQS.md"
+  local specs="$PROJ_ROOT/agent/SPECS.md"
+
+  if [ ! -f "$reqs" ] || [ ! -f "$specs" ]; then
+    return 0
+  fi
+
+  if ! grep -qE "^#### R[0-9]+ —|^### R[0-9]+ —" "$reqs" 2>/dev/null; then
+    return 0
+  fi
+
+  # Extract UI/UX-tagged R-rows. Match `**Category:** UI/UX` (and minor variants).
+  local ui_rows
+  ui_rows=$(awk '
+    /^#+ R[0-9]+ — / { rid=$0; sub(/^#+ /, "", rid); sub(/ —.*/, "", rid); next }
+    rid && /Category:\*\*[[:space:]]+UI\/UX|Category:\*\*[[:space:]]+UI[[:space:]]*\/[[:space:]]*UX|Category:\*\*[[:space:]]+UX\/UI/ { print rid; rid="" }
+    /^#+ R[0-9]+ — / { rid=$0; sub(/^#+ /, "", rid); sub(/ —.*/, "", rid) }
+  ' "$reqs" 2>/dev/null | sort -u)
+
+  local ui_count
+  ui_count=$(echo "$ui_rows" | grep -c '^R' 2>/dev/null || echo 0)
+
+  if [ "$ui_count" = "0" ]; then
+    # Project has no UI/UX-tagged rows. If REQS uses the new categorization,
+    # this may itself be a finding — but we don't enforce here unless the
+    # project ships UI surface. Detection deferred to psk-ui-polish-check.sh.
+    return 0
+  fi
+
+  # Enforce 12-row minimum for projects that ship UI (Phase 7 mandate).
+  if [ "$ui_count" -lt 12 ]; then
+    emit_issue "PSK017-UI-MIN" "ui-reqs-coverage" \
+      "Only $ui_count UI/UX R-rows in REQS.md (Phase 7 mandates ≥12 unless explicit no-UI confirm). Rows: $(echo "$ui_rows" | tr '\n' ' ')" \
+      "Add R-rows for missing UI/UX areas (layout / components / interactions / a11y / responsive / dark-mode / motion / loading-empty-error / onboarding / brand / i18n / forms). Bypass: PSK_UI_REQS_COVERAGE_DISABLED=1 (also accepts no-UI projects after explicit user confirm)."
+    return
+  fi
+
+  # Each UI R-row must map to ≥1 F-row that exists in SPECS.
+  local f_ids
+  f_ids=$(grep -oE "^#+ F[0-9]+ — " "$specs" | grep -oE "F[0-9]+" | sort -u)
+
+  local uncovered=""
+  local uncovered_count=0
+  for rid in $ui_rows; do
+    local maps_to_line
+    maps_to_line=$(awk -v rid="$rid" '
+      /^#+ '"$rid"' — / { found=1; next }
+      found && /^#+ R[0-9]+ — / { exit }
+      found && /^- \*\*Maps to:\*\*/ { print; exit }
+    ' "$reqs" 2>/dev/null)
+
+    if [ -z "$maps_to_line" ]; then
+      uncovered="$uncovered $rid(no-maps-to)"
+      uncovered_count=$((uncovered_count + 1))
+      continue
+    fi
+
+    local f_target
+    f_target=$(echo "$maps_to_line" | grep -oE "F[0-9]+" | head -1)
+    if [ -z "$f_target" ]; then
+      uncovered="$uncovered $rid(no-f-target)"
+      uncovered_count=$((uncovered_count + 1))
+      continue
+    fi
+
+    if ! echo "$f_ids" | grep -qF "$f_target"; then
+      uncovered="$uncovered $rid(maps-to-missing-$f_target)"
+      uncovered_count=$((uncovered_count + 1))
+    fi
+  done
+
+  if [ "$uncovered_count" = "0" ]; then
+    emit_pass "UI/UX REQS coverage: all $ui_count UI/UX R-rows owned by F-rows in SPECS (P8 Client-Grade Output)"
+  else
+    emit_issue "PSK017" "ui-reqs-coverage" \
+      "$uncovered_count of $ui_count UI/UX R-rows have no F-row owner:$uncovered" \
+      "Each UI/UX R-row must own a feature in SPECS that delivers it. Either add the F-row · or refactor the R-row · or move it to §Out of scope. Bypass: PSK_UI_REQS_COVERAGE_DISABLED=1"
+  fi
+}
+
+# Closes QA-AUDIT-CSV-01 (v0.6.28): every reflex pass dir whose cycle has
+# advanced (i.e. a later cycle exists) must have a corresponding row in
+# summary.csv. Drift means the cycle-close orchestration didn't invoke
+# score.sh — Dim 23.2 audit-trail-integrity flagged this when cycle-03/pass-001
+# was missing from summary.csv after cycle-04 started. Kit-mode only.
+#
+# Heuristic for "closed enough to score":
+#   - If a later cycle dir exists, every pass in earlier cycles is closed.
+#   - Within the latest cycle, the latest pass may still be in-flight; all
+#     prior passes in that cycle are closed (cycle advances pass-by-pass).
+check_summary_csv_completeness() {
+  [ "$MODE" != "kit" ] && return
+  local csv="$PROJ_ROOT/reflex/history/summary.csv"
+  local hist="$PROJ_ROOT/reflex/history"
+  [ -f "$csv" ] || return
+  [ -d "$hist" ] || return
+  run_check
+  local max_cycle pd cycle_num pass_num missing_passes scored_count
+  max_cycle=0
+  for pd in "$hist"/cycle-*; do
+    [ -d "$pd" ] || continue
+    cycle_num=$(basename "$pd" | sed -nE 's/^cycle-0*([0-9]+)$/\1/p')
+    [ -z "$cycle_num" ] && continue
+    [ "$cycle_num" -gt "$max_cycle" ] && max_cycle="$cycle_num"
+  done
+  missing_passes=""
+  scored_count=0
+  for pd in "$hist"/cycle-*/pass-*; do
+    [ -d "$pd" ] || continue
+    [ -f "$pd/signoff.md" ] || continue
+    cycle_num=$(basename "$(dirname "$pd")" | sed -nE 's/^cycle-0*([0-9]+)$/\1/p')
+    pass_num=$(basename "$pd" | sed -nE 's/^pass-0*([0-9]+)$/\1/p')
+    [ -z "$cycle_num" ] || [ -z "$pass_num" ] && continue
+    # Skip latest pass of latest cycle (may be in-flight)
+    if [ "$cycle_num" = "$max_cycle" ]; then
+      local latest_pass_in_cycle
+      latest_pass_in_cycle=$(ls -1d "$hist/cycle-$(printf '%02d' "$cycle_num")/pass-"*/ 2>/dev/null | sort -V | tail -1 | xargs -I{} basename {} | sed -nE 's/^pass-0*([0-9]+)$/\1/p')
+      [ "$pass_num" = "$latest_pass_in_cycle" ] && continue
+    fi
+    scored_count=$((scored_count + 1))
+    if ! grep -qE "^${cycle_num},${pass_num}," "$csv" 2>/dev/null; then
+      missing_passes="${missing_passes} cycle-${cycle_num}/pass-${pass_num}"
+    fi
+  done
+  if [ -z "$missing_passes" ]; then
+    emit_pass "summary.csv completeness ($scored_count closed pass dirs all have rows)"
+  else
+    emit_issue "PSK002" "summary-csv-incomplete" \
+      "missing rows for:$missing_passes" \
+      "Run score.sh for each missing pass: REFLEX_PASS_DIR=reflex/history/cycle-NN/pass-NNN bash reflex/lib/score.sh"
+  fi
+}
+
 check_reflex_protected_files() {
   local branch staged_files offending
   branch=$(git -C "$PROJ_ROOT" symbolic-ref --short HEAD 2>/dev/null || echo "")
@@ -1089,6 +1323,9 @@ main() {
     check_critic_prompts_comprehensive
     check_secrets
     check_reflex_protected_files
+    check_reqs_coverage
+    check_ui_requirements_coverage
+    check_summary_csv_completeness
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

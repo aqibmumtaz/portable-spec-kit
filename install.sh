@@ -166,12 +166,22 @@ download_framework() {
     echo -e "  ${RED}✗${NC} Failed to download portable-spec-kit.md"
     exit 1
   fi
+
+  # PHILOSOPHY.md — kit constitution (v0.6.16+, ADR-028)
+  # QA-Agent reads this at the start of every reflex pass; sync-check verifies presence.
+  mkdir -p ./agent
+  if fetch "agent/PHILOSOPHY.md" "./agent/PHILOSOPHY.md"; then
+    echo -e "  ${GREEN}✓${NC} agent/PHILOSOPHY.md"
+  else
+    echo -e "  ${YELLOW}⊘${NC} agent/PHILOSOPHY.md (will be cached on first reflex pass)"
+  fi
 }
 
 download_scripts() {
   echo -e "${CYAN}[2/6] Downloading reliability scripts...${NC}"
-  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh"
-  local optional="psk-jira-sync.sh psk-tracker.sh psk-tracker-report.sh install-tracker.sh uninstall-tracker.sh"
+  # Core scripts every project needs (kit reliability + workflows + self-evolution v0.6.16-23)
+  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh"
+  local optional="psk-jira-sync.sh psk-tracker.sh psk-tracker-report.sh install-tracker.sh uninstall-tracker.sh sync.sh"
 
   for s in $scripts; do
     if fetch "agent/scripts/$s" "./agent/scripts/$s"; then
@@ -199,7 +209,8 @@ download_scripts() {
 
 download_skills() {
   echo -e "${CYAN}[3/6] Downloading skill files...${NC}"
-  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md"
+  # All on-demand skills the kit references (CLAUDE.md skill table is authoritative; this list mirrors it)
+  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md"
 
   for s in $skills; do
     if fetch ".portable-spec-kit/skills/$s" "./.portable-spec-kit/skills/$s" 2>/dev/null; then
@@ -347,7 +358,7 @@ install_reflex() {
   mkdir -p reflex/lib reflex/prompts reflex/history reflex/sandbox
 
   local reflex_files=(run.sh install-into-project.sh update.sh README.md config.yml)
-  for f in "${refine_files[@]}"; do
+  for f in "${reflex_files[@]}"; do
     if [ -n "$LOCAL_SOURCE" ] && [ -f "$LOCAL_SOURCE/reflex/$f" ]; then
       cp "$LOCAL_SOURCE/reflex/$f" "reflex/$f"
     else
@@ -359,7 +370,14 @@ install_reflex() {
     [ "${f##*.}" = "sh" ] && chmod +x "reflex/$f"
   done
 
-  local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh)
+  # All reflex/lib helpers — Phase 0 pre-compute + spawn + scoring + token tracking + self-evolution v0.6.16-23 helpers
+  local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
+    anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
+    check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
+    cycle-summary.sh doc-code-diff.sh external-research.sh extract-claims.sh \
+    identify-integration-probes.sh intake.sh log-hardening.sh loop.sh \
+    prune-history.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
+    state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
   for f in "${lib_files[@]}"; do
     if [ -n "$LOCAL_SOURCE" ] && [ -f "$LOCAL_SOURCE/reflex/lib/$f" ]; then
       cp "$LOCAL_SOURCE/reflex/lib/$f" "reflex/lib/$f"

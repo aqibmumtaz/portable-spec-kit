@@ -87,9 +87,11 @@ Always multiples of 4px. Common scale:
 
 **Rule:** never use values not on the grid. `13px` instead of `12px` is a code smell.
 
-### 4. Component primitives (12 minimum)
+### 4. Component primitives (MANDATORY — 12 base + 8 client-grade)
 
-Every project ships with these 12 working components (stack-aware implementations):
+Every project that ships UI MUST ship working implementations of all 20 components below. The first 12 are universal app primitives. The next 8 are the **Client-Grade Output** primitives mandated by Phase 7 (P8) — they were the gap that made SearchSocialTruth's first cycle ship as half-done. They are no longer advisory.
+
+**Base 12 — universal app primitives:**
 
 1. **Button** — variants: `primary` / `secondary` / `ghost` / `destructive` × sizes: `sm` / `md` / `lg` × states: default / hover / focus / active / disabled / loading
 2. **Input** — text, with label / helper / error states + icon-prefix support
@@ -103,6 +105,21 @@ Every project ships with these 12 working components (stack-aware implementation
 10. **Breadcrumb** — accessible (aria-current), truncation for long paths
 11. **Tabs** — keyboard nav (arrow keys), aria-selected, lazy content
 12. **Skeleton** — loading placeholder for cards + tables + lists
+
+**Client-Grade 8 — P8 mandatory primitives (Phase 7 v0.6.23+):**
+
+13. **VerdictCard / ContentCard** — pattern card with color-coded label, icon, ring, with sources list + reputation badges. Generalize beyond fact-check apps as "rich content card with status, evidence, share."
+14. **ConfidenceBar** — 0-100% progress bar with `role="progressbar"` + `aria-valuenow`. Color-coded by threshold. The visible affordance for any AI-generated probability.
+15. **ShareButton** — `navigator.share` + clipboard fallback. Always emits sanitized text (no raw user content). Anti-amplification by design.
+16. **OnboardingTour** — first-run modal with N steps (≥3), always-visible Skip, Esc + click-outside dismiss, persisted in localStorage. Mounted in root layout.
+17. **QRCodeBlock** — SVG / canvas QR with surrounding metadata card. Used for WhatsApp / Slack / messaging integrations on hero.
+18. **LoadingState** — skeleton + spinner + "loading X…" status text + `aria-busy`. Replaces blank-page flicker on every async surface.
+19. **EmptyState** — icon + title + description + CTA button. `role="region"` + `aria-live="polite"`. Used on /history, /feed, /search-no-results, /admin-empty.
+20. **ErrorState / ErrorBoundary** — friendly fallback (not stack trace) with retry CTA, support-link, and `request_id` chip if available. Mounted via Next.js error.tsx (or framework equivalent) at root + each route group.
+
+**Why these are mandatory:** they cover the user-facing polish gaps that distinguish "scaffold" from "client-deliverable product." Any project the kit orchestrates from raw requirements ships with all 20. Projects that legitimately have no UI surface skip the entire ui-design-system skill (CLI tools, libraries, server-only APIs).
+
+**Detection:** `bash agent/scripts/psk-ui-polish-check.sh` scans the project for the 8 client-grade elements and surfaces gaps. Pre-release reports any missing element as a warning. The companion `check_ui_requirements_coverage` in `psk-sync-check.sh` validates that the UI/UX R-rows in REQS.md actually have F-rows owning them in SPECS.md.
 
 Each ships with a **Storybook entry** (or stack equivalent — SwiftUI Previews, Compose Previews, etc.) showing all states.
 
