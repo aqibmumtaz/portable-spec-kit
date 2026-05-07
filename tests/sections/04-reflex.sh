@@ -4686,6 +4686,35 @@ extracted_set_2b=$(awk '/^[[:space:]]*-[[:space:]]+id:/ { sub(/^[[:space:]]*-[[:
   || fail "Loop6.5/PhaseH-plateau-progress: different ID sets incorrectly equal (extraction broken)"
 rm -rf "$PLAT_TMP"
 
+# --- Loop 7 v0.6.36 — Phase P/Q/R/S regression tests ---
+
+# Phase P — REFLEX_DEV_SELF_VERIFY default-on
+grep -q 'REFLEX_DEV_SELF_VERIFY:-1.*=.*"0"\|REFLEX_DEV_SELF_VERIFY:-1' "$PROJ/reflex/lib/dev-self-verify.sh" \
+  && pass "Loop7/PhaseP-default-on: dev-self-verify gate defaults to enabled" \
+  || fail "Loop7/PhaseP-default-on: gate still default-off (was Loop 6.5 opt-in)"
+
+# Phase Q — cascade has machinery propagation block
+grep -q "kit machinery propagation\|SYNC_TARGETS" "$PROJ/agent/scripts/psk-version-cascade.sh" \
+  && pass "Loop7/PhaseQ-machinery: cascade has Phase Q machinery-propagation block" \
+  || fail "Loop7/PhaseQ-machinery: machinery propagation missing"
+
+# Phase Q — sync-targets.txt format documented
+grep -q 'sync-targets.txt' "$PROJ/agent/scripts/psk-version-cascade.sh" \
+  && pass "Loop7/PhaseQ-targets-file: cascade reads sync-targets.txt" \
+  || fail "Loop7/PhaseQ-targets-file: sync-targets file not referenced"
+
+# Phase R — smart DSL has new patterns
+for pat in "contains" "matches" "is exactly" "has.*lines" "file exists at"; do
+  grep -qE "$pat" "$PROJ/reflex/lib/dev-self-verify.sh" \
+    && pass "Loop7/PhaseR-pattern: dev-self-verify recognizes '$pat' assertion" \
+    || fail "Loop7/PhaseR-pattern: '$pat' pattern missing"
+done
+
+# Phase S — loop.sh L2 trap honors EXPECT_RESUME
+grep -A 8 "_l2_iter_trap()" "$PROJ/reflex/lib/loop.sh" | grep -q 'EXPECT_RESUME' \
+  && pass "Loop7/PhaseS-loop-trap: loop.sh L2 trap honors EXPECT_RESUME" \
+  || fail "Loop7/PhaseS-loop-trap: loop.sh trap missing EXPECT_RESUME check"
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"

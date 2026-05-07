@@ -8,7 +8,25 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.35 · **Tests:** 1950 (1805 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.36 · **Tests:** 1955 (1810 framework + 145 benchmarking)
+
+### v0.6.36 — Loop Iteration 7 kit-side: in-reflex deferrals closed (P/Q/R/S) + machinery propagation (May 2026)
+
+**Closes all 4 in-reflex deferred items from v0.6.35.**
+
+**Phase P — REFLEX_DEV_SELF_VERIFY default-on:** `dev-self-verify.sh` flipped from opt-in to default-on. 10th gate now active in every reflex run unless `REFLEX_DEV_SELF_VERIFY=0` is explicitly set.
+
+**Phase Q — `psk-version-cascade.sh` extended for kit-machinery propagation:** When invoked from kit-self with `.portable-spec-kit/sync-targets.txt` populated, also propagates `reflex/lib/*.sh` + `reflex/run.sh` + `reflex/prompts/*.md` + `agent/scripts/psk-*.sh` to each target project. Closes Loop 6 §16.2 — projects no longer drift out of sync with kit machinery on version bumps. `reflex/config.yml` NOT bulk-overwritten (project may have customized); set `REFLEX_SYNC_CONFIG_OVERWRITE=1` to force.
+
+**Phase R — `dev-self-verify` smart DSL expanded (3 → 8+ patterns):** Added `contains '<text>'`, `matches '<regex>'`, `is exactly '<value>'`, `exit code N`, `has N+ lines` / `has fewer than N lines`, `file exists at <path>` / `file does not exist at <path>`. Reduces false-positive advisory-passes.
+
+**Phase S — `EXPECT_RESUME` pattern generalized:** `reflex/lib/loop.sh::_l2_iter_trap` now honors `EXPECT_RESUME=1` env flag (matching `run.sh::_l2_completion_trap` from Phase E). Lock-file cleanup trap intentionally NOT modified (lock release should always happen).
+
+**Phase T — regression tests:** 10 new assertions in `tests/sections/04-reflex.sh` covering Phase P/Q/R/S.
+
+**Phase U/V/W/X/Y** — kit ceremony (this commit) + cascade propagated machinery to project automatically + reflex iter-to-convergence on both repos + final ceremony.
+
+**Tests:** 1810 framework + 145 benchmarking = 1955 (was 1805+145=1950, +5 Loop 7 regression tests).
 
 ### v0.6.35 — Loop Iteration 6.5 kit-side: convergence-rule fix — no budget-stops, set-based plateau (May 2026)
 
