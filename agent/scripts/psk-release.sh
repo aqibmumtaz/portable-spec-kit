@@ -556,6 +556,18 @@ run_step_6_version() {
     echo -e "  ${GREEN}✓${NC} examples synced"
   fi
 
+  # Phase C (Loop 6 v0.6.34) — comprehensive cascade sweep ensures ALL
+  # version-pinned artifacts are bumped, not just the obvious ones. Closes
+  # G-KIT-V0633-SWEEP-CASCADE-01 (doc 19 §15.3).
+  if [ -x "$PROJ_ROOT/agent/scripts/psk-version-cascade.sh" ]; then
+    echo -e "  ${CYAN}→ running version-cascade sweep (Phase C)${NC}"
+    if bash "$PROJ_ROOT/agent/scripts/psk-version-cascade.sh" 2>&1 | sed 's/^/  /'; then
+      :  # cascade clean or applied
+    else
+      echo -e "${YELLOW}  cascade reported issues — review output${NC}"
+    fi
+  fi
+
   # Verify version consistency
   if [ -x "$SYNC_CHECK" ]; then
     if bash "$SYNC_CHECK" --quick 2>/dev/null; then

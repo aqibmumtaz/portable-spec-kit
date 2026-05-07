@@ -270,12 +270,49 @@ check_version() {
   fi
 
   if [ "$FULL" = true ] && [ -f "$PROJ_ROOT/CHANGELOG.md" ]; then
-    v_changelog=$(grep -m1 'Built over:' "$PROJ_ROOT/CHANGELOG.md" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+    # M4 (Loop-3) QA-KIT-PSK001-PARSER-01 — scope grep to the most-recent
+    # `## v<x.y>` block only. Same pattern as PSK002 (Loop-2 H2 fix).
+    # Previously `grep -m1 'Built over:'` could pick a "Built over:" line
+    # from anywhere in the file; if the topmost block had no Built-over
+    # line but an older block did, PSK001 used the older version and
+    # fired a spurious mismatch. Now we extract the last v-version on the
+    # first Built-over line within the topmost ## v block.
+    v_changelog=$(awk '
+      /^## v[0-9]+\.[0-9]+/ {
+        if (in_block) exit
+        in_block = 1
+        next
+      }
+      in_block && /Built over:/ {
+        s = $0
+        while (match(s, /v[0-9]+\.[0-9]+\.[0-9]+/)) {
+          last = substr(s, RSTART, RLENGTH)
+          s = substr(s, RSTART + RLENGTH)
+        }
+        if (last) { print last; exit }
+      }
+    ' "$PROJ_ROOT/CHANGELOG.md" 2>/dev/null)
     [ -n "$v_changelog" ] && { sources="$sources CHANGELOG=$v_changelog"; all_versions="$all_versions $v_changelog"; }
   fi
 
   if [ "$FULL" = true ] && [ -f "$AGENT_DIR/RELEASES.md" ]; then
-    v_releases=$(grep -m1 '^Kit:' "$AGENT_DIR/RELEASES.md" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+    # M4 (Loop-3) QA-KIT-PSK001-PARSER-01 — scope grep to the most-recent
+    # `## v<x.y>` block only. Same pattern as PSK002 (Loop-2 H2 fix).
+    v_releases=$(awk '
+      /^## v[0-9]+\.[0-9]+/ {
+        if (in_block) exit
+        in_block = 1
+        next
+      }
+      in_block && /^Kit:/ {
+        s = $0
+        while (match(s, /v[0-9]+\.[0-9]+\.[0-9]+/)) {
+          last = substr(s, RSTART, RLENGTH)
+          s = substr(s, RSTART + RLENGTH)
+        }
+        if (last) { print last; exit }
+      }
+    ' "$AGENT_DIR/RELEASES.md" 2>/dev/null)
     [ -n "$v_releases" ] && { sources="$sources RELEASES=$v_releases"; all_versions="$all_versions $v_releases"; }
   fi
 
@@ -304,7 +341,25 @@ check_test_count() {
 
   if [ "$FULL" = true ] && [ -f "$PROJ_ROOT/CHANGELOG.md" ]; then
     local ch_tests
-    ch_tests=$(grep -oE 'Tests:\*\* [0-9]+' "$PROJ_ROOT/CHANGELOG.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)
+    # QA-KIT-PSK002-CROSSVER-01 (searchsocialtruth-cycle-05): scope grep to
+    # the topmost `## v<x.y>` block only. Previously ranged across all
+    # version sections — when the most-recent block lacked Tests:** but an
+    # older block had it, the grep returned an old number and PSK002 fired
+    # spuriously. Now extract only between the first `## v` heading and
+    # the next one (or EOF).
+    ch_tests=$(awk '
+      /^## v[0-9]+\.[0-9]+/ {
+        if (in_block) exit
+        in_block = 1
+        next
+      }
+      in_block && match($0, /Tests:\*\*[[:space:]]+[0-9]+/) {
+        s = substr($0, RSTART, RLENGTH)
+        gsub(/[^0-9]/, "", s)
+        print s
+        exit
+      }
+    ' "$PROJ_ROOT/CHANGELOG.md" 2>/dev/null)
     [ -n "$ch_tests" ] && { counts="$counts $ch_tests"; sources="$sources CHANGELOG=$ch_tests"; }
   fi
 

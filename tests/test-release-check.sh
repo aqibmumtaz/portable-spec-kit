@@ -84,9 +84,22 @@ echo "$current_key" > "$TEST_REF_CACHE_KEY" 2>/dev/null || true
 # Detect test runner from project root
 detect_runner() {
   local test_file="$1"
-  if [ -f "package.json" ] && grep -q "jest\|vitest" "package.json" 2>/dev/null; then
-    echo "jest"
-  elif [ -f "pytest.ini" ] || [ -f "pyproject.toml" ] || [ -f "setup.cfg" ]; then
+  # QA-KIT-RUNNER-DETECT-01 (searchsocialtruth-cycle-05): explicit
+  # vitest / mocha / tap detection — used to fall through to "jest" for
+  # any vitest project, which broke npx invocation. Match in priority
+  # order: vitest > mocha > tap > jest > pytest > go > extension fallback.
+  if [ -f "package.json" ]; then
+    if grep -q '"vitest"' "package.json" 2>/dev/null; then
+      echo "vitest"; return 0
+    elif grep -q '"mocha"' "package.json" 2>/dev/null; then
+      echo "mocha"; return 0
+    elif grep -q '"tap"' "package.json" 2>/dev/null; then
+      echo "tap"; return 0
+    elif grep -q '"jest"' "package.json" 2>/dev/null; then
+      echo "jest"; return 0
+    fi
+  fi
+  if [ -f "pytest.ini" ] || [ -f "pyproject.toml" ] || [ -f "setup.cfg" ]; then
     echo "pytest"
   elif [ -f "go.mod" ]; then
     echo "go"
@@ -105,9 +118,31 @@ run_test() {
   local test_ref="$1"
 
   # Return cached result if this file was already run
+  # Closes QA-KIT-CACHE-POISON-01 (cycle-05): only PASS results (result=0)
+  # are cached. Failures (result=1) and unknowns (result=2) are NOT cached
+  # and will be re-run on the next invocation. Rationale: a transient
+  # failure (flaky test, race condition, environment glitch) used to stick
+  # in the cache forever — even after the test starts passing — because
+  # the upstream invalidation logic only triggers on test-file mtime change
+  # or HEAD/cwd change. Tests that pass without source modification but
+  # had a prior transient fail were stuck reporting failure.
+  # Net effect: passes still cached (the common case, full perf benefit);
+  # failures always re-run (cheap because rare). No false-positive sticky
+  # failures.
   local cached
   cached=$(grep "^${test_ref}:" "$TEST_CACHE_FILE" 2>/dev/null | tail -1 | cut -d: -f2)
-  if [ -n "$cached" ]; then return "$cached"; fi
+  if [ "$cached" = "0" ]; then return 0; fi
+  # On any non-zero or empty cached entry, fall through to re-run.
+  # If a stale failure was cached, remove it so the new (potentially
+  # passing) result has a clean slot to write into.
+  if [ -n "$cached" ] && [ "$cached" != "0" ]; then
+    # Strip the stale entry from the cache file in-place (BSD/GNU compatible).
+    if [ -f "$TEST_CACHE_FILE" ]; then
+      grep -v "^${test_ref}:" "$TEST_CACHE_FILE" > "${TEST_CACHE_FILE}.tmp" 2>/dev/null \
+        && mv "${TEST_CACHE_FILE}.tmp" "$TEST_CACHE_FILE" \
+        || rm -f "${TEST_CACHE_FILE}.tmp" 2>/dev/null
+    fi
+  fi
 
   local runner result
   runner=$(detect_runner "$test_ref")
@@ -116,6 +151,18 @@ run_test() {
     jest)
       if command -v npx >/dev/null 2>&1; then
         npx jest "$test_ref" --passWithNoTests 2>/dev/null && result=0 || result=1
+      else result=2; fi ;;
+    vitest)
+      if command -v npx >/dev/null 2>&1; then
+        npx vitest run "$test_ref" --passWithNoTests 2>/dev/null && result=0 || result=1
+      else result=2; fi ;;
+    mocha)
+      if command -v npx >/dev/null 2>&1; then
+        npx mocha "$test_ref" 2>/dev/null && result=0 || result=1
+      else result=2; fi ;;
+    tap)
+      if command -v npx >/dev/null 2>&1; then
+        npx tap "$test_ref" 2>/dev/null && result=0 || result=1
       else result=2; fi ;;
     pytest)
       if command -v pytest >/dev/null 2>&1; then
@@ -128,15 +175,33 @@ run_test() {
         go test "./$test_ref/..." 2>/dev/null && result=0 || result=1
       else result=2; fi ;;
     bash)
-      bash "$test_ref" >/dev/null 2>&1 && result=0 || result=1 ;;
+      # M1 (Loop-3) — explicit env propagation into nested test invocation.
+      # `bash "$test_ref"` would inherit only exported env vars from the
+      # caller; some kit-bypass flags (set by gates / Phase 0 helpers) are
+      # consumed by test-spec-kit.sh + sibling runners and need to be
+      # forwarded deterministically. Wrap with `env` so the bypass-flag
+      # contract holds across sub-shells regardless of how the parent
+      # exported (or didn't export) them. Defaults preserve "off" semantics
+      # when the caller didn't set the flag.
+      env \
+        PSK_REQS_COVERAGE_DISABLED="${PSK_REQS_COVERAGE_DISABLED:-0}" \
+        PSK_FEATURE_CRITERIA_STRICT="${PSK_FEATURE_CRITERIA_STRICT:-0}" \
+        PSK_TEST_REF_NO_CACHE="${PSK_TEST_REF_NO_CACHE:-0}" \
+        PSK_UI_REQS_COVERAGE_DISABLED="${PSK_UI_REQS_COVERAGE_DISABLED:-0}" \
+        PSK_RFT_KEEP_CACHE="${PSK_RFT_KEEP_CACHE:-0}" \
+        bash "$test_ref" >/dev/null 2>&1 && result=0 || result=1 ;;
     python)
       python3 "$test_ref" 2>/dev/null && result=0 || result=1 ;;
     *)
       result=2 ;;
   esac
 
-  # Store in cache
-  echo "${test_ref}:${result}" >> "$TEST_CACHE_FILE"
+  # Store in cache ONLY if the test passed.
+  # Closes QA-KIT-CACHE-POISON-01: failures/unknowns are not persisted
+  # so the next invocation will re-attempt them.
+  if [ "$result" = "0" ]; then
+    echo "${test_ref}:${result}" >> "$TEST_CACHE_FILE"
+  fi
   return $result
 }
 
@@ -148,18 +213,31 @@ check_test_relevance() {
   # to reference the feature ID (case-insensitive, e.g. "F1" / "f1") OR a
   # feature-specific symbol the agent extracts from the SPECS row.
   #
-  # Strategy: pass if the test file contains either:
-  #   1. The feature ID literally (`F1`, `f1`)
-  #   2. A keyword from the feature description (≥4-char meaningful tokens)
+  # H4 / QA-KIT-RELEVANCE-NOISE-01 (searchsocialtruth-cycle-05): the F{N}
+  # heuristic flagged 59/70 kit features as "possibly irrelevant" because
+  # kit-self maps every feature to tests/test-spec-kit.sh (a comprehensive
+  # orchestrator) where individual F-IDs are not literal tokens — sections
+  # carry N{N} identifiers instead. Mode-aware fix: detect kit-self via
+  # the v0.6.28 discriminator (examples/ + tests/sections/ + install.sh +
+  # agent/PHILOSOPHY.md) and accept N{N} section references OR feature
+  # keyword matches as evidence of relevance.
   #
-  # Permissive on purpose — false-negative cost is high, and stub-marker
-  # check below already catches the most common "wrong test" symptom.
+  # Strategy: pass if the test file contains either:
+  #   1. The feature ID literally (`F1`, `f1`)            — projects + kit
+  #   2. (Kit-self only) any N{N} section reference        — kit
+  #   3. A keyword from the feature description            — projects + kit
   local test_ref="$1"
   local fn="$2"        # feature ID e.g. F1
   local feature="$3"   # feature description for keyword match
   if [ -z "$fn" ] || [ -z "$test_ref" ]; then return 0; fi
   # Quick win: feature ID literal
   if grep -qiE "\\b${fn}\\b" "$test_ref" 2>/dev/null; then return 0; fi
+  # H4: kit-self mode — accept N{N} section presence as relevance evidence.
+  # Detect kit-self via v0.6.28 discriminator: examples/ + tests/sections/
+  # + install.sh + agent/PHILOSOPHY.md all present at PWD.
+  if [ -d "examples" ] && [ -d "tests/sections" ] && [ -f "install.sh" ] && [ -f "agent/PHILOSOPHY.md" ]; then
+    if grep -qE "\\bN[0-9]+\\b" "$test_ref" 2>/dev/null; then return 0; fi
+  fi
   # Fallback: keyword match (any meaningful 4+-char word from feature description)
   local keyword
   keyword=$(echo "$feature" | grep -oE '[A-Za-z]{4,}' | head -1)
@@ -197,59 +275,90 @@ while IFS= read -r line; do
     fn=$(echo "$line" | awk -F'|' '{gsub(/ /,"",$2); print $2}')
     feature=$(echo "$line" | awk -F'|' '{gsub(/^ +| +$/,"",$3); print $3}' | cut -c1-30)
 
-    # Extract Tests column — last field that looks like a test file path
-    # Test refs: no spaces, contain a dot or slash, look like file paths
+    # QA-AUDIT-GAP-01 (v0.6.29) — Tests column may contain multiple comma-separated
+    # references, e.g. `tests/a.test.js, tests/b.test.js`. Extract the last cell
+    # of the row, then split on commas; validate each entry independently.
+    # Test refs: no spaces, contain a dot or slash, look like file paths.
     # e.g. tests/auth.test.js  tests/auth.sh  section-2
-    test_ref=$(echo "$line" | awk -F'|' '{
+    raw_cell=$(echo "$line" | awk -F'|' '{
+      # Walk fields right-to-left; pick the last non-empty cell that contains
+      # at least one path-shaped token (file with extension or starting with tests/).
       for (i=NF; i>1; i--) {
-        gsub(/^ +| +$/, "", $i)
-        # Must have no spaces AND look like a path (has / or . or starts with "tests" or "section")
-        if ($i !~ / / && length($i) > 0 && ($i ~ /^tests\// || $i ~ /\.test\.|\.spec\.|\.sh$|\.py$|\.ts$|\.js$/)) {
-          print $i; exit
+        cell = $i
+        gsub(/^ +| +$/, "", cell)
+        if (length(cell) > 0 && (cell ~ /tests\// || cell ~ /\.test\.|\.spec\.|\.sh|\.py|\.ts|\.js/)) {
+          print cell; exit
         }
       }
     }')
 
+    # Split raw_cell on commas, trim each, drop empties and non-path tokens.
+    test_refs=()
+    if [ -n "$raw_cell" ]; then
+      OLDIFS="$IFS"
+      IFS=','
+      for tok in $raw_cell; do
+        tok="${tok#"${tok%%[![:space:]]*}"}"   # ltrim
+        tok="${tok%"${tok##*[![:space:]]}"}"   # rtrim
+        # Reject tokens with internal whitespace or that don't look like paths
+        if [ -n "$tok" ] && ! echo "$tok" | grep -q ' '; then
+          if echo "$tok" | grep -qE '^tests/|\.test\.|\.spec\.|\.sh$|\.py$|\.ts$|\.js$'; then
+            test_refs+=("$tok")
+          fi
+        fi
+      done
+      IFS="$OLDIFS"
+    fi
+
     TOTAL_DONE=$((TOTAL_DONE + 1))
 
-    if [ -z "$test_ref" ]; then
+    if [ "${#test_refs[@]}" -eq 0 ]; then
       printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "⚠  NO TEST REFERENCE"
       MISSING_REFS=$((MISSING_REFS + 1))
-
-    elif [ ! -f "$test_ref" ] && [ ! -d "$test_ref" ]; then
-      printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FILE NOT FOUND: $test_ref"
-      REF_PRESENT=$((REF_PRESENT + 1))
-      MISSING_FILES=$((MISSING_FILES + 1))
-
     else
-      REF_PRESENT=$((REF_PRESENT + 1))
-      FILE_EXISTS=$((FILE_EXISTS + 1))
+      # Per-feature aggregate: if ANY ref fails, the feature fails. Counters
+      # accumulate per-ref so REF_PRESENT/FILE_EXISTS track total individual
+      # references — preserves existing semantics for single-ref rows.
+      feature_pass=true
+      for test_ref in "${test_refs[@]}"; do
+        REF_PRESENT=$((REF_PRESENT + 1))
 
-      if ! check_stub_complete "$test_ref"; then
-        stub_count=$(grep "^${test_ref}:stubs_incomplete:" "$TEST_CACHE_FILE" | cut -d: -f3)
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  STUBS NOT FILLED ($stub_count TODO markers): $test_ref"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        continue
-      fi
+        if [ ! -f "$test_ref" ] && [ ! -d "$test_ref" ]; then
+          printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FILE NOT FOUND: $test_ref"
+          MISSING_FILES=$((MISSING_FILES + 1))
+          feature_pass=false
+          continue
+        fi
+        FILE_EXISTS=$((FILE_EXISTS + 1))
 
-      # v0.6.29 G21 — relevance check: warn (not fail) if test doesn't reference feature
-      if ! check_test_relevance "$test_ref" "$fn" "$feature"; then
-        IRRELEVANT_TESTS=$((IRRELEVANT_TESTS + 1))
-      fi
+        if ! check_stub_complete "$test_ref"; then
+          stub_count=$(grep "^${test_ref}:stubs_incomplete:" "$TEST_CACHE_FILE" | cut -d: -f3)
+          printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  STUBS NOT FILLED ($stub_count TODO markers): $test_ref"
+          TESTS_FAILED=$((TESTS_FAILED + 1))
+          feature_pass=false
+          continue
+        fi
 
-      run_test "$test_ref"
-      run_result=$?
+        # v0.6.29 G21 — relevance check: warn (not fail)
+        if ! check_test_relevance "$test_ref" "$fn" "$feature"; then
+          IRRELEVANT_TESTS=$((IRRELEVANT_TESTS + 1))
+        fi
 
-      if [ "$run_result" -eq 0 ]; then
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✓  $test_ref"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-      elif [ "$run_result" -eq 2 ]; then
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "~  $test_ref (exists, run manually)"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-      else
-        printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FAILED: $test_ref"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-      fi
+        run_test "$test_ref"
+        run_result=$?
+
+        if [ "$run_result" -eq 0 ]; then
+          printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✓  $test_ref"
+          TESTS_PASSED=$((TESTS_PASSED + 1))
+        elif [ "$run_result" -eq 2 ]; then
+          printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "~  $test_ref (exists, run manually)"
+          TESTS_PASSED=$((TESTS_PASSED + 1))
+        else
+          printf "  %-5s %-32s %-8s %s\n" "$fn" "$feature" "[x]" "✗  FAILED: $test_ref"
+          TESTS_FAILED=$((TESTS_FAILED + 1))
+          feature_pass=false
+        fi
+      done
     fi
   fi
 done < "$SPECS"

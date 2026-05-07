@@ -14,6 +14,13 @@
 # diagnostic, RFT cache + CI templates).
 #
 # Independently runnable: bash tests/sections/04-reflex.sh
+#
+# DEPRECATED-IN-FAVOR-OF: tests/features/fNN-*.sh
+#
+# Loop-4 v0.6.32: SPECS.md Tests column now points at tests/features/fNN-*.sh
+# (per-feature audits, ~1 sec each). The exhaustive coverage in this file
+# still runs when test-spec-kit.sh sources sections/. Future cleanup
+# (v0.7.0+) will split this file's tests across features/ properly.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -z "${PROJ:-}" ] && source "$SCRIPT_DIR/../lib.sh"
 
@@ -1018,9 +1025,9 @@ grep -qF "Probe 23.4 — Cross-surface terminology consistency" "$PROJ/reflex/pr
 grep -qF "Probe 23.5 — Self-output validation loop" "$PROJ/reflex/prompts/qa-agent.md" \
   && pass "N45/Dim23: Probe 23.5 self-output validation present" \
   || fail "N45/Dim23: Probe 23.5 missing"
-grep -qE "24 dimensions of review|across 24 dimensions" "$PROJ/reflex/prompts/qa-agent.md" \
-  && pass "N45/Dim23: prompt heading bumped to 24 dimensions (Dim 24 added v0.6.28)" \
-  || fail "N45/Dim23: dim count not bumped to 24"
+grep -qE "25 dimensions of review|across 25 dimensions" "$PROJ/reflex/prompts/qa-agent.md" \
+  && pass "N45/Dim23: prompt heading bumped to 25 dimensions (Dim 25 added v0.6.30)" \
+  || fail "N45/Dim23: dim count not bumped to 25"
 
 # v0.6.27+ — bookend pattern (ADR-039): iter 1 = prepare (version bump),
 # iter 2+ = SKIP release ceremony, GRANTED convergence = one final refresh.
@@ -1380,34 +1387,39 @@ rm -rf "$N53_TMP"
 # ───────────────────────────────────────────────────────────────
 # Section N56 — Convergence stopping + loop-resume + cache-order + token tracking
 # ───────────────────────────────────────────────────────────────
-section "N56. Convergence-based stopping + loop-resume + cache-order + token tracking"
+section "N56. Convergence-based stopping + loop-resume + cache-order + cost reporting"
 
-# --- Convergence config in reflex/config.yml ---
+# --- Convergence config in reflex/config.yml (Loop 6.5 v0.6.35 contract) ---
+# Per doc 19 §17: only PLATEAU(set-based) + INFINITE_LOOP_PROTECTION + GRANTED +
+# REGRESSION may stop reflex. Budget-driven stops removed (min_fix_rate,
+# count-based plateau, max_iterations_safety, max_tool_calls, max_retries).
 grep -qF "convergence:" "$PROJ/reflex/config.yml" \
   && pass "N56/convergence: config.yml has convergence block" \
   || fail "N56/convergence: convergence block missing from config.yml"
-for k in findings_floor patience_passes min_fix_rate allow_findings_increase max_iterations_safety; do
+# Loop 6.5 contract — these MUST be present:
+for k in findings_floor allow_findings_increase infinite_loop_protection plateau_check plateau_passes_required; do
   grep -qF "$k:" "$PROJ/reflex/config.yml" \
-    && pass "N56/convergence: config has $k setting" \
+    && pass "N56/convergence: config has $k setting (Loop 6.5)" \
     || fail "N56/convergence: $k setting missing"
 done
-grep -qF "token_tracking:" "$PROJ/reflex/config.yml" \
-  && pass "N56/token: config.yml has token_tracking block" \
-  || fail "N56/token: token_tracking block missing"
+# These MUST be ABSENT (removed in Loop 6.5 — were budget-stops):
+for k in patience_passes min_fix_rate max_iterations_safety; do
+  ! grep -qE "^[[:space:]]*$k:" "$PROJ/reflex/config.yml" \
+    && pass "N56/convergence: config has NO $k (removed in Loop 6.5 — was budget-stop)" \
+    || fail "N56/convergence: $k still in config (should be removed)"
+done
+grep -qF "cost_reporting:" "$PROJ/reflex/config.yml" \
+  && pass "N56/cost: config.yml has cost_reporting block (Loop 6.5)" \
+  || fail "N56/cost: cost_reporting block missing"
 
-# --- loop.sh convergence stop logic ---
+# --- loop.sh convergence stop logic (Loop 6.5 contract) ---
 grep -qF "FINDINGS_FLOOR" "$PROJ/reflex/lib/loop.sh" \
   && pass "N56/loop: loop.sh reads findings_floor from config" \
   || fail "N56/loop: findings_floor logic missing"
-grep -qF "PATIENCE_PASSES" "$PROJ/reflex/lib/loop.sh" \
-  && pass "N56/loop: loop.sh implements patience counter" \
-  || fail "N56/loop: patience logic missing"
-grep -qF "MIN_FIX_RATE" "$PROJ/reflex/lib/loop.sh" \
-  && pass "N56/loop: loop.sh checks fix-rate threshold" \
-  || fail "N56/loop: min_fix_rate logic missing"
-grep -qF "SAFETY_CAP" "$PROJ/reflex/lib/loop.sh" \
-  && pass "N56/loop: loop.sh uses max_iterations_safety as escape hatch" \
-  || fail "N56/loop: safety cap missing"
+# Loop 6.5: SAFETY_CAP renamed to INFINITE_LOOP_PROTECTION (with backward-compat alias)
+grep -qF "INFINITE_LOOP_PROTECTION" "$PROJ/reflex/lib/loop.sh" \
+  && pass "N56/loop: loop.sh uses INFINITE_LOOP_PROTECTION (Loop 6.5)" \
+  || fail "N56/loop: INFINITE_LOOP_PROTECTION missing"
 grep -qF "FINDINGS_INCREASED" "$PROJ/reflex/lib/loop.sh" \
   && pass "N56/loop: loop.sh detects findings-increase regression signal" \
   || fail "N56/loop: findings-increase check missing"
@@ -1689,11 +1701,11 @@ else
   fail "N57/bootstrap: qa-agent.md missing Dimension 16 or 17"
 fi
 
-# Dimension count updated to 16
-if grep -qE "24 dimensions of review" "$PROJ/reflex/prompts/qa-agent.md"; then
-  pass "N57/bootstrap: qa-agent.md header says 24 dimensions"
+# Dimension count updated to 25 (v0.6.30 — Dim 25 mandate-compliance)
+if grep -qE "25 dimensions of review" "$PROJ/reflex/prompts/qa-agent.md"; then
+  pass "N57/bootstrap: qa-agent.md header says 25 dimensions"
 else
-  fail "N57/bootstrap: qa-agent.md header not updated to 24 dimensions"
+  fail "N57/bootstrap: qa-agent.md header not updated to 25 dimensions"
 fi
 
 rm -rf "$NB_TMP"
@@ -1975,10 +1987,10 @@ else
   fail "N60/spawn-qa: Phase 0 ordering wrong"
 fi
 
-# --- 16-dim safety net preserved ---
-grep -qE "24 dimensions of review|safety net" "$QA_PROMPT" \
-  && pass "N60/qa-prompt: 24-dim checklist preserved as safety net (not replaced)" \
-  || fail "N60/qa-prompt: 24-dim safety net missing"
+# --- 25-dim safety net preserved ---
+grep -qE "25 dimensions of review|safety net" "$QA_PROMPT" \
+  && pass "N60/qa-prompt: 25-dim checklist preserved as safety net (not replaced)" \
+  || fail "N60/qa-prompt: 25-dim safety net missing"
 
 # --- Senior/Principal Dev plan + hardening log (parallel to QA plan) ---
 DEV_PLAN="$PROJ/agent/design/f70-reflex-senior-engineer-dev.md"
@@ -2297,10 +2309,10 @@ grep -qF "assumptions.md" "$QA_PROMPT" \
   && pass "N59/qa-prompt: assumption-surfacing documented" \
   || fail "N59/qa-prompt: assumption-surfacing missing"
 
-# --- 24-dim checklist preserved as safety net (not replaced) ---
-grep -qE "24 dimensions of review" "$QA_PROMPT" \
-  && pass "N59/qa-prompt: 24-dim checklist preserved as safety net (not replaced by Phase 0)" \
-  || fail "N59/qa-prompt: 24-dim checklist missing — Phase 0 should augment, not replace"
+# --- 25-dim checklist preserved as safety net (not replaced) ---
+grep -qE "25 dimensions of review" "$QA_PROMPT" \
+  && pass "N59/qa-prompt: 25-dim checklist preserved as safety net (not replaced by Phase 0)" \
+  || fail "N59/qa-prompt: 25-dim checklist missing — Phase 0 should augment, not replace"
 
 grep -qiE "safety net|short-circuit" "$QA_PROMPT" \
   && pass "N59/qa-prompt: prompt describes how Phase 0 and 22-dim interact (safety net / short-circuit)" \
@@ -4404,6 +4416,275 @@ grep -q "IS_KIT_SELF" "$PROJ/reflex/lib/doc-code-diff.sh" \
 grep -q 'agent/scripts/psk-\*) continue' "$PROJ/reflex/lib/doc-code-diff.sh" \
   && pass "N84/G22-skip-kit-infra: doc-code-diff excludes kit-owned paths on user projects" \
   || fail "N84/G22-skip-kit-infra: kit-infra exclusion missing"
+
+# --- Phase A — dev-self-verify (10th gate) — Loop 6 v0.6.34 ---
+# Locks in the structural fix for the 3-iteration sub-agent claim recurrence
+# pattern. Doc 19 §15.2 + §15.8 + Loop-6 plan §A.
+
+[ -x "$PROJ/reflex/lib/dev-self-verify.sh" ] \
+  && pass "Loop6/PhaseA-script: reflex/lib/dev-self-verify.sh exists + executable" \
+  || fail "Loop6/PhaseA-script: dev-self-verify.sh missing or not executable"
+
+grep -q "REFLEX_DEV_SELF_VERIFY" "$PROJ/reflex/lib/dev-self-verify.sh" \
+  && pass "Loop6/PhaseA-flag: feature flag REFLEX_DEV_SELF_VERIFY honored" \
+  || fail "Loop6/PhaseA-flag: feature flag missing"
+
+grep -q "regression_vector\|invocation_verbatim\|expected_assertion" "$PROJ/reflex/lib/dev-self-verify.sh" \
+  && pass "Loop6/PhaseA-parser: dev-self-verify parses regression_vector blocks" \
+  || fail "Loop6/PhaseA-parser: regression_vector parsing absent"
+
+grep -q "dev-self-verify" "$PROJ/reflex/lib/gates.sh" \
+  && pass "Loop6/PhaseA-wired: gates.sh invokes dev-self-verify as 10th gate" \
+  || fail "Loop6/PhaseA-wired: gates.sh missing dev-self-verify invocation"
+
+# Default off — bare invocation with no env flag should exit 0 (gate disabled)
+REFLEX_DEV_SELF_VERIFY=0 bash "$PROJ/reflex/lib/dev-self-verify.sh" >/dev/null 2>&1 \
+  && pass "Loop6/PhaseA-default-off: gate is no-op when flag not set" \
+  || fail "Loop6/PhaseA-default-off: gate misbehaves when flag absent"
+
+# --- Phase B — lock in the 3 recurrence fixes (RFT/AB/DCD) — Loop 6 v0.6.34 ---
+# Cycle-09 surfaced these as recurrences; investigation showed scripts work
+# correctly when invoked directly. Regression tests pin the working behavior
+# so future Phase A's dev-self-verify catches any silent regressions.
+
+# B.1 — RFT comma-split actually splits multi-test references
+RFT_TMP="/tmp/psk-rft-test-$$"
+mkdir -p "$RFT_TMP/tests/e2e" "$RFT_TMP/agent" "$RFT_TMP/agent/design"
+cat > "$RFT_TMP/agent/SPECS.md" <<'EOF'
+# SPECS
+
+| Feature | Name | Req | Criteria | Status | Date | Tests |
+|---|---|---|---|---|---|---|
+| F1 | Test feature | R1 | criteria | [x] | 2026-01-01 | tests/e2e/03-submit-text.spec.ts, tests/e2e/04-submit-url.spec.ts |
+
+### F1
+- [x] criterion
+EOF
+cat > "$RFT_TMP/agent/REQS.md" <<'EOF'
+# REQS
+
+| R1 | description | status |
+EOF
+touch "$RFT_TMP/tests/e2e/03-submit-text.spec.ts" "$RFT_TMP/tests/e2e/04-submit-url.spec.ts"
+touch "$RFT_TMP/agent/design/f1-test.md"
+RFT_OUT=$(bash "$PROJ/reflex/lib/check-rft-integrity.sh" "$RFT_TMP" 2>&1 || true)
+breaks_count=$(echo "$RFT_OUT" | grep -c "C4-test-exists" || true)
+[ "$breaks_count" = "0" ] \
+  && pass "Loop6/PhaseB-rft-comma-split: comma-split test refs both validate as existing" \
+  || fail "Loop6/PhaseB-rft-comma-split: comma-split broke (got $breaks_count C4-test-exists breaks)"
+rm -rf "$RFT_TMP"
+
+# B.2 — abort-integrity emits schema v2 with abort_findings + baseline_audit_trail
+AB_OUT=$(bash "$PROJ/reflex/lib/check-abort-integrity.sh" "$PROJ" 2>&1 || true)
+echo "$AB_OUT" | grep -q '"schema_version": 2' \
+  && pass "Loop6/PhaseB-ab-schema: abort-integrity emits schema v2" \
+  || fail "Loop6/PhaseB-ab-schema: abort-integrity missing schema_version=2"
+
+echo "$AB_OUT" | grep -q '"abort_findings"' && echo "$AB_OUT" | grep -q '"baseline_audit_trail"' \
+  && pass "Loop6/PhaseB-ab-tiers: abort-integrity separates abort_findings from baseline_audit_trail" \
+  || fail "Loop6/PhaseB-ab-tiers: abort-integrity missing tier separation"
+
+echo "$AB_OUT" | grep -A 3 '"abort_findings"' | grep -q '\[\][[:space:]]*$\|^\s*\]' \
+  && pass "Loop6/PhaseB-ab-clean: abort-integrity has 0 abort_findings on kit-self (BASELINE filter working)" \
+  || fail "Loop6/PhaseB-ab-clean: abort-integrity surfacing pre-L3 history as findings (filter broken)"
+
+# B.3 — doc-code-diff excludes kit-installed paths in user-project mode
+# When run on a project (non-kit), psk-*.sh + reflex/* paths must be excluded
+DCD_OUT=$(REFLEX_DCD_VERBOSE=0 bash "$PROJ/reflex/lib/doc-code-diff.sh" "/Users/AqibMumtaz/Aqib Mumtaz/SL/Documents/Projects/psk-playground/searchsocialtruth" 2>&1 || true)
+psk_drift_count=$(echo "$DCD_OUT" | grep -c "agent/scripts/psk-" || true)
+[ "$psk_drift_count" = "0" ] \
+  && pass "Loop6/PhaseB-dcd-kit-exclude: doc-code-diff excludes kit-owned psk-*.sh paths in user-project mode" \
+  || fail "Loop6/PhaseB-dcd-kit-exclude: $psk_drift_count psk-*.sh drifts surfaced (kit-path exclusion broken)"
+
+# --- Phase C — psk-version-cascade.sh (closes V0633-SWEEP-CASCADE) ---
+# Loop 6 v0.6.34. Doc 19 §15.3.
+
+[ -x "$PROJ/agent/scripts/psk-version-cascade.sh" ] \
+  && pass "Loop6/PhaseC-script: psk-version-cascade.sh exists + executable" \
+  || fail "Loop6/PhaseC-script: psk-version-cascade.sh missing"
+
+# --check-only mode should exit 0 on clean tree, 1 on drift
+bash "$PROJ/agent/scripts/psk-version-cascade.sh" --check-only >/dev/null 2>&1 \
+  && pass "Loop6/PhaseC-clean-tree: cascade reports clean on current tree" \
+  || fail "Loop6/PhaseC-clean-tree: cascade reports drift on a tree that should be clean"
+
+# Inject synthetic drift, verify cascade detects it
+CASC_TMP="/tmp/psk-cascade-test-$$"
+mkdir -p "$CASC_TMP/agent" "$CASC_TMP/examples/starter/agent"
+cat > "$CASC_TMP/agent/AGENT_CONTEXT.md" <<EOF
+- **Version:** v0.9.99
+EOF
+cat > "$CASC_TMP/examples/starter/agent/AGENT_CONTEXT.md" <<EOF
+- **Kit:** v0.0.1
+EOF
+PROJ_ROOT="$CASC_TMP" bash "$PROJ/agent/scripts/psk-version-cascade.sh" --check-only >/dev/null 2>&1 \
+  && fail "Loop6/PhaseC-detects-drift: cascade missed synthetic drift in examples Kit field" \
+  || pass "Loop6/PhaseC-detects-drift: cascade correctly detects examples Kit field drift"
+
+# Apply mode bumps to TO_VER
+PROJ_ROOT="$CASC_TMP" bash "$PROJ/agent/scripts/psk-version-cascade.sh" >/dev/null 2>&1
+grep -q "Kit:\*\* v0.9.99" "$CASC_TMP/examples/starter/agent/AGENT_CONTEXT.md" \
+  && pass "Loop6/PhaseC-applies-fix: cascade bumps examples Kit field to TO_VER" \
+  || fail "Loop6/PhaseC-applies-fix: cascade did not bump examples Kit field"
+rm -rf "$CASC_TMP"
+
+# psk-release.sh Step 6 invokes psk-version-cascade.sh
+grep -q "psk-version-cascade.sh" "$PROJ/agent/scripts/psk-release.sh" \
+  && pass "Loop6/PhaseC-wired: psk-release.sh Step 6 invokes psk-version-cascade" \
+  || fail "Loop6/PhaseC-wired: psk-release.sh missing cascade invocation"
+
+# --- Phase D — gate-execution isolation (closes SELFTEST-ISOLATION-DEEPER) ---
+# Loop 6 v0.6.34. Doc 19 §15.4.
+
+grep -q "clear_gate_caches" "$PROJ/reflex/lib/gates.sh" \
+  && pass "Loop6/PhaseD-helper: gates.sh has clear_gate_caches helper" \
+  || fail "Loop6/PhaseD-helper: clear_gate_caches helper missing"
+
+# Whitelist preserves prep-release state file (look for `state|` in case branch)
+grep -A 8 "clear_gate_caches" "$PROJ/reflex/lib/gates.sh" | grep -qE "state\\|" \
+  && pass "Loop6/PhaseD-whitelist-state: prep-release state file preserved" \
+  || fail "Loop6/PhaseD-whitelist-state: state file not whitelisted (would break prep-release flow)"
+
+# Whitelist preserves critic-task / critic-result
+grep -A 8 "clear_gate_caches" "$PROJ/reflex/lib/gates.sh" | grep -q "critic-task\|critic-result" \
+  && pass "Loop6/PhaseD-whitelist-critic: critic state files preserved" \
+  || fail "Loop6/PhaseD-whitelist-critic: critic state files not whitelisted"
+
+# Helper invoked inside the per-gate loop
+awk '/^while IFS= read -r gate/,/^done <<< "\$gates"/' "$PROJ/reflex/lib/gates.sh" | grep -q "clear_gate_caches" \
+  && pass "Loop6/PhaseD-wired: clear_gate_caches called per gate iteration" \
+  || fail "Loop6/PhaseD-wired: clear_gate_caches not called per gate"
+
+# --- Phase E — EXPECT_RESUME flag (closes L2-OVERFIRE) ---
+# Loop 6 v0.6.34. Doc 19 §15.5.
+
+# L2 trap honors EXPECT_RESUME=1 — no INTERRUPTED verdict on intentional pauses
+grep -A 12 "_l2_completion_trap()" "$PROJ/reflex/run.sh" | grep -q 'EXPECT_RESUME' \
+  && pass "Loop6/PhaseE-trap-honor: L2 trap checks EXPECT_RESUME flag" \
+  || fail "Loop6/PhaseE-trap-honor: L2 trap missing EXPECT_RESUME check"
+
+# spawn-qa exports EXPECT_RESUME before exit 2
+grep -B 1 "exit 2" "$PROJ/reflex/lib/spawn-qa.sh" | grep -q "EXPECT_RESUME=1" \
+  && pass "Loop6/PhaseE-spawn-qa: spawn-qa sets EXPECT_RESUME before AWAITING_QA exit" \
+  || fail "Loop6/PhaseE-spawn-qa: spawn-qa missing EXPECT_RESUME export"
+
+# spawn-dev exports EXPECT_RESUME before exit 2
+grep -B 1 "exit 2" "$PROJ/reflex/lib/spawn-dev.sh" | grep -q "EXPECT_RESUME=1" \
+  && pass "Loop6/PhaseE-spawn-dev: spawn-dev sets EXPECT_RESUME before AWAITING_DEV exit" \
+  || fail "Loop6/PhaseE-spawn-dev: spawn-dev missing EXPECT_RESUME export"
+
+# --- Phase F — resume-* path standardization (closes RESUME-DEV-PATH) ---
+# Loop 6 v0.6.34. Doc 19 §15.5.
+
+# resume-qa branch has auto-mirror fallback from pass-dir
+awk '/resume-qa\)/,/^  ;;/' "$PROJ/reflex/run.sh" | grep -q "auto-mirroring from" \
+  && pass "Loop6/PhaseF-qa-mirror: resume-qa auto-mirrors qa-result.md from pass-dir" \
+  || fail "Loop6/PhaseF-qa-mirror: resume-qa missing auto-mirror fallback"
+
+# resume-dev branch has same auto-mirror
+awk '/resume-dev\)/,/^  ;;/' "$PROJ/reflex/run.sh" | grep -q "auto-mirroring from" \
+  && pass "Loop6/PhaseF-dev-mirror: resume-dev auto-mirrors dev-result.md from pass-dir" \
+  || fail "Loop6/PhaseF-dev-mirror: resume-dev missing auto-mirror fallback"
+
+# --- Loop 6.5 v0.6.35 — convergence-rule fix (Phase G/H/I/J) ---
+# Doc 19 §17. User mandate: only PLATEAU(set-based) + INFINITE_LOOP_PROTECTION
+# may stop reflex. min_fix_rate, count-based plateau, tool-call cap, retry cap
+# all REMOVED — they were budget-stops causing leftover-deferrals.
+
+# Phase G — config.yml has no min_fix_rate stop signal
+! grep -q "^[[:space:]]*min_fix_rate:" "$PROJ/reflex/config.yml" \
+  && pass "Loop6.5/PhaseG-no-min-fix-rate: config.yml has no min_fix_rate (was budget-stop)" \
+  || fail "Loop6.5/PhaseG-no-min-fix-rate: min_fix_rate still present in config — should be removed"
+
+# Phase G — config.yml has set-based plateau
+grep -q "plateau_check:[[:space:]]*id_set_match" "$PROJ/reflex/config.yml" \
+  && pass "Loop6.5/PhaseG-set-plateau: config.yml has plateau_check: id_set_match" \
+  || fail "Loop6.5/PhaseG-set-plateau: set-based plateau missing from config"
+
+# Phase G — infinite_loop_protection replaces max_iterations_safety
+grep -q "infinite_loop_protection:" "$PROJ/reflex/config.yml" \
+  && pass "Loop6.5/PhaseG-infinite-protection: config.yml has infinite_loop_protection" \
+  || fail "Loop6.5/PhaseG-infinite-protection: hard-ceiling field missing"
+
+# Phase G — guidance section replaces budget hard caps
+grep -q "^guidance:" "$PROJ/reflex/config.yml" \
+  && pass "Loop6.5/PhaseG-guidance: config.yml has guidance: section (replaces budget:)" \
+  || fail "Loop6.5/PhaseG-guidance: guidance section missing"
+
+! grep -q "^budget:" "$PROJ/reflex/config.yml" \
+  && pass "Loop6.5/PhaseG-no-budget: config.yml has no budget: section (replaced by guidance)" \
+  || fail "Loop6.5/PhaseG-no-budget: budget: section still present"
+
+# Phase H — loop.sh has no FIX_RATE_DROP stop branch (excluding comments)
+! grep -E '^\s*[^#]*FIX_RATE_DROP|^\s*[^#]*MIN_FIX_RATE=|stop_reason="FIX_RATE_DROP' "$PROJ/reflex/lib/loop.sh" >/dev/null \
+  && pass "Loop6.5/PhaseH-no-fix-rate-stop: loop.sh has no min_fix_rate stop logic" \
+  || fail "Loop6.5/PhaseH-no-fix-rate-stop: FIX_RATE_DROP/MIN_FIX_RATE still active in loop.sh"
+
+# Phase H — loop.sh has set-based plateau detection
+grep -q "PLATEAU.*finding-ID set\|id_set_match\|_plateau_pass_dirs" "$PROJ/reflex/lib/loop.sh" \
+  && pass "Loop6.5/PhaseH-set-plateau-impl: loop.sh implements set-based plateau" \
+  || fail "Loop6.5/PhaseH-set-plateau-impl: set-based plateau missing in loop.sh"
+
+# Phase H — loop.sh uses INFINITE_LOOP_PROTECTION
+grep -q "INFINITE_LOOP_PROTECTION" "$PROJ/reflex/lib/loop.sh" \
+  && pass "Loop6.5/PhaseH-infinite-protection: loop.sh uses INFINITE_LOOP_PROTECTION" \
+  || fail "Loop6.5/PhaseH-infinite-protection: not wired in loop.sh"
+
+# Phase I — spawn-dev.sh emits guidance, not hard budget cap
+grep -q "recommended_tool_calls\|guidance:" "$PROJ/reflex/lib/spawn-dev.sh" \
+  && pass "Loop6.5/PhaseI-spawn-dev-guidance: spawn-dev emits guidance, not hard cap" \
+  || fail "Loop6.5/PhaseI-spawn-dev-guidance: hard cap still in spawn-dev"
+
+grep -q "task_completeness: ABSOLUTE\|task completeness is absolute" "$PROJ/reflex/lib/spawn-dev.sh" \
+  && pass "Loop6.5/PhaseI-spawn-dev-mandate: spawn-dev mandates task_completeness ABSOLUTE" \
+  || fail "Loop6.5/PhaseI-spawn-dev-mandate: task-completeness mandate missing"
+
+# Phase I — dev-agent.md prompt has no "budget exhausted" abandon path
+! grep -q "budget-exhausted-at-finding-N" "$PROJ/reflex/prompts/dev-agent.md" \
+  && pass "Loop6.5/PhaseI-prompt-no-abandon: dev-agent.md has no budget-exhausted abandon path" \
+  || fail "Loop6.5/PhaseI-prompt-no-abandon: budget-exhausted still in dev-agent prompt"
+
+# Phase J — cost reporting in track-tokens.sh
+grep -q "Pass cost report\|estimated_usd_per_1k_tokens" "$PROJ/reflex/lib/track-tokens.sh" \
+  && pass "Loop6.5/PhaseJ-cost-report: track-tokens emits structured cost report" \
+  || fail "Loop6.5/PhaseJ-cost-report: cost report block missing"
+
+grep -q "cost_reporting:" "$PROJ/reflex/config.yml" \
+  && pass "Loop6.5/PhaseJ-cost-config: config.yml has cost_reporting: section" \
+  || fail "Loop6.5/PhaseJ-cost-config: cost_reporting section missing"
+
+# Set-based plateau correctness — synthetic test
+PLAT_TMP="/tmp/psk-plateau-test-$$"
+mkdir -p "$PLAT_TMP/reflex/history/cycle-01/pass-001"
+mkdir -p "$PLAT_TMP/reflex/history/cycle-01/pass-002"
+cat > "$PLAT_TMP/reflex/history/cycle-01/pass-001/findings.yaml" <<'EOF'
+findings:
+  - id: QA-X-01
+  - id: QA-X-02
+EOF
+cat > "$PLAT_TMP/reflex/history/cycle-01/pass-002/findings.yaml" <<'EOF'
+findings:
+  - id: QA-X-01
+  - id: QA-X-02
+EOF
+# Both passes have IDENTICAL ID set {QA-X-01, QA-X-02} → would trigger plateau
+extracted_set_1=$(awk '/^[[:space:]]*-[[:space:]]+id:/ { sub(/^[[:space:]]*-[[:space:]]+id:[[:space:]]*/, ""); gsub(/[[:space:]"]/, ""); print }' "$PLAT_TMP/reflex/history/cycle-01/pass-001/findings.yaml" | sort -u | tr '\n' ',' | sed 's/,$//')
+extracted_set_2=$(awk '/^[[:space:]]*-[[:space:]]+id:/ { sub(/^[[:space:]]*-[[:space:]]+id:[[:space:]]*/, ""); gsub(/[[:space:]"]/, ""); print }' "$PLAT_TMP/reflex/history/cycle-01/pass-002/findings.yaml" | sort -u | tr '\n' ',' | sed 's/,$//')
+[ "$extracted_set_1" = "$extracted_set_2" ] && [ "$extracted_set_1" = "QA-X-01,QA-X-02" ] \
+  && pass "Loop6.5/PhaseH-plateau-detect: set-based detection identifies identical ID sets" \
+  || fail "Loop6.5/PhaseH-plateau-detect: identical sets not equal under extraction (got: '$extracted_set_1' vs '$extracted_set_2')"
+
+# Set-based: different IDs (same count) should NOT trigger plateau
+cat > "$PLAT_TMP/reflex/history/cycle-01/pass-002/findings.yaml" <<'EOF'
+findings:
+  - id: QA-X-01
+  - id: QA-Y-99
+EOF
+extracted_set_2b=$(awk '/^[[:space:]]*-[[:space:]]+id:/ { sub(/^[[:space:]]*-[[:space:]]+id:[[:space:]]*/, ""); gsub(/[[:space:]"]/, ""); print }' "$PLAT_TMP/reflex/history/cycle-01/pass-002/findings.yaml" | sort -u | tr '\n' ',' | sed 's/,$//')
+[ "$extracted_set_1" != "$extracted_set_2b" ] \
+  && pass "Loop6.5/PhaseH-plateau-progress: different ID sets recognized as progress (Dev fixed C, QA found D)" \
+  || fail "Loop6.5/PhaseH-plateau-progress: different ID sets incorrectly equal (extraction broken)"
+rm -rf "$PLAT_TMP"
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""

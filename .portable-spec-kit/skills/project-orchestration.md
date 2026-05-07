@@ -104,7 +104,51 @@ Spawn `security-baseline.md` skill + augmented `source-structures.md` template. 
 - Error response format (no stack traces in prod)
 - README.md with setup + run + deploy instructions
 
+**Stack-specific post-scaffold hooks (MANDATORY when applicable):**
+
+When `create-next-app` (or any external generator that emits a Next.js App Router scaffold) is used in this phase, the agent MUST patch the generated `app/layout.tsx` to add `suppressHydrationWarning` to BOTH the `<html>` and `<body>` tags before continuing to Phase 7.
+
+**Why:** Next.js App Router hydrates the root layout on the client. Browser extensions (Grammarly, password managers, dark-mode injectors, etc.) routinely mutate `<html>` / `<body>` attributes (e.g. `data-gr-ext-installed`, `cz-shortcut-listen`, `class="vsc-initialized"`) BEFORE React hydrates. The default scaffold has no hydration suppression, so every user with any common extension sees a hydration-mismatch warning in dev console on first paint — which then trips kit reflex's console-cleanliness probe (G-KIT-CONSOLE-CLEANLINESS-01) as a false positive against scaffolded code the kit emitted itself. `suppressHydrationWarning` on `<html>` and `<body>` only suppresses warnings on attributes set on those two elements (it does NOT suppress warnings deeper in the tree — that scope is exactly correct for this case).
+
+**Patch pattern (idempotent — safe to re-run):**
+```bash
+# After create-next-app finishes, before any Phase 7 commit:
+LAYOUT="${PROJ_ROOT}/app/layout.tsx"
+[ ! -f "$LAYOUT" ] && LAYOUT="${PROJ_ROOT}/src/app/layout.tsx"  # src/ variant
+if [ -f "$LAYOUT" ] && ! grep -q "suppressHydrationWarning" "$LAYOUT"; then
+  # Add to <html ...> opening tag (handles `<html lang="en">` and bare `<html>`)
+  sed -i.bak -E 's|<html([^>]*)>|<html\1 suppressHydrationWarning>|' "$LAYOUT"
+  # Add to <body ...> opening tag (handles className= and bare <body>)
+  sed -i.bak -E 's|<body([^>]*)>|<body\1 suppressHydrationWarning>|' "$LAYOUT"
+  rm -f "${LAYOUT}.bak"
+fi
+```
+
+After patching: run `npm run dev` smoke once (best-effort) and verify console shows zero hydration warnings before exiting Phase 6.
+
 **Gate:** *"Scaffold landed in `src/` and `tests/`. Run `bash setup.sh` then continue?"*
+
+### Phase 6.5 — Pre-flight mandate conformance audit
+
+Before crossing into Phase 7 (feature implementation), run the kit's mandate-conformance probe against the freshly-scaffolded project. This is the structural counterpart to Dim 25 (Mandate-Compliance) — it confirms the scaffold itself satisfies the mandates declared in `portable-spec-kit.md` so subsequent feature work cannot inherit a non-conformant skeleton.
+
+**Run:**
+
+```bash
+bash reflex/lib/mandate-audit.sh --full --block-severity MAJOR
+```
+
+**Severity policy:**
+
+- `MAJOR` findings (e.g. missing `ard/`, missing pipeline file, missing stack manifest) — must be fixed before Phase 7. The probe exits non-zero; orchestration halts until the gap is closed.
+- `MINOR` findings (e.g. missing `docs/work-flows/`, design plan missing for a feature scheduled later, `.env.example` missing) — appended to `agent/TASKS.md` under the current version backlog, not blocking. Phase 7 may continue.
+- `ADVISORY` findings (e.g. `ard/*.pdf` not yet generated) — informational only, not blocking, not added to TASKS.md.
+
+**Idempotent.** Re-running the probe on a Phase-6.5-clean project produces zero MAJOR findings. Re-runs are safe — the probe is read-only, no side effects.
+
+**Why the gate lives here, not at QA-Agent only.** Reflex Dim 25 surfaces mandate gaps *after* features ship; Phase 6.5 surfaces them *before* a single feature lands. Catching at scaffold time is cheaper (no fix-by-fix backfill) and prevents the class of regressions documented in Loop-Iter-2 (e.g. searchsocialtruth missed `ard/`/`docs/`/`src/` consolidation that QA only flagged at cycle-05).
+
+**Gate:** *"Mandate audit clean (or only MINOR backlog logged) — proceed to Phase 7?"*
 
 ### Phase 7 — Feature-by-feature implementation
 

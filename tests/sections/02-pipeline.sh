@@ -12,6 +12,13 @@
 # onboarding tour, requirements/research/design pipeline, end-user.
 #
 # Independently runnable: bash tests/sections/02-pipeline.sh
+#
+# DEPRECATED-IN-FAVOR-OF: tests/features/fNN-*.sh
+#
+# Loop-4 v0.6.32: SPECS.md Tests column now points at tests/features/fNN-*.sh
+# (per-feature audits, ~1 sec each). The exhaustive coverage in this file
+# still runs when test-spec-kit.sh sources sections/. Future cleanup
+# (v0.7.0+) will split this file's tests across features/ properly.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -z "${PROJ:-}" ] && source "$SCRIPT_DIR/../lib.sh"
 

@@ -8,6 +8,13 @@
 #
 # Independently runnable: bash tests/sections/01-infrastructure.sh
 # Orchestrator-sourced: see tests/test-spec-kit.sh
+#
+# DEPRECATED-IN-FAVOR-OF: tests/features/fNN-*.sh
+#
+# Loop-4 v0.6.32: SPECS.md Tests column now points at tests/features/fNN-*.sh
+# (per-feature audits, ~1 sec each). The exhaustive coverage in this file
+# still runs when test-spec-kit.sh sources sections/. Future cleanup
+# (v0.7.0+) will split this file's tests across features/ properly.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -z "${PROJ:-}" ] && source "$SCRIPT_DIR/../lib.sh"
 
@@ -829,7 +836,7 @@ section "24. README — Python Environment Section"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
-grep -q "16 step-by-step flow" "$PROJ/README.md" && pass "README: 16 flows count" || fail "README: wrong flow count"
+grep -q "21 step-by-step flow" "$PROJ/README.md" && pass "README: 21 flows count" || fail "README: wrong flow count"
 grep -q "12-project-lifecycle" "$PROJ/README.md" && pass "README: 12-project-lifecycle flow listed" || fail "README: missing 12-project-lifecycle"
 
 # ═══════════════════════════════════════════════════════════════

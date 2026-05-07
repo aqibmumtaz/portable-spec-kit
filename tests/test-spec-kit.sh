@@ -38,6 +38,7 @@ SECTIONS=(
   "$SCRIPT_DIR/sections/02-pipeline.sh"
   "$SCRIPT_DIR/sections/03-reliability.sh"
   "$SCRIPT_DIR/sections/04-reflex.sh"
+  "$SCRIPT_DIR/sections/05-mandate-compliance.sh"
 )
 
 for s in "${SECTIONS[@]}"; do
@@ -50,6 +51,22 @@ for s in "${SECTIONS[@]}"; do
   # shellcheck source=/dev/null
   source "$s"
 done
+
+# Phase T2 (Loop 4) — per-feature test discovery (Approach 3).
+# Sources tests/features/f*.sh dynamically. Additive — runs alongside the
+# legacy 5-section sourcing during the migration. Once all 70 features have
+# been moved (Phase T5-T7), the section sourcing becomes redundant and
+# sections/* will be converted to thin shims (Phase T9).
+if [ -d "$SCRIPT_DIR/features" ]; then
+  feature_files=( "$SCRIPT_DIR/features"/f*.sh )
+  if [ -e "${feature_files[0]:-/dev/null}" ]; then
+    echo ""
+    echo "═══ Per-feature tests (tests/features/) ═══"
+    for ff in "${feature_files[@]}"; do
+      [ -f "$ff" ] && source "$ff"
+    done
+  fi
+fi
 
 # Final aggregated summary
 echo ""

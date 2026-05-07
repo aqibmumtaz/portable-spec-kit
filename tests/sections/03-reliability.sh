@@ -11,6 +11,13 @@
 # (PSK012), 60g v0.5.16 RFT cache + CI templates, 60f verbatim-quote critic.
 #
 # Independently runnable: bash tests/sections/03-reliability.sh
+#
+# DEPRECATED-IN-FAVOR-OF: tests/features/fNN-*.sh
+#
+# Loop-4 v0.6.32: SPECS.md Tests column now points at tests/features/fNN-*.sh
+# (per-feature audits, ~1 sec each). The exhaustive coverage in this file
+# still runs when test-spec-kit.sh sources sections/. Future cleanup
+# (v0.7.0+) will split this file's tests across features/ properly.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -z "${PROJ:-}" ] && source "$SCRIPT_DIR/../lib.sh"
 
@@ -266,7 +273,37 @@ for f in critic-task.md critic-result.md .validate-stamp critic-iterations; do
   [ -f "$VSTATE/$f" ] && mv "$VSTATE/$f" "$VSTATE/$f.pretest-bak"
 done
 
+# H5 / QA-KIT-SELFTEST-ISOLATION-01 (searchsocialtruth-cycle-05-gate)
+# + L5.4 G-KIT-SELFTEST-ISOLATION-01 (searchsocialtruth-cycle-08-gate):
+# pre-clean helper — strips ALL state files known to leak between
+# behavior tests so a prior failed run cannot pollute a subsequent
+# test. Called before every "Behavior N" block.
+#
+# Files cleaned (full reflex/release-state surface):
+#   critic-task.md      — input from validate.sh to critic
+#   critic-result.md    — output from critic
+#   .validate-stamp     — freshness anchor (mtime-checked)
+#   critic-iterations   — iteration counter (5-cap)
+#   loop-state.yml      — autoloop convergence state
+#   dev-task.md         — input to Dev-Agent (L5.4)
+#   dev-result.md       — output from Dev-Agent
+#   qa-task.md          — input to QA-Agent (L5.4)
+#   qa-result.md        — output from QA-Agent (L5.4)
+pre_clean_release_state() {
+  for f in critic-task.md critic-result.md .validate-stamp \
+           critic-iterations loop-state.yml \
+           dev-task.md dev-result.md \
+           qa-task.md qa-result.md; do
+    rm -f "$VSTATE/$f"
+  done
+}
+
+# L5.4 — also pre-clean at section start (covers any pollution from
+# prior section files OR prior test-spec-kit.sh runs that exited mid-flow).
+pre_clean_release_state
+
 # Behavior 1: no critic-result, no stamp → exit 2 AWAITING_CRITIC
+pre_clean_release_state
 PSK_SYNC_CHECK_DISABLED=1 bash "$VALIDATE_SH" release >/dev/null 2>&1
 rc=$?
 [ "$rc" = "2" ] \
@@ -1165,6 +1202,18 @@ for tpl in STEP_4_FLOW_DOCS STEP_8_RELEASES STEP_9_VALIDATION FEATURE_COMPLETE I
     || fail "quote-verify: critic template $tpl missing QUOTE: requirement"
 done
 
+
+# L5.4 — post-clean: prevent residue from leaking into the next section
+# file or next test-spec-kit.sh run. Idempotent; safe even if VSTATE
+# doesn't exist yet.
+if [ -d "$VSTATE" ]; then
+  for f in critic-task.md critic-result.md .validate-stamp \
+           critic-iterations loop-state.yml \
+           dev-task.md dev-result.md \
+           qa-task.md qa-result.md; do
+    rm -f "$VSTATE/$f"
+  done
+fi
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""

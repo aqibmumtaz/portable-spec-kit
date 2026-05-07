@@ -8,7 +8,175 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.28 · **Tests:** 1756 (1611 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.35 · **Tests:** 1950 (1805 framework + 145 benchmarking)
+
+### v0.6.35 — Loop Iteration 6.5 kit-side: convergence-rule fix — no budget-stops, set-based plateau (May 2026)
+
+**Closes the budget-driven leftover-deferral pattern.** Per Loop 3 §Convergence mandate ("no leftover from reflex shortcuts"), reflex must iterate to GENUINE convergence. Loop 6 surfaced 4 budget-stops in the kit that violated this:
+
+1. `min_fix_rate: 0.5` — stopped on diminishing returns (left 50%+ findings unfixed)
+2. `patience_passes: 2` (count-based) — stopped on COUNT plateau even when finding IDs differ (`{A,B,C}` → `{A,B,D}` was being read as plateau when it's actually progress)
+3. `max_iterations_safety: 10` — too low; stopped on real work needing >10 iterations
+4. `max_tool_calls_per_pass: 200` + `max_retries_per_task: 3` — passed to Dev-Agent prompt as hard caps; sub-agent abandoned findings mid-investigation when reached
+
+**Phase G — config.yml rewrite:** `convergence:` now has only 4 STOP signals (GRANTED, REGRESSION, set-based PLATEAU, `infinite_loop_protection: 100`). `budget:` section REMOVED; replaced with `guidance:` (recommended targets, NEVER hard caps). `cost_reporting:` section added.
+
+**Phase H — loop.sh stop logic:** Set-based PLATEAU detection extracts finding IDs from last N pass dirs' `findings.yaml`, compares as sorted sets. Stops only on EXACT match. Per user §15.1: "1 fix lands → continue iterating; only exact same set 2 cycles → stop". `min_fix_rate` stop branch removed entirely. `SAFETY_CAP` → `INFINITE_LOOP_PROTECTION` (raised 10 → 100).
+
+**Phase I — strip budget caps from sub-agent prompts:** `spawn-dev.sh` task file emits `guidance:` block with "recommended ~1000 tool calls" + "task_completeness: ABSOLUTE — never abandon a finding". `dev-agent.md` prompt rewritten: no more "deferred: budget-exhausted-at-finding-N" abandon path.
+
+**Phase J — cost reporting first-class output:** Every pass prints structured cost block: QA tokens · calls · USD · Dev tokens · calls · USD · pass total + cumulative cycle + cumulative all-time. `track-tokens.sh` upgraded.
+
+**Phase K — regression tests:** 14 new assertions in `tests/sections/04-reflex.sh` covering Phase G/H/I/J + N56 contract update. N56 tests rewritten to assert NEW convergence rules.
+
+**Phase O — PLAYWRIGHT-EMFILE-01 verified already fixed** at `gates.sh:199`. TASKS.md updated.
+
+**TASKS.md backlog audit:** 12 items closed (verified in production), 1 deferred to v0.7.x as low priority (PHASE0-EARLY-EXIT-01 optimization, not blocker since Phase 0 already 15.8s post-Loop 4).
+
+**Tests:** 1805 framework + 145 benchmarking = 1957 tests passing (was 1933, +24 Loop 6.5 regression tests).
+
+### v0.6.34 — Loop Iteration 6 kit-side: structural recurrence prevention (Phase A-F) + version-cascade ceremony (May 2026)
+
+**Loop Iteration 6 closes the 3-iteration sub-agent claim recurrence pattern documented in doc 19 §15.2.** Six structural fixes (Phase A-F) land in dependency order. Doc 19 §16 captures Iteration 6 lessons.
+
+**Phase A — Sub-agent verification gate (10th mechanical gate):**
+
+- **`f8383d0`:** `reflex/lib/dev-self-verify.sh` — extracts each fix-claimed finding's `regression_vector.invocation_verbatim`, runs it, asserts `expected_assertion`. Smart DSL handles "Output is empty", "Output ≥ N", "Output: N". Behind `REFLEX_DEV_SELF_VERIFY=1` env flag. 10th gate in `gates.sh`. `[source: loop-6]`
+
+**Phase B — Regression tests pin RFT/AB/DCD fixes:**
+
+- **`1f1c029`:** Cycle-09 findings were stale-state artifacts; scripts already worked. Phase B locks behavior with synthetic-fixture regression tests in `tests/sections/04-reflex.sh`. `[source: loop-6]`
+
+**Phase C — Comprehensive version-cascade sweep (closes V0633-SWEEP-CASCADE):**
+
+- **`4211474`:** New `agent/scripts/psk-version-cascade.sh` (script #27) — field-anchored version propagation across examples' `agent/*` Kit fields, benchmarking fixtures, ARD HTML current-version anchors, CHANGELOG range end. `psk-release.sh` Step 6 invokes it. `[source: loop-6]`
+
+**Phase D — Gate-execution isolation (closes SELFTEST-ISOLATION-DEEPER):**
+
+- **`4408e7d`:** `reflex/lib/gates.sh` — new `clear_gate_caches()` wipes all `agent/.release-state/` cache files except whitelist before every gate iteration. `[source: loop-6]`
+
+**Phase E — EXPECT_RESUME flag honored by L2 EXIT trap (closes L2-OVERFIRE):**
+
+- **`870be8f`:** L2 trap honors `EXPECT_RESUME=1` exported by spawn-qa/spawn-dev before AWAITING_* exit. Intentional pauses no longer write INTERRUPTED verdict. `[source: loop-6]`
+
+**Phase F — Resume-* path standardization (closes RESUME-DEV-PATH):**
+
+- **`a6c212b`:** `run.sh resume-qa` and `resume-dev` auto-mirror result files from pass-dir to STATE_DIR when sub-agent skipped canonical copy. Both write paths Just Work. `[source: loop-6]`
+
+**Tests:** 1788 framework + 145 benchmarking = 1933 tests (was 1909, +24 Loop 6 regression tests).
+
+### v0.6.33 — Loop Iteration 5 kit-side: 4 deferred fixes from v0.6.32 backlog + cycle-06 dev-fixes (May 2026)
+
+**Loop Iteration 5 lands the v0.6.33 backlog carried from Loop 4 incompleteness.** Four deep fixes (L5.1-L5.4) addressing the same findings sub-agents claimed to fix in Loop 4 but cycle-08 found still incomplete. Plus 2 cycle-06 dev fixes (D01 `tests/features/f{N}-feature-name.sh` template exemption · V01 version-drift README badge). Project (searchsocialtruth v0.4.7) reflex cycle-09 GRANTED with all-9-gates-green. Kit doc 19 §15 captures Iteration 5 lessons including the clarified PLATEAU rule.
+
+**Phase L5 — Deep fixes for v0.6.32 backlog (4 commits):**
+
+- **L5.1 (`1e3f607`):** RFT comma-split fix in `reflex/lib/check-rft-integrity.sh` — applied Loop-2 H4 awk comma-split pattern to the actual code path that handles SPECS.md Tests column. Ships QA-KIT-RFT-COMMA-02 fix. `[source: loop-5]`
+- **L5.2 (`0ea56d2`):** abort-integrity schema v2 split — separate `abort_findings` (current pass with verdict-absent) from `baseline_audit_trail` (pre-L3 history with .iter-status.yml absent → BASELINE tier, not MAJOR). Ships QA-KIT-AB-PRIOR-05 fix. `[source: loop-5]`
+- **L5.3 (`8951bf7` + `311b607`):** doc-code-diff comprehensive kit-installed-path exclusion — added `tests/features/f[0-9]*-*` template exemption to handle template-style references in SPECS.md. Ships QA-KIT-DCD-NOISE-02 fix + cycle-06 D01. `[source: loop-5]`
+- **L5.4 (`5205f52`):** pre/post-clean state in `tests/sections/03-reliability.sh` and `05-mandate-compliance.sh` for 9 state files. Ships G-KIT-SELFTEST-ISOLATION-01 fix (3-run verified clean direct invocation). Note: state pollution recurs in gate-context — filed as `G-KIT-SELFTEST-ISOLATION-DEEPER-01` for v0.6.34. `[source: loop-5]`
+
+**Phase V5 — Version-drift cascade fix (2 commits):**
+
+- **V5.1 (`035eab9`):** README badge v0.6.32→v0.6.33 + AGENT_CONTEXT.md version sync (cycle-06 V01). `[source: loop-5]`
+- **V5.2 (`e62b25d`):** v0.6.32→v0.6.33 prep release: workspace-root portable-spec-kit.md sync, kit framework version bump. `[source: loop-5]`
+
+**Phase X5 — Loop 5 ceremony:**
+
+- **doc 19 §15:** Iteration 5 lessons — PLATEAU rule clarified ("1 fix lands → continue; exact same set 2 cycles → declare"), sub-agent claim incompleteness now empirically a 3-iteration pattern, version-drift cascade surfaced as structural concern, state-pollution recurrence proves Loop-2 H5 fix incomplete, 8 v0.6.34 backlog items filed. `[source: loop-5]`
+
+**Loop 5 backlog (filed for v0.6.34, 8 findings):**
+- G-KIT-V0633-SWEEP-CASCADE-01 (MAJOR) — version-drift cascade across artifacts
+- G-KIT-SELFTEST-ISOLATION-DEEPER-01 (MAJOR) — needs gate-execution isolation, not more pre-clean
+- G-KIT-L2-OVERFIRE-01 (MINOR) — EXIT trap fires INTERRUPTED on legitimate AWAITING_QA pause
+- G-KIT-RESUME-DEV-PATH-01 (MINOR) — sub-agents write to pass dir, resume-* looks at agent/.release-state/
+- QA-KIT-RFT-COMMA-03 (MAJOR) — 3rd recurrence (Loop-3 M3 → Loop-4 -02 → Loop-5 -03)
+- QA-KIT-AB-PRIOR-06 (MINOR) — 3rd recurrence (Loop-3 abort-tier)
+- QA-KIT-DCD-NOISE-03 (MINOR) — 3rd recurrence (Loop-3 doc-code-diff exclusion)
+- QA-KIT-VERSION-DRIFT-01 (MINOR) — README/AGENT_CONTEXT mismatch on bump
+
+### v0.6.32 — Loop Iteration 4 kit-side: Per-feature test architecture (Approach 3) + 4 deferred fixes cleared (May 2026)
+
+**Architectural fix for the cost wall surfaced by Loop 3 G-KIT-PHASE0-COST-01.** Each of 70 kit features now has a dedicated `tests/features/fNN-*.sh` selective audit (~1 sec each) instead of pointing at the 1909-test monolith `tests/test-spec-kit.sh`. Release-check runtime: hours → 15.8 seconds. Sections retained as exhaustive backbone of `test-spec-kit.sh` (1764 framework + 145 benchmarking = 1909 tests still passing). Kit-self discriminator preserved.
+
+**Phase T — Per-feature test architecture (Approach 3 implementation):**
+
+- **ADR-077 / T1.1 (`4673407`):** playwright gate ulimit fix — increase open-files limit before invoking npx playwright. `[source: loop-4]`
+- **ADR-078 / T1.2 (`f413604`):** RFT comma-split parity completion — final code-path that hadn't migrated to comma-split semantics. `[source: loop-4]`
+- **ADR-079 / T1.3 (`449109a`):** abort-integrity BASELINE tier — recognizes pre-L1 history as legitimate, not flagged as silent abort. `[source: loop-4]`
+- **ADR-080 / T1.4 (`6d88d72`):** doc-code-diff comprehensive kit-script exclusion — full kit-owned-paths list, not just symlinked entries. `[source: loop-4]`
+- **ADR-081 / T2 (`774ceb3`..`27b0ab5` skeleton commits):** `tests/{shared,features}/` skeleton + dynamic discovery in test-spec-kit.sh. `[source: loop-4]`
+- **ADR-082 / T3:** `MIGRATION-MAP.csv` classification artifact — every existing test mapped to target feature. `[source: loop-4]`
+- **ADR-083 / T4 (`27b0ab5`):** 6 shared helper files (T4.1-T4.6 collapsed): test-fixtures, mandate-audit, reflex-fixtures, common assertions, file-resolvers, project-skeletons. `[source: loop-4]`
+- **ADR-084 / T5-T7 (`6979303` · `868482e` · `20025c6`):** 70 per-feature audit files (`tests/features/f01-*.sh` through `tests/features/f70-*.sh`), each ~1 sec selective audit. `[source: loop-4]`
+- **ADR-085 / T8 (`43535de`):** SPECS.md Tests column migrated to per-feature refs (70 features). F25 retained as `tests/test-spd-benchmarking.sh`. `[source: loop-4]`
+- **ADR-086 / T9 (`8d48380`):** sections/* deprecation headers (content retained for exhaustive coverage). Test logic unchanged — sections/ remain orchestrator-sourced backbone. `[source: loop-4]`
+- **ADR-087:** Loop 4 cost-wall elimination — architectural rationale for the per-feature split (release-check no longer runs the 1909-test monolith for every feature row). `[source: loop-4]`
+- **ADR-088:** Per-feature test architecture as Approach 3 implementation — chose Approach A (retain sections/) over Approach B (replace with shims) for risk minimization. `[source: loop-4]`
+
+### v0.6.31 — Loop Iteration 3 kit-side: Convergence-discipline structural enforcement + 5 v0.6.30 deferred fixes cleared (May 2026)
+
+**Convergence-discipline elevated from documentation to gate-enforced invariant.** Adds 6 abort-enforcement mechanisms (L1-L6) so a Ctrl-C'd / OOM-killed / timeout-killed autoloop iteration can no longer silently look the same as a clean GRANTED to the filesystem. The 9th mechanical gate `convergence-audit` rejects INTERRUPTED verdicts; the EXIT-trap completion contract guarantees a verdict.md exists; per-iteration `.iter-status.yml` provides the audit trail; abort-integrity is pre-computed in Phase 0 and surfaced to QA-Agent dimensions. Plus 5 v0.6.30 deferred findings cleared (M1-M5).
+
+**Phase L — Abort-enforcement architecture (6 commits):**
+
+- **ADR-066 / L1 (`6843dad`):** abort-detection in preconditions + `--recover-from-abort` flag. Next pass detects prior INTERRUPTED verdict and refuses to silently continue. `[source: loop-3]`
+- **ADR-067 / L2 (`64ad34e`):** EXIT-trap completion contract — bash EXIT trap writes verdict.md=INTERRUPTED if mainline didn't. Structural guarantee that no abort leaves zero machine-readable trace. `[source: loop-3]`
+- **ADR-068 / L3 (`a09d3bd`):** per-iteration `.iter-status.yml` audit trail (status: in-flight/completed/aborted, timestamps, verdict-ref). Read by L1, verified by L4, enforced by L5. `[source: loop-3]`
+- **ADR-069 / L4 (`517d2e5`):** abort-integrity probe in Phase 0 pre-compute. `reflex/lib/check-abort-integrity.sh` writes `abort-integrity.yaml` for QA-Agent dimensions + 9th gate. `[source: loop-3]`
+- **ADR-070 / L5 (`bf1b024`):** 9th mechanical gate `convergence-audit` (rejects INTERRUPTED verdicts). No commit on a `reflex/dev-*` branch closes a pass with INTERRUPTED. `[source: loop-3]`
+- **ADR-071 / L6 (`0d25871`):** `portable-spec-kit.md` §Convergence section + 9-gate doc count refresh. Cross-agent visibility for the 9th gate + abort-detection rules. `[source: loop-3]`
+
+**Phase M — 5 v0.6.30 deferred fixes cleared (5 commits):**
+
+- **ADR-072 / M1 (`eb07d9c`):** `G-KIT-RELEASE-CHECK-SUBSHELL-01` — subshell env-var propagation in test-release-check. `PSK_*_DISABLED` now propagates into nested test invocations via explicit `export`. `[source: loop-3]`
+- **ADR-073 / M2 (`1279e6a`):** `G-KIT-PHASE0-PERF-01` — Phase 0 test-spec-kit cache sharing across helpers. ~60-180s savings per pass on real-size projects (was 3× redundant invocations). `[source: loop-3]`
+- **ADR-074 / M3 (`11c302f`):** `QA-KIT-RFT-COMMA-01` — RFT comma-split parity with release-check. Multi-test features (`tests/a.sh, tests/b.sh`) now parsed identically across both code paths. `[source: loop-3]`
+- **ADR-075 / M4 (`c03b365`):** `QA-KIT-PSK001-PARSER-01` — PSK001 version-scoped grep. Parallels v0.6.30's H2 PSK002 fix — same structural class, false-flag elimination on historical version digits. `[source: loop-3]`
+- **ADR-076 / M5 (`d3f5fd6`):** `QA-KIT-DOCDIFF-NOISE-01` — doc-code-diff kit-script exclusion on user projects. IS_KIT_SELF detection now skips kit-installed paths when running on a user project. `[source: loop-3]`
+
+### Tests
+
+- **1764 framework + 145 benchmarking = 1909 tests passing** (no test-count delta from v0.6.30 — L+M fixes locked in by existing N84 / N76 / N75 / Dim 25 regression suites; L6 9th-gate count refresh updates the existing "8 mechanical gates" assertion to "9 mechanical gates")
+- Sources: `[loop-3]`
+
+### v0.6.30 — Loop Iteration 2 kit-side: Mandate-Compliance probe (Dim 25) + 8th gate + 6 deferred findings cleared (May 2026)
+
+**Adds the structural-completeness floor.** Dim 24 was the structural ceiling (overlap detection — prevents over-coverage). Dim 25 is the floor (mandate-compliance — prevents under-coverage). An orchestrated project can now no longer ship missing whole top-level kit mandates (no `ard/`, no per-feature design plans, missing CHANGELOG, real-looking secrets in `.env.example`, README badges drifted from `agent/AGENT_CONTEXT.md`) with reflex's behavioral dimensions all green.
+
+- **F1 — `agent/scripts/mandate-audit.sh`** (commit `b503ad7`): deterministic kit-mandate compliance probe. Reads `portable-spec-kit.md` for declared mandates (ard/, agent/design/, CHANGELOG.md, .env.example placeholders, badge ↔ AGENT_CONTEXT version sync). Outputs `mandate-audit.yaml` with MAJOR (block) / MINOR (advisory) findings. Per-mandate severity table; project-agnostic.
+- **F2 — QA-Agent Dim 25 registered** (commit `6dfafd7`): `reflex/prompts/qa-agent.md` header bumped 24→25 dimensions; new `### Dimension 25 — Mandate-Compliance` section (~50 lines) with 5 probes (25.1 directory mandates, 25.2 design-plan-per-feature, 25.3 CHANGELOG drift, 25.4 secret-leak in `.env.example`, 25.5 badge ↔ AGENT_CONTEXT sync). Severity rationale documented.
+- **F3 — 8th mechanical gate** (commit `21e8b25`): `reflex/lib/gates.sh` registers `mandate-compliance` gate. MAJOR=block (gate fails), MINOR=advisory (gate passes, finding filed). Wired into `reflex/run.sh` mechanical-gates loop.
+- **F4 — `tests/sections/05-mandate-compliance.sh`** (commit `fce880b`): 9-test regression suite locks the probe + gate. Synthetic skeletons exercise T1 (missing ard/), T2 (missing design plan), T3 (clean skeleton = 0 findings) + Dim 25 + gate-8 reference checks.
+- **F5 — `portable-spec-kit.md`** (commit `f8a0118`): doc refresh — "8 mechanical gates" + Dim 25 registration + mandate-audit script reference.
+- **G1 — Phase 6.5 pre-flight** (commit `ec8bf53`): `reflex/lib/orchestration-phase-6-5.sh` runs mandate-audit BEFORE the project enters reflex (orchestration phase boundary). Catches structural gaps at scaffold-time, not first-reflex-pass.
+- **G2 — `psk-orchestrate.sh`** (commit `1e601ed`): wires Phase 6.5 invocation into the orchestration pipeline.
+- **G3 — `docs/work-flows/20-orchestration-completeness.md`** (commit `cd4d766`): flow doc covering Phase 6.5 design + invariants + integration with Dim 25.
+
+**6 deferred findings cleared from cycle-05** (closing the cycle backlog):
+- **H1 — `QA-KIT-RUNNER-DETECT-01`** (commit `d643883`): test-runner detection now explicitly enumerates `vitest`, `mocha`, `tap` (was Jest-only on Node, surfacing false-negatives on projects using alternatives). `[source: searchsocialtruth-cycle-05]`
+- **H2 — `QA-KIT-PSK002-CROSSVER-01`** (commit `5dd7953`): `tests/sections/02-pipeline.sh` test-count grep now version-scoped (was matching badge digits across version sweeps producing false coupling). `[source: searchsocialtruth-cycle-05]`
+- **H3 — `QA-KIT-INSTALLER-MANIFEST-01`** (commit `02fc1fe`): `install.sh` reflex/lib enumeration now dynamic (was hardcoded list growing stale on new lib helpers). `[source: kit-cycle-05]`
+- **H4 — `QA-KIT-RELEVANCE-NOISE-01`** (commit `42010df`): `tests/test-release-check.sh` test-relevance heuristic now mode-aware for feature naming (reduces false advisory flags on legitimate kebab-case test files). `[source: searchsocialtruth-cycle-05]`
+- **H5 — `QA-KIT-SELFTEST-ISOLATION-01`** (commit `7aec33c`): reliability tests now pre-clean state before running (was leaking sandbox residue across reruns). `[source: searchsocialtruth-cycle-05-gate]`
+- **H6 — `QA-META-PHIL-CYCLE-05-01`** (commit `057d8da`): ADL Dim 26 Gate-Distinguishability advisory (philosophical/meta finding from Loop Iteration 2 retro). `[source: meta-philosophy]`
+
+**ADR-052..064 added.** New 9-test mandate-compliance regression locks Dim 25 + 8th gate. Section count 94→95 (+1 for `tests/sections/05-mandate-compliance.sh`).
+
+**Tests:** 1909 (1764 framework + 145 benchmarking). Sources: `[searchsocialtruth-cycle-05 + kit-cycle-05 + meta-philosophy]`. Loop Iteration 2 kit-side ceremony — kit reflex pass and push follow this release.
+
+### v0.6.29 — Kit-evolution Phase A from searchsocialtruth field-test — 6 fixes (May 2026)
+
+**Second wave of kit-evolution fixes lands via the kit-evolution protocol.** Searchsocialtruth user-project field-tests (v0.4.0 smoke + cycle-04-pass-001 + cycle-02) surfaced 6 kit-machinery bugs filed as `scope: kit`. All 6 ship in this release.
+
+- **ADR-046 (G-KIT-NEXTJS-EXTENSION-HYDRATION-01):** Project-orchestration Phase 6 mandates a post-`create-next-app` patch on `app/layout.tsx` — adds `suppressHydrationWarning` to `<html>` and `<body>` tags. Prevents browser-extension induced hydration warnings (Grammarly, password managers, dark-mode injectors mutate those attrs before React hydrates) from tripping reflex's console-cleanliness probe as false-positive findings against scaffolded code the kit emitted itself.
+- **ADR-047 (G-KIT-CONSOLE-CLEANLINESS-01):** New `reflex/lib/console-probe.ts` Playwright wrapper captures `page.on('console')` (warning/error) + `page.on('pageerror')` (uncaught) on every page in the project's e2e suite. Allowlist via `e2e_console_allow: []` in `reflex/config.yml`. New gate in `reflex/lib/gates.sh` runs the probe IFF target has `playwright.config.{ts,js,mjs}`. Skips cleanly on kit-self.
+- **ADR-048 (G-KIT-PLAYWRIGHT-GATE-01):** 7th mechanical gate `playwright-suite` auto-detected on `playwright.config.{ts,js,mjs}` presence. Runs `npx playwright test --reporter=list` from PROJ_ROOT, exit code = gate result. Skipped on kit-self and Playwright-less projects. Zero changes needed in `config.yml mechanical_gates:` for projects to pick this up.
+- **ADR-049 (QA-AUDIT-PHASE0-01):** Phase 0 pre-compute now produces `pass-state-diff.yaml` (diff vs prior pass HEAD — files_changed + insertions + deletions + per-file status). Distinct from existing `state-diff.yaml` (reference-state vs current). Each pass also stamps `.head-sha` so the next pass can compute its diff. `sync-check.txt` wrapped in header block — never empty even when `psk-sync-check.sh` silent-exits.
+- **ADR-050 (QA-AUDIT-GAP-01):** `tests/test-release-check.sh` Tests-column parser supports comma-separated multi-test references. Pattern: `tests/a.test.js, tests/b.test.js` is now split, trimmed, and validated per-token. Single-ref rows behave identically. Per-feature aggregate: ANY ref failing fails the feature.
+- **ADR-051 (QA-KIT-CODEREV-ENV-FP-01):** `agent/scripts/psk-code-review.sh` exempts `.env.example`, `.env.sample`, `.env.template` from the committed-secrets warning. These are documentation files (placeholder values only) intended to be committed. Closes the recurring false positive on every searchsocialtruth cycle-02 pass.
+
+**Tests:** 1756 (1611 framework + 145 benchmarking). Sources: `[avacr-eval-searchsocialtruth/v0.4.0-smoke + cycle-04-pass-001 + cycle-02]`. Phase B (kit reflex on the kit's own evolution) and Phase C (push) follow this release.
 
 ### v0.6.28 — User-project reflex correctness (G19-G23 from searchsocialtruth field-test) (May 2026)
 

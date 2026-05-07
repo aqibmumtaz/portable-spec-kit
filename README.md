@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.6.28-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.6.35-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1756%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1950%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -58,7 +58,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-sp
 **Or paste to any AI agent (Claude, Cursor, Copilot, Windsurf, Cline):**
 > Install the Portable Spec Kit: run `curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash` then read CLAUDE.md and set up my project.
 
-Installs: `portable-spec-kit.md` (~980 lines) · 26 reliability scripts (+ 3 optional helpers) · 25 skill files (JIT-loaded) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
+Installs: `portable-spec-kit.md` (~980 lines) · 27 reliability scripts (+ 3 optional helpers) · 25 skill files (JIT-loaded) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
 
 Open any AI agent after install — personalized profile, project scan, 4-step guided tour, and you're building in under 2 minutes. **[Full install details ↓](#setup)** · **Uninstall:** `bash agent/scripts/psk-uninstall.sh` (preserves your `agent/*.md` pipeline files).
 
@@ -940,6 +940,8 @@ Detailed step-by-step diagrams for every work flow:
 | 17 | **[Reflex](docs/work-flows/17-reflex.md)** | Post-prep-release Actor-Critic loop — QA-Agent (black-box) finds gaps, Dev-Agent fixes atomically with per-commit gates; installable into any speckit project |
 | 18 | **[Project Orchestration](docs/work-flows/18-project-orchestration.md)** | Natural-language entry point — turns loose requirements into a polished, secure, audited working product via 10 phases (capture → research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature impl → release-prep → reflex audit → handoff) |
 | 19 | **[Kit Evolution Gauntlet](docs/work-flows/19-kit-evolution-gauntlet.md)** | Self-evolution safety harness — every proposed kit rule passes 6 gates (tests · rule-conflicts · philosophy · reflex fixture · /optimize health · manual approval) before merging; rejected proposals form permanent audit trail in agent/tasks/rejected/ |
+| 20 | **[Kit ↔ Project Evolution Loop](docs/work-flows/19-kit-project-evolution-loop.md)** | Round-trip protocol for routing user-project audit findings back to the kit — preserves genericity contract, ADL/ADR routing, and bidirectional version sync between kit and consuming projects |
+| 21 | **[Orchestration Completeness (Phase 6.5)](docs/work-flows/20-orchestration-completeness.md)** | Completeness as a first-class orchestration contract — Phase 6.5 verifies every R/F/T/ADR declared in the plan was actually shipped, before reflex audit; closes the "claimed-shipped vs actually-shipped" gap |
 
 ---
 
@@ -947,7 +949,7 @@ Detailed step-by-step diagrams for every work flow:
 
 - **[Quick Guide (PDF)](ard/Portable_Spec_Kit_Guide.pdf)** — Visual overview of the framework
 - **[Technical Overview (PDF)](ard/Portable_Spec_Kit_Technical_Overview.pdf)** — Architecture reference document
-- **[Work Flows](docs/work-flows/)** — 16 step-by-step flow diagrams
+- **[Work Flows](docs/work-flows/)** — 21 step-by-step flow diagrams
 - **SPD Concept Paper** — Methodology paper with evaluation *(coming soon)*
 - **[Benchmarking Report](tests/spd-benchmarking-report.md)** — 5 projects × 3 methodologies compared
 - **[Starter Example](examples/starter/)** — Fresh project with self-documenting README

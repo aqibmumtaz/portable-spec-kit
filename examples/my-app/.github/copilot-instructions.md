@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.28 -->
+<!-- Framework Version: v0.6.35 -->
 
-**Version:** v0.6.28 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1756 (1611 framework · 145 benchmarking)
+**Version:** v0.6.35 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1950 (1805 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -97,6 +97,7 @@ This file is the **core brain** — behavioral rules loaded every session. Proce
 | Polished UI design system (palette, type scale, 12 component primitives, dark mode, a11y) | `.portable-spec-kit/skills/ui-design-system.md` |
 | Security baseline (OWASP Top 10, auth scaffolding, middleware stack, input validation) | `.portable-spec-kit/skills/security-baseline.md` |
 | **`/optimize` · `psk optimize` · `optimize tokens` · `clean up bloat`** — token-bloat sweep with safety contract (no rule loss) | `.portable-spec-kit/skills/optimize.md` |
+| Kit ↔ project evolution loop (when fixing kit gaps surfaced by user-project audits) | [`docs/work-flows/19-kit-project-evolution-loop.md`](docs/work-flows/19-kit-project-evolution-loop.md) |
 
 Skills are downloaded from GitHub on first use, cached in `.portable-spec-kit/skills/`. Install is unchanged (one curl command).
 
@@ -1313,6 +1314,26 @@ Every reflex/AVACR finding carries a `scope:` field that classifies where the fi
 5. Rejected fixes stay in `agent/tasks/rejected/Gxx-*.md` with rationale — audit trail of "why not."
 
 **Net effect:** every user running AVACR on their own project contributes (optionally) to kit improvement — the kit is continuously stress-tested by real-world use, not just by maintainer self-testing. `agent/tasks/` becomes the empirical record of how the kit evolves.
+
+**Dim 25 — Mandate-Compliance probe (registered in `reflex/prompts/qa-agent.md`).** QA-Agent's dimension set is extensible; Loop-Iter-2 (Phase F) added Dim 25 — every QA pass MUST audit the target against the mandates declared in `portable-spec-kit.md` (required directories, required pipeline files, source-layout sanity, per-feature design plans, ARD docs, README badge currency, `.env.example` placeholder hygiene, CI workflow content). The probe is implemented in `reflex/lib/mandate-audit.sh` and emits structured JSON findings with severity (`MAJOR` / `MINOR` / `ADVISORY`).
+
+**9 mechanical gates (was 8 pre-Loop-3).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline).
+
+### Convergence (MANDATORY — added in Loop-3, L1-L6)
+
+**Convergence-discipline is enforced by the 9th mechanical gate (`convergence-audit`)** in `reflex/lib/gates.sh`. Combined with four additional enforcement layers in the abort-handling stack:
+
+- **L1 — abort-detection in preconditions.** `reflex/lib/preconditions.sh::check_prior_abort()` walks the last 3 pass dirs and refuses to start a new run if any lacks `verdict.md`. Operator must explicitly recover.
+- **L2 — completion contract via EXIT trap.** `reflex/run.sh` and `reflex/lib/loop.sh` install EXIT/INT/TERM traps that write a fallback `INTERRUPTED` verdict.md if the mainline doesn't reach the verdict-write block. Net: every pass dir always has verdict.md.
+- **L3 — per-iteration `.iter-status.yml` audit trail.** Each pass dir carries a status file (PENDING → RUNNING → COMPLETE-GRANTED / COMPLETE-DENIED). The L4 probe walks these.
+- **L4 — abort-integrity probe.** `reflex/lib/check-abort-integrity.sh` runs in Phase 0 pre-compute and emits JSON listing any pass dir with partial state. QA-Agent surfaces findings as `scope:kit + dimension:25` (Mandate-Compliance — convergence-mandate extension).
+- **L5 — convergence-audit gate.** Final gate that fails on `INTERRUPTED` verdicts.
+
+**Agent CANNOT abort reflex mid-loop without leaving an `INTERRUPTED` verdict.** Hard signal, sub-shell crash, manual `kill` — all paths leave the trail. Recovery from interrupted runs requires the explicit `--recover-from-abort <pass-id>` flag, which writes a post-hoc `INTERRUPTED · operator-recovered` annotation to the targeted pass's verdict.md. Without that annotation, the next reflex run fails fast at L1.
+
+**Bypass for genuine emergencies:** `REFLEX_ABORT_CHECK_DISABLED=1` skips L1; `--reset` / `--purge-history` flags also skip the abort gate. None of these are normal-path operations — each represents an explicit operator decision to discard prior abort state.
+
+Cross-references: the L1-L5 enforcement is implemented in `reflex/lib/preconditions.sh`, `reflex/run.sh`, `reflex/lib/loop.sh`, `reflex/lib/check-abort-integrity.sh`, and `reflex/lib/gates.sh`. L6 elevated this paragraph from skill / ADL into the framework's mandatory-rule layer.
 
 **Execution isolation — three invariants (MANDATORY):**
 

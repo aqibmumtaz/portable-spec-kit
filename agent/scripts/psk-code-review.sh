@@ -221,12 +221,19 @@ check_quality() {
   fi
 
   # .env files committed to git
+  # QA-KIT-CODEREV-ENV-FP-01 (v0.6.29): exempt .env.example / .env.sample.
+  # These are documentation files (placeholder values only) intended to be
+  # committed — they tell new contributors which env vars the project needs.
+  # Only flag actual secret-bearing files: `.env`, `.env.local`,
+  # `.env.production`, `.env.development`, `.env.test`, `.env.<branch>`.
   if git -C "$PROJ_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
     local env_committed
-    env_committed=$(git -C "$PROJ_ROOT" ls-files '*.env' '.env' '.env.*' 2>/dev/null | wc -l | tr -d ' ')
+    env_committed=$(git -C "$PROJ_ROOT" ls-files '*.env' '.env' '.env.*' 2>/dev/null \
+      | grep -v -E '(^|/)\.env\.(example|sample|template)$' \
+      | wc -l | tr -d ' ')
     [ "$env_committed" -eq 0 ] \
-      && pass_check "No .env files committed to git" \
-      || fail_check "$env_committed .env file(s) committed — add to .gitignore"
+      && pass_check "No secret-bearing .env files committed to git (.env.example/.env.sample exempted)" \
+      || fail_check "$env_committed .env file(s) committed — add to .gitignore (note: .env.example/.env.sample are exempt)"
   fi
 
   # .gitignore includes .env*

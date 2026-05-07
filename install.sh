@@ -370,22 +370,34 @@ install_reflex() {
     [ "${f##*.}" = "sh" ] && chmod +x "reflex/$f"
   done
 
-  # All reflex/lib helpers — Phase 0 pre-compute + spawn + scoring + token tracking + self-evolution v0.6.16-23 helpers
-  local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
-    anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
-    check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
-    cycle-summary.sh doc-code-diff.sh external-research.sh extract-claims.sh \
-    identify-integration-probes.sh intake.sh log-hardening.sh loop.sh \
-    prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
-    state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
-  for f in "${lib_files[@]}"; do
-    if [ -n "$LOCAL_SOURCE" ] && [ -f "$LOCAL_SOURCE/reflex/lib/$f" ]; then
-      cp "$LOCAL_SOURCE/reflex/lib/$f" "reflex/lib/$f"
-    else
+  # All reflex/lib helpers — closes QA-KIT-INSTALLER-MANIFEST-01 (kit-cycle-05).
+  # Previously a hardcoded array drifted from disk reality (e.g. console-probe.ts
+  # added but not in array, requiring manual cp). When LOCAL_SOURCE is set,
+  # enumerate every .sh / .ts / .js / .mjs / .py at the top level of reflex/lib
+  # dynamically — any new helper is auto-included. Curl mode falls back to the
+  # static array because curl can't list a remote directory.
+  if [ -n "$LOCAL_SOURCE" ] && [ -d "$LOCAL_SOURCE/reflex/lib" ]; then
+    while IFS= read -r src; do
+      [ -f "$src" ] || continue
+      base=$(basename "$src")
+      cp "$src" "reflex/lib/$base"
+      [ "${base##*.}" = "sh" ] && chmod +x "reflex/lib/$base"
+    done < <(find "$LOCAL_SOURCE/reflex/lib" -maxdepth 1 -type f \
+      \( -name "*.sh" -o -name "*.ts" -o -name "*.js" -o -name "*.mjs" -o -name "*.py" \) 2>/dev/null)
+  else
+    # Curl fallback — static list (must be kept in sync manually for network installs)
+    local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
+      anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
+      check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
+      console-probe.ts cycle-summary.sh doc-code-diff.sh external-research.sh extract-claims.sh \
+      identify-integration-probes.sh intake.sh log-hardening.sh loop.sh mandate-audit.sh \
+      prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
+      state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
+    for f in "${lib_files[@]}"; do
       curl -fsSL "$RAW_BASE/reflex/lib/$f" -o "reflex/lib/$f" 2>/dev/null || continue
-    fi
-    chmod +x "reflex/lib/$f"
-  done
+      [ "${f##*.}" = "sh" ] && chmod +x "reflex/lib/$f"
+    done
+  fi
 
   for f in qa-agent.md dev-agent.md; do
     if [ -n "$LOCAL_SOURCE" ] && [ -f "$LOCAL_SOURCE/reflex/prompts/$f" ]; then
