@@ -8,7 +8,26 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.36 · **Tests:** 1955 (1810 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.37 · **Tests:** 1982 (1837 framework + 145 benchmarking)
+
+### v0.6.37 — Loop Iteration 8: QA orchestration (wave-based parallel dim-agents) + Dev-Agent Phase 1 analysis (May 2026)
+
+**Solves the kit-self reflex SDK stream-idle-timeout (G-KIT-QA-PROMPT-LENGTH-01).** 25-dimension monolithic QA-Agent hit the 58-min wall-clock limit on kit-self. This release restructures QA into an orchestrator + focused parallel dim-agents.
+
+**QA orchestration — wave-based parallel investigation:**
+- `reflex/prompts/qa-agent-orchestrator.md` (NEW) — orchestrator: Phase 0 project understanding (once), wave planning from config, parallel dim-agent spawning, aggregation + de-duplication
+- `reflex/prompts/qa-agent-dim.md` (NEW) — focused dim-agent: receives Phase 0 summary + assigned dim slice + prior findings for regression; writes partial-findings file
+- `reflex/lib/spawn-qa.sh` extended: auto-detects orchestrator/dim prompts → uses `qa_mode: orchestrated` when both present, falls back to monolithic for backward compat
+- `reflex/config.yml` → new `qa_agent:` section: `max_dims_per_spawn: 10` (timeout protection) + `max_parallel_agents: 4` (rate/cost ceiling). Wave formula: `ceil(total_dims / max_dims_per_spawn / max_parallel_agents)` — auto-scales as dimensions grow
+
+**Dev-Agent Phase 1 analysis (single-pass efficiency + integrity):**
+- `reflex/prompts/dev-agent.md` updated: explicit Phase 1 (read-only, root-cause grouping, fix-plan.md before any code writes) + Phase 2 execution (cascade-check after each commit for auto-closures)
+- `reflex/lib/spawn-dev.sh` updated: task file describes Phase 1 → Phase 2 protocol with fix-plan.md checkpoint
+- `reflex/config.yml` → new `dev_agent:` section: `strategy: single_pass_ordered`, `analysis_phase: enabled`, `cascade_check: after_each_commit`
+
+**Tests:** 1837 framework + 145 benchmarking = 1982 (was 1810+145=1955; +25 Loop 8 regression assertions + 2 collateral).
+
+---
 
 ### v0.6.36 — Loop Iteration 7 kit-side: in-reflex deferrals closed (P/Q/R/S) + machinery propagation (May 2026)
 

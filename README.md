@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.6.36-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.6.37-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1955%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1982%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -65,6 +65,8 @@ Open any AI agent after install — personalized profile, project scan, 4-step g
 ---
 
 ## Latest Release
+
+**v0.6.37 (Loop Iteration 8: QA orchestration + Dev-Agent Phase 1 analysis):** Solves the kit-self reflex SDK stream-idle-timeout (G-KIT-QA-PROMPT-LENGTH-01). 25-dimension monolithic QA-Agent hit the 58-min wall-clock limit on kit-self. New orchestrator + focused parallel dim-agents: `reflex/prompts/qa-agent-orchestrator.md` (NEW) drives wave-based parallel spawning from `reflex/config.yml qa_agent:` section (`max_dims_per_spawn: 10`, `max_parallel_agents: 4`). `reflex/prompts/qa-agent-dim.md` (NEW) is the focused dim-agent receiving Phase 0 summary + assigned dim slice. Dev-Agent gains Phase 1 root-cause analysis: reads findings.yaml, groups by root cause, writes `fix-plan.md` before any code writes, then Phase 2 executes in dependency order with cascade-check after each commit. `reflex/config.yml` new `dev_agent:` section. 1982 tests (1837+145). See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 **v0.6.28 (User-project reflex correctness — 5 fixes G19-G23 from searchsocialtruth field-test):** First user-project field-test results land via the kit-evolution protocol. Reflex run on searchsocialtruth (v0.1.1) surfaced 5 kit-machinery bugs filed as `scope: kit`. **ADR-041 (G23):** kit-self detection uses kit-only directory discriminator (examples/starter + examples/my-app + tests/sections + install.sh + agent/PHILOSOPHY.md) — replaces broken symlink heuristic that misrouted findings on Windows / copy-installs. Cascade fix unblocking correct routing for every other QA-KIT-* finding. **ADR-042 (G19):** sandbox cp-fallback enumerates dynamically — catches `src/`, `app/`, `components/`, `packages/` on Next.js / monorepo projects. **ADR-043 (G20):** rft-integrity regex matches h2-h6 R-rows. Kit's own `requirement-research.md` skill recommends h4 — projects following recommendation no longer get false missing-R-row findings. **ADR-044 (G21):** release-check `check_test_relevance()` advisory check — misassigned tests flagged. **ADR-045 (G22):** doc-code-diff `IS_KIT_SELF` skip clause for kit-installed paths on user projects. 1756 tests passing; 9 N84 regression sub-tests cover all 5 fixes. `[source: avacr-eval-searchsocialtruth/cycle-01/pass-001]`
 

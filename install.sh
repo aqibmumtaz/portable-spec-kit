@@ -180,7 +180,7 @@ download_framework() {
 download_scripts() {
   echo -e "${CYAN}[2/6] Downloading reliability scripts...${NC}"
   # Core scripts every project needs (kit reliability + workflows + self-evolution v0.6.16-23)
-  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh"
+  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh psk-version-cascade.sh"
   local optional="psk-jira-sync.sh psk-tracker.sh psk-tracker-report.sh install-tracker.sh uninstall-tracker.sh sync.sh"
 
   for s in $scripts; do
@@ -388,8 +388,8 @@ install_reflex() {
     # Curl fallback — static list (must be kept in sync manually for network installs)
     local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
       anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
-      check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
-      console-probe.ts cycle-summary.sh doc-code-diff.sh external-research.sh extract-claims.sh \
+      check-abort-integrity.sh check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
+      console-probe.ts cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
       identify-integration-probes.sh intake.sh log-hardening.sh loop.sh mandate-audit.sh \
       prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
       state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)

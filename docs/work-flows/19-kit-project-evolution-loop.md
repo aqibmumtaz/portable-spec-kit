@@ -566,4 +566,94 @@ This is honest deferral, not silent skipping. The convergence-discipline stack f
 | 5 | PLATEAU rule clarification | Premature convergence-claim by operator |
 | **6** | **10th gate dev-self-verify + EXPECT_RESUME + cache-wipe + cascade-script** | **Sub-agent claim recurrence (3-iteration pattern broken)** |
 
-Iteration 6 closes the recurrence pattern documented in §15.2. Iteration 7 will close whatever Loop 6 missed — likely the project-machinery-sync gap from §16.2 (psk-version-cascade.sh extension to also propagate `reflex/` + `agent/scripts/psk-*.sh` to kit-installed projects on version bumps).
+Iteration 6 closes the recurrence pattern documented in §15.2. Iteration 7 closes the SDK-timeout wall for QA-Agent and the parallel-Dev integrity problem — both surfaced as scalability concerns as the kit's dimension count grew past 25.
+
+---
+
+## 17. Iteration 8 lessons (2026-05-08, kit v0.6.37)
+
+### 17.1 Root cause: SDK stream-idle-timeout is external, not a budget-gate
+
+The prior architecture assumed QA-Agent timeouts were budget-control signals — the kit's own `max_retries_per_task`, `recommended_tool_calls_per_pass`, and similar caps. Loop 7 diagnosed the true cause: the Claude SDK imposes a hard ~58-minute wall-clock limit per individual sub-agent spawn, independent of any kit config. A single QA-Agent spanning 25+ dimensions routinely breaches this limit.
+
+**Consequence of misdiagnosis:** Loop 3–6 raised budget caps and removed hard stops (correct for the documented budget-stop problem) but left the SDK timeout unaddressed. Dimensions accumulated as the kit grew; the timeout hit harder each loop.
+
+**Correct framing:** the SDK timeout is an *external infrastructure constraint*, not a kit budget signal. The kit can't configure it away — it can only structure work to stay under it.
+
+### 17.2 Wave-based QA orchestration (ADR-089)
+
+The solution splits monolithic QA into three layers:
+
+1. **Orchestrator** — one agent, runs once per pass. Reads the full codebase, produces a compact `project-understanding.md` (~800 tokens), counts available dimensions, computes a wave plan, then spawns all dim-agents for wave 1 simultaneously via multiple Task tool calls in a single response. Aggregates `partial-findings-dims-*.yaml` from all dim-agents, de-duplicates by finding ID, writes the canonical `findings.yaml`.
+
+2. **Dim-agents** — one agent per dim-group, N run in parallel per wave. Each receives the orchestrator's `project-understanding.md` (no redundant Phase 0), a bounded slice of dimensions, and the prior-pass open findings for regression re-verification. Writes `partial-findings-dims-N-to-M.yaml` only — never writes `findings.yaml` or `signoff.md` directly.
+
+3. **Two config dials in `reflex/config.yml`:**
+   - `max_dims_per_spawn` — how many dims one agent handles. Controls per-spawn wall-clock (target <30 min). Tune down if dims get heavier.
+   - `max_parallel_agents` — how many dim-agents run per wave. Controls API rate + cost ceiling.
+
+**Wave formula:** `waves = ceil(total_dims / max_dims_per_spawn / max_parallel_agents)`.
+
+| Example | Dims | Per-spawn | Parallel | Waves |
+|---|---|---|---|---|
+| Default kit (25 dims) | 25 | 10 | 4 | 1 wave of 3 agents |
+| Future (48 dims) | 48 | 10 | 4 | 2 waves (4 + 1 agents) |
+
+Wall-clock grows in **wave steps**, not linearly per-dimension. A 4× growth in dim count from 25 → 48 adds exactly one extra wave (~25 min), not 4× the total time.
+
+**Backward compatibility:** `spawn-qa.sh` auto-detects orchestrator files at runtime. If `reflex/prompts/qa-agent-orchestrator.md` or `reflex/prompts/qa-agent-dim.md` are absent, it falls back to monolithic mode. Existing user projects are not broken.
+
+### 17.3 Dev-Agent: why parallel is wrong, and why sequential + Phase 1 is right
+
+The question "should Dev-Agent be parallelised across findings like QA-Agent was parallelised across dims?" has a clear negative answer. QA parallelism is safe because dim-agents are read-only — they observe the codebase without modifying it. Dev parallelism would mean multiple agents writing code simultaneously:
+
+- **File conflicts** — two agents edit the same file at once; last write wins, earlier fix lost.
+- **Cascading fix collisions** — Agent A fixes root cause R1 which also closes symptom S1. Agent B, unaware, applies a separate fix to S1. Now S1 has two fixes, one likely wrong.
+- **Gate incoherence** — mechanical gates run per-commit; parallel commits interleave, making gate results non-deterministic.
+
+The efficiency problem is real but the solution is smarter sequencing, not parallelism.
+
+**Dev Phase 1 Analysis (ADR-090) solves the efficiency problem without the risks:**
+
+Phase 1 is strictly read-only. Before touching any source file, Dev-Agent:
+
+1. Loads all findings into working memory.
+2. Groups findings by root cause (multiple surface symptoms → one underlying bug).
+3. Builds a dependency order (foundational fixes before infrastructure before feature-level).
+4. Predicts cascade auto-closures (which symptom findings root-fix will auto-close).
+5. Writes `fix-plan.md` to the pass directory as a committed artifact.
+
+Phase 2 executes `fix-plan.md` sequentially. After each commit, a **cascade check** scans remaining open findings: if a root fix auto-closed symptoms, they are marked `auto_closed:` in `dev-result.yaml` and no separate work is filed. Only findings that the cascade check confirms are not auto-closed get explicit fixes.
+
+**Net effect:** fewer commits, better code integrity, root-cause focus rather than symptom-by-symptom churn.
+
+### 17.4 Dim-count scalability — the two-dial design
+
+Both config dials are independent safety mechanisms:
+
+- `max_dims_per_spawn` protects **wall-clock** (per-agent timeout). As dimensions grow heavier (more probes per dim, more codebase to scan), this dial comes down to keep each dim-agent under the SDK ceiling.
+- `max_parallel_agents` protects **API rate + cost**. Tune down on lower API tiers or when cost ceiling matters. Tune up when fast QA cycles matter more than cost.
+
+The dials decouple two previously coupled concerns. Before v0.6.37 they were both implicitly set to 1 (one monolithic agent). Decoupling them gives operators independent control.
+
+### 17.5 Structural enforcement: dim-agent write ban
+
+Dim-agents writing `findings.yaml` directly would produce merge conflicts when the orchestrator tries to aggregate. The write-ban is structural, not trust-based:
+
+- `reflex/prompts/qa-agent-dim.md` mandates that `partial_output_file` is the only output artifact.
+- The orchestrator explicitly names the aggregation step as its responsibility.
+- `findings.yaml` is only ever written by the orchestrator (or monolithic QA in fallback mode).
+
+This mirrors the protected-files write-ban from Loop 3 (no Dev-Agent writes to `AGENT.md`/`AGENT_CONTEXT.md`): structural constraints beat prompt-level trust.
+
+### 17.6 Probe-pattern table extended
+
+| Iteration | New mechanism | Failure-class closed |
+|---|---|---|
+| 1 | Reflex pass + scope: routing | Manual QA |
+| 2 | Dim 25 mandate-audit + 8th gate | Mandates drift |
+| 3 | L1-L6 abort-enforcement + 9th gate convergence-audit | Silent abort |
+| 4 | Per-feature test architecture (Approach 3) | Cost wall (release-check 6h → 15.8s) |
+| 5 | PLATEAU rule clarification | Premature convergence-claim by operator |
+| 6 | 10th gate dev-self-verify + EXPECT_RESUME + cache-wipe + cascade-script | Sub-agent claim recurrence (3-iteration pattern broken) |
+| **7** | **Wave-based QA orchestration + Dev Phase 1 analysis** | **SDK stream-idle-timeout (QA) · parallel Dev integrity risk** |

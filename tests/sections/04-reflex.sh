@@ -4715,6 +4715,107 @@ grep -A 8 "_l2_iter_trap()" "$PROJ/reflex/lib/loop.sh" | grep -q 'EXPECT_RESUME'
   && pass "Loop7/PhaseS-loop-trap: loop.sh L2 trap honors EXPECT_RESUME" \
   || fail "Loop7/PhaseS-loop-trap: loop.sh trap missing EXPECT_RESUME check"
 
+# --- Loop 8 v0.6.37 — QA Orchestration + Dev-Agent Phase 1 ---
+
+# QA orchestration — new prompt files exist
+[ -f "$PROJ/reflex/prompts/qa-agent-orchestrator.md" ] \
+  && pass "Loop7/QA-orch-prompt: qa-agent-orchestrator.md exists" \
+  || fail "Loop7/QA-orch-prompt: qa-agent-orchestrator.md MISSING"
+
+[ -f "$PROJ/reflex/prompts/qa-agent-dim.md" ] \
+  && pass "Loop7/QA-dim-prompt: qa-agent-dim.md exists" \
+  || fail "Loop7/QA-dim-prompt: qa-agent-dim.md MISSING"
+
+# QA orchestration — config.yml has qa_agent section with both dials
+grep -q '^qa_agent:' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/QA-config-section: config.yml has qa_agent section" \
+  || fail "Loop7/QA-config-section: qa_agent section MISSING from config"
+
+grep -q 'max_dims_per_spawn:' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/QA-config-dims-per-spawn: max_dims_per_spawn configured" \
+  || fail "Loop7/QA-config-dims-per-spawn: max_dims_per_spawn MISSING"
+
+grep -q 'max_parallel_agents:' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/QA-config-parallel-agents: max_parallel_agents configured" \
+  || fail "Loop7/QA-config-parallel-agents: max_parallel_agents MISSING"
+
+# QA orchestration — spawn-qa.sh references orchestrator prompt
+grep -q 'qa-agent-orchestrator.md\|ORCHESTRATOR_PROMPT' "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "Loop7/QA-spawn-orchestrator: spawn-qa.sh references orchestrator prompt" \
+  || fail "Loop7/QA-spawn-orchestrator: orchestrator not referenced in spawn-qa.sh"
+
+grep -q 'QA_MODE' "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "Loop7/QA-spawn-mode: spawn-qa.sh has QA_MODE fallback to monolithic" \
+  || fail "Loop7/QA-spawn-mode: QA_MODE fallback MISSING"
+
+# QA orchestration — orchestrator prompt has required sections
+grep -q 'Phase 0' "$PROJ/reflex/prompts/qa-agent-orchestrator.md" \
+  && pass "Loop7/QA-orch-phase0: orchestrator has Phase 0 (project understanding)" \
+  || fail "Loop7/QA-orch-phase0: Phase 0 section MISSING"
+
+grep -q 'wave-plan\|Wave planning\|wave plan' "$PROJ/reflex/prompts/qa-agent-orchestrator.md" \
+  && pass "Loop7/QA-orch-wave-plan: orchestrator has wave planning section" \
+  || fail "Loop7/QA-orch-wave-plan: wave planning MISSING"
+
+grep -q 'max_dims_per_spawn\|dims_per_spawn' "$PROJ/reflex/prompts/qa-agent-orchestrator.md" \
+  && pass "Loop7/QA-orch-config-aware: orchestrator reads max_dims_per_spawn from config" \
+  || fail "Loop7/QA-orch-config-aware: orchestrator not config-aware"
+
+grep -q 'parallel\|simultaneously\|single response' "$PROJ/reflex/prompts/qa-agent-orchestrator.md" \
+  && pass "Loop7/QA-orch-parallel: orchestrator specifies parallel dim-agent spawning" \
+  || fail "Loop7/QA-orch-parallel: parallel spawning not specified"
+
+grep -q 'Aggregat\|De-duplicate\|partial-findings' "$PROJ/reflex/prompts/qa-agent-orchestrator.md" \
+  && pass "Loop7/QA-orch-aggregate: orchestrator has aggregation phase" \
+  || fail "Loop7/QA-orch-aggregate: aggregation phase MISSING"
+
+# QA orchestration — dim-agent prompt has required sections
+grep -q 'partial_output_file\|partial-findings' "$PROJ/reflex/prompts/qa-agent-dim.md" \
+  && pass "Loop7/QA-dim-output: dim-agent writes partial findings file" \
+  || fail "Loop7/QA-dim-output: partial output file spec MISSING from qa-agent-dim.md"
+
+grep -q 'project_understanding_file\|project-understanding' "$PROJ/reflex/prompts/qa-agent-dim.md" \
+  && pass "Loop7/QA-dim-phase0-reuse: dim-agent reads orchestrator Phase 0 summary" \
+  || fail "Loop7/QA-dim-phase0-reuse: project-understanding.md reuse not specified"
+
+grep -q 'regression.*re-verif\|Regression re-verif\|prior_findings_open' "$PROJ/reflex/prompts/qa-agent-dim.md" \
+  && pass "Loop7/QA-dim-regression: dim-agent re-verifies prior-pass findings" \
+  || fail "Loop7/QA-dim-regression: regression re-verification MISSING from qa-agent-dim.md"
+
+# Dev-Agent Phase 1 analysis
+grep -q 'Phase 1.*Analysis\|Phase 1 — Analysis' "$PROJ/reflex/prompts/dev-agent.md" \
+  && pass "Loop7/Dev-phase1-analysis: dev-agent.md has Phase 1 analysis section" \
+  || fail "Loop7/Dev-phase1-analysis: Phase 1 analysis section MISSING"
+
+grep -q 'Root-cause group\|root.*cause.*group\|fix-plan.md' "$PROJ/reflex/prompts/dev-agent.md" \
+  && pass "Loop7/Dev-root-cause: dev-agent.md specifies root-cause grouping" \
+  || fail "Loop7/Dev-root-cause: root-cause grouping MISSING"
+
+grep -q 'cascade.*check\|Cascade check\|auto-closed\|auto_closed' "$PROJ/reflex/prompts/dev-agent.md" \
+  && pass "Loop7/Dev-cascade-check: dev-agent.md has cascade-check after each commit" \
+  || fail "Loop7/Dev-cascade-check: cascade-check MISSING"
+
+grep -q 'fix-plan.md' "$PROJ/reflex/lib/spawn-dev.sh" \
+  && pass "Loop7/Dev-spawn-fixplan: spawn-dev.sh task mentions fix-plan.md" \
+  || fail "Loop7/Dev-spawn-fixplan: fix-plan.md reference MISSING from spawn-dev.sh"
+
+# Dev-Agent config section
+grep -q '^dev_agent:' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/Dev-config-section: config.yml has dev_agent section" \
+  || fail "Loop7/Dev-config-section: dev_agent section MISSING from config"
+
+grep -q 'strategy.*single_pass_ordered\|single_pass_ordered' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/Dev-config-strategy: dev_agent.strategy = single_pass_ordered" \
+  || fail "Loop7/Dev-config-strategy: single_pass_ordered strategy MISSING"
+
+grep -q 'analysis_phase.*enabled\|analysis_phase: enabled' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/Dev-config-analysis: dev_agent.analysis_phase = enabled" \
+  || fail "Loop7/Dev-config-analysis: analysis_phase MISSING from config"
+
+grep -q 'cascade_check' "$PROJ/reflex/config.yml" \
+  && pass "Loop7/Dev-config-cascade: dev_agent.cascade_check configured" \
+  || fail "Loop7/Dev-config-cascade: cascade_check MISSING from config"
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"

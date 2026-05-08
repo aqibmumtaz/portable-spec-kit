@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.36 -->
+<!-- Framework Version: v0.6.37 -->
 
-**Version:** v0.6.36 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1955 (1810 framework · 145 benchmarking)
+**Version:** v0.6.37 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1982 (1837 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -1337,7 +1337,7 @@ Cross-references: the L1-L5 enforcement is implemented in `reflex/lib/preconditi
 
 **Execution isolation — three invariants (MANDATORY):**
 
-1. **QA-Agent runs in a sandbox worktree** at `reflex/sandbox/cycle-NN/pass-NNN/` with `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` physically removed. QA cannot read Dev's narrative.
+1. **QA-Agent runs in a sandbox worktree** at `reflex/sandbox/cycle-NN/pass-NNN/` with `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` physically removed. QA cannot read Dev's narrative. QA-Agent runs in orchestrated mode when `reflex/prompts/qa-agent-orchestrator.md` and `reflex/prompts/qa-agent-dim.md` are present. The orchestrator spawns parallel dim-agents per the `qa_agent` section of `reflex/config.yml`, replacing the single-agent 25-dimension sequential pass with a wave-based parallel execution that avoids the SDK stream-idle-timeout on large codebases.
 2. **Dev-Agent runs on an isolated branch** `reflex/dev-cycle-NN-pass-NNN` off the current HEAD. Fix commits land there; the user's main branch is untouched during the pass. On GRANTED verdict, run.sh fast-forward merges to main (falls back to no-ff merge on divergence) and deletes the dev branch. On DENIED / REGRESSION the branch is retained for review (last-3 pattern, prune-history.sh enforces).
 3. **Protected-files write-ban: reflex never modifies AGENT.md / AGENT_CONTEXT.md (3-layer enforcement).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Layer 1: `reflex/prompts/dev-agent.md` mandates the constraint. Layer 2: `reflex/lib/gates.sh` fails any commit on a `reflex/dev-*` branch that touches them. Layer 3: `psk-sync-check.sh check_reflex_protected_files` blocks the commit at the pre-commit hook when on a reflex branch. If a finding's recommendation would touch these files, Dev-Agent files it as Bucket D (QA scope violation) + routes the underlying concern to human-arbitration via a `QA-<ID>-ARB` task in `agent/TASKS.md`.
 
