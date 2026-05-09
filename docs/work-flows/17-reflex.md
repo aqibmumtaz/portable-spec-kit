@@ -1,6 +1,6 @@
 # Flow 17 — Reflex (Adversarial Verbal Actor-Critic Refinement Loop, AVACR)
 
-Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 24 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, fixes atomically on an isolated dev branch with per-commit mechanical gates, and audits sibling-class weaknesses. Convergence = QA hunted hard and cannot find a blocker.
+Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 25 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. In orchestrated mode (v0.6.37+) the QA orchestrator spawns parallel dim-agents in waves via `qa-agent-orchestrator.md` + `qa-agent-dim.md` — each dim-agent investigates its assigned slice independently, then the orchestrator aggregates findings. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, runs a Phase 1 analysis pass (root-cause grouping → `fix-plan.md`) then fixes atomically on an isolated dev branch with per-commit mechanical gates, cascade-checking after each commit for auto-closures. Convergence = QA hunted hard and cannot find a blocker.
 
 Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operational name: **reflex**. Primary entry: `reflex/run.sh` (see §Commands). Internal machinery: `reflex/lib/spawn-qa.sh`, `reflex/lib/spawn-dev.sh`, `reflex/lib/file-bugs.sh`, `reflex/lib/gates.sh`, `reflex/lib/regression-diff.sh`, `reflex/lib/score.sh`, `reflex/lib/preconditions.sh`, `reflex/lib/loop.sh`, `reflex/lib/update-eval-trace.sh`, `reflex/lib/prune-history.sh`.
 
@@ -12,7 +12,7 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 
 **Mode A claim probe-types (v0.6.25+, extract-claims extensions):** four new claim types alongside the original eight (version-match · test-count · feature-count · capability-exists · file-count · install-works · dimension-count · skill-count). The new four — `api-route` (express/fastify/router-style route registrations in src/lib/app/api/server), `perf-budget` (`<Nms p95` / `<Ns` patterns extracted from REQS/SPECS/PLANS/README), `error-message-text` (15-80 char user-facing strings in agent/REQS.md / SPECS.md / README.md / HANDOFF.md), `security-rule` (anti-pattern absence claims like "no eval", "no pickle", "no shell=True"). Each emitted with a `probe_target` QA must verify or falsify.
 
-**Symmetric self-evolution (v0.6.27+, P9 + ADR-040):** kit hunts for both gaps AND overlaps. `agent/scripts/psk-coverage-overlap-check.sh` extracts coverage signatures from 24 dimensions + Phase 0 helpers + sync-check fns + /optimize cats; reports overlap clusters. Wired into `/optimize` cat 14 + Phase 6 evolution-gauntlet Gate G. New QA `Dimension 24 — Coverage-overlap audit` (3 probes per pass) files `QA-OVERLAP-NN` findings. Phase 5 self-reflection now mandates ≥1 overlap observation. `OL-NNN` registry in `qa-blind-spots.md` tracks human-flagged overlaps. Bypass `PSK_OVERLAP_CHECK_DISABLED=1`.
+**Symmetric self-evolution (v0.6.27+, P9 + ADR-040):** kit hunts for both gaps AND overlaps. `agent/scripts/psk-coverage-overlap-check.sh` extracts coverage signatures from 25 dimensions + Phase 0 helpers + sync-check fns + /optimize cats; reports overlap clusters. Wired into `/optimize` cat 14 + Phase 6 evolution-gauntlet Gate G. New QA `Dimension 24 — Coverage-overlap audit` (3 probes per pass) files `QA-OVERLAP-NN` findings. Phase 5 self-reflection now mandates ≥1 overlap observation. `OL-NNN` registry in `qa-blind-spots.md` tracks human-flagged overlaps. Bypass `PSK_OVERLAP_CHECK_DISABLED=1`.
 
 **Tier 3 auto-probe-synthesis (v0.6.27+, ADR-038):** `agent/scripts/psk-blind-spot-synthesize.sh` reads BS-NNN `status: open` entries, classifies target, scaffolds PR-style proposals at `agent/tasks/proposed/Gxx-<slug>.md`. Closes Tier 3 of v0.6.7+ residual plan.
 
@@ -164,7 +164,7 @@ Every pass directory is `reflex/history/cycle-NN/pass-NNN/` (autoloop) or `refle
 | **`assumptions.md`** (v0.6.6+) | QA sub-agent (Phase 1) | **Phase 0 Mode C** — QA lists every implicit assumption its probes operate under. Each MUST have a probe that verifies or falsifies it. Unverifiable assumption = MAJOR `QA-ASSUMPTION-NN` finding. |
 | `findings.yaml` | QA sub-agent | Structured findings (id · priority · scope · dimension · citable_quote · regression_vector · recommendation) — peer exchange to Dev-Agent. Now includes claim-derived + state-diff + assumption + 24-dim-derived findings. |
 | `signoff.md` | `spawn-qa.sh` + QA sub-agent | Verdict (GRANTED / DENIED), blocking findings, deferred decisions, human-arbitration items |
-| `verdict.md` | `run.sh` write_verdict | Machine-parsed pass summary (mode, findings, fixes, gates status, timestamp) |
+| `verdict.md` | `run.sh` write_verdict | Machine-parsed pass summary. Always includes structural `verdict: GRANTED` or `verdict: DENIED` field (v0.6.38+) so the convergence-audit gate (9th gate in `gates.sh`) passes via primary path. Also includes mode, findings, fixes, gates status, timestamp. |
 | `investigation-log.md` | QA sub-agent | QA's reasoning trail — why each finding was filed; Dev reads this for context + sibling-class hardening |
 | `coverage.md` | QA sub-agent | Machine-readable YAML block listing features tested and not-tested; informs Dev's fix scope |
 | `pass-plan.md` | QA sub-agent | QA's pre-investigation plan (targets, persona coverage, dimension coverage) |
@@ -249,7 +249,7 @@ After 3 autoloop invocations (cycle 1: 3 iters, cycle 2: 2 iters, cycle 3: 3 ite
 1. **Dev-branch isolation.** Dev-Agent commits to `reflex/dev-cycle-NN-pass-NNN` (for autoloop) or `reflex/dev-standalone-pass-NNN` (single-pass), a dedicated branch off the current HEAD. Main branch stays clean during the pass. On GRANTED verdict, run.sh fast-forward merges into the parent branch (falls back to `--no-ff` if parent diverged) and deletes the dev branch. On DENIED / REGRESSION the branch is retained (last 3 unhappy branches kept; pruned beyond that).
 2. **Protected-files write-ban (3-layer).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Enforced at three layers: Dev-Agent prompt ("NEVER modify"), `gates.sh` per-commit diff check, and `psk-sync-check.sh` pre-commit hook (branch-gated to `reflex/dev-*`). If a finding's recommendation touches these files, Dev-Agent files it as Bucket D + routes a `QA-<ID>-ARB` task to human-arbitration.
 3. **Sandbox purge after QA:** `file-bugs.sh` removes the current pass's QA sandbox worktree the moment findings are extracted into the committed `reflex/history/<pass>/`. Dev physically cannot read QA's private workspace — structural enforcement, not trust-based.
-4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer required for audit).
+4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 10 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim).
 5. **Max 3 retries per task.** Gate fails after 3 attempts → task marked `[~]` (human review).
 6. **Max 200 tool calls per cycle.** Budget cap aborts runaway cycles.
 7. **Regression detection.** Next pass verifies previously-fixed tasks haven't reopened; `regression-diff.md` records closed / persisted / new / regressed per pass.
@@ -328,6 +328,11 @@ mechanical_gates:
 precondition:
   require_clean_tree: true
   require_prep_release_marker: true
+# Playwright gate config (v0.6.38+). Gates.sh runs `npm ci --prefer-offline`
+# before `npx playwright test` so stale node_modules (after Dev-Agent upgrades
+# package.json) don't cause false gate failures. Set false ONLY when e2e suite
+# requires a live server unavailable in reflex context; CI must cover instead.
+playwright_suite_gate_enabled: true
 history_retention:
   pass_dirs_keep: 10         # reflex/history/<pass>/ on disk
   dev_branches_keep: 3       # reflex/dev-* unhappy branches (GRANTED deleted immediately)
@@ -484,7 +489,7 @@ tests/
     04-reflex.sh           (463 tests · standalone-runnable)
 ```
 
-Each section file is independently runnable: `bash tests/sections/04-reflex.sh` works from any cwd, sources lib.sh, increments the same counter globals, exits with own RESULTS line. Orchestrator aggregates via shared globals when sections are sourced (not bash'd). Total: 1471 framework tests; +145 benchmarking via separate `tests/test-spd-benchmarking.sh`.
+Each section file is independently runnable: `bash tests/sections/04-reflex.sh` works from any cwd, sources lib.sh, increments the same counter globals, exits with own RESULTS line. Orchestrator aggregates via shared globals when sections are sourced (not bash'd). Total: 1837 framework tests; +145 benchmarking via separate `tests/test-spd-benchmarking.sh`.
 
 ### Standalone analysis helpers (v0.6.11 — closes QA-DOC-HELPER-01)
 
@@ -499,8 +504,100 @@ Neither helper is part of the autoloop hot path. They are kept invocable so main
 
 Reflex reset command — nuclear wipe: bash reflex/run.sh --reset [--confirm] [--reset-hardening] [--reset-consent] deletes everything under reflex/history/ and reflex/sandbox/ plus runtime state files and reflex/dev-* branches via allowlist (any new pass artifact auto-cleaned). Preserves reflex/history/hardening-log.md (kit's structural-defense audit memory) and the consent marker by default.
 
+### v0.6.30 capabilities — QA robustness improvements
+
+Six targeted fixes shipped from searchsocialtruth cycle-05 and kit-cycle-05 audits:
+
+- **H1 — Test-runner detection broadened** (`QA-KIT-RUNNER-DETECT-01`): test-runner detection now explicitly enumerates `vitest`, `mocha`, `tap` in addition to Jest. Projects using non-Jest Node test runners no longer produce false-negatives when QA checks test-suite execution.
+- **H2 — PSK002 version-scoped grep** (`QA-KIT-PSK002-CROSSVER-01`): `tests/sections/02-pipeline.sh` test-count grep is now version-scoped so badge digits from historical versions in `CHANGELOG.md` don't produce false coupling failures when bumping to a new version.
+- **H3 — `install.sh` reflex/lib enumeration dynamic** (`QA-KIT-INSTALLER-MANIFEST-01`): `install.sh` reflex/lib enumeration is now dynamic (was a hardcoded list that grew stale on every new lib helper). New helpers are automatically included without updating the installer.
+- **H4 — Test-relevance heuristic mode-aware** (`QA-KIT-RELEVANCE-NOISE-01`): `tests/test-release-check.sh` test-relevance heuristic is now mode-aware for feature naming, reducing false advisory flags on legitimate kebab-case test files (e.g. `tests/f1-submission-api.test.ts`).
+- **H5 — Reliability test isolation** (`QA-KIT-SELFTEST-ISOLATION-01`): reliability tests now pre-clean state before running, eliminating sandbox residue bleed-over across reruns that caused flaky false-negatives on consecutive pass runs.
+- **H6 — Dim 26 Gate-Distinguishability** (`QA-META-PHIL-CYCLE-05-01`): ADL Dim 26 advisory from Loop Iteration 2 retrospective. Gates must be distinguishable by error message — overlapping failure messages from different gates prevent operators from pinpointing root cause. Each gate now emits a distinct prefix.
+
+### v0.6.35 capabilities — version cascade, gate-cache clearing, EXPECT_RESUME
+
+- **`psk-version-cascade.sh` — kit-machinery propagation:** script #27 in `agent/scripts/`. Invoked by `psk-release.sh` Step 6 on every version bump. Propagates the new version to: examples' `agent/*` Kit fields, benchmarking fixtures, ARD HTML `current-version` anchors, and CHANGELOG range end markers. When invoked from kit-self with `.portable-spec-kit/sync-targets.txt` populated, also propagates `reflex/lib/*.sh`, `reflex/run.sh`, `reflex/prompts/*.md`, and `agent/scripts/psk-*.sh` to each target project. `reflex/config.yml` is NOT bulk-overwritten (projects may have customizations); set `REFLEX_SYNC_CONFIG_OVERWRITE=1` to force. Closes Loop 6 §16.2.
+- **`clear_gate_caches()` in `gates.sh`:** new helper that wipes all `agent/.release-state/` cache files (except a whitelist) before every gate iteration. Prevents stale cache state from causing a gate to report a prior-pass result rather than the current Dev fix. Called at the top of every per-task gate run.
+- **`EXPECT_RESUME` pattern generalized:** `reflex/lib/loop.sh`'s `_l2_iter_trap` now honors `EXPECT_RESUME=1` env flag, matching the `run.sh`'s `_l2_completion_trap` behavior added in Phase E. Spawn-qa and spawn-dev export `EXPECT_RESUME=1` before intentional `AWAITING_*` exits — these deliberate pauses no longer write a spurious `INTERRUPTED` verdict, eliminating false abort-integrity failures on normal QA→Dev handoffs.
+
+### v0.6.38 capabilities — kit-quality fixes (playwright gate, verdict integrity, findings discipline)
+
+Capability inventory (search keys used by psk-doc-sync.sh):
+- Playwright gate fix (gates.sh): `npm ci --prefer-offline --silent` runs before `npx playwright test`; `playwright_suite_gate_enabled` config key added (default `true`).
+- write_verdict() structural field (run.sh): verdict.md now emits `verdict: GRANTED|DENIED` as explicit field — convergence-audit gate reads it directly.
+- findings.yaml status discipline (dev-agent.md): Dev-Agent Step 4 mandates updating status `open` → `closed` after TASKS.md `[x]`; `[source: <pass-name>]` HARD REQUIREMENT.
+- track-tokens.sh unbound variable fix: `${var:-0}` defaults on all numeric aggregation vars prevent `set -u` crash on first-pass runs.
+- Kit version drift advisory (psk-sync-check.sh): new `check_kit_version_drift()` compares project `Kit:` field against installed kit version; emits advisory (non-blocking).
+- .gitignore playwright output: `test-results/` + `playwright-report/` added under playwright section.
+- REQUIREMENTS.md duplicate advisory (mandate-audit.sh): ADVISORY finding when both root `REQUIREMENTS.md` and `agent/REQS.md` exist.
+- Feature-named test files mandate (psk-orchestrate.sh): Phase 7 explicitly requires `tests/f{N}-feature-name.test.ts` naming for R→F→T traceability.
+- REQUIREMENTS.md deleted from kit root: `agent/REQS.md` is authoritative; `psk-release.sh` REQUIREMENTS.md check removed.
+- Flow doc coverage (13 + 17): `13-release-workflow.md` Step 6 documents `psk-version-cascade.sh`; `17-reflex.md` adds §v0.6.30/§v0.6.35 capability sections.
+
+### v0.6.34 capabilities — structural recurrence prevention (Phase A-F, ADR-034 series)
+
+Commit inventory for psk-doc-sync.sh coverage:
+- `f8383d0:` `reflex/lib/dev-self-verify.sh` — 10th mechanical gate extracts each fix-claimed finding's `regression_vector.invocation_verbatim`, runs it, asserts `expected_assertion`. Smart DSL. Behind `REFLEX_DEV_SELF_VERIFY=1` env flag.
+- `1f1c029:` cycle-09 findings were stale-state artifacts; scripts already worked. Phase B locks behavior with synthetic-fixture regression tests in `tests/sections/04-reflex.sh`.
+- `4211474:` new `agent/scripts/psk-version-cascade.sh` (script #27) — field-anchored version propagation across examples' `agent/*` Kit fields, benchmarking fixtures, ARD HTML current-version anchors, CHANGELOG range end. `psk-release.sh` Step 6 invokes it.
+- `4408e7d:` `reflex/lib/gates.sh` — new `clear_gate_caches()` wipes all `agent/.release-state/` cache files except whitelist before every gate iteration.
+- `870be8f:` L2 trap honors `EXPECT_RESUME=1` exported by spawn-qa/spawn-dev before AWAITING_* exit — intentional pauses no longer write INTERRUPTED verdict.
+- `a6c212b:` `run.sh resume-qa` and `resume-dev` auto-mirror result files from pass-dir to STATE_DIR when sub-agent skipped canonical copy.
+
+### v0.6.33 capabilities — Loop 5 deep fixes (L5.1–L5.4) + version-drift cascade (V5.1–V5.2)
+
+Commit inventory:
+- L5.1 (1e3f607): RFT comma-split fix in `reflex/lib/check-rft-integrity.sh` — applied Loop-2 H4 awk comma-split pattern to SPECS.md Tests column code path. Ships QA-KIT-RFT-COMMA-02.
+- L5.2 (0ea56d2): abort-integrity schema v2 split — separate `abort_findings` (verdict-absent) from `baseline_audit_trail` (pre-L3 history → BASELINE tier, not MAJOR). Ships QA-KIT-AB-PRIOR-05.
+- L5.3 (8951bf7 + 311b607): doc-code-diff comprehensive kit-installed-path exclusion — added `tests/features/f[0-9]*-*` template exemption. Ships QA-KIT-DCD-NOISE-02 + cycle-06 D01.
+- L5.4 (5205f52): pre/post-clean state in `tests/sections/03-reliability.sh` and `05-mandate-compliance.sh` for 9 state files. Ships G-KIT-SELFTEST-ISOLATION-01.
+- V5.1 (035eab9): README badge v0.6.32→v0.6.33 + AGENT_CONTEXT.md version sync (cycle-06 V01).
+- V5.2 (e62b25d): v0.6.32→v0.6.33 prep release: workspace-root `portable-spec-kit.md` sync, kit framework version bump.
+- doc 19 §15: Iteration 5 lessons — PLATEAU rule clarified ("1 fix lands → continue; exact same set 2 cycles → declare"), sub-agent claim incompleteness 3-iteration pattern, version-drift cascade concern, 8 v0.6.34 backlog items filed.
+
+### v0.6.32 capabilities — per-feature test architecture (T1.1–T9, ADR-077 through ADR-086)
+
+Commit inventory:
+- ADR-077 / T1.1 (4673407): playwright gate ulimit fix — increase open-files limit before invoking `npx playwright`.
+- ADR-078 / T1.2 (f413604): RFT comma-split parity completion — final code-path migration to comma-split semantics.
+- ADR-079 / T1.3 (449109a): abort-integrity BASELINE tier — recognizes pre-L1 history as legitimate, not flagged as silent abort.
+- ADR-080 / T1.4 (6d88d72): doc-code-diff comprehensive kit-script exclusion — full kit-owned-paths list, not just symlinked entries.
+- ADR-081 / T2 (774ceb3..27b0ab5 skeleton commits): `tests/{shared,features}/` skeleton + dynamic discovery in test-spec-kit.sh.
+- ADR-083 / T4 (27b0ab5): 6 shared helper files (T4.1-T4.6): test-fixtures, mandate-audit, reflex-fixtures, common assertions, file-resolvers, project-skeletons.
+- ADR-084 / T5-T7 (6979303 · 868482e · 20025c6): 70 per-feature audit files (`tests/features/f01-*.sh` through `tests/features/f70-*.sh`), each ~1 sec selective audit.
+- ADR-085 / T8 (43535de): SPECS.md Tests column migrated to per-feature refs (70 features). F25 retained as `tests/test-spd-benchmarking.sh`.
+- ADR-086 / T9 (8d48380): sections/* deprecation headers added — content retained for exhaustive coverage; test logic unchanged.
+
+### v0.6.31 capabilities — convergence-discipline structural enforcement (L1–L6 + M1–M5)
+
+Commit inventory:
+- ADR-066 / L1 (6843dad): abort-detection in preconditions + `--recover-from-abort` flag — next pass detects prior INTERRUPTED verdict and refuses to silently continue.
+- ADR-067 / L2 (64ad34e): EXIT-trap completion contract — bash EXIT trap writes `verdict.md=INTERRUPTED` if mainline didn't. Structural guarantee no abort leaves zero machine-readable trace.
+- ADR-068 / L3 (a09d3bd): per-iteration `.iter-status.yml` audit trail (status: in-flight/completed/aborted, timestamps, verdict-ref). Read by L1, verified by L4, enforced by L5.
+- ADR-069 / L4 (517d2e5): abort-integrity probe in Phase 0 pre-compute — `reflex/lib/check-abort-integrity.sh` writes `abort-integrity.yaml` for QA-Agent dimensions + 9th gate.
+- ADR-070 / L5 (bf1b024): 9th mechanical gate `convergence-audit` — rejects INTERRUPTED verdicts; no commit on a `reflex/dev-*` branch closes a pass with INTERRUPTED.
+- ADR-071 / L6 (0d25871): `portable-spec-kit.md` §Convergence section + 9-gate doc count refresh — cross-agent visibility for the 9th gate + abort-detection rules.
+- ADR-072 / M1 (eb07d9c): `PSK_*_DISABLED` subshell env-var propagation in test-release-check via explicit `export`. Closes G-KIT-RELEASE-CHECK-SUBSHELL-01.
+- ADR-073 / M2 (1279e6a): Phase 0 test-spec-kit cache sharing across helpers — ~60-180s savings per pass on real-size projects (was 3× redundant invocations).
+- ADR-074 / M3 (11c302f): RFT comma-split parity with release-check — multi-test features now parsed identically across both code paths.
+- ADR-075 / M4 (c03b365): PSK001 version-scoped grep — parallels v0.6.30 H2 PSK002 fix, same structural class, false-flag elimination on historical version digits.
+- ADR-076 / M5 (d3f5fd6): doc-code-diff kit-script exclusion on user projects — IS_KIT_SELF detection skips kit-installed paths on user project runs.
+
+### v0.6.30 capabilities — mandate compliance (F1–F5) + orchestration (G1–G3) + QA robustness (H1–H6)
+
+Capability inventory (exact CHANGELOG keys used by psk-doc-sync.sh):
+- F2 — QA-Agent Dim 25 registered: `reflex/prompts/qa-agent.md` header bumped 24→25 dims; new `### Dimension 25 — Mandate-Compliance` section with 5 probes (25.1 directory mandates, 25.2 design-plan-per-feature, 25.3 CHANGELOG drift, 25.4 secret-leak in `.env.example`, 25.5 badge ↔ AGENT_CONTEXT sync).
+- G1 — Phase 6.5 pre-flight: `reflex/lib/orchestration-phase-6-5.sh` runs mandate-audit BEFORE the project enters reflex (orchestration phase boundary). Catches structural gaps at scaffold-time.
+- H1 — QA-KIT-RUNNER-DETECT-01: test-runner detection now explicitly enumerates `vitest`, `mocha`, `tap` in addition to Jest — projects using non-Jest Node runners no longer produce false-negatives.
+- H2 — QA-KIT-PSK002-CROSSVER-01: `tests/sections/02-pipeline.sh` test-count grep is now version-scoped so badge digits from historical CHANGELOG versions don't produce false coupling failures.
+- H3 — QA-KIT-INSTALLER-MANIFEST-01: `install.sh` reflex/lib enumeration is now dynamic (was a hardcoded list growing stale on every new lib helper).
+- H4 — QA-KIT-RELEVANCE-NOISE-01: `tests/test-release-check.sh` test-relevance heuristic is now mode-aware for feature naming — reduces false advisory flags on legitimate kebab-case test files.
+- H5 — QA-KIT-SELFTEST-ISOLATION-01: reliability tests now pre-clean state before running — eliminates sandbox residue bleed-over across reruns.
+- H6 — QA-META-PHIL-CYCLE-05-01: ADL Dim 26 Gate-Distinguishability advisory from Loop Iteration 2 retrospective. Each gate now emits a distinct prefix.
+
 ### Flow docs updated:
 
 - docs/work-flows/17-reflex.md — 7-layer architecture, Phase 0 pre-compute, bootstrap gate, refresh-release inter-iter optimization, reset.sh allowlist
-- docs/work-flows/13-release-workflow.md — Step 0 bootstrap gate documented before Step 1 tests
+- docs/work-flows/13-release-workflow.md — Step 0 bootstrap gate documented before Step 1 tests; Step 6 psk-version-cascade.sh
 - docs/work-flows/11-spec-persistent-development.md — Dimension 16 + bootstrap-check awareness for QA passes

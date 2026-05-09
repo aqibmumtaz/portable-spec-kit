@@ -332,16 +332,8 @@ run_step_5_counts() {
         esac
       done <<< "$detected_stacks"
     fi
-    # Kit-author-only: REQUIREMENTS.md system-prereqs doc check
-    if [ -f "$PROJ_ROOT/portable-spec-kit.md" ] && [ ! -L "$PROJ_ROOT/portable-spec-kit.md" ]; then
-      # We're in the kit repo (regular file, not symlink). Verify REQUIREMENTS.md exists.
-      if [ -f "$PROJ_ROOT/REQUIREMENTS.md" ]; then
-        echo -e "${GREEN}    ✓ kit: REQUIREMENTS.md present (system prereqs)${NC}"
-      else
-        echo -e "${YELLOW}    ⚠ kit: REQUIREMENTS.md missing — system-prereqs doc absent${NC}"
-        missing_manifests=$((missing_manifests + 1))
-      fi
-    fi
+    # Kit-author-only: REQUIREMENTS.md was removed in v0.6.37+
+    # (system prereqs now live in README.md). No check needed.
     if [ "$missing_manifests" -gt 0 ]; then
       echo -e "${YELLOW}    Total missing manifests: $missing_manifests (advisory; non-blocking)${NC}"
     fi

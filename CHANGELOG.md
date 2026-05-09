@@ -8,7 +8,26 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.37 · **Tests:** 1982 (1837 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.38 · **Tests:** 1982 (1837 framework + 145 benchmarking)
+
+### v0.6.38 — Kit-quality fixes: playwright gate, verdict integrity, findings.yaml discipline, flow doc coverage (May 2026)
+
+**Nine targeted kit fixes from searchsocialtruth cycle-07 kit-scope findings (kit-first philosophy):**
+
+- **Playwright gate fix (`gates.sh`):** `npm ci --prefer-offline --silent` runs before `npx playwright test` to refresh node_modules after Dev-Agent package.json upgrades. `playwright_suite_gate_enabled` config key added (default `true`); set `false` only for e2e suites requiring a live server unavailable in reflex context.
+- **`write_verdict()` structural field (`run.sh`):** verdict.md now emits `verdict: GRANTED|DENIED` as an explicit field — convergence-audit gate (9th) reads it directly rather than relying on text-scan fallback.
+- **findings.yaml status discipline (`dev-agent.md`):** Dev-Agent Step 4 now mandates updating `findings.yaml` `status: open` → `status: closed` after marking TASKS.md `[x]`. `[source: <pass-name>]` commit trailer promoted from advisory to HARD REQUIREMENT with verification command.
+- **track-tokens.sh unbound variable fix:** all numeric aggregation vars get `${var:-0}` defaults — prevents `set -u` crash on first-pass runs with empty token files.
+- **Kit version drift advisory (`psk-sync-check.sh`):** new `check_kit_version_drift()` function compares project's `Kit:` field in AGENT_CONTEXT.md against installed kit version; emits advisory warning (non-blocking) when stale.
+- **`.gitignore` playwright output:** `test-results/` + `playwright-report/` added under `# Playwright / test runner output` section.
+- **REQUIREMENTS.md duplicate advisory (`mandate-audit.sh`):** emits ADVISORY finding when both root `REQUIREMENTS.md` and `agent/REQS.md` exist simultaneously.
+- **Feature-named test files mandate (`psk-orchestrate.sh`):** Phase 7 now explicitly requires `tests/f{N}-feature-name.test.ts` naming for R→F→T traceability without SPECS.md lookup.
+- **`REQUIREMENTS.md` deleted from kit root:** `agent/REQS.md` is the authoritative requirements file. `psk-release.sh` REQUIREMENTS.md check removed.
+- **Flow doc coverage (13 + 17):** `13-release-workflow.md` Step 6 documents `psk-version-cascade.sh`; `17-reflex.md` adds §v0.6.30 capabilities (H1-H6 QA robustness) + §v0.6.35 capabilities (`clear_gate_caches()`, `EXPECT_RESUME`, psk-version-cascade extension).
+
+**Tests:** 1837 framework + 145 benchmarking = 1982 (no count change — all structural fixes).
+
+---
 
 ### v0.6.37 — Loop Iteration 8: QA orchestration (wave-based parallel dim-agents) + Dev-Agent Phase 1 analysis (May 2026)
 

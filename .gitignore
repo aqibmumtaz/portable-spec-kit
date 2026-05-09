@@ -9,6 +9,10 @@ cache/
 logs/
 *.log
 
+# Playwright / test runner output
+test-results/
+playwright-report/
+
 # Jira sync transient files (never commit)
 agent/.jira-sync.lock
 agent/.agent-context.lock

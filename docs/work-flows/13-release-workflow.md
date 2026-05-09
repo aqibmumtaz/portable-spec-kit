@@ -69,6 +69,9 @@
 │  Step 6: VERSION BUMP (fully automated)                     │
 │     Script reads current version, computes next patch,      │
 │     seds all files automatically. Verify via sync-check.    │
+│     psk-version-cascade.sh propagates the new version to    │
+│     examples' agent/* Kit fields, benchmarking fixtures,    │
+│     ARD HTML anchors, and CHANGELOG range end.              │
 │     Skipped for refresh release.                            │
 └──────────────────────┬──────────────────────────────────────┘
                        │

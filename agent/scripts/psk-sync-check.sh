@@ -1341,6 +1341,31 @@ check_reflex_protected_files() {
   fi
 }
 
+# --- CHECK: Kit version drift (K3.1 advisory) ---
+# Compares the kit version installed in portable-spec-kit.md against the
+# Kit: field in agent/AGENT_CONTEXT.md. Warns when they diverge — purely
+# advisory (never blocks), because user projects don't control kit updates.
+check_kit_version_drift() {
+  run_check
+  local ctx_kit_ver="" installed_kit_ver=""
+
+  # Read Kit: field from AGENT_CONTEXT.md (e.g. "- **Kit:** v0.6.30")
+  if [ -f "$AGENT_DIR/AGENT_CONTEXT.md" ]; then
+    ctx_kit_ver=$(grep -m1 -E '\*\*Kit:\*\*' "$AGENT_DIR/AGENT_CONTEXT.md" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+  fi
+
+  # Read installed kit version from portable-spec-kit.md **Version:** header
+  if [ -f "$PROJ_ROOT/portable-spec-kit.md" ]; then
+    installed_kit_ver=$(grep -m1 '^\*\*Version:\*\*' "$PROJ_ROOT/portable-spec-kit.md" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  fi
+
+  if [ -n "$ctx_kit_ver" ] && [ -n "$installed_kit_ver" ] && [ "$ctx_kit_ver" != "$installed_kit_ver" ]; then
+    emit_warn "AGENT_CONTEXT.md Kit: field ($ctx_kit_ver) doesn't match installed kit ($installed_kit_ver) — run: grep -n 'Kit:' agent/AGENT_CONTEXT.md to update (advisory)"
+  else
+    emit_pass "Kit version drift (no drift detected)"
+  fi
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -1355,11 +1380,13 @@ main() {
     # Quick: version + test count only
     check_version
     check_test_count
+    check_kit_version_drift
     check_reflex_protected_files
   else
     # Full: all checks (expanded v0.5.9 with content validation, v0.5.13 with secrets)
     check_version
     check_test_count
+    check_kit_version_drift
     check_flow_count
     check_feature_count
     check_specs_staleness
