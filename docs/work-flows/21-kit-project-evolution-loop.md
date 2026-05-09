@@ -85,7 +85,7 @@ The installer does NOT touch:
 
 If this is the first time the project has run the loop, save reference docs:
 
-1. `<kit>/docs/work-flows/19-kit-project-evolution-loop.md` (this file)
+1. `<kit>/docs/work-flows/21-kit-project-evolution-loop.md` (this file)
 2. Add a `[Skill: Kit Evolution]` row to kit's `portable-spec-kit.md` skill table linking here
 3. Cross-reference from `portable-spec-kit.md §Reflex Finding Classification → Kit-Evolution Protocol`
 4. In each project's `HANDOFF.md` add a one-line "This project stays in sync with the kit via the Evolution Loop (kit/docs/work-flows/19)"

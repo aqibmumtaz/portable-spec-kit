@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.37 -->
+<!-- Framework Version: v0.6.38 -->
 
-**Version:** v0.6.37 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.6.38 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1982 (1837 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -97,7 +97,7 @@ This file is the **core brain** — behavioral rules loaded every session. Proce
 | Polished UI design system (palette, type scale, 12 component primitives, dark mode, a11y) | `.portable-spec-kit/skills/ui-design-system.md` |
 | Security baseline (OWASP Top 10, auth scaffolding, middleware stack, input validation) | `.portable-spec-kit/skills/security-baseline.md` |
 | **`/optimize` · `psk optimize` · `optimize tokens` · `clean up bloat`** — token-bloat sweep with safety contract (no rule loss) | `.portable-spec-kit/skills/optimize.md` |
-| Kit ↔ project evolution loop (when fixing kit gaps surfaced by user-project audits) | [`docs/work-flows/19-kit-project-evolution-loop.md`](docs/work-flows/19-kit-project-evolution-loop.md) |
+| Kit ↔ project evolution loop (when fixing kit gaps surfaced by user-project audits) | [`docs/work-flows/21-kit-project-evolution-loop.md`](docs/work-flows/21-kit-project-evolution-loop.md) |
 
 Skills are downloaded from GitHub on first use, cached in `.portable-spec-kit/skills/`. Install is unchanged (one curl command).
 

@@ -31,6 +31,6 @@ After Phase G, no orchestration run can cross from scaffold into feature impl wh
 ## See also
 
 - [doc 18 — Project Orchestration](18-project-orchestration.md) — full 10-phase pipeline, Phase 6.5 in context
-- [doc 19 — Kit ↔ Project Evolution Loop](19-kit-project-evolution-loop.md) — how findings surfaced in user projects flow back into kit improvements
+- [doc 19 — Kit ↔ Project Evolution Loop](21-kit-project-evolution-loop.md) — how findings surfaced in user projects flow back into kit improvements
 - `portable-spec-kit.md` §Reflex Finding Classification — Dim 25 + 8 gates registration
 - `reflex/lib/mandate-audit.sh` — the probe itself (read for the canonical mandate list)
