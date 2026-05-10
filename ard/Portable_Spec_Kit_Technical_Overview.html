@@ -59,12 +59,12 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.38 &bull; May 2026</div>
+    <div class="badge">v0.6.40 &bull; May 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.38</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.40</div>
     <div><strong style="color:#dce4f0;">Tests:</strong> 1982 passing (1837 framework + 145 benchmarking), 95 sections</div>
   </div>
 </div>
@@ -83,19 +83,19 @@
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.6.38</td></tr>
-  <tr><td>Framework size</td><td>Single markdown file (912 lines, 54% reduced from 1998)</td></tr>
-  <tr><td>Skill files</td><td>17 (loaded JIT at peak attention)</td></tr>
-  <tr><td>Reliability scripts</td><td>12 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker)</td></tr>
+  <tr><td>Current version</td><td>v0.6.40</td></tr>
+  <tr><td>Framework size</td><td>Single markdown file (approx. 980 lines)</td></tr>
+  <tr><td>Skill files</td><td>25 (loaded JIT at peak attention)</td></tr>
+  <tr><td>Reliability scripts</td><td>27 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker, orchestrate, version-cascade, and more)</td></tr>
   <tr><td>Enforcement layers</td><td>3 (bash critic, sub-agent critic, git/Claude Code hooks)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
-  <tr><td>Core strengths</td><td>13 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready, <strong>Reliably Enforced</strong>)</td></tr>
-  <tr><td>Source code templates</td><td>8 (Web, Python, Mobile, Android, iOS, Full Stack, Full Stack + Mobile, Document)</td></tr>
-  <tr><td>Automated tests</td><td>1060 (915 framework + 145 benchmarking)</td></tr>
+  <tr><td>Core strengths</td><td>16 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready, Reliably Enforced, Sub-Agent Honesty Gate, Security Scanning, Bypass Audit Log)</td></tr>
+  <tr><td>Source code templates</td><td>10 (Next.js Full-Stack colocated, Next.js Frontend-Only SPA, Next.js Monorepo, Python Backend, Full Stack separate services, Full Stack + Mobile, Mobile, Android, iOS, Document)</td></tr>
+  <tr><td>Automated tests</td><td>1982 (1837 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
-  <tr><td>Flow documents</td><td>16 step-by-step work flows</td></tr>
+  <tr><td>Flow documents</td><td>21 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
   <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
   <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
@@ -105,8 +105,11 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.38</p>
+<p>Kit: v0.6.0 — v0.6.40</p>
 <ul>
+  <li><strong>v0.6.40 — Flow doc coverage for v0.6.39 features (May 2026):</strong> Prep-release flow doc updates: <code>17-reflex.md</code> gains <code>§v0.6.39 capabilities</code> section (server-lifecycle.sh, Next.js colocated template, template-strict scaffold, cycle persistence, cascade Kit field); <code>18-project-orchestration.md</code> Phase 6 scaffold row updated to reference template-strict Stack matching rule. 1982 tests (1837+145).</li>
+  <li><strong>v0.6.39 — Playwright server-lifecycle, Next.js colocated template, template-strict scaffold, cycle persistence, cascade Kit field (May 2026):</strong> Five structural improvements. <strong>server-lifecycle.sh (NEW)</strong>: starts dev server before QA-Agent; port poll via <code>nc -z</code>; PID to <code>.server.pid</code>; process group kill for webpack/esbuild. spawn-qa.sh start hook + run.sh stop hook + <code>reflex/config.yml server_lifecycle:</code> block (<code>enabled: false</code> default) + qa-agent.md <code>REFLEX_SERVER_STATUS</code> awareness (ADR-091). <strong>source-structures.md</strong>: Next.js Full-Stack (colocated) DEFAULT template — ALL code under <code>src/</code>, <code>public/</code> at root (framework constraint), <code>drizzle.config.ts out: ./src/db/migrations</code>; Stack matching rule; Monorepo template added. <strong>psk-orchestrate.sh Phase 6</strong>: template-strict scaffold reads PLANS.md Stack → matches template → creates dirs exactly per template. <strong>reflex/run.sh</strong>: <code>.active-cycle</code> state file persists cycle-id across bash invocations; cleared on GRANTED. <strong>psk-version-cascade.sh Phase Q</strong>: updates <code>**Kit:**</code> field in sync-target AGENT_CONTEXT.md. 1982 tests (1837+145).</li>
+  <li><strong>v0.6.38 — Kit-quality fixes: playwright gate, verdict integrity, findings.yaml discipline, flow doc coverage (May 2026):</strong> 9 targeted kit fixes from searchsocialtruth cycle-07 kit-scope findings (kit-first philosophy). Playwright gate now runs <code>npm ci --prefer-offline --silent</code> before <code>npx playwright test</code> + adds <code>playwright_suite_gate_enabled</code> config key. <code>write_verdict()</code> in <code>run.sh</code> emits explicit <code>verdict: GRANTED|DENIED</code> field for the convergence-audit gate. <code>dev-agent.md</code> mandates <code>findings.yaml</code> status <code>open→closed</code> after TASKS.md <code>[x]</code> + promotes <code>[source: &lt;pass-name&gt;]</code> to HARD REQUIREMENT. <code>track-tokens.sh</code> unbound variable fix. <code>psk-sync-check.sh</code> new <code>check_kit_version_drift()</code> advisory. <code>.gitignore</code> gains playwright output paths. <code>mandate-audit.sh</code> emits ADVISORY when both root <code>REQUIREMENTS.md</code> and <code>agent/REQS.md</code> exist. <code>psk-orchestrate.sh</code> Phase 7 explicitly requires <code>tests/f{N}-feature-name.test.ts</code> naming. <code>REQUIREMENTS.md</code> deleted from kit root — <code>agent/REQS.md</code> is authoritative. Flow doc coverage: 13-release-workflow.md Step 6 + 17-reflex.md §v0.6.30/§v0.6.35 sections. 1982 tests (1837+145).</li>
   <li><strong>v0.6.0 — F70 Reflex evolves to AVACR (Adversarial Verbal Actor-Critic Refinement Loop):</strong> Architectural shift within F70 Reflex from cooperative VACR to adversarial goals with collaborative convergence. <em>QA-Agent</em> goal = FAIL the release (hunt exhaustively across 14 dimensions; default DENIED). <em>Dev-Agent</em> goal = FOOLPROOF the release against QA's hunt (fix findings + harden sibling-class weaknesses). Convergence = QA hunted hard and cannot find a blocker, not "Dev says it's done."
     <ul>
       <li><strong>Physical sandbox isolation:</strong> QA operates in a git worktree at <code>reflex/sandbox/qa-pass-NNN/</code> with <code>agent/AGENT.md</code> + <code>agent/AGENT_CONTEXT.md</code> physically removed. Dev's narrative files cannot bias QA's fresh-context investigation — enforced by filesystem, not prompt discipline. Dev retains full-repo read + write. Dual-rooted access (<code>REFLEX_QA_WORKTREE</code> for reads, <code>REFLEX_QA_PROJECT</code> for invocations).</li>
@@ -1380,7 +1383,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.6.38 &bull; May 2026
+  Portable Spec Kit — Technical Overview &bull; v0.6.40 &bull; May 2026
 </div>
 
 </div>
@@ -1398,7 +1401,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.38 &bull; May 2026</div>
+    <div class="badge">v0.6.40 &bull; May 2026</div>
   </div>
 </div>
 

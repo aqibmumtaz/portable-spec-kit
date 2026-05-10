@@ -548,6 +548,18 @@ run_step_6_version() {
     echo -e "  ${GREEN}✓${NC} examples synced"
   fi
 
+  # QA-KIT-FRAMEWORK-COPY-SYNC-01 — sync root workspace copy (PROJ_ROOT/../..).
+  # The test suite validates that the root workspace copy (e.g. SL/Documents/
+  # portable-spec-kit.md) matches the Projects copy version. This cp keeps
+  # them in sync after every version bump without requiring a manual step.
+  # Silently skipped if the root workspace copy doesn't exist (fresh checkout
+  # or environment where the workspace root layout differs).
+  _ROOT_WORKSPACE_COPY="$(cd "$PROJ_ROOT/../.." 2>/dev/null && pwd)/portable-spec-kit.md"
+  if [ -f "$_ROOT_WORKSPACE_COPY" ]; then
+    cp "$PROJ_ROOT/portable-spec-kit.md" "$_ROOT_WORKSPACE_COPY"
+    echo -e "  ${GREEN}✓${NC} root workspace copy synced ($(basename "$_ROOT_WORKSPACE_COPY"))"
+  fi
+
   # Phase C (Loop 6 v0.6.34) — comprehensive cascade sweep ensures ALL
   # version-pinned artifacts are bumped, not just the obvious ones. Closes
   # G-KIT-V0633-SWEEP-CASCADE-01 (doc 19 §15.3).

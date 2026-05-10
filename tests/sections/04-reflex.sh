@@ -4475,7 +4475,19 @@ breaks_count=$(echo "$RFT_OUT" | grep -c "C4-test-exists" || true)
 rm -rf "$RFT_TMP"
 
 # B.2 — abort-integrity emits schema v2 with abort_findings + baseline_audit_trail
-AB_OUT=$(bash "$PROJ/reflex/lib/check-abort-integrity.sh" "$PROJ" 2>&1 || true)
+# QA-KIT-ABORT-SELF-REFERENCE-01 fix: exclude the currently-running pass so its
+# legitimate INTERRUPTED/PENDING state is not surfaced as a MAJOR finding.
+# The active pass dir is determined from $REFLEX_PASS_DIR if set (autoloop mode)
+# or from the newest cycle-*/pass-*/ dir by mtime (test-suite mode). We derive
+# the composite ID (cycle-NN-pass-NNN) and pass it to --exclude-pass.
+_AB_ACTIVE_PASS_DIR="${REFLEX_PASS_DIR:-$(ls -1dt "$PROJ/reflex/history/cycle-"*/pass-*/ 2>/dev/null | head -1 | sed 's|/$||')}"
+_AB_EXCLUDE=""
+if [ -n "$_AB_ACTIVE_PASS_DIR" ] && [ -d "$_AB_ACTIVE_PASS_DIR" ]; then
+  _AB_CYCLE_SEG=$(basename "$(dirname "$_AB_ACTIVE_PASS_DIR")")
+  _AB_PASS_SEG=$(basename "$_AB_ACTIVE_PASS_DIR")
+  _AB_EXCLUDE="${_AB_CYCLE_SEG}-${_AB_PASS_SEG}"
+fi
+AB_OUT=$(REFLEX_EXCLUDE_PASS="$_AB_EXCLUDE" bash "$PROJ/reflex/lib/check-abort-integrity.sh" "$PROJ" 2>&1 || true)
 echo "$AB_OUT" | grep -q '"schema_version": 2' \
   && pass "Loop6/PhaseB-ab-schema: abort-integrity emits schema v2" \
   || fail "Loop6/PhaseB-ab-schema: abort-integrity missing schema_version=2"

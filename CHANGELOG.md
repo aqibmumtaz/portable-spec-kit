@@ -8,7 +8,32 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.38 · **Tests:** 1982 (1837 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.40 · **Tests:** 1982 (1837 framework + 145 benchmarking)
+
+### v0.6.40 — Flow doc coverage for v0.6.39 features (May 2026)
+
+**Prep-release flow doc updates:**
+
+- **17-reflex.md:** Added `### v0.6.39 capabilities` section documenting server-lifecycle.sh, Next.js colocated template, template-strict scaffold, cycle persistence, and cascade Kit field.
+- **18-project-orchestration.md:** Phase 6 scaffold row updated to reference template-strict Stack matching rule.
+
+**Tests:** 1837 framework + 145 benchmarking = 1982 (no count change).
+
+---
+
+### v0.6.39 — Playwright server-lifecycle, Next.js colocated source template, template-strict scaffold, cycle persistence, cascade Kit field (May 2026)
+
+**Five structural improvements shipped in this release:**
+
+- **Playwright server-lifecycle (`reflex/lib/server-lifecycle.sh` NEW):** starts the project's dev server before QA-Agent runs and stops it on resume. `spawn-qa.sh` calls `server-lifecycle.sh start` after Phase 0 pre-compute; `run.sh` `resume-qa` entry calls `stop`. Server port polled with `nc -z`; PID written to `$PASS_DIR/.server.pid`; process group killed to also stop webpack/esbuild children. `reflex/config.yml` gains `server_lifecycle:` block (`enabled: false` default — safe no-op for bash-only test suites). `qa-agent.md` gains Live server status section: QA reads `REFLEX_SERVER_STATUS` env var (ready / timeout / disabled) and only runs Playwright when `ready`. Hard rule: never attempt `page.goto` when status is not `ready` (ADR-091).
+- **Next.js Full-Stack (colocated) template (`source-structures.md`):** new DEFAULT template for single Next.js apps — ALL app code under `src/` (`app/`, `components/`, `lib/`, `db/`, `auth/`, `queue/`, `hooks/`, `types/`). `public/` stays at project root (Next.js framework constraint). `drizzle.config.ts out: "./src/db/migrations"`. Stack matching rule added at top of file. Renamed old Web App (Next.js/React) → "Next.js Frontend-Only SPA." Added Next.js Monorepo (Turborepo) template. Framework-managed dirs (`node_modules/`, `.next/`, `dist/`) noted as gitignored, never shown in project docs.
+- **Template-strict scaffold (`psk-orchestrate.sh` Phase 6):** Phase 6 now reads PLANS.md Stack table, matches to exact source-structures.md template per Stack matching rule (Next.js colocated / Frontend-Only SPA / Full Stack separate services / Monorepo), creates dirs EXACTLY as the matched template shows. `drizzle.config.ts out:` auto-set when Drizzle ORM in stack.
+- **Single-mode cycle persistence (`reflex/run.sh`):** `find_next_pass_dir()` writes `$HISTORY/.active-cycle` state file; subsequent `bash reflex/run.sh single` calls resume the same cycle instead of starting a new one. Cleared on GRANTED verdict. Fixes the bug where calling `run.sh` twice in succession advanced the cycle counter unnecessarily.
+- **Cascade Kit field (`psk-version-cascade.sh` Phase Q):** after machinery sync, Phase Q also updates `agent/AGENT_CONTEXT.md` `**Kit:**` field in each sync-target project so the Kit badge stays in sync without a separate manual edit.
+
+**Tests:** 1837 framework + 145 benchmarking = 1982 (no count change — all structural / config changes).
+
+---
 
 ### v0.6.38 — Kit-quality fixes: playwright gate, verdict integrity, findings.yaml discipline, flow doc coverage (May 2026)
 
