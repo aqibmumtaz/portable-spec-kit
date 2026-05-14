@@ -8,6 +8,63 @@
 >
 > **Companion skills:** `project-orchestration.md` (orchestrator) · `requirement-research.md` (Phase 2-3) · `ui-design-system.md` (Phase 5) · `security-baseline.md` (Phase 6)
 
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | User says `"create a project for X"` · `"build me an app"` · `"make it production-ready"` · `"generate the app from these requirements"` |
+| **Inputs** | Raw user requirement (one sentence to a paragraph) · optional `--reqs-file path` · optional `--retrofit` for existing projects |
+| **Outputs** | Working app with source code · tests · design system (`agent/design/ui-system.md`) · `README.md` · `HANDOFF.md` · `reflex/history/` audit trail · R→F→T traceability |
+| **Script** | `bash agent/scripts/psk-orchestrate.sh "<raw req>"` |
+| **Gate** | Confirm-with-user gate between each phase (user can redirect) · Phase 6.5 mandate-audit before feature loop · Reflex GRANTED required before final handoff |
+| **When blocked** | Phase 2 requires WebFetch/WebSearch (network-disabled environments skip research) · Phase 6.5 blocks on any MAJOR mandate finding before Phase 7 starts |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Phase 1: CAPTURE (agent)                                   │
+│     Raw req → 3 clarifying questions → agent/REQS.md        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phases 2-3: RESEARCH + EXPAND-REQS (agent)                 │
+│     7-dimension domain research → R1-R30+ professional reqs │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase 4-5: SPECS+PLANS + UI SYSTEM (agent)                 │
+│     R→F mapping · Stack · Data Model · API · ADL            │
+│     8-color palette · 12 component primitives · a11y tokens │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase 6: SCAFFOLD + Phase 6.5: MANDATE-AUDIT (automated)   │
+│     Source tree · auth · middleware · CI workflow           │
+│     mandate-audit.sh — blocks on MAJOR finding before Φ7    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase 7: FEATURES (agent — one feature = one commit)       │
+│     design plan → tests (RED) → implement (GREEN)           │
+│     → gates → commit → mark [x]                             │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase 8-9: RELEASE-PREP + REFLEX AUDIT (automated)         │
+│     psk-release.sh prepare → reflex autoloop → GRANTED      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase 10: FINAL HANDOFF (agent)                            │
+│     R→F→T coverage check · HANDOFF.md · final commit        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Why this flow exists
 
 The default `project-setup.md` flow scaffolds the agent/ directory and a chosen source-structure template — empty files that the user (with the agent) then fills in feature-by-feature.
@@ -36,7 +93,7 @@ The orchestrator drives ten phases sequentially. Each phase has a primary delive
 | 6 | **scaffold** | Source tree (template-strict per Stack table → source-structures.md matching rule) + auth scaffolding + middleware stack + input validation + secret hygiene + CI workflow + health endpoint + API versioning | `src/` + `tests/` + `.env.example` + `README.md` | 5-10 min |
 | 7 | **features** | Feature-by-feature loop: design plan → tests (red) → implement (green) → run gates → commit (one feature = one commit) → mark `[x]` | `agent/design/f{N}.md` per feature + commits + tests | 30-90 min |
 | 8 | **release-prep** | Run kit standard release ceremony — `bash agent/scripts/psk-release.sh prepare` then iterate `next` through 10 steps with critic spawns at Step 4 + Step 9 | Version bump + RELEASES + CHANGELOG entries + dual-gate validation | 10-15 min |
-| 9 | **reflex-audit** | Reflex autoloop until convergence (GRANTED / REGRESSION / plateau / fix-rate drop) — QA-Agent + Dev-Agent peer-exchange across 24 dimensions | `reflex/history/cycle-NN/pass-NNN/` | 30-60 min |
+| 9 | **reflex-audit** | Reflex autoloop until convergence (GRANTED / REGRESSION / plateau / fix-rate drop) — QA-Agent + Dev-Agent peer-exchange across 25 dimensions | `reflex/history/cycle-NN/pass-NNN/` | 30-60 min |
 | 10 | **final-handoff** | Verify R→F→T coverage, polish README runtime instructions, generate one-page `HANDOFF.md`, final commit, summary to user | `README.md` + `HANDOFF.md` | 5 min |
 
 **Sequence:** raw-req → capture → research → expand-reqs → specs-plans → ui-system → scaffold → features → release-prep → reflex-audit → final-handoff → polished, secure, working, audited project
@@ -187,6 +244,17 @@ A complete working application with:
 | **Vibe coding with AI agent** | hours | inconsistent | weak | none |
 | **Generic scaffolder** (create-next-app, etc.) | minutes | template-only | basic | none |
 | **Kit's professional generation flow** | 80-180 min | high (design system + tokens) | high (OWASP + adversarial tests) | reflex GRANTED |
+
+## Key Rules
+
+- **Phase 6.5 mandate-audit gate is non-optional:** the orchestrator runs `mandate-audit.sh` between the secure scaffold (Phase 6) and the feature loop (Phase 7). Any MAJOR mandate finding blocks Phase 7 from starting. Backfilling structural gaps mid-feature-cycle is expensive; catching them at scaffold-time is the design intent.
+- **Confirm-with-user gates exist between every phase:** the user can redirect at each gate (stack choice, palette, requirement scope). Do not auto-skip gates — they are the primary feedback loop.
+- **One feature = one atomic commit in Phase 7:** design plan → tests (RED) → implement (GREEN) → mechanical gates → commit. Do not bundle multiple features into one commit.
+- **Reflex GRANTED is required before final handoff:** Phase 9 runs the reflex autoloop until convergence. The project is not handed off while any CRITICAL or blocking finding is open.
+- **Phase 2 requires network access:** domain research uses WebFetch/WebSearch. Network-disabled environments must either pre-supply a requirements file (`--reqs-file`) or skip Phase 2 with a manual research note.
+- **`--retrofit` skips Phases 1-5:** for existing projects with code already written, the orchestrator skips capture/research/specs/plans/ui-system and jumps directly to Phase 6 (security gap-fill), Phase 7 (pending features), and Phase 8 (reflex audit).
+
+---
 
 ## Anti-patterns
 

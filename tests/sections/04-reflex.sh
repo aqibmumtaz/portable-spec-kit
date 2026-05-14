@@ -2518,16 +2518,18 @@ result=$(run_decision "$HIST_C")
   && pass "N62/C: 0 findings + GRANTED → advance to cycle 2 (clean terminator)" \
   || fail "N62/C: expected 2, got '$result'"
 
-# Scenario D: DENIED + 0 unclosed findings → ADVANCE (v0.6.27+ rule change).
-# Previously required GRANTED verdict to advance, but that blocked manual-fix
-# cycles forever (DENIED-then-externally-fixed couldn't advance). New rule:
-# trust the count_findings_yaml status filter — if no unclosed findings, advance.
+# Scenario D: DENIED + 0 unclosed findings → STAY in cycle 1 (v0.6.41 convergence-discipline).
+# Rule 4 was revised in v0.6.41: DENIED + 0 unclosed findings means Dev-Agent closed all
+# findings but QA has NOT re-verified. Advancing would declare convergence without a QA pass.
+# The correct behavior is to stay in the same cycle to force a fresh QA re-verification.
+# Previously (v0.6.27-v0.6.40) this scenario advanced to cycle 2, which was the
+# false-GRANTED bug: gates passing alone declared convergence without QA re-check.
 HIST_D="$N62_TMP/scen-d"
 build_pass "$HIST_D" 1 1 "DENIED" 0
 result=$(run_decision "$HIST_D")
-[ "$result" = "2" ] \
-  && pass "N62/D: DENIED + 0 unclosed findings → advance to cycle 2 (v0.6.27+: closed-status filter is the safeguard)" \
-  || fail "N62/D: expected 2, got '$result'"
+[ "$result" = "1" ] \
+  && pass "N62/D: DENIED + 0 unclosed findings → stay in cycle 1 (v0.6.41: forces QA re-verification)" \
+  || fail "N62/D: expected 1, got '$result'"
 
 # Scenario E: missing signoff.md → continue
 HIST_E="$N62_TMP/scen-e"

@@ -1,8 +1,71 @@
-# 19 — Kit ↔ Project Evolution Loop
+# 21 — Kit ↔ Project Evolution Loop
 
 > **Status:** Reference protocol · introduced 2026-05-04 with kit v0.6.29 · grounded in real round-trip from searchsocialtruth v0.4.0 → kit v0.6.29 → searchsocialtruth v0.4.2.
 >
 > **When to use:** the kit is a user project finds a gap that's not project-specific, and the gap belongs in the kit (a generic concern: missing gate, missing scaffold default, broken script, false-positive check). This doc is the canonical protocol for the back-and-forth round-trip that lands the fix in kit, releases a new kit version, syncs the new kit into the project, re-runs the project's reflex against the new gates, and ships the project.
+
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | ≥3 `scope:kit` reflex findings accumulate, or kit author wants to add a new probe/gate |
+| **Inputs** | `agent/tasks/Gxx-*.md` (kit task queue), open `[ ] @kit-maintainer` tasks in user-project TASKS.md |
+| **Outputs** | New kit version (bumped `portable-spec-kit.md`), updated project synced to new kit, post-upgrade reflex pass committed |
+| **Script** | `bash <kit-path>/install.sh --yes --from <kit-path>` (Phase B sync); `bash reflex/run.sh single` (Phase A4 + C1) |
+| **Gate** | 6 KGG gates (G1–G6) on all kit commits; project reflex pass after sync |
+| **When blocked** | Kit reflex DENIED with a real regression (not flaky isolation) in Phase A4 — investigate before proceeding |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Phase A: Kit Fixes (in kit repo)                           │
+│     Consolidate Gxx findings → fix one atomic commit each   │
+│     Kit release ceremony → bump version, ADR, CHANGELOG     │
+│     bash reflex/run.sh single (kit self-test)               │
+│     FAIL → investigate; ff-merge dev fixes if non-blocking  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase B: Sync Kit into Project (in user-project repo)      │
+│     bash <kit-path>/install.sh --yes --from <kit-path>      │
+│     bash agent/scripts/psk-bootstrap-check.sh --remediate   │
+│     diff -r <kit>/reflex/lib <project>/reflex/lib → copy    │
+│     FAIL → manually copy missing files post-install         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase C: Project Reflex Against New Gates (config-gated)   │
+│     bash reflex/run.sh single — new gates may surface       │
+│     dormant findings from prior kit versions                │
+│     Dev-Agent fixes on isolated branch; bookend release     │
+│     FAIL → fix findings, re-run; treat post-upgrade         │
+│             findings as expected, not regressions           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Phase D: Document the Loop (one-time per project)          │
+│     Save this flow doc, cross-reference from kit framework  │
+│     Add Evolution Loop note to project HANDOFF.md           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Rules
+
+- **Findings flow project → kit, never kit → project.** Only `target-project` scope findings auto-fix in the project. `kit` and `meta` scope route to `agent/tasks/Gxx-*.md` in the kit repo and require the maintainer.
+- **Kit version bumps trigger project re-init.** Every project on the old kit version must re-run reflex after upgrading to discover dormant findings newly surfaced by updated gates.
+- **New gates surface dormant findings — this is expected.** Post-upgrade findings are the mechanism working correctly, not regressions.
+- **No-bump patch on the project side.** A kit version bump is a kit event. The project gets a small patch tag (e.g. v0.4.1 → v0.4.2) with `Kit: vOLD → vNEW` in RELEASES.md. Project MAJOR/MINOR does not move.
+- **Batch triggers, not per-finding.** Start a loop when ≥3 kit findings accumulate. Single project-specific bugs fix in the project; single kit cleanup that doesn't change behavior stays in normal kit dev cycles.
+- **Sub-agent "I fixed it" reports are signal, not truth.** The next reflex pass is the verification mechanism.
+- **Kit-self-test is supplemental.** Primary validation channel is project-mode reflex on at least one user project.
+- **Every loop commit carries a provenance trail.** Kit fix subject: `kit: <ID> — <desc> [source: <project>-<cycle>-<pass>/<finding>]`. Project sync: `vX.Y.Z prep release: sync kit vA.B.C → vD.E.F`.
 
 ---
 
@@ -169,7 +232,7 @@ Iteration 1 found that `install.sh` missed `console-probe.ts` (new file, not in 
 
 ### 8.4 Phase 0 cost in self-test mode
 
-Kit-self-test reflex Phase 0 takes >30 min on cold cache because `test-release-check.sh + psk-sync-check.sh + mandate-audit.sh` each independently invoke `test-spec-kit.sh` (the kit has 1909 tests). Project-mode reflex doesn't share this cost (vitest is the project's runner, ~2 sec). Kit-self-test convergence is fundamentally costlier.
+Kit-self-test reflex Phase 0 takes >30 min on cold cache because `test-release-check.sh + psk-sync-check.sh + mandate-audit.sh` each independently invoke `test-spec-kit.sh` (the kit has 2192 tests). Project-mode reflex doesn't share this cost (vitest is the project's runner, ~2 sec). Kit-self-test convergence is fundamentally costlier.
 
 **Mitigation roadmap (v0.6.31+):** cache test-spec-kit results across Phase 0 helpers (compute once, share via temp file), or shard Phase 0 to skip already-computed inputs.
 
@@ -327,7 +390,7 @@ Net measurable impact:
 
 Iteration 3 noted that the kit's own SPECS.md violated the kit's own MANDATORY R→F→T rule (every feature should have feature-specific tests). Loop 4 closed this meta-gap: every F1..F70 row now references a feature-specific file, not a monolithic shared runner.
 
-The 1909 exhaustive tests stay in `tests/sections/*.sh` for orchestrator-driven full sweeps. Per-feature audit is the SPECS.md/release-check semantic.
+The 2192 exhaustive tests stay in `tests/sections/*.sh` for orchestrator-driven full sweeps. Per-feature audit is the SPECS.md/release-check semantic.
 
 ### 13.3 Convergence-discipline stack proven end-to-end
 

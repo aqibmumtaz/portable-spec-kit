@@ -40,6 +40,11 @@ kit_grep() {
     [ -f "$ref" ] || continue
     grep $flags "$pattern" "$ref" 2>/dev/null && return 0
   done
+  # v0.6.55+: templates externalized to .portable-spec-kit/templates/
+  for ref in "$PROJ/.portable-spec-kit/templates/"*.md; do
+    [ -f "$ref" ] || continue
+    grep $flags "$pattern" "$ref" 2>/dev/null && return 0
+  done
   return 1
 }
 

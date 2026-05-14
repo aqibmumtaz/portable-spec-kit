@@ -1,5 +1,57 @@
 # Flow 17 — Reflex (Adversarial Verbal Actor-Critic Refinement Loop, AVACR)
 
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | `bash reflex/run.sh` (autoloop, default) · `bash reflex/run.sh single` (single-pass) · cron / on-push (optional) |
+| **Inputs** | Prep-release commit · `agent/SPECS.md` · `agent/REQS.md` · source code · `reflex/config.yml` · Phase 0 pre-computed artifacts (`claims.yaml`, `state-diff.yaml`) |
+| **Outputs** | `reflex/history/cycle-NN/pass-NNN/` (findings.yaml · signoff.md · verdict.md · dev-trace.md · gates-result.md) · fast-forward merge to main on GRANTED |
+| **Script** | `bash reflex/run.sh` — sole public entry point |
+| **Gate** | 11 mechanical gates per pass (protected-files · commit-convention · console-cleanliness · mandate-compliance · convergence-audit · playwright-suite · config-yml · dev-self-verify · kit-evolution G1/G2) |
+| **When blocked** | INTERRUPTED verdict from prior pass without `operator-recovered` annotation (L1 abort-detection) · precondition gate failures (clean tree, prep-release marker, bootstrap integrity) |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 1: RELEASE-PREP (automated)                          │
+│     iter 1: psk-release.sh prepare (version bump)           │
+│     iter 2+: psk-release.sh refresh (no bump)               │
+│     FAIL → release ceremony errors surface; fix and retry   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PHASE 2: PRECONDITIONS + PHASE 0 + SPAWN QA-AGENT          │
+│     preconditions.sh — 4 gates (self-test, bootstrap,       │
+│       clean tree, prep-release marker)                      │
+│     Phase 0 helpers: extract-claims.sh + state-diff.sh      │
+│     Sandbox worktree created; AGENT.md removed              │
+│     AWAITING_QA → agent spawns QA sub-agent via Task tool   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PHASE 3: FILE BUGS + SPAWN DEV-AGENT (automated + agent)   │
+│     file-bugs.sh routes findings to TASKS.md                │
+│     Sandbox purged (structural isolation)                   │
+│     spawn-dev.sh creates reflex/dev-<pass> branch           │
+│     AWAITING_DEV → agent spawns Dev sub-agent via Task tool │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PHASE 4: GATES + VERDICT + DECISION (automated)            │
+│     gates.sh runs 11 mechanical gates                       │
+│     regression-diff.sh + score.sh + write_verdict           │
+│     ├─ GRANTED  → ff-merge dev branch → main; cycle done    │
+│     ├─ DENIED + iter < 3 → restart Phase 1 (same cycle)     │
+│     └─ DENIED + iter 3 / REGRESSION → MANUAL_REVIEW_NEEDED  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 25 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. In orchestrated mode (v0.6.37+) the QA orchestrator spawns parallel dim-agents in waves via `qa-agent-orchestrator.md` + `qa-agent-dim.md` — each dim-agent investigates its assigned slice independently, then the orchestrator aggregates findings. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, runs a Phase 1 analysis pass (root-cause grouping → `fix-plan.md`) then fixes atomically on an isolated dev branch with per-commit mechanical gates, cascade-checking after each commit for auto-closures. Convergence = QA hunted hard and cannot find a blocker.
 
 Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operational name: **reflex**. Primary entry: `reflex/run.sh` (see §Commands). Internal machinery: `reflex/lib/spawn-qa.sh`, `reflex/lib/spawn-dev.sh`, `reflex/lib/file-bugs.sh`, `reflex/lib/gates.sh`, `reflex/lib/regression-diff.sh`, `reflex/lib/score.sh`, `reflex/lib/preconditions.sh`, `reflex/lib/loop.sh`, `reflex/lib/update-eval-trace.sh`, `reflex/lib/prune-history.sh`.
@@ -21,6 +73,19 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 **Cycle-id rule (v0.6.28 — GRANTED converges, ADR-041):** the cycle advances when the latest pass's signoff verdict is `GRANTED`, regardless of whether non-blocking findings remain. GRANTED is the auditor's "ship-ready" signal; any leftover MINOR / non-blocking findings stay queued for the next cycle, no wasted re-verify pass needed. The v0.6.27 escape hatch (advance on 0 unclosed findings + signoff-present, verdict-agnostic) still applies for DENIED-then-externally-fixed cases — `count_findings_yaml`'s closed-status filter is the audit safeguard. The rule fires identically in `compute_next_cycle_id` (run.sh) and `next_cycle_id` (loop.sh).
 
 **Reflex history retention bloat (v0.6.2+, bounded disk use):** `reflex/lib/prune-history.sh` enforces caps from `reflex/config.yml` `history_retention.*`. Per-pass directories capped at `pass_dirs_keep` (default 10). Dev branches at `dev_branches_keep` (default 3, unhappy paths only). QA sandbox worktrees at `qa_sandbox_keep` (**default 0 since v0.6.28, ADR-043** — current pass purges immediately after QA via `reflex/lib/purge-current-sandbox.sh`; prior sandboxes have no consumer). `REFLEX_EVAL_TRACE.md` and `summary.csv` are kept forever. Pruning runs automatically at the start of every pass — pruned passes remain in the register with an `_(archived)_` marker. Detection: `/optimize` Category 8 flags per-pass dirs >2× retention limit and register >100KB. Manual clean slate: `bash reflex/run.sh --purge-history --confirm`.
+
+## Key Rules
+
+- **Both agents always run:** every pass must complete QA-Agent AND Dev-Agent alternately. A pass cannot be marked GRANTED without both agents having actually run (enforced at three layers in `run.sh`, `spawn-qa.sh`, and `loop.sh`).
+- **QA never reads source code:** QA-Agent exercises the public surface only, comparing to the promise in SPECS. This prevents Dev-written tests from hiding stub implementations.
+- **Dev cannot touch AGENT.md / AGENT_CONTEXT.md:** three enforcement layers (prompt mandate, `gates.sh` per-commit diff check, `psk-sync-check.sh` pre-commit hook on `reflex/dev-*` branches). Violations route to human-arbitration.
+- **No abort without a verdict:** EXIT/INT/TERM traps write a fallback `INTERRUPTED` verdict.md if the mainline doesn't reach the verdict-write block. Recovery requires `--recover-from-abort <pass-id>` before the next run.
+- **Sandbox is purged after QA:** `purge-current-sandbox.sh` removes the QA worktree unconditionally after findings are extracted. Dev physically cannot read QA's private workspace.
+- **Per-commit mechanical gates:** broken fixes never land. 11 gates per pass; max 3 retries per task; max 200 tool calls per cycle.
+- **GRANTED advances the cycle, not finding-count zero:** minor/non-blocking findings carry forward to the next cycle — no wasted re-verify pass.
+- **`reflex/` is out of QA scope:** avoids recursion; QA-Agent never tests reflex itself.
+
+---
 
 ## When to run
 
@@ -249,7 +314,7 @@ After 3 autoloop invocations (cycle 1: 3 iters, cycle 2: 2 iters, cycle 3: 3 ite
 1. **Dev-branch isolation.** Dev-Agent commits to `reflex/dev-cycle-NN-pass-NNN` (for autoloop) or `reflex/dev-standalone-pass-NNN` (single-pass), a dedicated branch off the current HEAD. Main branch stays clean during the pass. On GRANTED verdict, run.sh fast-forward merges into the parent branch (falls back to `--no-ff` if parent diverged) and deletes the dev branch. On DENIED / REGRESSION the branch is retained (last 3 unhappy branches kept; pruned beyond that).
 2. **Protected-files write-ban (3-layer).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Enforced at three layers: Dev-Agent prompt ("NEVER modify"), `gates.sh` per-commit diff check, and `psk-sync-check.sh` pre-commit hook (branch-gated to `reflex/dev-*`). If a finding's recommendation touches these files, Dev-Agent files it as Bucket D + routes a `QA-<ID>-ARB` task to human-arbitration.
 3. **Sandbox purge after QA:** `file-bugs.sh` removes the current pass's QA sandbox worktree the moment findings are extracted into the committed `reflex/history/<pass>/`. Dev physically cannot read QA's private workspace — structural enforcement, not trust-based.
-4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 10 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim).
+4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 11 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim), kit-evolution-file-scope (G1, PKFL), kit-genericity-proof (G2, PKFL — active on `REFLEX_KIT_EVOLUTION=1` passes).
 5. **Max 3 retries per task.** Gate fails after 3 attempts → task marked `[~]` (human review).
 6. **Max 200 tool calls per cycle.** Budget cap aborts runaway cycles.
 7. **Regression detection.** Next pass verifies previously-fixed tasks haven't reopened; `regression-diff.md` records closed / persisted / new / regressed per pass.
@@ -489,7 +554,7 @@ tests/
     04-reflex.sh           (463 tests · standalone-runnable)
 ```
 
-Each section file is independently runnable: `bash tests/sections/04-reflex.sh` works from any cwd, sources lib.sh, increments the same counter globals, exits with own RESULTS line. Orchestrator aggregates via shared globals when sections are sourced (not bash'd). Total: 1837 framework tests; +145 benchmarking via separate `tests/test-spd-benchmarking.sh`.
+Each section file is independently runnable: `bash tests/sections/04-reflex.sh` works from any cwd, sources lib.sh, increments the same counter globals, exits with own RESULTS line. Orchestrator aggregates via shared globals when sections are sourced (not bash'd). Total: 2192 framework tests; +145 benchmarking via separate `tests/test-spd-benchmarking.sh`.
 
 ### Standalone analysis helpers (v0.6.11 — closes QA-DOC-HELPER-01)
 
@@ -503,6 +568,13 @@ Neither helper is part of the autoloop hot path. They are kept invocable so main
 ### Reset behavior (v0.6.2 → v0.6.11)
 
 Reflex reset command — nuclear wipe: bash reflex/run.sh --reset [--confirm] [--reset-hardening] [--reset-consent] deletes everything under reflex/history/ and reflex/sandbox/ plus runtime state files and reflex/dev-* branches via allowlist (any new pass artifact auto-cleaned). Preserves reflex/history/hardening-log.md (kit's structural-defense audit memory) and the consent marker by default.
+
+### v0.6.44 capabilities — Dim 25 extension, regression test features, test-infra fix
+
+- **Dim 25 extension:** `reflex/prompts/qa-agent.md` Dimension 25 expanded with three new mandatory sub-probes — 25.2 stub-path compliance (does the project use `tests/features/f{N}-*.sh` paths per current SPECS.md Tests column?), 25.3 template structure completeness (do all 9 agent file templates contain their required gold-standard sections?), 25.4 config.md presence (`tests/features/` dir and `.portable-spec-kit/config.md` exist as mandated by kit init flow). All three emit MAJOR-severity findings.
+- **F71 — Framework Internal Consistency:** 6 regression tests added in `tests/features/f71-framework-consistency.sh` — verifies no bare stub paths in framework rules, `source-structures.md` documents `features/` subdir, `project-setup.md` mkdir includes `tests/features`, and the kit tree contains the mandated `tests/features/`, `tests/e2e/`, and `.portable-spec-kit/config.md` paths.
+- **F72 — Template Structure Completeness:** 15 regression tests added in `tests/features/f72-template-structure.sh` — verifies all 9 agent file templates in `skills/templates.md` contain their required gold-standard sections (REQS approval tracking, SPECS scope-change record and `tests/features/` stub path, AGENT.md Security + Definition of Done, TASKS.md QA Findings + Evidence field, AGENT_CONTEXT.md File Structure including `tests/features/` and `config.md`).
+- **Test infra fix (per-feature loop):** `tests/test-spec-kit.sh` orchestrator fixed two bugs: (1) sourced section files were clobbering `SCRIPT_DIR`, causing the per-feature loop to resolve `tests/features/` relative to `tests/sections/` instead of `tests/`; (2) Section 18 user-profile edge-case tests cd'd into temp dirs then deleted them, leaving subsequent sections unable to resolve `$PROJ` paths. Fix: `ORCHESTRATOR_DIR="$SCRIPT_DIR"` saved before sourcing; `cd "$PROJ"` restores cwd after each section. Framework test count: 1840 → 2191.
 
 ### v0.6.30 capabilities — QA robustness improvements
 

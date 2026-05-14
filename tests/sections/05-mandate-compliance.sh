@@ -34,10 +34,13 @@ else
 fi
 
 # Build a kit-conformant synthetic skeleton in $1 (target dir)
+# Includes tests/features/ tests/shared/ tests/fixtures/ tests/e2e/ per kit structure.
 build_skeleton() {
   local d="$1"
-  mkdir -p "$d/agent/design" "$d/agent/scripts" "$d/tests" \
-           "$d/docs/work-flows" "$d/ard" "$d/.github/workflows" "$d/src"
+  mkdir -p "$d/agent/design" "$d/agent/scripts" \
+           "$d/tests/features" "$d/tests/shared" "$d/tests/fixtures" "$d/tests/e2e" \
+           "$d/docs/work-flows" "$d/ard" "$d/.github/workflows" "$d/src" \
+           "$d/.portable-spec-kit"
   # Pipeline files (minimal but present)
   for f in REQS SPECS PLANS DESIGN TASKS RELEASES RESEARCH AGENT AGENT_CONTEXT; do
     echo "# $f" > "$d/agent/$f.md"
@@ -57,6 +60,14 @@ build_skeleton() {
   # Version anchors (avoid drift finding)
   echo "**Version:** v0.1.0" > "$d/agent/AGENT_CONTEXT.md"
   echo "version-v0.1.0" >> "$d/README.md"
+  # Project config (MANDATE-CONFIG-MISSING gate)
+  cat > "$d/.portable-spec-kit/config.md" <<'CFGEOF'
+# Project Config
+## CI/CD
+- **Enabled:** false
+## Code Review
+- **Auto on feature completion:** true
+CFGEOF
 }
 
 # --- T1: ard/ missing → MANDATE-DIR-ARD-MISSING (MAJOR) ---
@@ -128,6 +139,41 @@ else
   echo "$T3_OUT" | head -40 >&2
 fi
 rm -rf "$T3_DIR"
+
+# --- T4: flat tests/ (no features/ subdir) → MANDATE-DIR-TESTS-FEATURES-MISSING (MINOR) ---
+T4_DIR=$(mktemp -d "/tmp/psk-mandate-t4-XXXXXX")
+build_skeleton "$T4_DIR"
+# Remove tests/features to simulate old flat layout
+rm -rf "$T4_DIR/tests/features"
+T4_OUT=$(bash "$MANDATE_AUDIT" --root "$T4_DIR" 2>/dev/null)
+if echo "$T4_OUT" | grep -q "MANDATE-DIR-TESTS-FEATURES-MISSING"; then
+  pass "T4: flat tests/ (no features/ subdir) flagged with MANDATE-DIR-TESTS-FEATURES-MISSING"
+else
+  fail "T4: MANDATE-DIR-TESTS-FEATURES-MISSING not reported when tests/features/ removed"
+fi
+if echo "$T4_OUT" | grep -A1 "MANDATE-DIR-TESTS-FEATURES-MISSING" | grep -q '"severity":"MINOR"'; then
+  pass "T4: severity = MINOR (correct)"
+else
+  fail "T4: severity != MINOR for MANDATE-DIR-TESTS-FEATURES-MISSING"
+fi
+rm -rf "$T4_DIR"
+
+# --- T5: missing .portable-spec-kit/config.md → MANDATE-CONFIG-MISSING (MAJOR) ---
+T5_DIR=$(mktemp -d "/tmp/psk-mandate-t5-XXXXXX")
+build_skeleton "$T5_DIR"
+rm -f "$T5_DIR/.portable-spec-kit/config.md"
+T5_OUT=$(bash "$MANDATE_AUDIT" --root "$T5_DIR" 2>/dev/null)
+if echo "$T5_OUT" | grep -q "MANDATE-CONFIG-MISSING"; then
+  pass "T5: missing config.md flagged with MANDATE-CONFIG-MISSING"
+else
+  fail "T5: MANDATE-CONFIG-MISSING not reported when .portable-spec-kit/config.md removed"
+fi
+if echo "$T5_OUT" | grep -A1 "MANDATE-CONFIG-MISSING" | grep -q '"severity":"MAJOR"'; then
+  pass "T5: severity = MAJOR (correct)"
+else
+  fail "T5: severity != MAJOR for MANDATE-CONFIG-MISSING"
+fi
+rm -rf "$T5_DIR"
 
 # --- Gate-8 wiring sanity: gates.sh references mandate-compliance ---
 if grep -q "mandate-compliance\|mandate_compliance\|mandate-audit" "$PROJ/reflex/lib/gates.sh" 2>/dev/null; then

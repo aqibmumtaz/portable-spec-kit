@@ -1,5 +1,57 @@
 # Workflow 20 — Orchestration Completeness (Phase 6.5)
 
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Automatically fired by `psk-orchestrate.sh` between Phase 6 (scaffold) and Phase 7 (feature loop) · also fires after every Dev-Agent fix during Reflex via the 8th mechanical gate |
+| **Inputs** | Scaffolded project tree · `portable-spec-kit.md` mandate list · `reflex/lib/mandate-audit.sh` |
+| **Outputs** | Structured JSON findings with severity (MAJOR / MINOR / ADVISORY) · Phase 7 blocked when any MAJOR finding is open · MINOR findings advisory-appended to `agent/TASKS.md` |
+| **Script** | `reflex/lib/mandate-audit.sh` (probe) · `reflex/lib/orchestration-phase-6-5.sh` (Phase 6.5 runner) |
+| **Gate** | 8th mechanical gate in `reflex/lib/gates.sh` — blocks on MAJOR (configurable via `mandate_compliance_block_severity` in `reflex/config.yml`) |
+| **When blocked** | Any MAJOR mandate finding open at Phase 6.5 → Phase 7 cannot start · Any MAJOR finding introduced by a Dev-Agent fix → 8th gate blocks the commit |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PHASE 6 COMPLETE — Secure scaffold landed                  │
+│     src/ · auth · middleware · CI · .env.example            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PHASE 6.5: MANDATE-AUDIT PROBE (automated)                 │
+│     reflex/lib/mandate-audit.sh runs against project root   │
+│     Checks: required dirs · pipeline files · source-layout  │
+│     per-feature design plans · ARD docs · README badges     │
+│     .env.example hygiene · CI workflow content              │
+│     Emits: JSON findings per mandate with severity          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+         ┌─────────────▼──────────────┐
+         │  DECISION: MAJOR findings?  │
+         ├─ YES → block Phase 7       │
+         │   agent fixes gaps, reruns  │
+         └─ NO  → proceed to Phase 7  │
+         └────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PHASE 7: FEATURE LOOP (agent)                              │
+│     Feature implementation begins only with clean mandate   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  REFLEX PASSES — 8th GATE FIRES AFTER EVERY DEV FIX         │
+│     gates.sh invokes mandate-audit.sh after each commit     │
+│     MAJOR regression from a Dev fix → commit blocked        │
+│     Same probe, three trigger points (scaffold · QA · fix)  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Why completeness is part of orchestration's contract, not QA's safety net
 
 The kit's project-orchestration pipeline (Phases 1–10, see [doc 18](18-project-orchestration.md)) ends with a Reflex audit (Phase 8) that surfaces gaps. Until Loop-Iter-2, that meant any *structural* gap — a missing `ard/` directory, an absent stack manifest, a feature shipped without a design plan — was caught only after features had already landed. Backfilling those gaps mid-feature-cycle is expensive: every feature commit potentially needs revision, every test revisited, every doc cross-checked.
@@ -27,6 +79,16 @@ Loop-Iter-2 (the autoloop pass that produced searchsocialtruth) shipped its firs
 - Phase G1–G3 — Phase 6.5 added to orchestration skill, wired into `psk-orchestrate.sh`, this flow doc
 
 After Phase G, no orchestration run can cross from scaffold into feature impl while a `MAJOR` mandate finding stands.
+
+## Key Rules
+
+- **Phase 6.5 is non-optional in orchestration:** the mandate-audit probe fires between scaffold and feature loop on every `psk-orchestrate.sh` run. No flag exists to skip it — Phase 7 cannot start while a MAJOR finding is open.
+- **Same probe, three trigger points:** `mandate-audit.sh` runs at scaffold-time (Phase 6.5), audit-time (Reflex Dim 25 via QA-Agent), and fix-time (8th gate after every Dev-Agent commit). Each catches the same class of regression at a different cost point.
+- **MAJOR blocks, MINOR advises:** MAJOR findings block Phase 7 and the 8th gate. MINOR findings are appended to `agent/TASKS.md` as advisory items. ADVISORY findings are informational only. Block severity is configurable via `mandate_compliance_block_severity` in `reflex/config.yml`.
+- **Backfilling mid-feature-cycle is expensive:** the design intent is to catch structural gaps while only the scaffold exists. A missing `ard/` or absent stack manifest caught at Phase 6.5 requires fixing one file; the same gap caught at cycle-05 (six features in) requires revisiting every feature commit and doc cross-reference.
+- **QA Dim 25 is the regression detector, not the primary discovery mechanism:** after Phase 6.5 lands, Dim 25 confirms no regressions crept in during feature implementation. If Dim 25 catches a mandate gap that Phase 6.5 missed, that is a bug in `mandate-audit.sh` — file it as a kit finding.
+
+---
 
 ## See also
 

@@ -4,6 +4,23 @@ Sync TASKS.md to Jira Cloud. Explicit only — never automatic.
 
 This flow documents the **Jira Cloud integration** surface of the kit: `sync to jira`, credential handling, R→F→Epic→Story→Task hierarchy auto-creation, and the psk-tracker daemon. Companion scripts: `agent/scripts/psk-jira-sync.sh` and `agent/scripts/psk-tracker.sh`.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | User says `"sync to jira"` — explicit command only, never automatic |
+| **Inputs** | `agent/TASKS.md` (completed `[x]` tasks), `agent/AGENT_CONTEXT.md` (session hours), `.env` (Jira credentials), `agent/AGENT.md` (Jira URL + project key) |
+| **Outputs** | Jira tickets created/transitioned to Done, worklogs posted, `[PROJ-NNN]` tags written back to `TASKS.md`, `last_sync` timestamp in `AGENT_CONTEXT.md` |
+| **Script** | `bash agent/scripts/psk-jira-sync.sh` · `bash agent/scripts/psk-tracker.sh` (optional daemon) |
+| **Gate** | PID-based lock (`agent/.jira-sync.lock`); credential check and project key validation at Step 1 before any writes |
+| **When blocked** | Credential check fails · project key invalid · `JIRA_API_TOKEN` missing from `.env` · concurrent sync already running (lock held) |
+
+---
+
+## Flow Diagram
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  USER SAYS "sync to jira"                                   │
@@ -76,3 +93,15 @@ This flow documents the **Jira Cloud integration** surface of the kit: `sync to 
 │     Delete agent/.jira-sync.lock                            │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Key Rules
+
+- **Explicit only — never automatic.** The Jira sync never runs without `"sync to jira"` from the user. No release step, session start, or hook triggers it automatically.
+- **Credential gate runs first.** Step 1 tests the Jira API connection and validates the project key before any read or write operation. A failed credential check exits immediately with an actionable error — no partial state.
+- **PID-based lock prevents concurrent syncs.** `agent/.jira-sync.lock` is acquired at Step 1 and released at Step 8. A second sync attempt while the lock is held fails fast with a clear message.
+- **API keys never appear in committed files.** `JIRA_EMAIL` and `JIRA_API_TOKEN` live in `.env` (gitignored). `JIRA_URL` and `JIRA_PROJECT_KEY` go in `agent/AGENT.md` (committed — not secrets). Never store credentials in TASKS.md or any committed file.
+- **Errors per ticket do not abort the sync.** Step 6 continues to the next ticket on failure, collects all errors, and reports them at Step 7. A partial sync is better than no sync.
+- **`[PROJ-NNN]` tags are written back to TASKS.md.** After Jira ticket creation, the tag is appended to the matching task line so subsequent syncs can detect already-synced tasks without querying Jira.
+- **Hours confirmation is mandatory before push.** The user reviews and can edit per-task hour estimates at Step 5. No worklog is posted without user acceptance — the agent never silently submits hours.

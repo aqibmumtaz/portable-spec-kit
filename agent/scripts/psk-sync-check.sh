@@ -135,6 +135,12 @@ Error codes:
   PSK017: Critic prompts (Step 4 / Step 9) missing omission-detection language
   PSK018: Per-feature acceptance criteria block missing for one or more `| F{N} |` rows
           in SPECS.md (advisory by default; PSK_FEATURE_CRITERIA_STRICT=1 makes hard fail)
+  PSK019: Flow doc missing required sections (## Overview, ## Flow Diagram, ## Key Rules)
+          — checked against all docs/work-flows/*.md except 00-template.md
+  PSK023: Template fails 7-criterion Quality Bar — runs psk-template-quality.sh --all --strict
+          across .portable-spec-kit/templates/. Criteria: 1=stack-agnostic, 2=domain-agnostic,
+          3=scale-agnostic, 4=useful-and-complete, 5=lifecycle-aware, 6=self-documenting,
+          7=round-trippable. See portable-spec-kit.md §Template Quality Bar.
 
 Modes:
   --full         all 11 checks
@@ -423,7 +429,8 @@ check_flow_count() {
   run_check
 
   local actual readme_mention
-  actual=$(find "$PROJ_ROOT/docs/work-flows" -maxdepth 1 -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+  # Exclude 00-template.md — infrastructure file, not a user-facing workflow doc
+  actual=$(find "$PROJ_ROOT/docs/work-flows" -maxdepth 1 -name "*.md" -type f 2>/dev/null | grep -v '/00-template\.md$' | wc -l | tr -d ' ')
   readme_mention=$(grep -oE '[0-9]+ flow' "$PROJ_ROOT/README.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)
 
   if [ -z "$readme_mention" ]; then
@@ -650,12 +657,39 @@ check_script_perms() {
   fi
 }
 
+# --- CHECK 6b: Required scripts present (PSK006b) ---
+# Closes QA-C11P001-SYNCCHECK-MISSING-PLANSAVE-05: enumerate the kit-required
+# scripts so install drift surfaces immediately. Kept narrow — only scripts
+# whose absence would silently break a kit workflow (release, init, validate,
+# plan-save lifecycle, etc.). Stack-specific or optional helpers (jira /
+# tracker) are intentionally excluded.
+check_required_scripts() {
+  [ ! -d "$AGENT_DIR/scripts" ] && return
+  run_check
+
+  local required="psk-sync-check.sh psk-install-hooks.sh psk-release.sh psk-validate.sh psk-critic-spawn.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-bootstrap-check.sh psk-doc-sync.sh psk-plan-save.sh psk-env.sh"
+  local missing=""
+  for s in $required; do
+    if [ ! -f "$AGENT_DIR/scripts/$s" ]; then
+      missing="$missing $s"
+    fi
+  done
+
+  if [ -z "$missing" ]; then
+    emit_pass "Required scripts present (12 core + psk-plan-save.sh)"
+  else
+    emit_issue "PSK006b" "required-scripts" \
+      "missing required script(s):$missing" \
+      "Re-run install.sh from kit checkout to restore. Each listed script is part of the canonical install set."
+  fi
+}
+
 # --- CHECK 7: Required directories ---
 check_required_dirs() {
   run_check
 
   local required_base="agent agent/scripts"
-  [ "$MODE" = "kit" ] && required_base="$required_base agent/design docs/work-flows"
+  [ "$MODE" = "kit" ] && required_base="$required_base agent/design docs/work-flows tests/features tests/shared"
   local missing=""
   for d in $required_base; do
     if [ ! -d "$PROJ_ROOT/$d" ]; then
@@ -667,6 +701,36 @@ check_required_dirs() {
     emit_pass "Required directories exist"
   else
     emit_issue "PSK007" "required-dirs" "missing:$missing" "mkdir -p$missing"
+  fi
+
+  # PSK015-CONFIG: .portable-spec-kit/config.md must exist (auto-created by install.sh)
+  if [ ! -f "$PROJ_ROOT/.portable-spec-kit/config.md" ]; then
+    emit_issue "PSK015-CONFIG" "required-config" \
+      ".portable-spec-kit/config.md missing" \
+      "run install.sh (creates config.md with defaults) or create manually from config-details.md template"
+  fi
+}
+
+# --- CHECK PSK016: Stub path cross-reference — no bare tests/f{n} paths in framework ---
+check_stub_paths() {
+  [ "$MODE" != "kit" ] && return
+  run_check
+
+  local framework="$PROJ_ROOT/portable-spec-kit.md"
+  [ ! -f "$framework" ] && return
+
+  # Look for test stub path patterns that lack tests/features/ prefix
+  # Match tests/f{n} or tests/test_f{n} but NOT tests/features/...
+  local bad_lines
+  bad_lines=$(grep -n 'tests/f{n}\|tests/f{N}\|tests/test_f{n}\|tests/test-f{n}' "$framework" 2>/dev/null \
+    | grep -v 'tests/features/' | grep -v '^[[:space:]]*#' | head -5)
+
+  if [ -z "$bad_lines" ]; then
+    emit_pass "PSK016: all test stub paths in portable-spec-kit.md use tests/features/ prefix"
+  else
+    emit_issue "PSK016" "stub-paths" \
+      "portable-spec-kit.md has bare stub paths missing tests/features/ prefix" \
+      "Change tests/f{n} → tests/features/f{n} in: $(echo "$bad_lines" | awk -F: '{print $1}' | paste -sd, -)"
   fi
 }
 
@@ -866,7 +930,8 @@ check_readme_flow_table() {
   declared_rows=$(grep -cE '\[.*\]\(docs/work-flows/[0-9]+-[a-z-]+\.md\)' "$readme" 2>/dev/null)
 
   local actual_flows
-  actual_flows=$(ls "$PROJ_ROOT"/docs/work-flows/*.md 2>/dev/null | wc -l | tr -d ' ')
+  # Exclude 00-template.md — it is infrastructure, not a user-facing workflow doc
+  actual_flows=$(ls "$PROJ_ROOT"/docs/work-flows/*.md 2>/dev/null | grep -v '/00-template\.md$' | wc -l | tr -d ' ')
 
   # No flow table in README — skip
   if [ "$declared_rows" -eq 0 ]; then
@@ -923,6 +988,135 @@ check_flow_docs_content() {
     emit_issue "PSK016" "flow-docs-content" "Flow doc(s) missing required script mentions:${fails}" "Add the script name to the corresponding flow doc. See release-process.md skill — flow docs must describe the orchestrator they workflow."
   else
     emit_pass "Flow doc content (all executable-workflow orchestrators referenced in their flow docs)"
+  fi
+}
+
+check_flow_doc_template() {
+  [ "$FULL" = false ] && return
+  [ ! -d "$PROJ_ROOT/docs/work-flows" ] && return
+  run_check
+  local fails=""
+  local required_sections=("## Overview" "## Flow Diagram" "## Key Rules")
+  while IFS= read -r -d '' doc; do
+    local basename
+    basename=$(basename "$doc")
+    [ "$basename" = "00-template.md" ] && continue
+    for section in "${required_sections[@]}"; do
+      if ! grep -qF "$section" "$doc"; then
+        fails="${fails}\n  $basename: missing '$section'"
+      fi
+    done
+  done < <(find "$PROJ_ROOT/docs/work-flows" -maxdepth 1 -name "*.md" -print0 | sort -z)
+  if [ -z "$fails" ]; then
+    emit_pass "PSK019: all flow docs have required sections (Overview, Flow Diagram, Key Rules)"
+  else
+    emit_issue "PSK019" "flow-doc-template" \
+      "Flow doc(s) missing required template sections:${fails}" \
+      "Add ## Overview (table), ## Flow Diagram (ASCII boxed), and ## Key Rules (bullet list) to each flagged doc. See docs/work-flows/00-template.md for the canonical template."
+  fi
+}
+
+check_template_choice() {
+  # PSK022a — verify physical layout matches Stack-derived template choice
+  [ "$FULL" = false ] && return
+  [ ! -f "$PROJ_ROOT/agent/PLANS.md" ] && return
+  run_check
+
+  local plans="$PROJ_ROOT/agent/PLANS.md"
+  local has_src=0 has_frontend=0 has_backend=0 has_packages=0 has_bin=0
+  [ -d "$PROJ_ROOT/src" ] && has_src=1
+  [ -d "$PROJ_ROOT/frontend" ] && has_frontend=1
+  [ -d "$PROJ_ROOT/backend" ] && has_backend=1
+  [ -d "$PROJ_ROOT/packages" ] && has_packages=1
+  [ -d "$PROJ_ROOT/bin" ] && has_bin=1
+
+  # Skip when no app-shape layout exists (kit-self, docs-only, library)
+  if [ "$has_src" -eq 0 ] && [ "$has_frontend" -eq 0 ] && [ "$has_packages" -eq 0 ] && [ "$has_bin" -eq 0 ]; then
+    emit_pass "PSK022a: template choice (no app-shape layout — kit/library/docs project)"
+    return
+  fi
+
+  # Polyglot heuristic — ≥2 runtime declarations in Stack table
+  local runtime_count=0
+  grep -qi -E '\bPython\b|FastAPI|Django|Flask' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\bNode\b|Next\.js|Express|TypeScript' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\bGo\b|Gin|Echo' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\bRust\b|Cargo|Axum' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\bRuby\b|Rails' "$plans" && runtime_count=$((runtime_count + 1))
+
+  if [ "$runtime_count" -ge 2 ] && [ "$has_frontend" -eq 1 ] && [ "$has_backend" -eq 1 ]; then
+    emit_pass "PSK022a: template choice — Template 3 (separate services, ${runtime_count}-runtime polyglot)"
+  elif [ "$has_packages" -eq 1 ]; then
+    emit_pass "PSK022a: template choice — Template 4 (monorepo)"
+  elif [ "$has_bin" -eq 1 ] && [ "$has_src" -eq 1 ]; then
+    emit_pass "PSK022a: template choice — Template 6 (CLI)"
+  elif [ "$has_src" -eq 1 ]; then
+    if [ "$runtime_count" -ge 2 ]; then
+      emit_issue "PSK022a" "template-choice" \
+        "Stack table declares ${runtime_count} runtimes but physical layout is Template 1 (src/ colocated). Expected Template 3 (frontend/+backend/)." \
+        "Either consolidate to a single runtime in PLANS.md Stack table, or restructure to Template 3 with frontend/ + backend/ at project root."
+    else
+      emit_pass "PSK022a: template choice — Template 1 (single-runtime colocated)"
+    fi
+  fi
+}
+
+check_src_subdir_layout() {
+  # PSK022b — verify src/ opt-in subdirs match Stack-derived expectation
+  [ "$FULL" = false ] && return
+  [ ! -d "$PROJ_ROOT/src" ] && return
+  [ ! -f "$PROJ_ROOT/agent/PLANS.md" ] && return
+  run_check
+
+  local plans="$PROJ_ROOT/agent/PLANS.md"
+  local need_ui=0 need_api=0 need_integrations=0 need_platform=0
+  grep -qi -E 'next\.js|react|vue|angular|svelte|astro' "$plans" && need_ui=1
+  grep -qi -E 'next\.js|fastapi|django|express|flask|hono|rails' "$plans" && need_api=1
+  grep -qi -E 'twilio|stripe|openai|anthropic|claude|gpt|grok|gemini|whatsapp' "$plans" && need_integrations=1
+  grep -qi -E 'admin panel|rbac|role-based|multi-tenant' "$plans" && need_platform=1
+
+  local missing=""
+  # Required always
+  [ ! -d "$PROJ_ROOT/src/core" ] && missing="$missing core/"
+  [ ! -d "$PROJ_ROOT/src/shared" ] && missing="$missing shared/"
+  # Opt-in
+  [ "$need_ui" -eq 1 ] && [ ! -d "$PROJ_ROOT/src/ui" ] && missing="$missing ui/"
+  [ "$need_api" -eq 1 ] && [ ! -d "$PROJ_ROOT/src/api" ] && missing="$missing api/"
+  [ "$need_integrations" -eq 1 ] && [ ! -d "$PROJ_ROOT/src/integrations" ] && missing="$missing integrations/"
+  [ "$need_platform" -eq 1 ] && [ ! -d "$PROJ_ROOT/src/platform" ] && missing="$missing platform/"
+
+  # Kit-self skip — kit has src/ only via examples, not as Template 1 app
+  if [ -f "$PROJ_ROOT/install.sh" ] && [ -d "$PROJ_ROOT/examples" ] && [ -d "$PROJ_ROOT/tests/sections" ]; then
+    emit_pass "PSK022b: src/ subdir layout (kit-self skip — not a Template 1 app project)"
+    return
+  fi
+
+  if [ -z "$missing" ]; then
+    emit_pass "PSK022b: src/ subdir layout matches Stack-derived expectation"
+  else
+    emit_issue "PSK022b" "src-subdir-layout" \
+      "src/ missing expected subdirs (Stack-derived):${missing}" \
+      "Run: bash agent/scripts/psk-scaffold-src.sh \"\$PROJ_ROOT\" to create missing subdirs idempotently."
+  fi
+}
+
+check_template_quality() {
+  [ "$FULL" = false ] && return
+  local templates_dir="$PROJ_ROOT/.portable-spec-kit/templates"
+  [ ! -d "$templates_dir" ] && return
+  [ ! -x "$PROJ_ROOT/agent/scripts/psk-template-quality.sh" ] && return
+  run_check
+  local lint_output
+  if ! lint_output=$(bash "$PROJ_ROOT/agent/scripts/psk-template-quality.sh" --all --strict 2>&1); then
+    local failed_lines
+    failed_lines=$(echo "$lint_output" | grep -E "^✗" | head -10)
+    emit_issue "PSK023" "template-quality" \
+      "One or more templates fail the 7-criterion Quality Bar:\n${failed_lines}" \
+      "Run 'bash agent/scripts/psk-template-quality.sh <template>' on each failing file. Fix per-criterion failures (criterion 1=stack-agnostic, 2=domain-agnostic, 3=scale-agnostic, 4=useful-and-complete, 5=lifecycle-aware, 6=self-documenting, 7=round-trippable). See portable-spec-kit.md §Template Quality Bar for full criteria."
+  else
+    local count
+    count=$(echo "$lint_output" | grep -cE "^✓" || true)
+    emit_pass "PSK023: all $count template(s) pass 7-criterion Quality Bar"
   fi
 }
 
@@ -1393,7 +1587,9 @@ main() {
     check_rft_gate
     check_feature_criteria_blocks
     check_script_perms
+    check_required_scripts
     check_required_dirs
+    check_stub_paths
     check_current_version_docs
     check_ard_content
     check_agent_md_stack
@@ -1402,6 +1598,10 @@ main() {
     check_readme_agent_table
     check_readme_flow_table
     check_flow_docs_content
+    check_flow_doc_template
+    check_template_choice
+    check_src_subdir_layout
+    check_template_quality
     check_critic_prompts_comprehensive
     check_secrets
     check_reflex_protected_files

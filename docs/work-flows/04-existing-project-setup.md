@@ -4,6 +4,99 @@
 > code — first-time onboarding, not returning. Agent has never seen
 > this codebase before.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Agent detects existing codebase with no `agent/` directory, or user explicitly asks to onboard an existing project |
+| **Inputs** | Existing source files, config files (`package.json`, `requirements.txt`, `go.mod`, etc.), `.env.example` |
+| **Outputs** | `agent/AGENT.md`, `agent/AGENT_CONTEXT.md`, remaining `agent/*.md` files from templates, optional `ci.yml` |
+| **Script** | `bash agent/scripts/psk-existing-setup.sh` (optional ergonomic wrapper) |
+| **Gate** | Dual-gate validation via `bash agent/scripts/psk-validate.sh existing-setup` — both bash critic and sub-agent critic must pass |
+| **When blocked** | Ambiguous stack → ask user before filling `AGENT.md`; dual gate fails → fix and re-run |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 0: DETECT PROJECT STATE (automated, once per session) │
+│     ├─ Mapped   → ✅ Read context normally — skip scan      │
+│     ├─ Partial  → ⚠  Fill gaps only — skip full scan        │
+│     └─ New/None → 🔍 No context — proceed with full scan ↓  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 1: ANNOUNCE SCAN (agent)                              │
+│     "Spec Kit is understanding your project —               │
+│      scanning structure, stack, files, dependencies..."     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 2: SCAN THOROUGHLY (automated)                        │
+│     Config files: package.json, requirements.txt,           │
+│       pyproject.toml, Dockerfile, go.mod, Cargo.toml, etc.  │
+│     Top-level dirs + sample src/ structure                  │
+│     Build complete picture before touching anything         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 3: FILL agent/AGENT.md FROM SCAN (agent)              │
+│     Stack, tech, dev server port, key scripts               │
+│     Env var names (.env.example — names only, never values) │
+│     If Python → run Environment Selection flow              │
+│     Never leave fields TBD if answer visible in code        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 4: FILL agent/AGENT_CONTEXT.md FROM SCAN (agent)      │
+│     Current phase, what appears done, key decisions         │
+│     Directory structure and tech choices visible in code    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 5: PRESENT CHECKLIST (agent)                          │
+│     "Scan complete. Here's what I found and suggest:"       │
+│     [x] Create agent/ (pre-filled from scan)                │
+│     [ ] Commit agent/ to git                                │
+│     [ ] Create .env.example from .env                       │
+│     [ ] Create .github/workflows/ci.yml                     │
+│     [ ] Restructure README.md to match template             │
+│     "Which changes? All, some, or none."                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 6: APPLY SELECTED CHANGES ONLY (agent)                │
+│     agent/ files — always safe to create                    │
+│     Everything else — only if user selected it              │
+│     Never rename/move/delete without explicit approval      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 7: DUAL-GATE VALIDATION (agent + critic)              │
+│     bash agent/scripts/psk-validate.sh existing-setup       │
+│     Exit 0 → setup complete                                 │
+│     Exit 2 → AWAITING_CRITIC: spawn sub-agent, re-run       │
+│     Exit 1/3 → fix issues and re-run                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Rules
+
+- **Guide, don't force** — agent presents a checklist; user decides which changes to apply. Nothing is modified without user selection (except `agent/` files, which are always safe to create).
+- **Never overwrite existing files without approval** — `README.md`, `.gitignore`, source code, and config files are read-only during scan; changes require explicit user selection.
+- **Scan first, touch nothing** — the full scan (Step 2) completes before any file is written; no partial-state risk.
+- **Secrets never read** — `.env` variable names may be read to build `.env.example`; values are never read, displayed, or stored.
+- **Ambiguous stack → ask** — if config files give conflicting signals, ask the user before filling `AGENT.md`.
+- **Dual-gate mandatory** — setup is not complete until both bash critic and sub-agent critic pass; sub-agent verifies no existing files were destructively modified.
+
+---
+
 ## End-to-End Flow
 
 ```

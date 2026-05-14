@@ -9,7 +9,8 @@ When user asks to create a new project, follow these steps IN ORDER:
 
 **Step 1: Create Directory Structure + All Agent Files (DO THIS IMMEDIATELY — no questions)**
 ```bash
-mkdir -p <project>/{agent,ard,input,output,cache,src,tests,docs}
+mkdir -p <project>/{agent,ard,input,output,cache,src,docs}
+mkdir -p <project>/tests/{features,shared,fixtures,e2e}
 mkdir -p <project>/agent/{reqs,specs,plans,design,tasks,releases,scripts}
 mkdir -p <project>/agent/research/{reqs,specs,plans,design,tasks,releases}
 mkdir -p <project>/.portable-spec-kit/{skills,user-profile}

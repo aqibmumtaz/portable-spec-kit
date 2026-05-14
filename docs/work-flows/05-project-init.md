@@ -3,6 +3,130 @@
 > **When:** User says "init" or "reinit". Agent runs the
 > appropriate scan flow — never auto-triggers either command.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | User explicitly says `"init"` or `"reinit"` — never auto-triggered |
+| **Inputs** | Source files, config files, existing `agent/*.md` files (reinit only) |
+| **Outputs** | `init`: all 9 `agent/*.md` files created/populated; `reinit`: existing files updated, delta reported |
+| **Script** | `bash agent/scripts/psk-init.sh` / `bash agent/scripts/psk-reinit.sh` (optional wrappers) |
+| **Gate** | Dual-gate validation via `bash agent/scripts/psk-validate.sh init` (or `reinit`) — both critics must pass |
+| **When blocked** | `reinit` on New/Partial project → redirected to `init`; no recognizable stack → ask user before proceeding |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  User says "init" or "reinit"                               │
+│     Agent checks current kit status                         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+         ┌─────────────▼──────────────┐
+         │  DECISION: "init" or       │
+         │            "reinit"?       │
+         ├─ "init"  → INIT PATH ↓    │
+         └─ "reinit"→ REINIT PATH ↓  │
+         └────────────────────────────┘
+```
+
+**`init` path:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1: CONFIRM PROJECT DIRECTORY (agent)                  │
+│     List dirs → ask user to confirm (Enter = current dir)   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 2: DEEP SCAN (automated)                              │
+│     Config files, top-level dirs, sample src/ files         │
+│     Build complete picture before touching anything         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 3: CREATE / UPDATE agent/ FILES (agent)               │
+│     Create agent/ dir + all 6 files if missing              │
+│     Fill every field from scan — never leave TBD            │
+│     Create README.md, .gitignore, .env.example if missing   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 4: PRESENT OPTIONAL CHANGES CHECKLIST (agent)         │
+│     [x] agent/ — 6 files created/updated (from scan)        │
+│     [ ] .github/workflows/ci.yml                            │
+│     [ ] .env.example                                        │
+│     [ ] README.md restructure                               │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 5: DUAL-GATE VALIDATION (agent + critic)              │
+│     bash agent/scripts/psk-validate.sh init                 │
+│     Exit 0 → init complete                                  │
+│     Exit 2 → AWAITING_CRITIC: spawn sub-agent, re-run       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**`reinit` path:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1: READ BASELINE (automated)                          │
+│     agent/AGENT.md + agent/AGENT_CONTEXT.md as-is           │
+│     Announce: "Re-scanning — syncing agent files..."        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 2: DEEP SCAN (automated)                              │
+│     Source files, config files, directory structure         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 3: UPDATE AGENT.md (agent)                            │
+│     Update only fields that changed — note what changed     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 4: REBUILD AGENT_CONTEXT.md (agent)                   │
+│     Phase, Done, Next, Blockers, Structure — from codebase  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 5: SPECS.md STALENESS CHECK (agent)                   │
+│     Count [x] tasks vs features in SPECS.md                 │
+│     If completed tasks missing → prompt user (y/n)          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 6: PLANS.md vs CODE CHECK (agent)                     │
+│     Flag fields where code differs from PLANS.md (y/n)      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 7: DUAL-GATE VALIDATION (agent + critic)              │
+│     bash agent/scripts/psk-validate.sh reinit               │
+│     Exit 0 → reinit complete                                │
+│     Exit 2 → AWAITING_CRITIC: spawn sub-agent, re-run       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Rules
+
+- **Never auto-trigger** — neither `init` nor `reinit` fires automatically; both require an explicit user signal.
+- **`reinit` on New/Partial project → redirect** — if `agent/` files are not fully set up, redirect the user to run `init` first.
+- **Fill every field from the scan** — `init` must never leave `TBD` in any `agent/*.md` field when the answer is visible in source or config files.
+- **`reinit` only updates, never deletes** — no `[x]` tasks, ADL rows, or existing content is removed during re-sync; `psk-reinit.sh complete` enforces a content-loss check (>20% shrink flags a warning).
+- **Dual-gate mandatory for both paths** — `init` uses the INIT critic template; `reinit` uses the REINIT critic template; both must pass before the workflow is complete.
+- **Secrets never read** — `.env` variable names may inform `.env.example` creation; values are never read, echoed, or stored at any step.
+
+---
+
 ## End-to-End Flow
 
 ```

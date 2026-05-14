@@ -45,7 +45,10 @@ my-project/                        ← project root: config files + kit dirs onl
 │   └── worker.ts                  ← Worker entry point (if applicable)
 ├── public/                        ← Static file serving (Next.js requires at root)
 │   └── logo.svg                   ← Framework constraint — cannot be moved into src/
-├── tests/                         ← All tests (feature-wise naming: f1-*.test.ts…)
+├── tests/                         ← All tests
+│   ├── features/                  ← Per-feature tests (f1-*.test.ts, f2-*.test.ts…)
+│   ├── shared/                    ← Shared test helpers, mocks, fixtures
+│   ├── fixtures/                  ← Reusable data fixtures
 │   └── e2e/                       ← Playwright specs (require live server — see reflex config)
 ├── docs/                          ← Project documentation
 ├── ard/                           ← Architecture docs (HTML + PDF)
@@ -83,6 +86,9 @@ frontend/
 │   └── styles/            ← Global styles, theme tokens
 ├── public/                ← Static assets (framework constraint — at frontend/ root)
 └── tests/
+    ├── features/          ← Per-feature tests
+    ├── shared/            ← Helpers, mocks
+    └── e2e/               ← End-to-end specs
 ```
 
 ---
@@ -101,6 +107,9 @@ backend/
 │   ├── services/          ← Business logic (AI, email, PDF gen, etc.)
 │   └── utils/             ← Helpers, formatters
 ├── tests/
+│   ├── features/          ← Per-feature tests (test_f{n}_*.py)
+│   ├── shared/            ← Shared fixtures, helpers
+│   └── e2e/               ← Integration / end-to-end tests
 ├── Dockerfile
 └── requirements.txt
 ```
@@ -119,6 +128,8 @@ my-project/
 ├── shared/                ← Shared types, constants between frontend + backend
 ├── scripts/               ← Build scripts, deploy scripts, data migrations
 ├── tests/                 ← Integration + e2e tests spanning both services
+│   ├── features/          ← Per-feature integration tests
+│   └── e2e/               ← End-to-end tests
 ├── docs/
 ├── ard/
 └── agent/                 ← Kit management files (one agent/ for the whole monorepo)
@@ -157,6 +168,8 @@ my-monorepo/
 │   ├── ui/                ← Shared component library
 │   └── config/            ← Shared tsconfig, eslint, tailwind presets
 ├── tests/                 ← Cross-app integration tests
+│   ├── features/          ← Per-feature integration tests
+│   └── e2e/               ← End-to-end tests
 ├── turbo.json             ← Turborepo pipeline config
 ├── package.json           ← Workspace root (pnpm/yarn workspaces)
 ├── docs/
@@ -185,6 +198,9 @@ mobile/
 ├── android/               ← Native Android config
 ├── ios/                   ← Native iOS config
 ├── tests/
+│   ├── features/          ← Per-feature tests
+│   ├── shared/            ← Shared helpers + mocks
+│   └── e2e/               ← End-to-end tests
 └── app.json               ← App config (name, version, permissions)
 ```
 

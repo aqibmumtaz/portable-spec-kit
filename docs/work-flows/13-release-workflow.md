@@ -2,6 +2,23 @@
 
 > **When:** User says "prepare release", "update release", or "refresh release". Agent runs `bash agent/scripts/psk-release.sh prepare` which fires the bootstrap gate (Step 0) before `init_state`, then repeats `psk-release.sh next` until all 10 steps complete. Automated steps run directly. Agent steps (4, 8) pause for action. Validation is Step 9 (final gate). **No commit. No push.** Commit and push only when explicitly instructed.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | User says `"prepare release"` / `"refresh release"` / `"update release"` |
+| **Inputs** | All `agent/` pipeline files, `tests/`, `ard/*.html`, `CHANGELOG.md`, `RELEASES.md` |
+| **Outputs** | Updated docs, bumped version (prepare only), regenerated PDFs, updated RELEASES.md + CHANGELOG.md |
+| **Script** | `bash agent/scripts/psk-release.sh prepare` → `psk-release.sh next` (repeat) |
+| **Gate** | Step 9: dual critic — `psk-sync-check.sh --full` (PSK001–PSK023, including PSK023 Template Quality Bar lint via `psk-template-quality.sh --all --strict` against `.portable-spec-kit/templates/`) + sub-agent critic (`STEP_9_VALIDATION` template) |
+| **When blocked** | Any test suite failure · PSK check mismatch · sub-agent critic returns STALE · fabricated QUOTE line rejected |
+
+---
+
+## Flow Diagram
+
 ## Prepare Release Flow (steps 0–10)
 
 ```
@@ -51,8 +68,8 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  Step 5: CONSISTENCY SWEEP (automated + agent)              │
-│     psk-sync-check.sh --full — now 15 checks                │
-│     (PSK001–PSK015, was 8 at release):                      │
+│     psk-sync-check.sh --full — now 23 checks                │
+│     (PSK001–PSK019 + infra, was 15 in v0.5):                │
 │       PSK001-004B counts/versions/SPECS-staleness           │
 │       PSK005 R→F→T gate (result cached for 60× speedup)     │
 │       PSK006-010 perms/dirs/CHANGELOG/ARD/Stack             │
@@ -91,8 +108,8 @@
 ┌──────────────────────▼──────────────────────────────────────┐
 │  Step 9: FINAL VALIDATION — DUAL GATE (THE GATE)            │
 │     Delegates to psk-validate.sh release:                   │
-│       Layer 2A: psk-sync-check.sh --full (15 checks,        │
-│                 PSK001–PSK015 incl. secrets + README)       │
+│       Layer 2A: psk-sync-check.sh --full (23 checks,        │
+│                 PSK001–PSK019 incl. secrets + README)       │
 │       Layer 2B: sub-agent critic via Task tool              │
 │                 (fresh context, STEP_9_VALIDATION prompt)   │
 │     Verbatim-quote gate (v0.5.15): every CURRENT verdict    │
@@ -178,6 +195,18 @@ Every release since v0.5.8 added a structural enforcement mechanism. This sectio
 | v0.6.19 | **REQS-Coverage Gate (`check_reqs_coverage`, PSK016)** + **Phase 0 helper `reflex/lib/check-reqs-coverage.sh`** | Sync-check now mechanically validates every R-row in REQS.md maps to ≥1 F-row in SPECS.md (or is documented in §Out of scope). Sub-detector `check_reqs_numeric_drift` regex-extracts numerals from R-acceptance vs F-acceptance vs code constants. Fast (<2s), deterministic, free. Reflex Phase 0 helper writes `reqs-coverage.yaml` per pass so QA-Agent reads pre-computed gap list rather than rediscovering. ADR-031. |
 | v0.6.23 | **Client-Grade Output (`psk-ui-polish-check.sh`, ADR-034)** + **`check_ui_requirements_coverage` (PSK017 + PSK017-UI-MIN)** | UI-bearing projects MUST pass (a) the 8-element polish check (loading/empty/error states · skip-link · dark-mode toggle · onboarding · brand assets · aria-live regions) and (b) every R-row tagged `Category: UI/UX` must own a feature in SPECS. Mandatory minimum 12 UI/UX R-rows on UI projects. Bypass `PSK_UI_REQS_COVERAGE_DISABLED=1` for non-UI projects after explicit confirm. Phase 7 of the self-evolving plan. |
 
+## Key Rules
+
+- **Explicit signals only.** Never auto-run tests, bump versions, regenerate PDFs, or commit after every change. Wait for `"prepare release"`, `"refresh release"`, `"commit"`, or `"push"` — the user may have more changes coming.
+- **No commit. No push.** `prepare release` stops at Step 10 (summary). Changes sit staged for user review. Only `"prepare release and push"` or `"commit"` triggers commit; only `"push"` triggers push.
+- **All 3 test suites must pass.** Steps 1 and 9 run `test-spec-kit.sh`, `test-spd-benchmarking.sh`, and `test-release-check.sh`. Never stop on first failure — collect all results before reporting.
+- **Step 9 is the terminal gate.** Nothing ships until both Layer 2A (bash sync-check, 23 checks) and Layer 2B (sub-agent critic) pass. Fabricated QUOTE lines are rejected by `grep -F` verification.
+- **Bootstrap gate runs first.** Step 0 (`psk-bootstrap-check.sh --quiet`) fires before `init_state` on every prepare/refresh. A project scaffolded without `install.sh` fails here — fix with the remediation command shown, then re-run.
+- **Refresh release skips the version bump.** Step 6 is skipped when the signal is `"refresh release"` — all other steps run identically to `"prepare release"`.
+- **Stale release state is rejected.** If the release RUN_ID is >24h old or the base version drifted since the release flow started, `psk-release.sh` refuses to resume — prevents a prior version's `done` markers from silently satisfying a new release.
+
+---
+
 ## Pre-Push Gate
 
 Before every push — sync-check must pass (enforced by PreCommit hook).
@@ -215,7 +244,7 @@ bash agent/scripts/psk-validate.sh release
 ```
 
 The helper runs:
-1. **Layer 2A** — `psk-sync-check.sh --full` (15 deterministic checks, PSK001–PSK015; includes PSK011 secrets scan + PSK012/013/014/015 README drift checks; RFT gate cached for 60× speedup on repeat runs)
+1. **Layer 2A** — `psk-sync-check.sh --full` (23 deterministic checks, PSK001–PSK019 + infrastructure; includes PSK011 secrets scan + PSK012/013/014/015 README drift checks; RFT gate cached for 60× speedup on repeat runs)
 2. **Layer 2B** — `psk-critic-spawn.sh write STEP_9_VALIDATION` → exits `AWAITING_CRITIC` (exit code 2). Agent spawns sub-agent, writes `critic-result.md`, re-runs.
 
 Both must pass before the release is marked ready. Bypass flags (emergency only): `PSK_SYNC_CHECK_DISABLED=1`, `PSK_CRITIC_DISABLED=1`.

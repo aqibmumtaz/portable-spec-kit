@@ -180,7 +180,7 @@ download_framework() {
 download_scripts() {
   echo -e "${CYAN}[2/6] Downloading reliability scripts...${NC}"
   # Core scripts every project needs (kit reliability + workflows + self-evolution v0.6.16-23)
-  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh psk-version-cascade.sh"
+  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh psk-version-cascade.sh psk-generate-ci.sh psk-generate-user-guide.sh psk-plan-save.sh psk-template-quality.sh psk-scaffold-src.sh"
   local optional="psk-jira-sync.sh psk-tracker.sh psk-tracker-report.sh install-tracker.sh uninstall-tracker.sh sync.sh"
 
   for s in $scripts; do
@@ -231,6 +231,78 @@ download_skills() {
       echo -e "  ${YELLOW}⊘${NC} .portable-spec-kit/templates/ci/$f"
     fi
   done
+
+  # v0.6.45 — Project config (idempotent: never overwrite if already present)
+  # kit_source_path lets orchestrate.sh locate reflex/install-into-project.sh
+  # without the user having to pass PSK_KIT_ROOT manually. Set to "remote" when
+  # installing via curl so the orchestrator falls back to curl-fetching reflex.
+  local kit_src_val
+  if [ -n "$LOCAL_SOURCE" ]; then
+    kit_src_val="$(cd "$LOCAL_SOURCE" && pwd)"
+  else
+    kit_src_val="remote"
+  fi
+  # Derive kit version from the downloaded portable-spec-kit.md badge line
+  local kit_ver
+  kit_ver=$(grep -m1 '\*\*Version:\*\*' portable-spec-kit.md 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+
+  if [ ! -f "./.portable-spec-kit/config.md" ]; then
+    cat > "./.portable-spec-kit/config.md" <<CONFIGEOF
+# Project Config
+> Auto-created on first session. Edit anytime.
+> Review: say "show config" or "review config"
+
+## Kit Source
+- **kit_source_path:** ${kit_src_val}
+- **kit_version:** ${kit_ver}
+- **kit_installed_at:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+## CI/CD
+- **Enabled:** false
+- **Provider:** github-actions
+- **Badge in README:** false
+
+## Jira Integration
+- **Enabled:** false
+
+## Time Tracking
+- **psk-tracker installed:** false
+
+## Code Review
+- **Auto on feature completion:** true
+- **In release pipeline:** true
+
+## Scope Drift Detection
+- **Auto on session start:** true
+- **In release pipeline:** true
+
+## Onboarding
+- **Tour completed:** false
+CONFIGEOF
+    echo -e "  ${GREEN}✓${NC} .portable-spec-kit/config.md (created with kit_source_path=${kit_src_val})"
+  else
+    # Update kit_source_path in existing config — always refresh on reinstall
+    if grep -q "kit_source_path:" "./.portable-spec-kit/config.md"; then
+      sed -i.bak "s|.*kit_source_path:.*|- **kit_source_path:** ${kit_src_val}|" "./.portable-spec-kit/config.md"
+      sed -i.bak "s|.*kit_version:.*|- **kit_version:** ${kit_ver}|" "./.portable-spec-kit/config.md"
+      rm -f "./.portable-spec-kit/config.md.bak"
+      echo -e "  ${CYAN}↻${NC} .portable-spec-kit/config.md (kit_source_path refreshed → ${kit_src_val})"
+    else
+      # Prepend Kit Source section to existing config that predates v0.6.45
+      local tmp
+      tmp=$(mktemp)
+      {
+        head -2 "./.portable-spec-kit/config.md"
+        echo ""
+        echo "## Kit Source"
+        echo "- **kit_source_path:** ${kit_src_val}"
+        echo "- **kit_version:** ${kit_ver}"
+        echo "- **kit_installed_at:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        tail -n +3 "./.portable-spec-kit/config.md"
+      } > "$tmp" && mv "$tmp" "./.portable-spec-kit/config.md"
+      echo -e "  ${CYAN}↻${NC} .portable-spec-kit/config.md (kit_source_path injected into existing config)"
+    fi
+  fi
 }
 
 # --- Create symlinks (or copies on Windows) ---
@@ -388,11 +460,11 @@ install_reflex() {
     # Curl fallback — static list (must be kept in sync manually for network installs)
     local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
       anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
-      check-abort-integrity.sh check-installer-coverage.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
+      check-abort-integrity.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
       console-probe.ts cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
-      identify-integration-probes.sh intake.sh log-hardening.sh loop.sh mandate-audit.sh \
-      prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
-      state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
+      identify-integration-probes.sh intake.sh kit-evolution.sh log-hardening.sh loop.sh mandate-audit.sh \
+      orchestration-phase-6-5.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
+      server-lifecycle.sh smoke-test-examples.sh state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
     for f in "${lib_files[@]}"; do
       curl -fsSL "$RAW_BASE/reflex/lib/$f" -o "reflex/lib/$f" 2>/dev/null || continue
       [ "${f##*.}" = "sh" ] && chmod +x "reflex/lib/$f"

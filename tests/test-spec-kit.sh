@@ -26,6 +26,9 @@
 # ═══════════════════════════════════════════════════════════════
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Save before sourcing sections — section files each redefine SCRIPT_DIR to
+# point to tests/sections/, which would clobber the orchestrator's tests/ path.
+ORCHESTRATOR_DIR="$SCRIPT_DIR"
 
 # Load shared helpers + globals (PASS/FAIL/TOTAL/PROJ/ROOT/kit_grep/...)
 source "$SCRIPT_DIR/lib.sh"
@@ -57,8 +60,13 @@ done
 # legacy 5-section sourcing during the migration. Once all 70 features have
 # been moved (Phase T5-T7), the section sourcing becomes redundant and
 # sections/* will be converted to thin shims (Phase T9).
-if [ -d "$SCRIPT_DIR/features" ]; then
-  feature_files=( "$SCRIPT_DIR/features"/f*.sh )
+# Restore cwd: section edge-case tests (section 18) create+delete temp dirs,
+# leaving the shell in a deleted directory. Feature file sourcing silently
+# fails unless we return to a valid cwd first.
+# Restore ORCHESTRATOR_DIR: section files redefine SCRIPT_DIR, clobbering it.
+cd "$PROJ" 2>/dev/null || cd / 2>/dev/null || true
+if [ -d "$ORCHESTRATOR_DIR/features" ]; then
+  feature_files=( "$ORCHESTRATOR_DIR/features"/f*.sh )
   if [ -e "${feature_files[0]:-/dev/null}" ]; then
     echo ""
     echo "═══ Per-feature tests (tests/features/) ═══"

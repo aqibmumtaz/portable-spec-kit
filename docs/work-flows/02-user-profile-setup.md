@@ -5,6 +5,67 @@
 ## Trigger
 Agent reads framework → checks lookup order → no profile found anywhere.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | No profile found at workspace `.portable-spec-kit/user-profile/` or global `~/.portable-spec-kit/user-profile/` |
+| **Inputs** | GitHub CLI (`gh api user`), or manual answers from the user |
+| **Outputs** | `~/.portable-spec-kit/user-profile/user-profile-{username}.md` and workspace copy |
+| **Script** | None — agent-driven interactive flow |
+| **Gate** | If user skips all questions, recommended defaults are applied; profile is always written |
+| **When blocked** | Never fully blocked — agent can't write files → show content, ask user to create manually |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1: DETECT USERNAME (automated)                        │
+│     git config user.name → slugified (lowercase, spaces→-)  │
+│     Filename: user-profile-jane-smith.md                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 2: FETCH GITHUB PROFILE (automated)                   │
+│     gh api user → full name, bio (if gh authenticated)      │
+│     ├─ gh available → "Welcome, Jane Smith!"                │
+│     ├─ gh not authenticated → ask name + expertise manually │
+│     └─ gh not installed → ask manually                      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 3: ASK 3 PREFERENCE QUESTIONS (agent)                 │
+│     Q1: Communication style? (a/b/c, Enter = recommended)   │
+│     Q2: Working pattern?     (a/b/c, Enter = recommended)   │
+│     Q3: AI delegation?       (a/b/c, Enter = recommended)   │
+│     User skips all → all recommended defaults applied       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 4: CONFIRM PROFILE (agent)                            │
+│     Show profile summary to user                            │
+│     "Looks good? (Enter = yes, or type changes)"            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 5: SAVE PROFILE (automated)                           │
+│     ~/.portable-spec-kit/user-profile/user-profile-{u}.md   │
+│     workspace/.portable-spec-kit/user-profile/...           │
+│     → won't ask again on this machine                       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 6: CONTINUE TO PROJECT SETUP (agent)                  │
+│     Profile ready — proceeds to workspace/project scan      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## End-to-End Flow
 
 ```
@@ -73,6 +134,16 @@ Agent reads framework → checks lookup order → no profile found anywhere.
 - **Press Enter** → uses recommended
 - **Type custom text** → saved as-is
 - **Skip all (Enter through everything)** → all recommended defaults applied
+
+## Key Rules
+
+- **Skip is always safe** — pressing Enter through all questions applies recommended defaults; the profile is always written and the workflow always proceeds.
+- **Profile is looked up in order** — workspace copy takes precedence over global copy. If both exist, workspace copy is used with no questions asked.
+- **No credential exposure** — `gh api user` fetches name and bio only; no tokens, keys, or secrets are read or stored in the profile.
+- **Profile file exists with content → use directly** — never recreate or prompt if a non-empty profile file already exists at either lookup location.
+- **Agent can't write files → fallback** — show profile content to the user and ask them to create the file manually; do not block.
+
+---
 
 ## Edge Cases
 | Scenario | Handling |

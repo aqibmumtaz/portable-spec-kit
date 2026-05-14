@@ -5,6 +5,62 @@
 > (Persistent Memory Architecture) — no direct messaging, no APIs.
 > Also covers the Progress Dashboard trigger.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Multiple developers working on the same project; `"my tasks"` / `"assign"` / `"delegate"` / `"progress"` / `"dashboard"` |
+| **Inputs** | `agent/TASKS.md` (with `@username` tags), `git config user.name` for identity |
+| **Outputs** | Per-user filtered task view, delegation updates in `TASKS.md`, inline progress dashboard |
+| **Script** | No dedicated script — agent reads `TASKS.md` directly; dashboard rendered inline |
+| **Gate** | None (advisory workflow) — TASKS.md is committed to git so every pull syncs the shared state |
+| **When blocked** | `TASKS.md` missing → `"run init"` · git user not configured → prompt for username |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  SETUP — tag tasks with @username ownership                 │
+│     Format: - [ ] Task description @username                │
+│     Multiple owners: - [ ] Review schema @aqib @sara        │
+│     Untagged = unassigned                                   │
+│     Username = slugified git config user.name               │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PER-USER VIEW — "my tasks" / "what do I have"              │
+│     Agent detects current user: git config user.name        │
+│     Filters TASKS.md for @{current-user} tasks              │
+│     Shows pending + done tasks for that user                │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  DELEGATION — "assign [task] to @username"                  │
+│     Agent finds task in TASKS.md (by keyword or Fn number)  │
+│     Adds @username tag · commits · Agent B pulls and sees   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  CROSS-AGENT COORDINATION (no APIs, no messages)            │
+│     Agent A assigns task → commits → pushes                 │
+│     Agent B pulls → sees new @username tag in TASKS.md      │
+│     TASKS.md is the coordination channel                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  PROGRESS DASHBOARD — "progress" / "dashboard" / "burndown" │
+│     Agent reads TASKS.md · counts done vs total per version │
+│     Renders inline dashboard with progress bars             │
+│     BY CONTRIBUTOR section when @username tags present      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## End-to-End Flow: Multi-Agent Task Tracking
 
 ```
@@ -117,6 +173,18 @@
 | Git user not configured | "What's your username? (used for task filtering)" |
 | @username typo in TASKS.md | Show as-is in dashboard — don't silently drop |
 | All tasks owned by one user | "All tasks owned by @username — consider distributing" |
+
+---
+
+## Key Rules
+
+- **No direct agent-to-agent communication.** Agents coordinate exclusively by reading and writing committed `agent/TASKS.md` — no APIs, no message queues, no real-time connections.
+- **`@username` tag is the ownership contract.** A task without a tag is unassigned. A task with `@aqib @sara` requires both to mark done before it leaves the pending view.
+- **Shared task completion requires all owners.** The last owner to mark `[x]` makes the task complete. Until then the task remains `[ ]` in every other owner's per-user view.
+- **Dashboard is read-only.** The agent never modifies TASKS.md when generating a dashboard — it reads, parses, and renders inline only.
+- **Git is the sync mechanism.** Agent A commits the delegation; Agent B pulls and immediately sees the updated `@username` tag. No additional tooling required.
+- **Identity comes from git config.** `git config user.name` is the username source. If not configured, the agent prompts once and uses the answer for the session.
+- **All multi-agent state is auditable.** Every assignment, re-assignment, and completion is a git commit — full trail of who did what and when.
 
 ---
 

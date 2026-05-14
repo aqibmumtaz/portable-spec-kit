@@ -5,6 +5,67 @@
 ## Trigger
 Agent reads framework → detects `WORKSPACE_CONTEXT.md` does not exist.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Agent detects `WORKSPACE_CONTEXT.md` does not exist on session start |
+| **Inputs** | Workspace directory tree, user profile (workspace or global), installed tools |
+| **Outputs** | `WORKSPACE_CONTEXT.md`, `agent/` directories for projects found without them |
+| **Script** | None — agent-driven; no dedicated orchestrator script |
+| **Gate** | Profile and scan are independent; scan never blocks on profile completion |
+| **When blocked** | Never fully blocked — profile setup skipped → defaults applied, scan proceeds |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1: CHECK PROFILE (agent)                              │
+│     workspace/.portable-spec-kit/user-profile/ → FOUND?     │
+│     ~/.portable-spec-kit/user-profile/ → FOUND?             │
+│     Neither → run User Profile Setup flow (non-blocking)    │
+│     If user skips → apply defaults and proceed              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 2: DETECT ENVIRONMENT (automated)                     │
+│     OS, Node version, Python version, tools installed       │
+│     → populate Environment & Tools section                  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 3: SCAN WORKSPACE (automated)                         │
+│     List all directories → identify projects                │
+│     → populate Workspace Overview table                     │
+│     Announce: "Scanning workspace — found X projects..."    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 4: CREATE WORKSPACE_CONTEXT.md (agent)                │
+│     Sections: Workspace Overview, Environment & Tools,      │
+│     Key Conventions, Last Updated                           │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 5: CREATE agent/ DIRS FOR PROJECTS WITHOUT THEM       │
+│     For each project found without agent/ dir:              │
+│     - Create agent/ with 6 template files                   │
+│     - Apply File Creation/Update Rule to README.md          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 6: WORKSPACE READY (agent)                            │
+│     "Workspace scanned. X projects found."                  │
+│     "What would you like to work on?"                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## End-to-End Flow
 
 ```

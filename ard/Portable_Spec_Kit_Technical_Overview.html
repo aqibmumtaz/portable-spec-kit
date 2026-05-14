@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.40 &bull; May 2026</div>
+    <div class="badge">v0.6.55 &bull; May 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.40</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 1982 passing (1837 framework + 145 benchmarking), 95 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.55</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 2351 passing (2206 framework + 145 benchmarking), 95 sections</div>
   </div>
 </div>
 
@@ -77,25 +77,25 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 16 flow documents, 1818 automated tests (1691 framework + 145 benchmarking), 92 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 23 flow documents, 2351 automated tests (2206 framework + 145 benchmarking), 95 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.6.40</td></tr>
+  <tr><td>Current version</td><td>v0.6.55</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (approx. 980 lines)</td></tr>
   <tr><td>Skill files</td><td>25 (loaded JIT at peak attention)</td></tr>
-  <tr><td>Reliability scripts</td><td>27 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker, orchestrate, version-cascade, and more)</td></tr>
+  <tr><td>Reliability scripts</td><td>29 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker, orchestrate, version-cascade, generate-ci, generate-user-guide, and more)</td></tr>
   <tr><td>Enforcement layers</td><td>3 (bash critic, sub-agent critic, git/Claude Code hooks)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>16 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready, Reliably Enforced, Sub-Agent Honesty Gate, Security Scanning, Bypass Audit Log)</td></tr>
   <tr><td>Source code templates</td><td>10 (Next.js Full-Stack colocated, Next.js Frontend-Only SPA, Next.js Monorepo, Python Backend, Full Stack separate services, Full Stack + Mobile, Mobile, Android, iOS, Document)</td></tr>
-  <tr><td>Automated tests</td><td>1982 (1837 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>2351 (2206 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
-  <tr><td>Flow documents</td><td>21 step-by-step work flows</td></tr>
+  <tr><td>Flow documents</td><td>22 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
   <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
   <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
@@ -105,10 +105,20 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.0 — v0.6.40</p>
+<p>Kit: v0.6.0 — v0.6.55</p>
 <ul>
+  <li><strong>v0.6.55 — Plan-Save Protocol: interruption-resilient plan persistence (May 2026):</strong> New mandatory rule in <code>portable-spec-kit.md</code> §Task Tracking: any conversation-drafted plan (≥3 markdown headings OR ≥30 lines AND a plan-shaped prompt — <em>"draft a plan"</em>, <em>"plan this"</em>, <em>"before implementing"</em>, any ExitPlanMode) MUST persist to <code>agent/plans/YYYY-MM-DD-&lt;slug&gt;.md</code> as the agent's first tool call of the same turn, before any implementation. Lifecycle frontmatter drives <code>draft → approved → executing → done | abandoned</code> so any interruption point (context compact, machine switch, user steps away) leaves the latest plan version in git history. New script <code>agent/scripts/psk-plan-save.sh</code> (30th kit script): subcommands <code>save</code> / <code>approve</code> / <code>start</code> / <code>done</code> / <code>abandon</code> / <code>list</code> / <code>show</code>. Idempotent — re-saving rewrites body and refreshes <code>updated:</code> field while preserving lifecycle status. <code>done &lt;slug&gt; &lt;sha-range&gt;</code> records the commit range that implemented the plan. Demonstrated by self-application: the v0.6.55 plan itself was saved as <code>agent/plans/2026-05-12-plan-save-protocol.md</code> before any code changes. <strong>Motivating incident:</strong> the 705-line <code>kit-v0639-and-sst-v2.md</code> plan (May 10) lived only in <code>~/.claude/plans/</code> (ephemeral IDE storage) and was nearly lost on context compact — Plan-Save Protocol closes this gap by making the project repo the source of truth. Flow doc 16 updated. README install count 29 → 30 scripts. 2351 tests (2206+145, unchanged — additive feature).</li>
+  <li><strong>v0.6.52 — Reflex cycle-10/pass-003 close: ARD content correction + doc-code-diff */basename fix + flow doc count sweep (May 2026):</strong> ARD Technical Overview corrected: v0.6.51 section had wrong content (PSK019/workflow-template-standard from v0.6.50 was showing under v0.6.51 heading); replaced with correct pass-002 merge content; missing v0.6.50 entry added. <code>doc-code-diff.sh</code> */basename pattern fix eliminates 4 false-positive MAJORs per pass; +1 framework test (2191→2192). Test count sweep: 8 files updated 2336/2191 → 2337/2192. Flow doc corrections in docs 17, 19, 21. 2351 tests (2206+145).</li>
+  <li><strong>v0.6.51 — Reflex cycle-10/pass-002 merge: doc-code-diff fixes + F16 test hardening + K3/K7 cross-refs (May 2026):</strong> Fast-forward merge of <code>reflex/dev-cycle-10-pass-002</code> into main — 119 files committed (findings.yaml, signoff.md, verdict.md, dev-trace.md, 72 F-test plans in behavioral-tests/, coverage.md, gates-result.md, .cycle-meta). <strong>doc-code-diff.sh template exclusions:</strong> Added false-positive filter patterns for placeholder file names used in kit documentation examples: <code>foo.sh</code>, <code>psk-foo.sh</code>, <code>script-name.sh</code>, <code>test_f*_feature_name.*</code>, <code>f*-feature-name.*</code> — eliminates spurious MAJOR noise from instructional literals. <strong>F16 test hardened (exact count):</strong> <code>tests/features/f16-work-flow-docs.sh</code> assertion changed from <code>&gt;=</code> to <code>==</code>; <code>00-template.md</code> explicitly excluded — test now asserts exactly 23 numbered docs. <strong>23-project-update-workflow.md K3/K7 additions:</strong> Added K3 (design-plan + stub creation phases U3/U4), enhanced K6 cross-refs, added K7 (HANDOFF.md structure for U10). <strong>AGENT_CONTEXT.md test count corrected:</strong> Stale count 1982 replaced with 2336 (2191+145). 2351 tests (2206+145 — +1 from doc-code-diff basename fix).</li>
+  <li><strong>v0.6.50 — Workflow template standard: PSK019 gate + all 23 flow docs standardised + Gate 1 scope fix (May 2026):</strong> New <code>docs/work-flows/00-template.md</code> establishes the canonical 7-section workflow template with 63-char ASCII box standard (Overview, Flow Diagram, Steps, Key Rules, Edge Cases, Related Flows, Bypass). <strong>PSK019 gate</strong> added to <code>psk-sync-check.sh</code> — <code>check_flow_doc_template()</code> enforces <code>## Overview</code>, <code>## Flow Diagram</code>, and <code>## Key Rules</code> in every flow doc except the template itself. All 23 existing flow docs updated to comply; PSK015 and PSK003 exclude <code>00-template.md</code> from doc-count and file-count checks. Box line alignment: all ASCII box lines fixed to exactly 63 display characters — 80 misaligned lines corrected across 13 files. <strong>Reflex Gate 1 scope fix:</strong> <code>reflex/lib/preconditions.sh</code> Gate 1 changed from <code>git status --porcelain</code> to <code>git status --porcelain -- .</code> — scopes the clean-tree check to <code>PROJ_ROOT</code> subtree only, preventing false positives when the kit lives inside a larger workspace git repo with sibling untracked directories. 2336 tests (2191+145).</li>
+  <li><strong>v0.6.49 — resolve_kit_root bug fix: path-spaces stripping + heuristic false-positive (May 2026):</strong> Two bugs in <code>psk-orchestrate.sh resolve_kit_root()</code> fixed. (1) <code>tr -d '[:space:]'</code> stripped embedded spaces from directory names — fixed with <code>sed 's/[[:space:]]*$//'</code>. (2) Heuristic false-positive: any project with a real copy of <code>portable-spec-kit.md</code> identified as kit root — fixed by adding <code>[ -f "$kit_candidate/install.sh" ]</code> check. 2336 tests (2191+145).</li>
+  <li><strong>v0.6.48 — Orchestrator --update mode + Phase 9 mandatory reflex + KIT_ROOT resolution + polyglot stack detection + R→F→T stubs + summary.csv GRANTED path + project-update flow doc (May 2026):</strong> K1: <code>install.sh</code> writes <code>kit_source_path</code>/<code>kit_version</code>/<code>kit_installed_at</code> to <code>.portable-spec-kit/config.md</code>. K2: <code>psk-orchestrate.sh</code> Phase 9 reflex-audit now MANDATORY — no skip path, auto-installs reflex if missing. K3: <code>psk-orchestrate.sh --update</code> mode (U0–U10 phases: script sync → mandate audit → reflex install → design plans → feature stubs → ARD/flows → sync-check config → features → release-prep → reflex GRANTED → handoff). K4: Phase 7 sub-agent prompt updated to require <code>tests/features/</code> R→F→T anchor stubs. K5: <code>mandate-audit.sh</code> polyglot detection added — <code>backend/+frontend/</code> projects resolve as <code>polyglot-python-node</code> instead of <code>unknown</code>. K6: <code>loop.sh</code> GRANTED terminator calls <code>score.sh</code>; cycle-09 backfilled in <code>summary.csv</code>. K7: Flow doc 23 (<code>23-project-update-workflow.md</code>) retires manual cascade pattern. 2336 tests (2191+145).</li>
+  <li><strong>v0.6.44 — Kit-evolution phases 1–6: config.md, template enrichment, F71/F72, test infra fixes (May 2026):</strong> <code>.portable-spec-kit/config.md</code> created + wired into install.sh + PSK015-CONFIG gate + MANDATE-CONFIG-MISSING probe + T4/T5 regression tests. All 9 agent file templates enriched (approval tracking, scope-change record, Security, Definition of Done, QA Findings, Evidence, Open Research Questions). F71 (6 tests) + F72 (15 tests) regression suites added. PSK016 stub-path gate + Dim 25 probes 25.2–25.4 added. Per-feature test loop fixed: SCRIPT_DIR clobber + cwd deletion bugs; 72 feature files now run. 2336 tests (2191+145).</li>
+  <li><strong>v0.6.43 — Flow doc consistency sweep: step counts, gate count, dimension count, test count (May 2026):</strong> <code>11-spec-persistent-development.md</code>: "8-step gate" → "10-step gate" (two occurrences). <code>17-reflex.md</code>: "10 gates" → "11 gates" (PKFL added G1 kit-evolution-file-scope + G2 kit-genericity-proof in v0.6.41). <code>18-project-orchestration.md</code>: "24 dimensions" → "25 dimensions" (Dim 25 Mandate-Compliance added in Loop-Iter-2). <code>19-kit-evolution-gauntlet.md</code>: "1836 tests" → "1982 tests". Test infrastructure: flow count check 21→22. 1982 tests (1837+145).</li>
+  <li><strong>v0.6.42 — README consistency sweep: script count + flow table row 22 (May 2026):</strong> PSK013 fix: Quick Start "Installs:" updated from 27 → 29 scripts (psk-generate-ci.sh + psk-generate-user-guide.sh added in v0.6.41). PSK015 fix: Flows table row 22 added for <code>22-project-kit-feedback-loop.md</code>; Documentation section updated to 22 flow diagrams. ARD Key Highlights updated: flow docs 21→22, scripts 27→29. 1982 tests (1837+145).</li>
+  <li><strong>v0.6.41 — PKFL + convergence discipline + ARD user guide + mandate audit extensions (May 2026):</strong> Convergence discipline fix (critical): Rule 4 in <code>loop.sh</code> + <code>run.sh</code> — DENIED + 0 unclosed findings now stays in same cycle (was falsely advancing). <strong>PKFL machinery</strong>: <code>reflex/lib/kit-evolution.sh</code> (6-phase orchestrator), <code>check-kit-genericity.sh</code> (G2 vocabulary scanner), <code>smoke-test-examples.sh</code> (G6 multi-project smoke); gates 10 (G1 file-scope) + 11 (G2 genericity-proof) added to <code>gates.sh</code>; G4 <code>genericity_proof</code> gate in <code>file-bugs.sh</code>; flow doc <code>22-project-kit-feedback-loop.md</code> created; §PKFL mandatory rule section added to <code>portable-spec-kit.md</code>; gates count 9 → 11. <strong>ARD user guide generation</strong>: <code>psk-generate-user-guide.sh</code> + <code>psk-generate-ci.sh</code>, wired into psk-release.sh Steps 1 + 7. <strong>Dim 25 mandate audit extensions</strong>: ARD user guide absent (ADVISORY), DB migration scaffold absent (MINOR), shadcn/ui components empty (MINOR). Stack-specific fix patterns added to <code>dev-agent.md</code>. 1982 tests (1837+145).</li>
   <li><strong>v0.6.40 — Flow doc coverage for v0.6.39 features (May 2026):</strong> Prep-release flow doc updates: <code>17-reflex.md</code> gains <code>§v0.6.39 capabilities</code> section (server-lifecycle.sh, Next.js colocated template, template-strict scaffold, cycle persistence, cascade Kit field); <code>18-project-orchestration.md</code> Phase 6 scaffold row updated to reference template-strict Stack matching rule. 1982 tests (1837+145).</li>
-  <li><strong>v0.6.39 — Playwright server-lifecycle, Next.js colocated template, template-strict scaffold, cycle persistence, cascade Kit field (May 2026):</strong> Five structural improvements. <strong>server-lifecycle.sh (NEW)</strong>: starts dev server before QA-Agent; port poll via <code>nc -z</code>; PID to <code>.server.pid</code>; process group kill for webpack/esbuild. spawn-qa.sh start hook + run.sh stop hook + <code>reflex/config.yml server_lifecycle:</code> block (<code>enabled: false</code> default) + qa-agent.md <code>REFLEX_SERVER_STATUS</code> awareness (ADR-091). <strong>source-structures.md</strong>: Next.js Full-Stack (colocated) DEFAULT template — ALL code under <code>src/</code>, <code>public/</code> at root (framework constraint), <code>drizzle.config.ts out: ./src/db/migrations</code>; Stack matching rule; Monorepo template added. <strong>psk-orchestrate.sh Phase 6</strong>: template-strict scaffold reads PLANS.md Stack → matches template → creates dirs exactly per template. <strong>reflex/run.sh</strong>: <code>.active-cycle</code> state file persists cycle-id across bash invocations; cleared on GRANTED. <strong>psk-version-cascade.sh Phase Q</strong>: updates <code>**Kit:**</code> field in sync-target AGENT_CONTEXT.md. 1982 tests (1837+145).</li>
+  <li><strong>v0.6.39 — Playwright server-lifecycle, Next.js colocated template, template-strict scaffold, cycle persistence, cascade Kit field (May 2026):</strong> Five structural improvements. <strong>server-lifecycle.sh (NEW)</strong>: starts dev server before QA-Agent; port poll via <code>nc -z</code>; PID to <code>.server.pid</code>; process group kill for webpack/esbuild. spawn-qa.sh start hook + run.sh stop hook + <code>reflex/config.yml server_lifecycle:</code> block (<code>enabled: false</code> default) + qa-agent.md <code>REFLEX_SERVER_STATUS</code> awareness (ADR-091). <strong>source-structures.md</strong>: Next.js Full-Stack (colocated) DEFAULT template — ALL code under <code>src/</code>, <code>public/</code> at root (framework constraint), <code>drizzle.config.ts out: ./src/db/migrations</code>; Stack matching rule; Monorepo template added. <strong>psk-orchestrate.sh Phase 6</strong>: template-strict scaffold reads PLANS.md Stack → matches template → creates dirs exactly per template. <strong>Single-mode cycle persistence</strong> (<strong>reflex/run.sh</strong>): <code>.active-cycle</code> state file persists cycle-id across bash invocations; cleared on GRANTED. <strong>Cascade Kit field</strong> (<strong>psk-version-cascade.sh Phase Q</strong>): updates <code>**Kit:**</code> field in sync-target AGENT_CONTEXT.md. 1982 tests (1837+145).</li>
   <li><strong>v0.6.38 — Kit-quality fixes: playwright gate, verdict integrity, findings.yaml discipline, flow doc coverage (May 2026):</strong> 9 targeted kit fixes from searchsocialtruth cycle-07 kit-scope findings (kit-first philosophy). Playwright gate now runs <code>npm ci --prefer-offline --silent</code> before <code>npx playwright test</code> + adds <code>playwright_suite_gate_enabled</code> config key. <code>write_verdict()</code> in <code>run.sh</code> emits explicit <code>verdict: GRANTED|DENIED</code> field for the convergence-audit gate. <code>dev-agent.md</code> mandates <code>findings.yaml</code> status <code>open→closed</code> after TASKS.md <code>[x]</code> + promotes <code>[source: &lt;pass-name&gt;]</code> to HARD REQUIREMENT. <code>track-tokens.sh</code> unbound variable fix. <code>psk-sync-check.sh</code> new <code>check_kit_version_drift()</code> advisory. <code>.gitignore</code> gains playwright output paths. <code>mandate-audit.sh</code> emits ADVISORY when both root <code>REQUIREMENTS.md</code> and <code>agent/REQS.md</code> exist. <code>psk-orchestrate.sh</code> Phase 7 explicitly requires <code>tests/f{N}-feature-name.test.ts</code> naming. <code>REQUIREMENTS.md</code> deleted from kit root — <code>agent/REQS.md</code> is authoritative. Flow doc coverage: 13-release-workflow.md Step 6 + 17-reflex.md §v0.6.30/§v0.6.35 sections. 1982 tests (1837+145).</li>
   <li><strong>v0.6.0 — F70 Reflex evolves to AVACR (Adversarial Verbal Actor-Critic Refinement Loop):</strong> Architectural shift within F70 Reflex from cooperative VACR to adversarial goals with collaborative convergence. <em>QA-Agent</em> goal = FAIL the release (hunt exhaustively across 14 dimensions; default DENIED). <em>Dev-Agent</em> goal = FOOLPROOF the release against QA's hunt (fix findings + harden sibling-class weaknesses). Convergence = QA hunted hard and cannot find a blocker, not "Dev says it's done."
     <ul>
@@ -284,7 +294,7 @@
 
 <h4>Flow Documentation</h4>
 <ul>
-  <li>16 flow documents created in <code>docs/work-flows/</code></li>
+  <li>22 flow documents created in <code>docs/work-flows/</code></li>
   <li>Each flow: title, trigger condition, step-by-step diagram, edge cases, files involved</li>
   <li>Context Management rule: update flows after implementation/tests</li>
 </ul>
@@ -476,7 +486,7 @@ workspace/
 </div>
 
 <h3>Flow Diagrams</h3>
-<p>Step-by-step box diagrams for all 16 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
+<p>Step-by-step box diagrams for all 23 flows. All box lines are exactly 63 display characters wide. Connectors: <code>└──────┬──────┘</code> → <code>┌──────▼──────┐</code>. No tree-style standalone arrows or spacing lines.</p>
 
 <h4>01 — First Session in New Workspace</h4>
 <p><em>When: User opens an AI agent in a workspace for the first time — no WORKSPACE_CONTEXT.md exists.</em></p>
@@ -1335,7 +1345,7 @@ What to build      How to build it     Track progress      Log results
   <tr><td><code>CONTRIBUTING.md</code></td><td>PR guidelines, portability test, review process</td></tr>
   <tr><td><code>LICENSE</code></td><td>MIT License</td></tr>
   <tr><td><code>ard/</code></td><td>Architecture Reference Documents (this file + Quick Guide)</td></tr>
-  <tr><td><code>docs/work-flows/</code></td><td>16 work flow documents</td></tr>
+  <tr><td><code>docs/work-flows/</code></td><td>23 work flow documents</td></tr>
   <tr><td><code>examples/starter/</code></td><td>Fresh project example — shows setup state</td></tr>
   <tr><td><code>examples/my-app/</code></td><td>Mid-development example — shows active project</td></tr>
   <tr><td><code>tests/</code></td><td>1633 automated tests (1488 framework + 145 benchmarking) + <code>test-release-check.sh</code> (R→F→T feature validator — distributed to all kit users)</td></tr>
@@ -1383,7 +1393,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.6.40 &bull; May 2026
+  Portable Spec Kit — Technical Overview &bull; v0.6.55 &bull; May 2026
 </div>
 
 </div>
@@ -1401,7 +1411,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.40 &bull; May 2026</div>
+    <div class="badge">v0.6.55 &bull; May 2026</div>
   </div>
 </div>
 

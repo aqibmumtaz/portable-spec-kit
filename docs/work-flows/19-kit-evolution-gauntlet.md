@@ -6,6 +6,64 @@
 
 ---
 
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Kit maintainer proposes a new MANDATORY rule · new skill · new ADR shifting philosophy · new `psk-*.sh` script other workflows depend on |
+| **Inputs** | `agent/tasks/proposed/<Pxx\|Gxx>-name.md` (proposal file) · current `portable-spec-kit.md` · `agent/PHILOSOPHY.md` · `reflex/` fixture project |
+| **Outputs** | Per-gate pass/fail report · proposal moved to `agent/tasks/rejected/` on failure (with rationale) · merged kit change on Gate F approval |
+| **Script** | `bash agent/scripts/psk-evolution-gauntlet.sh agent/tasks/proposed/Pxx-name.md` |
+| **Gate** | 6 gates A–F: test suite · rule-conflicts · philosophy consistency · reflex fixture · optimize health · manual author approval (Gate F never auto-passes) |
+| **When blocked** | Any Gate A–E failure moves proposal to `rejected/` · Gate F requires human `APPROVED` — the non-interactive flag DEFERS it, never passes it |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DRAFT PROPOSAL (agent/tasks/proposed/<Pxx|Gxx>-name.md)    │
+│     Title · Motivation · Rule text · Impact · Risk · Revert │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Gate A — TEST SUITE GREEN (automated)                      │
+│     bash tests/test-spec-kit.sh && test-spd-benchmarking.sh │
+│     All 2337 tests pass after proposed change?              │
+│     FAIL → proposal → rejected/ with rationale              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Gate B — NO NEW RULE CONFLICTS (automated)                 │
+│     psk-rule-conflicts.sh --json · conflict_count ≤ baseline│
+│     Gate C — PHILOSOPHY CONSISTENCY (agent)                 │
+│     Cross-check against PHILOSOPHY.md; log P-mutations      │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Gate D — REFLEX FIXTURE STILL GRANTED (heavy, skippable)   │
+│     bash reflex/run.sh single against known-good fixture    │
+│     Verdict must remain GRANTED                             │
+│     Skip: PSK_GAUNTLET_QUICK=1 (defer to final landing)     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Gate E — /optimize HEALTH GREEN OR YELLOW (automated)      │
+│     psk-optimize.sh --health · status must not regress 🔴   │
+│     Cat 10/11/12 counts must not increase vs baseline       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Gate F — MANUAL AUTHOR APPROVAL (human — NEVER auto-passes)│
+│     Kit author reads proposal + gauntlet report             │
+│     Types APPROVED → instructions to commit · or N → DEFER  │
+│     Post-merge: 48h soak cron re-runs gauntlet daily        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Purpose
 
 Every proposed kit rule, principle mutation, ADR, or skill change must clear a 6-gate gauntlet before merging. The gauntlet is the structural enforcement layer that prevents kit-evolution drift — it stops new rules from contradicting old rules, violating principles, or breaking existing functionality.
@@ -39,7 +97,7 @@ Proposed rule (in agent/tasks/proposed/<Pxx|Gxx>-name.md)
   │
   ├─► Gate A — Test suite green
   │   `bash tests/test-spec-kit.sh && bash tests/test-spd-benchmarking.sh`
-  │   All 1836 tests still pass after the proposed change?
+  │   All 2337 tests still pass after the proposed change?
   │
   ├─► Gate B — No new rule conflicts
   │   `bash agent/scripts/psk-rule-conflicts.sh --json`
@@ -139,6 +197,17 @@ How to back this out if the 48h soak surfaces a regression.
 ## Gauntlet history
 (Filled by the gauntlet on each run — date, gates passed/failed, notes.)
 ```
+
+---
+
+## Key Rules
+
+- **Gate F never auto-passes:** human author approval is structural. Passing `--non-interactive` DEFERS Gate F, not passes it. Fully-automated rule landing is prohibited by design.
+- **First failure halts the gauntlet:** gates run A → B → C → D → E in order. The first failure moves the proposal to `agent/tasks/rejected/` with a rationale comment. The author may revise and re-run.
+- **Gate D is skippable during iteration:** `PSK_GAUNTLET_QUICK=1` skips the heavy reflex fixture run for faster proposal iteration. Final landing always requires a full Gate D pass.
+- **Post-merge 48h soak:** `.github/workflows/postmerge-gauntlet-soak.yml` re-runs the gauntlet on every recently-merged proposal commit. Failures auto-file `revert-<Pxx>` tasks and open a labeled GitHub issue.
+- **This workflow is kit-maintainer only:** routine project work (features, bug fixes, doc updates) does NOT pass through the gauntlet. When in doubt, run the gauntlet — it is fast in `--quick` mode and a regression is far more expensive.
+- **Bug fixes without behavior change do not need the gauntlet:** a fix to awk parsing in `psk-sync-check.sh` requires a regression test in `tests/sections/`, not a gauntlet pass. The gauntlet targets behavioral and philosophical changes to the kit.
 
 ---
 

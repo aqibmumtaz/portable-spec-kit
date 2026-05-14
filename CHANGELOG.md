@@ -8,14 +8,181 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.40 · **Tests:** 1982 (1837 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.55 · **Tests:** 2352 (2207 framework + 145 benchmarking)
+
+### v0.6.55 — Source Layout Policy + 10 new templates + flow doc 24 (May 2026)
+
+Phase A of the 3-release Template Completeness plan (v0.6.54/55/56).
+
+- **New §Source Layout Policy in `portable-spec-kit.md`:** Stack-driven two-step decision — (1) Template choice (1=colocated, 3=separate services, 4=monorepo, 5=library, 6=CLI) via PSK022a `check_template_choice()`. (2) `src/` opt-in subdirs (`core/` + `shared/` always; `ui/` / `api/` / `integrations/` / `platform/` per Stack table) via PSK022b `check_src_subdir_layout()`. **No empty mandatory dirs** — orchestrator only creates subdirs the Stack justifies. `integrations/ai/`, `integrations/messaging/`, `integrations/payment/`, `integrations/storage/` sub-grouping.
+- **10 new templates** in `.portable-spec-kit/templates/`: `reflex-prompt-template.md`, `test-section-template.sh`, `skill-template.md`, `ard-html-template.html`, `kit-finding-template.md`, `research-template.md`, `adr-template.md`, `handoff-template.md`, `src-layout-template.md`, `src-subdir-readme-template.md`. Total templates: 13 → 23. All pass 7-criterion Quality Bar.
+- **New script `agent/scripts/psk-scaffold-src.sh` (32nd script):** reads PLANS.md Stack table → derives opt-in subdirs → creates with READMEs from `src-subdir-readme-template.md`. Idempotent. `--check` dry-run mode. Called by `psk-orchestrate.sh` Phase 6 + `--update` mode.
+- **New flow doc 24** — `docs/work-flows/24-template-driven-creation.md` documents the template-driven creation lifecycle (scaffolded → drafted → committed), PSK022a/022b/023 gates, opt-in src taxonomy.
+- **F16 test count `==23` → `==24`:** SPECS.md F16 row + acceptance criterion updated.
+- **`agent-reqs-template.md` enriched:** added `Clarifying Assumptions`, `R-Row Summary`, per-requirement `Statement:` field per F71/F72 gold-standard.
+- **`agent-AGENT_CONTEXT-template.md` enriched:** `File Structure` callout for `tests/features/` per-feature audits.
+- **README install line:** 31 → 32 reliability scripts; 13 → 23 file-class templates; new "24 flow documents" callout.
+- **Carryover from v0.6.54 cycle-12:** QA-12-02 (criterion-4 wording refinement) and QA-12-03 (criterion-3 regex breadth) — both folded into v0.6.55 lint scope rather than separately fixed.
+
+**Tests:** 2207 framework + 145 benchmarking = **2352 total** (+1 from carry-over F73 lifecycle test count).
+
+---
+
+### v0.6.54 — Template Quality Bar + externalized templates dir (May 2026)
+
+Phase A0 of the 3-release Template Completeness plan (v0.6.54/55/56). Establishes the quality bar against existing templates before adding new ones.
+
+- **New §Template Quality Bar in `portable-spec-kit.md`:** 7 mandatory criteria every kit-shipped template must pass — stack-agnostic, domain-agnostic, scale-agnostic, useful-and-complete (refined wording: useful > generic, don't dilute to vacuous "fill in X" placeholders), lifecycle-aware, self-documenting (`<!-- TEMPLATE-KIND / GENERICITY / LAST-AUDITED -->` header), round-trippable (scaffold passes sync-check zero-edit).
+- **Externalized templates dir** `.portable-spec-kit/templates/` — 13 templates extracted from inline `.portable-spec-kit/skills/templates.md` (633 lines): 11 agent file templates + design-plan + flow-doc + plan + project-readme. Each carries audit header + lifecycle markers where applicable.
+- **New script `agent/scripts/psk-template-quality.sh` (31st script):** 7-criterion lint with JSON output (`--json`), single-file or bulk audit (`--all`), strict gate mode (`--all --strict`), audit log writer.
+- **`.audit-log.yaml`** at `.portable-spec-kit/templates/` — per-template audit history with date + criteria pass/fail.
+- **PSK023 sync-check rule:** `check_template_quality()` runs `psk-template-quality.sh --all --strict` on every `psk-sync-check.sh --full`. Blocks templates that fail the bar at the mechanical gate.
+- **Predicted failure caught & fixed:** `agent-AGENT-template.md` initially failed criterion 1 (stack-specific examples in normative sections) and 7 (`TBD` placeholders without REQUIRED marker). Fixed by extracting stack-specific content to `### Examples (stack: typescript-node)` and `### Examples (stack: python)` blocks, marking placeholders `<!-- REQUIRED — replace before commit -->`.
+- **install.sh:** registered psk-template-quality.sh → 31 install-cached scripts.
+- **README install line:** 30 → 31 reliability scripts; added "13 file-class templates" callout.
+
+**Tests:** 2206 framework + 145 benchmarking = **2351 total** (unchanged — additive feature).
+
+---
+
+### v0.6.53 — Plan-Save Protocol: interruption-resilient plan persistence (May 2026)
+
+- **New rule §Task Tracking / Plan-Save Protocol:** any plan drafted in conversation (≥3 markdown headings OR ≥30 lines AND a plan-shaped prompt) MUST persist to `agent/plans/YYYY-MM-DD-<slug>.md` as the agent's first tool call of the same turn, before any implementation. Lifecycle states live in frontmatter — `draft → approved → executing → done | abandoned` — so any interruption point (context compact, machine switch, user steps away) leaves the latest plan version on disk and in git history. Feature-scoped plans continue at `agent/design/f{N}-*.md`.
+- **New script `agent/scripts/psk-plan-save.sh`:** subcommands `save`, `approve`, `start`, `done`, `abandon`, `list`, `show`. Idempotent — re-saving a plan with the same slug rewrites body and refreshes `updated:` field while preserving lifecycle status. `done <slug> <sha-range>` records the commit range that implemented the plan.
+- **Demonstrated by self-application:** the v0.6.53 plan itself was saved as `agent/plans/2026-05-12-plan-save-protocol.md` before any implementation work — proves the protocol round-trip.
+- **Flow doc 16 updated:** `docs/work-flows/16-feature-design.md` now references the protocol and disambiguates `agent/plans/` (general plans) vs `agent/design/f{N}-*.md` (feature plans). Both surfaces are committed.
+- **README install count:** scripts 29 → 30 (psk-plan-save.sh added).
+- **Motivating incident:** the 705-line `kit-v0639-and-sst-v2.md` plan was drafted May 10 but lived only in `~/.claude/plans/` (ephemeral IDE storage). The user lost track of it and had to ask the agent to recover from disk. Plan-Save Protocol closes this gap by making the project repo the source of truth for plans, not the IDE.
+
+**Tests:** 2206 framework + 145 benchmarking = **2351 total** (unchanged — new script added, no test count change).
+
+---
+
+### v0.6.52 — Reflex cycle-10/pass-003 close: ARD content correction + doc-code-diff */basename fix + flow doc count sweep (May 2026)
+
+- **ARD Technical Overview corrected:** v0.6.51 section in `ard/Portable_Spec_Kit_Technical_Overview.html` had wrong content (was showing v0.6.50's PSK019/workflow-template-standard work). Replaced with correct v0.6.51 content (pass-002 merge) and inserted missing v0.6.50 entry. Fixes MAJOR finding QA-C10P003-DIM21-ARD-VERSION-MISMATCH-01.
+- **doc-code-diff.sh */basename pattern fix:** `case "$ref_clean"` uses full paths; bare basename patterns (`foo.sh`) never matched `agent/scripts/foo.sh` in bash case statements. Fixed by prepending `*/` to each template-exclusion pattern. Eliminates 4 false-positive MAJORs per pass; +1 new passing test (2191→2192 framework tests). Fixes MINOR finding QA-C10P003-DIM13-DOCCODEDIFF-EXCLUSION-BUG-01.
+- **Test count consistency sweep:** 8 files updated 2336/2191 → 2337/2192 — `portable-spec-kit.md`, `README.md`, `CHANGELOG.md` header, `agent/RELEASES.md`, `agent/AGENT_CONTEXT.md`, `ard/Portable_Spec_Kit_Guide.html`, `ard/Portable_Spec_Kit_Technical_Overview.html`, `agent/SPECS.md`.
+- **Flow doc count corrections:** `docs/work-flows/17-reflex.md` (2191→2192 framework count), `docs/work-flows/19-kit-evolution-gauntlet.md` (2336→2337 in two gate boxes), `docs/work-flows/21-kit-project-evolution-loop.md` (heading `# 19` → `# 21` numbering fix; `1909` → `2192` in two references).
+- **Reflex cycle-10/pass-003 artifacts committed:** findings.yaml with MAJOR/MINOR closed, ADVISORY acknowledged; pass-003 history directory (104 files) committed.
+- **Flow doc check-count correction (refresh):** `docs/work-flows/06-cicd-setup.md`, `11-spec-persistent-development.md`, and `13-release-workflow.md` updated "15 checks" → "23 checks" to match current `psk-sync-check.sh` count.
+
+**Tests:** 2206 framework + 145 benchmarking = **2351 total** (+1 from doc-code-diff */basename fix).
+
+---
+
+### v0.6.51 — Reflex cycle-10/pass-002 merge: doc-code-diff fixes + F16 test hardening + K3/K7 cross-refs (May 2026)
+
+- **Reflex cycle-10/pass-002 merged:** 119 files committed — all pass-002 artifacts (findings.yaml, signoff.md, verdict.md, dev-trace.md, 72 F-test plans in behavioral-tests/, coverage.md, gates-result.md, .cycle-meta). Fast-forward merge of `reflex/dev-cycle-10-pass-002` → main.
+- **doc-code-diff.sh template exclusions:** Added false-positive filter patterns for placeholder file names used in kit documentation examples: `foo.sh`, `psk-foo.sh`, `script-name.sh` (bash script naming convention illustrations), `test_f*_feature_name.*` and `f*-feature-name.*` (tests/features/ stub template forms). Eliminates spurious MAJOR noise from instructional literals in framework docs.
+- **F16 test hardened (exact count):** `tests/features/f16-work-flow-docs.sh` assertion changed from `>=` to `==` (catches both under- and over-count drift). `00-template.md` explicitly excluded from numbered workflow doc count — test now asserts exactly 23 numbered docs.
+- **23-project-update-workflow.md K3/K7 additions:** Added missing K3 (design-plan and stub creation phases U3/U4 — unconditional structural pipeline fill before release ceremony); enhanced K6 with cross-references to U9 and K2; added K7 (HANDOFF.md structure for U10 — overwrite semantics, `update_summary:` section, cross-reference to 18-project-orchestration.md).
+- **AGENT_CONTEXT.md test count corrected:** Stale count 1982 replaced with 2336 (2191 framework + 145 benchmarking) using replace_all sweep.
+
+**Tests:** 2206 framework + 145 benchmarking = **2351 total** (+1 from doc-code-diff basename fix).
+
+---
+
+### v0.6.50 — Workflow template standard: PSK019 gate + all 23 flow docs standardised + Gate 1 scope fix (May 2026)
+
+- **Workflow template standard (PSK019):** New `docs/work-flows/00-template.md` establishes the canonical 7-section template (Overview, Flow Diagram, Steps, Key Rules, Edge Cases, Related Flows, Bypass) with 63-char ASCII box standard. All 23 existing flow docs updated to comply — every doc now has `## Overview`, `## Flow Diagram`, and `## Key Rules` sections.
+- **PSK019 gate in psk-sync-check.sh:** `check_flow_doc_template()` enforces the 3 required sections on every `docs/work-flows/*.md` except `00-template.md` itself. PSK015 and PSK003 exclude `00-template.md` from doc-count and file-count checks.
+- **Box line alignment (63-char standard):** All `│`, `┌`, `└` lines in the 23 flow diagram ASCII boxes aligned to exactly 63 display characters. Fixed 80 misaligned lines across 13 files; enforced by `tests/sections/01-infrastructure.sh` line 714 Python check.
+- **Reflex Gate 1 scope fix:** `reflex/lib/preconditions.sh` Gate 1 changed `git status --porcelain` → `git status --porcelain -- .` to scope the clean-tree check to `PROJ_ROOT` subtree only. Prevents false positives when the kit lives inside a larger workspace git repo with sibling untracked directories.
+
+**Tests:** 2191 framework + 145 benchmarking = **2336 total** (unchanged).
+
+---
+
+### v0.6.49 — resolve_kit_root bug fix: path-spaces stripping + heuristic false-positive (May 2026)
+
+- **K1 path-spaces bug fixed:** `resolve_kit_root()` used `tr -d '[:space:]'` to strip trailing whitespace from the `kit_source_path` config value. This stripped in-path spaces (e.g. a directory named "Aqib Mumtaz"), producing an invalid path. Fixed to `sed 's/[[:space:]]*$//'` which strips only trailing whitespace.
+- **Heuristic false-positive fixed:** The script-location heuristic checked for `portable-spec-kit.md` as a non-symlink real file, which falsely matched user projects where `install.sh` copied (rather than symlinked) the kit file. Fixed by adding `[ -f "$kit_candidate/install.sh" ]` to the heuristic — only a real kit directory has `install.sh`.
+- **doc-23 updated:** `23-project-update-workflow.md` resolution order item 3 now documents the `install.sh` check requirement.
+
+**Tests:** 2191 framework + 145 benchmarking = **2336 total** (unchanged).
+
+---
+
+### v0.6.48 — Release-prep consistency sweep: flow count 22→23, examples/ARD v0.6.47→v0.6.48, doc-23 K1-K7 mentions (May 2026)
+
+- **README flow count:** `tests/sections/01-infrastructure.sh` line 839 updated `"22 step-by-step flow"` → `"23 step-by-step flow"` to match the 23rd flow doc added in v0.6.47.
+- **Example version consistency:** `examples/starter/` and `examples/my-app/` AGENT_CONTEXT.md (Kit field), RELEASES.md (Kit field), and `portable-spec-kit.md` (Framework Version comment + Version header) updated v0.6.44 → v0.6.48 via `psk-version-cascade.sh`.
+- **ARD HTML consistency:** `ard/Portable_Spec_Kit_Guide.html` and `ard/Portable_Spec_Kit_Technical_Overview.html` version badges + footers updated to v0.6.48. Guide HTML received proper v0.6.47 section (K1-K7 description); Technical Overview received corrected v0.6.47 entry and restored v0.6.44 entry.
+- **Benchmarking fixture:** `tests/test-spd-benchmarking.sh` Kit fixture line updated v0.6.44 → v0.6.48.
+- **doc-23 K1-K7 coverage:** `23-project-update-workflow.md` enriched with KIT_ROOT resolution details (K1), mandatory reflex note (K2), tests/features stubs note (K4), polyglot detection note (K5), and score.sh GRANTED path note (K6). Version field corrected v0.6.46 → v0.6.47.
+- **PDFs regenerated** from updated HTML. Root workspace copy of portable-spec-kit.md synced.
+
+**Tests:** 2191 framework + 145 benchmarking = **2336 total** (unchanged).
+
+---
+
+### v0.6.47 — Orchestrator: --update mode, Phase 9 never skips, KIT_ROOT resolution, polyglot stack detection (May 2026)
+
+- **K1 — `install.sh` records `kit_source_path`:** `kit_source_path`, `kit_version`, `kit_installed_at` written to `.portable-spec-kit/config.md` on every install. Existing configs get the section injected on reinstall. Enables orchestrate.sh to locate `reflex/install-into-project.sh` on any machine without `PSK_KIT_ROOT` env var.
+- **K2 — Phase 9 never skips:** `psk-orchestrate.sh` Phase 9 (reflex-audit) previously printed "skipping" when `reflex/run.sh` was absent. Now auto-installs reflex from kit source (local or remote curl) and runs to convergence. No skip path.
+- **K3 — `--update` mode added:** New `psk-orchestrate.sh --update` command (U0–U10) replaces the manual cascade pattern. Phases: kit-currency sync → structure-audit → reflex-install → design-plans gap-fill → tests/features stubs → ARD/flow-docs → sync-check-config → optional features → release-prep → reflex-until-convergence → handoff. `PSK_KIT_ROOT` and config.md `kit_source_path` both supported.
+- **K4 — Phase 7 writes `tests/features/` stubs:** Phase 7 prompt updated: before implementing each feature, sub-agent creates `tests/features/test_f{N}*.py` (or `.test.ts`) R→F→T anchor stubs, one per acceptance criterion. These stubs are the gates test-release-check.sh resolves; runnable tests live in the stack's test dir.
+- **K5 — Polyglot stack detection in `mandate-audit.sh`:** Stack detection now recognises `backend/requirements.txt` + `frontend/package.json` as `polyglot-python-node` (instead of `unknown`). CI-workflow and manifest mandates now fire correctly on FastAPI+Next.js projects.
+- **K6 — `loop.sh` GRANTED terminator calls `score.sh`:** Previously the GRANTED path in loop.sh did not call score.sh — kit self-test passes and any loop-terminated cycles were missing from `summary.csv`. Fix: score.sh called in GRANTED terminator. Cycle-09 row backfilled in summary.csv.
+- **K7 — `docs/work-flows/23-project-update-workflow.md` added:** Flow doc for `--update` mode covering all 10 update phases, KIT_ROOT resolution, and why cascade is retired.
+
+**Tests:** 2191 framework + 145 benchmarking = **2336 total** (unchanged — kit fixes are behavioral, not test-count changes).
+
+---
+
+### v0.6.44 — Kit-evolution phases 1–6: config.md, template enrichment, F71/F72, test infra fixes (May 2026)
+
+- **`.portable-spec-kit/config.md`** created and wired into `install.sh` (auto-created on install), `psk-sync-check.sh` (PSK015-CONFIG gate), `mandate-audit.sh` (MANDATE-CONFIG-MISSING MAJOR probe), and `tests/sections/05-mandate-compliance.sh` (T4/T5 regression tests).
+- **Template enrichment (`skills/templates.md`):** All 9 agent file templates updated with gold-standard sections — REQS (approval tracking + requirement types + source columns), SPECS (scope-change record + tests/features stub path), AGENT.md (Security + Definition of Done), TASKS.md (QA Findings + Evidence field), RESEARCH.md (Open Research Questions), AGENT_CONTEXT.md (tests/features/ + config.md in File Structure).
+- **F71 — Framework Internal Consistency:** 6 regression tests in `tests/features/f71-framework-consistency.sh` lock in: no bare stub paths in framework, `source-structures.md` documents `features/` subdir, `project-setup.md` mkdir includes `tests/features`, kit has `tests/features/` + `tests/e2e/` + `.portable-spec-kit/config.md`.
+- **F72 — Template Structure Completeness:** 15 regression tests in `tests/features/f72-template-structure.sh` verify all required gold-standard sections across all 9 agent file templates.
+- **PSK016 gate:** `psk-sync-check.sh` new `check_stub_paths()` catches bare `tests/f{n}` paths in `portable-spec-kit.md` that should use `tests/features/f{n}`.
+- **Dim 25 extension:** `qa-agent.md` extended from 1 to 4 mandatory Dim 25 probes: 25.1 (mandate-audit), 25.2 (stub-path compliance), 25.3 (template structure completeness), 25.4 (config.md presence).
+- **Test infra fix (per-feature loop):** Two bugs in `tests/test-spec-kit.sh` fixed — (a) SCRIPT_DIR clobbered by sourced section files (each section redefines SCRIPT_DIR to `tests/sections/`, so the per-feature loop checked `sections/features/` not `tests/features/`); save as `ORCHESTRATOR_DIR` before sourcing sections; (b) cwd deleted by section 18 edge-case tests; `cd "$PROJ"` restores it. Result: 72 per-feature test files now run. Framework count 1840 → 2191.
+
+**Tests:** 2191 framework + 145 benchmarking = **2336 total** (was 1982; +354 per-feature tests now correctly running + 21 new F71/F72 tests).
+
+---
+
+### v0.6.43 — Flow doc consistency sweep: step counts, gate count, dimension count, test count (May 2026)
+
+- **11-spec-persistent-development.md** step count corrected: "8-step gate" → "10-step gate" in two places — box diagram and Pipeline Sync Rules table.
+- **17-reflex.md** gate count corrected: "10 gates" → "11 gates" — PKFL added G1 (kit-evolution-file-scope) + G2 (kit-genericity-proof) in v0.6.41.
+- **18-project-orchestration.md** dimension count corrected: "24 dimensions" → "25 dimensions" — Dim 25 Mandate-Compliance probe added in Loop-Iter-2.
+- **19-kit-evolution-gauntlet.md** test count corrected: "1836 tests" → "1982 tests" (1837 framework + 145 benchmarking).
+- Test infrastructure: flow count check in `tests/sections/01-infrastructure.sh` updated 21 → 22 to match README from v0.6.42.
+
+### v0.6.42 — README consistency sweep: script count + flow table row 22 (May 2026)
+
+**README consistency fixes for v0.6.41 additions:**
+
+- **PSK013 fix (README.md):** Quick Start "Installs:" line updated from `27 reliability scripts` → `29 reliability scripts` — psk-generate-ci.sh and psk-generate-user-guide.sh added in v0.6.41 were not reflected.
+- **PSK015 fix (README.md):** Flows table row 22 added for `22-project-kit-feedback-loop.md`; Documentation section reference updated from "21" → "22 step-by-step flow diagrams".
+
+**Tests:** 1837 framework + 145 benchmarking = 1982 (no count change).
+
+---
+
+### v0.6.41 — PKFL + convergence discipline + ARD user guide + mandate audit extensions (May 2026)
+
+**Four structural additions in this patch:**
+
+- **Convergence discipline fix (critical):** Rule 4 in `loop.sh` and `run.sh` — DENIED + 0 unclosed findings now stays in same cycle (forces QA re-verification); previously falsely advanced cycle counter. `resume-dev` now checks QA signoff before writing GRANTED verdict.
+- **PKFL — Project-to-Kit Feedback Loop:** `kit-evolution.sh` (6-phase orchestrator), `check-kit-genericity.sh` (G2 vocabulary scanner), `smoke-test-examples.sh` (G6 multi-project smoke). Gates 10 (G1 file-scope) + 11 (G2 genericity-proof) added to `gates.sh`, fire on `REFLEX_KIT_EVOLUTION=1`. G4 genericity_proof gate added to `file-bugs.sh`. Flow doc 22 (`22-project-kit-feedback-loop.md`) created. §PKFL mandatory rule section added to `portable-spec-kit.md`; gates count updated 9 → 11.
+- **ARD user guide generation:** `psk-generate-user-guide.sh` (generates `ard/user-guide.html`), `psk-generate-ci.sh` (auto-creates `.github/workflows/ci.yml`). Both wired into `psk-release.sh` Steps 1 + 7 as non-fatal hooks.
+- **Mandate audit extensions (Dim 25):** Three new checks in `mandate-audit.sh` — ARD user guide absent (ADVISORY), DB migration scaffold absent for Drizzle/Prisma projects (MINOR), shadcn/ui components empty (MINOR). Stack-specific fix patterns added to `dev-agent.md`.
+
+**Tests:** N62/D updated to expect `"1"` (stay in cycle) — 1836 framework + 145 benchmarking = 1981. Suite re-run after test fix → 1837 framework + 145 benchmarking = 1982.
+
+---
 
 ### v0.6.40 — Flow doc coverage for v0.6.39 features (May 2026)
 
 **Prep-release flow doc updates:**
 
-- **17-reflex.md:** Added `### v0.6.39 capabilities` section documenting server-lifecycle.sh, Next.js colocated template, template-strict scaffold, cycle persistence, and cascade Kit field.
-- **18-project-orchestration.md:** Phase 6 scaffold row updated to reference template-strict Stack matching rule.
+- **17-reflex.md** updated — added `### v0.6.39 capabilities` section documenting server-lifecycle.sh, Next.js colocated template, template-strict scaffold, cycle persistence, and cascade Kit field.
+- **18-project-orchestration.md** updated — Phase 6 scaffold row updated to reference template-strict Stack matching rule.
 
 **Tests:** 1837 framework + 145 benchmarking = 1982 (no count change).
 
@@ -25,11 +192,11 @@ All notable changes to the Portable Spec Kit are documented here.
 
 **Five structural improvements shipped in this release:**
 
-- **Playwright server-lifecycle (`reflex/lib/server-lifecycle.sh` NEW):** starts the project's dev server before QA-Agent runs and stops it on resume. `spawn-qa.sh` calls `server-lifecycle.sh start` after Phase 0 pre-compute; `run.sh` `resume-qa` entry calls `stop`. Server port polled with `nc -z`; PID written to `$PASS_DIR/.server.pid`; process group killed to also stop webpack/esbuild children. `reflex/config.yml` gains `server_lifecycle:` block (`enabled: false` default — safe no-op for bash-only test suites). `qa-agent.md` gains Live server status section: QA reads `REFLEX_SERVER_STATUS` env var (ready / timeout / disabled) and only runs Playwright when `ready`. Hard rule: never attempt `page.goto` when status is not `ready` (ADR-091).
-- **Next.js Full-Stack (colocated) template (`source-structures.md`):** new DEFAULT template for single Next.js apps — ALL app code under `src/` (`app/`, `components/`, `lib/`, `db/`, `auth/`, `queue/`, `hooks/`, `types/`). `public/` stays at project root (Next.js framework constraint). `drizzle.config.ts out: "./src/db/migrations"`. Stack matching rule added at top of file. Renamed old Web App (Next.js/React) → "Next.js Frontend-Only SPA." Added Next.js Monorepo (Turborepo) template. Framework-managed dirs (`node_modules/`, `.next/`, `dist/`) noted as gitignored, never shown in project docs.
-- **Template-strict scaffold (`psk-orchestrate.sh` Phase 6):** Phase 6 now reads PLANS.md Stack table, matches to exact source-structures.md template per Stack matching rule (Next.js colocated / Frontend-Only SPA / Full Stack separate services / Monorepo), creates dirs EXACTLY as the matched template shows. `drizzle.config.ts out:` auto-set when Drizzle ORM in stack.
-- **Single-mode cycle persistence (`reflex/run.sh`):** `find_next_pass_dir()` writes `$HISTORY/.active-cycle` state file; subsequent `bash reflex/run.sh single` calls resume the same cycle instead of starting a new one. Cleared on GRANTED verdict. Fixes the bug where calling `run.sh` twice in succession advanced the cycle counter unnecessarily.
-- **Cascade Kit field (`psk-version-cascade.sh` Phase Q):** after machinery sync, Phase Q also updates `agent/AGENT_CONTEXT.md` `**Kit:**` field in each sync-target project so the Kit badge stays in sync without a separate manual edit.
+- **Playwright server-lifecycle** (`reflex/lib/server-lifecycle.sh` NEW): starts the project's dev server before QA-Agent runs and stops it on resume. `spawn-qa.sh` calls `server-lifecycle.sh start` after Phase 0 pre-compute; `run.sh` `resume-qa` entry calls `stop`. Server port polled with `nc -z`; PID written to `$PASS_DIR/.server.pid`; process group killed to also stop webpack/esbuild children. `reflex/config.yml` gains `server_lifecycle:` block (`enabled: false` default — safe no-op for bash-only test suites). `qa-agent.md` gains Live server status section: QA reads `REFLEX_SERVER_STATUS` env var (ready / timeout / disabled) and only runs Playwright when `ready`. Hard rule: never attempt `page.goto` when status is not `ready` (ADR-091).
+- **Next.js Full-Stack (colocated)** template (`source-structures.md`): new DEFAULT template for single Next.js apps — ALL app code under `src/` (`app/`, `components/`, `lib/`, `db/`, `auth/`, `queue/`, `hooks/`, `types/`). `public/` stays at project root (Next.js framework constraint). `drizzle.config.ts out: "./src/db/migrations"`. Stack matching rule added at top of file. Renamed old Web App (Next.js/React) → "Next.js Frontend-Only SPA." Added Next.js Monorepo (Turborepo) template. Framework-managed dirs (`node_modules/`, `.next/`, `dist/`) noted as gitignored, never shown in project docs.
+- **template-strict scaffold** (`psk-orchestrate.sh` Phase 6): Phase 6 now reads PLANS.md Stack table, matches to exact source-structures.md template per Stack matching rule (Next.js colocated / Frontend-Only SPA / Full Stack separate services / Monorepo), creates dirs EXACTLY as the matched template shows. `drizzle.config.ts out:` auto-set when Drizzle ORM in stack.
+- **Single-mode cycle persistence** (`reflex/run.sh`): `find_next_pass_dir()` writes `$HISTORY/.active-cycle` state file; subsequent `bash reflex/run.sh single` calls resume the same cycle instead of starting a new one. Cleared on GRANTED verdict. Fixes the bug where calling `run.sh` twice in succession advanced the cycle counter unnecessarily.
+- **Cascade Kit field** (`psk-version-cascade.sh` Phase Q): after machinery sync, Phase Q also updates `agent/AGENT_CONTEXT.md` `**Kit:**` field in each sync-target project so the Kit badge stays in sync without a separate manual edit.
 
 **Tests:** 1837 framework + 145 benchmarking = 1982 (no count change — all structural / config changes).
 

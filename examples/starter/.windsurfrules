@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.40 -->
+<!-- Framework Version: v0.6.55 -->
 
-**Version:** v0.6.40 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 1982 (1837 framework · 145 benchmarking)
+**Version:** v0.6.55 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2352 (2207 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -481,6 +481,7 @@ Kit: v0.2.1 — v0.2.7
     - **Explicit** — user says "plan F3" / "plan this feature" / "design F3" → agent creates/opens the plan file
     - **Auto on SPECS.md** — feature added to SPECS.md → agent auto-creates plan stub in `agent/design/`
     - **Implementation gate** — user says "implement F3" / "start F3" → agent checks plan exists. If not → creates + fills first, confirms with user, then implements
+    - **Plan-Save Protocol (MANDATORY — supersedes earlier "save on transition" behavior, v0.6.53+)** — any time the agent drafts a plan in conversation (≥3 markdown headings OR ≥30 lines AND the user prompt was plan-shaped: "draft a plan", "plan this", "show me a plan", "before implementing", or any ExitPlanMode), the agent MUST persist the plan to `agent/plans/YYYY-MM-DD-<slug>.md` (or `agent/design/f{N}-*.md` if feature-scoped) **as the first tool call of the same turn**, before any implementation tool calls. Subsequent revisions rewrite the same file. Lifecycle states live in frontmatter (`status: draft | approved | executing | done | abandoned`), driven by `bash agent/scripts/psk-plan-save.sh {save|approve|start|done|abandon} <slug>`. Rationale: any interruption point (context compact, machine switch, user steps away) leaves the latest plan version on disk and in git history. Without this, plans drafted but not yet approved are lost to ephemeral IDE storage. The script is idempotent — re-saving a plan with the same slug rewrites the body and refreshes the `updated:` field while preserving lifecycle status. Commands: `save <slug>` (draft), `approve <slug>` (draft→approved), `start <slug>` (approved→executing), `done <slug> <sha-range>` (executing→done), `list` (all plans + status), `show <slug>` (print file path).
     - **Plan-mode → implementation transition (MANDATORY)** — when a plan-mode planning session transitions to implementation (plan mode exits, user says "implement it", or user approves the plan for execution), agent automatically executes the **plan-to-pipeline sync**:
       1. **Save the plan** to `agent/design/f{N}-feature-name.md` (if the plan was in an ephemeral location such as the IDE's local plans directory) — this makes the plan part of the repo history
       2. **Add SPECS.md entry** — new F{N} row in features table with acceptance criteria subsection (`### F{N}` with `- [ ]` items)
@@ -623,21 +624,21 @@ Kit: v0.2.1 — v0.2.7
 
 **Test stub generation rule (forward flow only):** When trigger conditions are met:
 1. Detect stack from `agent/AGENT.md` Stack table → choose test format
-2. Generate stub file in `tests/` named after feature: `tests/f1-feature-name.test.js` (Jest), `tests/test_f1_feature_name.py` (pytest), `tests/f1-feature-name.sh` (bash), etc.
+2. Generate stub file in `tests/features/` named after feature: `tests/features/f1-feature-name.test.js` (Jest), `tests/features/test_f1_feature_name.py` (pytest), `tests/features/f1-feature-name.sh` (bash), etc.
 3. One test case per acceptance criterion — title = criterion text, body = `// TODO: implement`
 4. Add stub file path to SPECS.md Tests column for that feature
 5. Add task to TASKS.md: `[ ] Implement tests for F1 — Feature Name`
-6. Announce: "Generated stub: tests/f1-feature-name.test.js (3 tests for F1)"
+6. Announce: "Generated stub: tests/features/f1-feature-name.test.js (3 tests for F1)"
 
 **Stack-aware stub formats:**
 
 | Stack | File format | Stub body |
 |-------|------------|-----------|
-| Jest / Vitest (JS/TS) | `tests/f{n}-name.test.js` | `test('criterion', () => { // TODO: implement\n  expect(true).toBe(false); });` |
-| pytest (Python) | `tests/test_f{n}_name.py` | `def test_criterion():\n    # TODO: implement\n    assert False` |
-| Go | `tests/f{n}_name_test.go` | `func TestCriterion(t *testing.T) {\n    t.Skip("TODO: implement")\n}` |
-| Bash | `tests/test-f{n}-name.sh` | `# TODO: implement\necho "FAIL: not implemented"; exit 1` |
-| Unknown stack | `tests/f{n}-name-manual.md` | Checklist of manual test steps, one per criterion |
+| Jest / Vitest (JS/TS) | `tests/features/f{n}-name.test.js` | `test('criterion', () => { // TODO: implement\n  expect(true).toBe(false); });` |
+| pytest (Python) | `tests/features/test_f{n}_name.py` | `def test_criterion():\n    # TODO: implement\n    assert False` |
+| Go | `tests/features/f{n}_name_test.go` | `func TestCriterion(t *testing.T) {\n    t.Skip("TODO: implement")\n}` |
+| Bash | `tests/features/test-f{n}-name.sh` | `# TODO: implement\necho "FAIL: not implemented"; exit 1` |
+| Unknown stack | `tests/features/f{n}-name-manual.md` | Checklist of manual test steps, one per criterion |
 
 **Test stub completion rule:** Before marking a feature `[x]` done in SPECS.md, the agent must verify the test file contains NO incomplete markers:
 - No `# TODO`, `// TODO`, `/* TODO */`
@@ -1306,18 +1307,53 @@ Every reflex/AVACR finding carries a `scope:` field that classifies where the fi
 
 **Dev-Agent rule:** only auto-fix findings with `scope: target-project`. `kit` and `meta` findings are informational to Dev-Agent — they are routed to the kit repo for maintainer review, not silently applied.
 
-**Kit-Evolution Protocol — how reflex findings become kit improvements:**
-1. QA surfaces finding → classifies scope → file-bugs routes.
-2. Kit maintainer (not Dev-Agent) reviews `agent/tasks/Gxx-*.md` batch before a kit release.
-3. Proposed fix verified generic — must hold true for any user project, not just the one that surfaced it. Fixes that over-fit one project are rejected or reframed.
-4. Approved fixes land in kit via normal R→F→T + ADL + mechanical-gate discipline. Commit message references source: `[source: avacr-eval-<project>/pass-NNN/Gxx]`.
+**Kit-Evolution Protocol — how reflex findings become kit improvements (automated via PKFL):**
+1. QA surfaces finding → sets `scope: kit` + `genericity_proof` field → `file-bugs.sh` G4 gate checks genericity_proof; absent = downgraded to `target-project`.
+2. `file-bugs.sh` routes verified `scope:kit` findings to `agent/tasks/Gxx-*.md` in the kit repo.
+3. If `kit_evolution.auto: true` in `reflex/config.yml`, `kit-evolution.sh` triggers automatically: runs a kit Dev-Agent pass under `REFLEX_KIT_EVOLUTION=1`, enforces G1–G6 KGG gates, runs full kit test suite, runs multi-project smoke test, cascades updated kit into source project.
+4. Manual path: kit maintainer reviews `agent/tasks/Gxx-*.md`, verifies genericity, commits under normal R→F→T + ADL + mechanical-gate discipline. Commit message references source: `[source: avacr-eval-<project>/pass-NNN/Gxx]`.
 5. Rejected fixes stay in `agent/tasks/rejected/Gxx-*.md` with rationale — audit trail of "why not."
 
 **Net effect:** every user running AVACR on their own project contributes (optionally) to kit improvement — the kit is continuously stress-tested by real-world use, not just by maintainer self-testing. `agent/tasks/` becomes the empirical record of how the kit evolves.
 
+### PKFL — Project-to-Kit Feedback Loop (MANDATORY when scope:kit findings present)
+
+**PKFL is the named process for converting project-surfaced QA findings into generic kit improvements.** It is the only approved path for evolving the kit based on user-project audits. Ad-hoc kit changes shaped by one project's specifics are prohibited (see §Kit-vs-Project Scope Separation).
+
+**6 KGG gates (Kit Genericity Guard) — MANDATORY for all kit-evolution commits:**
+
+| Gate | Enforced in | What it checks |
+|------|------------|----------------|
+| G1 | `gates.sh` gate 10 (`REFLEX_KIT_EVOLUTION=1`) | Changed files belong to kit paths only — no project files in kit commit |
+| G2 | `gates.sh` gate 11 via `check-kit-genericity.sh` | No project-specific vocabulary in kit code |
+| G3 | `kit-evolution.sh` Phase 2 | Every Gxx task has a Disposition within 7 days (fix \| reject \| defer) |
+| G4 | `file-bugs.sh` AWK emit block | `genericity_proof` field present before routing to kit |
+| G5 | `kit-evolution.sh` Phase 4 | Full kit test suite passes |
+| G6 | `kit-evolution.sh` Phase 5 via `smoke-test-examples.sh` | Kit installs cleanly into all example projects |
+
+**`genericity_proof` field (MANDATORY in all `scope:kit` findings):**
+```yaml
+genericity_proof: |
+  This gap is generic because: <one sentence proving the fix applies to ANY project
+  using the kit, independent of this project's stack, domain, or features>.
+  Counter-check: the fix targets a kit script/prompt/template/rule, not project-specific code.
+```
+
+**PKFL auto-trigger (when `kit_evolution.auto: true`):** after `file-bugs.sh` routes Gxx tasks, `reflex/lib/kit-evolution.sh` runs automatically — kit Dev-Agent fix → G1-G6 gates → cascade to source project → source project reruns reflex to verify.
+
+**Manual trigger:**
+```bash
+bash reflex/lib/kit-evolution.sh \
+  --kit-root /path/to/portable-spec-kit \
+  --source-project /path/to/your-project \
+  --auto-cascade
+```
+
+**Full flow doc:** `docs/work-flows/22-project-kit-feedback-loop.md`.
+
 **Dim 25 — Mandate-Compliance probe (registered in `reflex/prompts/qa-agent.md`).** QA-Agent's dimension set is extensible; Loop-Iter-2 (Phase F) added Dim 25 — every QA pass MUST audit the target against the mandates declared in `portable-spec-kit.md` (required directories, required pipeline files, source-layout sanity, per-feature design plans, ARD docs, README badge currency, `.env.example` placeholder hygiene, CI workflow content). The probe is implemented in `reflex/lib/mandate-audit.sh` and emits structured JSON findings with severity (`MAJOR` / `MINOR` / `ADVISORY`).
 
-**9 mechanical gates (was 8 pre-Loop-3).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline).
+**11 mechanical gates (was 9 pre-PKFL).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline). Gates 10 and 11 — `kit-evolution-file-scope` (G1) and `kit-genericity-proof` (G2) — activate only on `REFLEX_KIT_EVOLUTION=1` passes to enforce PKFL genericity contracts.
 
 ### Convergence (MANDATORY — added in Loop-3, L1-L6)
 
@@ -1462,11 +1498,60 @@ Proactive detection of scope drift across 5 dimensions. Ensures the project stay
 | *(auto)* Session start | Quick check (feature drift + plan staleness) |
 | `"check scope"` / `"scope check"` / `"drift check"` | Full 5-dimension check on demand |
 
+### Source Layout Policy (MANDATORY — Stack-driven, opt-in subdirs, v0.6.55+)
+
+Two decisions automated by the orchestrator reading `agent/PLANS.md` Stack table:
+
+**Step 1 — Template choice** (enforced by PSK022a `check_template_choice()`)
+
+| Stack table declares | Template | Physical layout |
+|---|---|---|
+| Single runtime (Next.js only, FastAPI only, Go only…) | **Template 1 — Colocated** | All app code under `src/` |
+| ≥2 runtime languages (polyglot) | **Template 3 — Separate services** | `frontend/` + `backend/` at project root |
+| Monorepo (Turborepo, Nx) | **Template 4 — Monorepo** | `packages/` + `apps/` at root |
+| Library only | **Template 5 — Library** | Flat `src/` + `examples/` + `docs/` |
+| CLI tool | **Template 6 — CLI** | `src/` + `bin/` + `man/` |
+
+**Step 2 — `src/` opt-in subdirs** (enforced by PSK022b `check_src_subdir_layout()` — Template 1 / Template 4 apps)
+
+| Subdir | Purpose | Opt-in trigger |
+|---|---|---|
+| `core/` | Business logic, framework-agnostic services, domain models | **Always** |
+| `shared/` | Cross-cutting types, constants, utils, i18n | **Always** |
+| `ui/` | User-facing presentation layer | Stack declares any frontend framework |
+| `api/` | API surface (route handlers, controllers, serializers) | Stack declares any HTTP server / route handler |
+| `integrations/` | 3rd-party services. Sub-grouped: `integrations/ai/`, `integrations/messaging/`, `integrations/payment/`, `integrations/storage/` | Stack declares any external service or AI |
+| `platform/` | Permission-scoped features (admin panel, RBAC, billing, multi-tenant) | Stack declares any admin panel / multi-role auth |
+
+**Key rule — no empty mandatory dirs.** A CLI tool has no frontend, so no `ui/` is created. A library has no admin panel, so no `platform/`. The opt-in policy keeps the layout tight and meaningful to the project's actual scope.
+
+**Scaffold machinery:** `bash agent/scripts/psk-scaffold-src.sh <project-root>` reads PLANS.md Stack table → derives required subdirs → creates them with READMEs from `src-subdir-readme-template.md`. Idempotent — only creates missing subdirs, never overwrites. `--check` mode reports without writing.
+
+**Orchestrator integration:** `psk-orchestrate.sh` Phase 6 (secure scaffold) calls `psk-scaffold-src.sh` after `mkdir -p src/`. `--update` mode also calls it to backfill missing subdirs.
+
+### Template Quality Bar (MANDATORY — applies to every kit-shipped template)
+
+Every template — existing or new — must pass all 7 criteria before landing. Enforced by `bash agent/scripts/psk-template-quality.sh <template>` lint and PSK023 sync-check rule.
+
+| # | Criterion | Pass-test |
+|---|---|---|
+| 1 | **Stack-agnostic** | No hardcoded language/framework/library in normative sections. Stack-specific examples live in `### Examples (stack: <name>)` blocks. |
+| 2 | **Domain-agnostic** | No project-domain vocabulary (cv-builder, news-validation, e-commerce) outside `<!-- Example -->` blocks the orchestrator can swap. |
+| 3 | **Scale-agnostic** | Works for 1-feature MVP and 100-feature enterprise. No "exactly N rows" / "fixed at N entries" constraints. |
+| 4 | **Useful-and-complete** | Every section the kit feature being templated requires is concrete and present. Useful > generic — don't dilute to vacuous "fill in X" placeholders that pass lint but say nothing. |
+| 5 | **Lifecycle-aware** | Stateful template classes (plan, finding, task, release) carry explicit state markers — `draft \| approved \| executing \| done \| abandoned` for plans, `open \| acknowledged \| closed \| rejected` for findings. Templates show all valid states. |
+| 6 | **Self-documenting** | Header: `<!-- TEMPLATE-KIND: <class> · GENERICITY: passing · LAST-AUDITED: YYYY-MM-DD -->`. Inline `<!-- HINT: -->` for non-obvious sections. Audit history visible without git log. |
+| 7 | **Round-trippable** | Scaffolded file from the template passes `psk-sync-check.sh --full` zero-edit. REQUIRED user-input sections marked `<!-- REQUIRED — replace before commit -->` with grep-detectable placeholder so premature commit is blocked. |
+
+**Audit machinery:** `bash agent/scripts/psk-template-quality.sh --all` runs the lint across every file in `.portable-spec-kit/templates/`. Per-template audit history is logged to `.portable-spec-kit/templates/.audit-log.yaml`. `bash agent/scripts/psk-template-quality.sh --all --strict` exits non-zero on any failure (gate-mode for CI / pre-commit).
+
+**Where templates live:** `.portable-spec-kit/templates/` (kit-shipped, externalized in v0.6.54). Old inline-in-skill location `.portable-spec-kit/skills/templates.md` is retained as a quick-reference index but the externalized files are the source of truth.
+
 ### Agent File Templates
 
 Use these exact templates when creating `agent/` files. Replace `<Project Name>` with actual name.
 
-> **Skill: Project Setup** — Full templates for all 9 agent files (REQS.md, SPECS.md, PLANS.md, RESEARCH.md, DESIGN.md, TASKS.md, RELEASES.md, AGENT.md, AGENT_CONTEXT.md) are in `.portable-spec-kit/skills/templates.md`. Agent reads this file when creating or restructuring agent files.
+> **Skill: Project Setup** — Full templates for all agent files (REQS.md, SPECS.md, PLANS.md, RESEARCH.md, DESIGN.md, TASKS.md, RELEASES.md, AGENT.md, AGENT_CONTEXT.md, plus per-feature design plans and general plans) live as standalone files in `.portable-spec-kit/templates/`. Each template passes the 7-criterion Quality Bar above. Index in `.portable-spec-kit/skills/templates.md`. Agent reads these when creating or restructuring agent files.
 
 **tests/test-release-check.sh:**
 > Script validates R→F→T coverage: every done feature must have passing test reference. Full script at `tests/test-release-check.sh` (distributed with kit). When setting up new projects, copy from existing `tests/test-release-check.sh`, not from this template.

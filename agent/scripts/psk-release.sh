@@ -199,6 +199,16 @@ run_step_1_tests() {
   echo -e "${CYAN}═══ Step 1: Running all test suites ═══${NC}"
   local fail=0
 
+  # Auto-generate CI workflow if absent (A4 — psk-generate-ci.sh)
+  if [ ! -f "$PROJ_ROOT/.github/workflows/ci.yml" ]; then
+    echo -e "\n${CYAN}--- Auto-generating CI workflow ---${NC}"
+    if bash "$PROJ_ROOT/agent/scripts/psk-generate-ci.sh" "$PROJ_ROOT"; then
+      echo -e "${GREEN}  CI workflow created${NC}"
+    else
+      echo -e "${YELLOW}  CI workflow generation skipped (non-fatal)${NC}"
+    fi
+  fi
+
   echo -e "\n${CYAN}--- test-spec-kit.sh ---${NC}"
   if bash "$PROJ_ROOT/tests/test-spec-kit.sh"; then
     echo -e "${GREEN}  Framework tests: PASSED${NC}"
@@ -589,6 +599,16 @@ run_step_6_version() {
 
 run_step_7_pdfs() {
   echo -e "${CYAN}═══ Step 7: Regenerate PDFs ═══${NC}"
+
+  # Auto-generate user guide if absent (A3 — psk-generate-user-guide.sh)
+  if [ ! -f "$PROJ_ROOT/ard/user-guide.html" ]; then
+    echo -e "\n${CYAN}--- Auto-generating user guide ---${NC}"
+    if bash "$PROJ_ROOT/agent/scripts/psk-generate-user-guide.sh" "$PROJ_ROOT"; then
+      echo -e "${GREEN}  user-guide.html created${NC}"
+    else
+      echo -e "${YELLOW}  user guide generation skipped (non-fatal)${NC}"
+    fi
+  fi
 
   if ! command -v weasyprint &>/dev/null; then
     echo -e "${RED}  weasyprint not found — install it: pip install weasyprint${NC}"

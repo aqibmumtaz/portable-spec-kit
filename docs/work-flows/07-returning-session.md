@@ -5,6 +5,81 @@
 ## Trigger
 Agent reads framework in a workspace that already has `agent/` files.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Agent starts in a workspace that already has `agent/` files (returning user, any agent) |
+| **Inputs** | `portable-spec-kit.md`, `.portable-spec-kit/user-profile/`, `agent/AGENT.md`, `agent/AGENT_CONTEXT.md`, `agent/TASKS.md`, `agent/PLANS.md` |
+| **Outputs** | Session greeting with progress summary; `agent/AGENT_CONTEXT.md` updated at session end |
+| **Script** | n/a — agent-driven lifecycle; kit update flow runs `reinit` if version mismatch detected |
+| **Gate** | Kit version check (Step 1); profile lookup (Step 3); no-slip rule verified at session end |
+| **When blocked** | Profile not found anywhere → must complete first-time profile setup before proceeding; kit version mismatch → must complete update flow before working |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Step 1: LOAD FRAMEWORK (automated)                         │
+│     Agent reads portable-spec-kit.md via symlink            │
+│     Compare <!-- Framework Version --> vs **Kit:** field    │
+│     ├─ Same version → proceed to Step 2                     │
+│     └─ Different   → run Kit Version Update flow (below)    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 2: SHOW KIT STATUS (agent — once per session)         │
+│     ✅ Spec Kit: Project mapped (vX.X.X) — reading context  │
+│     ⚠  Spec Kit: Partial context — filling in gaps...       │
+│     🔍 Spec Kit: Understanding your project — scanning...   │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 3: LOAD PROFILE (automated)                           │
+│     1. workspace/.portable-spec-kit/user-profile/ → found?  │
+│        ├─ YES → load silently, no questions                 │
+│        └─ NO  → check ~/.portable-spec-kit/user-profile/    │
+│                 ├─ YES → show profile, keep or customize    │
+│                 └─ NO  → run User Profile Setup flow        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 4: READ PROJECT CONTEXT (automated)                   │
+│     1. agent/AGENT.md     — project rules, stack            │
+│     2. agent/AGENT_CONTEXT.md — living state                │
+│     3. agent/TASKS.md     — current tasks                   │
+│     4. agent/PLANS.md     — architecture                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 5: GREET + SUMMARIZE (agent)                          │
+│     "Welcome back, [name]! Here's where we left off:"       │
+│     - Version and phase from AGENT_CONTEXT.md               │
+│     - Tasks completed vs pending from TASKS.md              │
+│     - Last decision + next step                             │
+│     "Want to continue with [next task]?"                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 6: WORK (agent)                                       │
+│     User gives instructions → agent works                   │
+│     Track all tasks in TASKS.md (no-slip rule)              │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  Step 7: SESSION END UPDATE (agent)                         │
+│     Update agent/AGENT_CONTEXT.md — progress, decisions     │
+│     Update docs/work-flows/ if any flow changed             │
+│     Verify no tasks slipped (scan conversation)             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## End-to-End Flow
 
 ```

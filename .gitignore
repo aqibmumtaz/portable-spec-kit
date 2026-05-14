@@ -62,3 +62,6 @@ agent/.release-state/test-ref-cache.txt
 agent/.release-state/test-ref-cache.key
 agent/.release-state/reflex.lock
 tests/.psk-optimize-counts.cache
+
+# Per-user profiles (created on first session, not shared across contributors)
+.portable-spec-kit/user-profile/

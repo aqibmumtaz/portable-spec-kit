@@ -836,7 +836,7 @@ section "24. README — Python Environment Section"
 # ═══════════════════════════════════════════════════════════════
 
 grep -q "Python Environment" "$PROJ/README.md" && pass "README: Python Environment in features table" || fail "README: missing Python Environment"
-grep -q "21 step-by-step flow" "$PROJ/README.md" && pass "README: 21 flows count" || fail "README: wrong flow count"
+grep -q "23 step-by-step flow" "$PROJ/README.md" && pass "README: 23 flows count" || fail "README: wrong flow count"
 grep -q "12-project-lifecycle" "$PROJ/README.md" && pass "README: 12-project-lifecycle flow listed" || fail "README: missing 12-project-lifecycle"
 
 # ═══════════════════════════════════════════════════════════════

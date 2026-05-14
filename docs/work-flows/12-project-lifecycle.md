@@ -2,6 +2,68 @@
 
 > **When:** A project goes through its full lifecycle — from client requirements through specification, development, scope changes, context breaks, and final delivery. Shows how SPD handles every phase and what happens to specifications at each transition.
 
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | Project starts (new or existing) and needs full lifecycle tracking from requirements through handoff |
+| **Inputs** | Client requirements (human language), existing codebase (if any), `agent/` pipeline files |
+| **Outputs** | Populated `agent/SPECS.md`, `agent/PLANS.md`, `agent/TASKS.md`, `agent/AGENT_CONTEXT.md`, `agent/RELEASES.md` with full traceability |
+| **Script** | `bash agent/scripts/psk-release.sh prepare` (for release phase) · `bash agent/scripts/psk-validate.sh feature-complete` (per feature) |
+| **Gate** | R→F→T traceability gate at every release; dual critic at feature-complete and prepare-release steps |
+| **When blocked** | Scope change not recorded in SPECS.md · context break loses state · feature done without test coverage |
+
+---
+
+## Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. CLIENT REQUIREMENTS                                     │
+│     Client gives requirements (human language)              │
+│     Agent translates: Rn → Fn (R→F traceability starts)     │
+│     SPECS.md + PLANS.md + TASKS.md + AGENT_CONTEXT.md       │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  2. BUILD — features + scope changes                        │
+│     Implement features — track in TASKS.md                  │
+│     Client changes requirements mid-project:                │
+│     DROP / ADD / MODIFY / REPLACE — recorded in SPECS.md    │
+│     R→F traceability maintained through every change        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  3. CONTEXT BREAK (developer stops / agent switch)          │
+│     Context persists in agent/ files — nothing lost         │
+│     Any agent / any session picks up from AGENT_CONTEXT.md  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  4. RESUME                                                  │
+│     Agent reads AGENT_CONTEXT.md → "Here's where we left"   │
+│     Continues seamlessly — zero rebuild of context          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  5. RELEASE v0.1                                            │
+│     All version tasks [x] done → prepare release            │
+│     RELEASES.md — what was delivered vs descoped            │
+│     R→F→T traceability: every feature has test coverage     │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────────┐
+│  6. HANDOFF (months later — new developer)                  │
+│     Sarah reads agent/ files — understands everything       │
+│     Requirements → features → decisions → test coverage     │
+│     Continues without any briefing from original developer  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## End-to-End Flow
 
 ```
@@ -642,6 +704,18 @@ Every TaskFlow decision flows through the pipeline with reason and timestamp:
 No context lost on breaks. No knowledge lost on handoff. No specs drifting silently. Every change recorded with reason, date, and impact across all pipeline files.
 
 In TaskFlow's case: the project went through 4 scope changes (drop PDF, add calendar, add SSO, replace calendar with list), a 2-week developer break, an agent switch, and a handoff — and every decision, reason, and outcome is preserved in the agent/ files. Six months later, Sarah reads them and understands everything without a single meeting.
+
+## Key Rules
+
+- **Every scope change must be recorded.** DROP / ADD / MODIFY / REPLACE changes go into SPECS.md with reason and date; TASKS.md and PLANS.md are updated in the same session.
+- **R→F traceability is maintained through every change.** When a requirement changes, trace it: the original Rn, what changed, and which Fn it now maps to.
+- **Context breaks are zero-loss.** All project state lives in committed `agent/` files. Any agent on any machine picks up from AGENT_CONTEXT.md — no verbal handoff needed.
+- **Agent switching is transparent.** The kit installs as `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `.clinerules` simultaneously — all agents read the same framework rules and project files.
+- **Nothing is deleted — descoped work is preserved.** Dropped features move to "Out of scope" in SPECS.md with the reason recorded. Replaced decisions stay visible in PLANS.md ADL.
+- **Handoff is automatic.** Committing `agent/` to git means any new developer or AI agent is fully briefed by reading those files — no meeting, no wiki, no separate documentation.
+- **RELEASES.md is the deliverable record.** Every version must have a RELEASES.md entry showing what was delivered, what was descoped, what changed, and test results — before the release is considered done.
+
+---
 
 ## Files Involved
 

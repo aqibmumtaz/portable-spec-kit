@@ -2,7 +2,22 @@
 
 > **When:** User follows any development workflow — structured, agile, or mixed. The agent maintains living specs throughout. Also applies when agent fills gaps retroactively. The framework doesn't enforce a methodology — it adapts to yours.
 
-## End-to-End Flow
+---
+
+## Overview
+
+| Field | Value |
+|---|---|
+| **Trigger** | User starts building features, or agent detects pipeline files are out of sync with codebase |
+| **Inputs** | `agent/SPECS.md`, `agent/PLANS.md`, `agent/TASKS.md`, `agent/AGENT_CONTEXT.md`, source code |
+| **Outputs** | Updated pipeline files, test stubs, marked `[x]` features with test refs, RELEASES.md entry |
+| **Script** | `bash agent/scripts/psk-validate.sh feature-complete` · `bash agent/scripts/psk-feature-complete.sh` |
+| **Gate** | Dual critic: `psk-sync-check.sh --full` (PSK001–PSK015) + sub-agent critic (`FEATURE_COMPLETE` template) |
+| **When blocked** | Stub has TODO/skip markers · feature has no test ref · SPECS.md stale vs TASKS.md · R→F→T gap detected |
+
+---
+
+## Flow Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -35,7 +50,7 @@
 └──────────────────────┬──────────────────────────────────────┘
                        │ When all version tasks [x] done
 ┌──────────────────────▼──────────────────────────────────────┐
-│  5. PREPARE RELEASE (8-step gate)                           │
+│  5. PREPARE RELEASE (10-step gate)                          │
 │     Run 3 suites → update counts → bump version             │
 │     PDFs → RELEASES.md → CHANGELOG.md → publish             │
 │     Section 41 (28 tests) catches any sync gaps             │
@@ -66,7 +81,7 @@ All 4 files must stay in sync. When anything changes:
 | **Feature descoped** | SPECS.md (move to Out of scope) + TASKS.md (remove from current, add to Backlog) + AGENT_CONTEXT.md |
 | **Architecture changed** | PLANS.md (Stack, Data Model, API Endpoints) + AGENT.md (Stack table) + AGENT_CONTEXT.md (Key Decisions) |
 | **After implementation** | AGENT_CONTEXT.md (progress) + SPECS.md (if scope changed) + PLANS.md (if architecture evolved) + docs/work-flows/ (if any flow changed) + ci.yml (if stack changed) |
-| **Version released** | Run prepare release gate (8-step) → RELEASES.md + TASKS.md (Done) + AGENT_CONTEXT.md (bump) + ARD |
+| **Version released** | Run prepare release gate (10-step) → RELEASES.md + TASKS.md (Done) + AGENT_CONTEXT.md (bump) + ARD |
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -138,6 +153,18 @@ The user doesn't HAVE to follow this flow sequentially:
 | `TASKS.md` | Version-based task tracking | Before and after every task |
 | `RELEASES.md` | Version changelog, test results | End of version release |
 
+## Key Rules
+
+- **Pipeline files must stay in sync.** When any feature is added, descoped, or modified, update SPECS.md, PLANS.md, TASKS.md, and AGENT_CONTEXT.md in the same session — never one without the others.
+- **TASKS.md first.** Add the task to TASKS.md before starting any implementation work — not after.
+- **Never mark a feature `[x]` without test coverage.** The Tests column in SPECS.md must be filled with a passing test file reference before the feature is considered done.
+- **Stub completion gate is mandatory.** `check_stub_complete()` verifies no TODO/skip/placeholder markers remain in the test file. A feature with incomplete stubs cannot be marked done.
+- **R→F→T traceability is required end-to-end.** Every requirement (Rn) must trace to a feature (Fn), and every feature must trace to a test. Gaps block the release gate.
+- **Retroactive gap-filling is automatic.** If SPECS.md has fewer features than TASKS.md has `[x]` tasks, the agent fills SPECS.md from what has been built — SPECS must never be emptier than the implementation.
+- **Dual-gate validation before closing a feature.** Both the bash critic (PSK001–PSK015) and the sub-agent critic (`FEATURE_COMPLETE` template) must pass. Fabricated QUOTE lines are rejected by `grep -F` verification.
+
+---
+
 ## Feature Completion — Final Validation (MANDATORY — dual gate)
 
 Before marking a feature `[x]` in SPECS.md and TASKS.md, the agent MUST run the dual-gate validation:
@@ -146,7 +173,7 @@ Before marking a feature `[x]` in SPECS.md and TASKS.md, the agent MUST run the 
 bash agent/scripts/psk-validate.sh feature-complete
 ```
 
-**Bash critic** — `psk-sync-check.sh --full` runs 15 deterministic checks (PSK001–PSK015) including: R→F→T gate, SPECS staleness, AGENT.md Stack drift, ARD content freshness, README structural consistency (agent table row count, flow table row count, install list counts), and **secret scanning (PSK011)** that blocks commits of real-format credentials.
+**Bash critic** — `psk-sync-check.sh --full` runs 23 deterministic checks (PSK001–PSK019 + infrastructure checks) including: R→F→T gate, SPECS staleness, AGENT.md Stack drift, ARD content freshness, README structural consistency (agent table row count, flow table row count, install list counts), and **secret scanning (PSK011)** that blocks commits of real-format credentials.
 
 **Sub-agent critic** (`FEATURE_COMPLETE` template) — spawns fresh sub-agent that verifies the feature being closed has:
 - `[x]` in SPECS.md with Completed date + populated Tests column
