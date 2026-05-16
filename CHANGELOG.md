@@ -8,7 +8,50 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.55 · **Tests:** 2352 (2207 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.59 · **Tests:** 2325 (2180 framework + 145 benchmarking)
+
+### v0.6.59 — Workflow-Fidelity Plan Close-out (Phase D, May 2026)
+
+- **Plan schema conversion (D1+D2):** `2026-05-13-workflow-fidelity.md` (22 phases) + `2026-05-12-plan-save-protocol.md` (7 phases) converted from compat_mode → `schema_version: 1` via `psk-run-plan.sh --convert`. Per-phase prompts + artifacts scaffolded under `agent/plans/<slug>/{prompts,artifacts}/`.
+- **user-guide.html regen (D3):** `ard/user-guide.html` present (closes Phase R ADVISORY). Note: deeper `psk-generate-user-guide.sh` pipefail bug on AGENT.md without `**Version:` line filed as v0.6.60 backlog.
+- **install.sh inventory (D4):** 6 v0.6.56+v0.6.57 artifacts enumerated — scripts (`psk-workflow-state.sh`, `psk-spawn.sh`, `psk-run-plan.sh`, `psk-ui-completeness.sh`), skill (`plan-execution.md`), reflex/lib (`workflow-fidelity-audit.sh`).
+- **PSK022a polyglot-detection fix (D5):** Root cause — regex matched `Gin` inside "messaGINg" / "enGINe" / "loGINg" without word-boundary anchors. Fixed by `\b(Keyword)\b` everywhere in `check_template_choice()`. Library names (Drizzle, Twilio, Upstash, NextAuth) excluded from runtime detection. v5's Next.js + Drizzle + Twilio + Neon + Upstash stack now correctly resolves as Template 1 (single-runtime colocated). v5 sync-check no longer needs `--no-verify`.
+- **SPECS + TASKS v0.6.57 sync (D6):** F73 (Workflow Fidelity), F74 (Plan Execution Protocol), F75 (UI Completeness Gate), F76 (PSK022a fix) added to SPECS with R→F→T test refs.
+- **Closes Phase R 4 ADVISORY findings** from cycle-15/pass-001 (compat-mode plans ×2, user-guide ARD missing, install.sh inventory drift).
+- **2325 tests passing** (2180 framework + 145 benchmarking), 76 features tracked, 100% R→F→T coverage.
+
+### v0.6.57 — Plan Execution Protocol + UI Completeness Gate (May 2026)
+
+- **New MANDATORY §Plan Execution Protocol** in `portable-spec-kit.md` (5th reliability layer — plan-shape gate). Every plan executed via sub-agent spawning conforms to `schema_version: 1` + `phases:` frontmatter. `psk-run-plan.sh` driver refuses non-conformant plans (one-shot `compat_mode: true` exception). Schema validates at `psk-plan-save.sh approve`. PSK024 sync-check rule lints every `agent/plans/*.md`. Bypass `PSK_PLAN_EXEC_DISABLED=1` for emergencies only.
+- **3 new templates**: `.portable-spec-kit/templates/plan-executable.md` + `plan-prompt.md` + `plan-artifact.md`, all passing 7-criterion Quality Bar.
+- **`agent/scripts/psk-run-plan.sh`** (35th script) — schema-aware driver with commands start/next/status/resume/retry/--convert/--validate/--health/abort. No inline-fallback branch; structurally only spawn/retry/abort paths forward. Built on `psk-workflow-state.sh` state machine + `psk-spawn.sh` SPAWN contract.
+- **`psk-plan-save.sh` body-preservation fix** — regression caught the same day caused 233 lines of plan body to be erased on save. Now uses tempfile + frontmatter-only rewrite. `approve` runs schema validation; refuses on PSK024-N (missing schema_version), PSK024-P (missing phases), PSK024-F (missing required field), PSK024-D (depends_on dangling/cycle), PSK024-L (path layout violation).
+- **PSK024 sync-check rule** (27th rule) — 11 sub-codes (V/P/I/N/R/A/G/C/D/M/X) linting executable plans. PostToolUse warn + pre-commit error. Honors `compat_mode: true` advisory.
+- **§Workflow Fidelity B2 retrofit** — `register-gate <wf> <phase> <cmd>` + `verify-gate <wf> <phase>` API in `psk-workflow-state.sh`. `mark-done` refuses unverified phases (exit 2 with PSK-style error). 9 workflows wired with their per-phase gates: psk-orchestrate (new + --update), psk-release (STEP_1..STEP_10), psk-new-setup, psk-existing-setup, psk-init, psk-reinit, psk-feature-complete, reflex/run.sh, psk-run-plan.
+- **`agent/scripts/psk-ui-completeness.sh`** (36th script) — stack-aware 10-category UI audit (P primitives, L layout, D dark-mode, S states, A a11y, T tokens, F per-feature pages, I input-feedback, R responsive, E empty-shell). `--check` advisory / `--strict` gate / `--json` machine-readable. Bash 3.2 compatible (parallel indexed arrays). Stack detection: package.json deps → agent/PLANS.md Stack table.
+- **PSK025 sync-check rule** (28th rule) — wraps `psk-ui-completeness.sh --json`. Skips no-frontend projects. Bypass: `PSK_UI_COMPLETENESS_DISABLED=1`.
+- **Orchestrator `--update` U6.5** — new UI-completeness backfill phase between sync-check-config and features. Sub-agent reads `--json` output, backfills every PSK025 violation (P/L/D/S/A/T/F/I/R/E) with full implementations, re-verifies with `--strict`. No skip path under §Workflow Fidelity.
+- **Reflex Dim 26 + 12th mechanical gate** — `reflex/lib/workflow-fidelity-audit.sh` audits workflow-state ledger + UI completeness + per-phase gate discipline + spawn-protocol fidelity + bypass-env-var abuse. Emits structured JSON findings. Gate `workflow-fidelity-completeness` blocks at MAJOR (configurable via `reflex/config.yml`).
+- **Flow docs 26 + 27**: `26-plan-execution-protocol.md` (Overview, Key Rules, Flow Diagram, Schema, Command Surface, Lifecycle States, Gate Semantics, Dependency Resolution, Compat-mode + Conversion, Edge Cases, Related Flows, Worked Example) and `27-ui-completeness-gate.md` (sub-code reference table + worked v5 fix path).
+- **`.portable-spec-kit/skills/plan-execution.md`** — agent-facing operational skill: drafting plans, phase prompt/artifact authoring, driving execution, handling AWAITING states, gate failure recovery, conversion.
+- **2325 tests passing** (2180 framework + 145 benchmarking), 100% feature coverage, 0 failures. 390 reliability tests across Sections 61-67.
+- Motivating incidents: today's plan body erasure regression (catalyst for stricter schema enforcement); searchsocialtruth-v5 skeletal UI (the v5 failure mode that PSK025 + U6.5 close structurally).
+
+### v0.6.56 — Workflow Fidelity: the agent executes the kit, never overrides it (May 2026)
+
+- **New MANDATORY §Workflow Fidelity** in `portable-spec-kit.md` (4th reliability layer — behavioral, enforced structurally). When the kit defines a process — workflow, phase, gate, rule, principle, test — the agent executes it faithfully and completely. No phase compression/skip/reorder, no inline substitution where a sub-agent is specified, no scope reduction under rate/context pressure, no replacing the kit's "done" with the agent's judgment. Rate/context limits → pause-and-resume, never reduce-scope.
+- **New principle `P10 — Workflow Fidelity`** in `agent/PHILOSOPHY.md`, with searchsocialtruth-v5 as the evidence base (skeletal UI shipped behind a "20/20 features, 110 tests" report — root cause: agent overrode the kit's defined process).
+- **`agent/scripts/psk-workflow-state.sh` (33rd kit script)** — shared resumable phase-state machine for every executable workflow. State file at `agent/.workflow-state/<workflow>.state`. A phase cannot be marked done until its registered completion gate passes. `resume` re-enters at the exact in-progress phase — never restarts, never skips. `init` / `get-phase` / `mark-in-progress` / `mark-done` / `mark-awaiting` / `register-gate` / `resume` / `status` / `complete?`.
+- **`agent/scripts/psk-spawn.sh` (34th kit script)** — sub-agent spawn-fidelity protocol. `request` / `complete` / `retry` / `status`. Has **no inline-fallback branch** — there is structurally no code path where the agent does a sub-agent's work itself as a shortcut. On rate-limit → `AWAITING_SUBAGENT_RETRY`, the only forward command is retry-spawn.
+- **9 executable workflows retrofitted** to reference §Workflow Fidelity: `psk-orchestrate.sh` (`await_subagent` routes through `psk-spawn.sh`, no inline alternative), `psk-new-setup.sh`, `psk-existing-setup.sh`, `psk-init.sh`, `psk-reinit.sh`, `psk-feature-complete.sh`, `reflex/run.sh`.
+- **New flow doc `25-workflow-fidelity.md`** — full state-machine API, phase-gate registry, spawn-retry protocol, resume semantics. 25 numbered flow docs (was 24).
+- **18 new regression tests** in `tests/sections/03-reliability.sh` section 61: state-machine init/mark/resume round-trips, gate-blocks-advance, spawn request pauses AWAITING, spawn complete refuses without result artifact, structural assertion that `psk-spawn.sh` has lifecycle-only dispatch verbs (no inline/fallback verb), retrofit coverage across all 7 workflow scripts + reflex.
+- **Stale verdict cleanup:** `reflex/history/cycle-12/pass-001/verdict.md` annotated `INTERRUPTED · operator-recovered` (pass converged GRANTED; verdict.md was stale EXIT-trap residue).
+- README install line: 32→34 scripts, 24→25 flow documents.
+
+**Tests:** 2225 framework + 145 benchmarking = **2370 total** (+18 from §Workflow Fidelity regression suite).
+
+---
 
 ### v0.6.55 — Source Layout Policy + 10 new templates + flow doc 24 (May 2026)
 

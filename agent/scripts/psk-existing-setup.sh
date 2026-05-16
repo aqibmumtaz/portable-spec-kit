@@ -8,8 +8,14 @@
 
 set -uo pipefail
 
+# §Workflow Fidelity (portable-spec-kit.md): this is an executable kit workflow.
+# The agent executes its defined steps faithfully and completely — no phase
+# compression, no inline substitution where a sub-agent is specified, no scope
+# reduction under rate/context pressure. Pause-and-resume, never reduce-scope.
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
+WFS="$SCRIPT_DIR/psk-workflow-state.sh"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -19,6 +25,15 @@ MODE="${1:-complete}"
 case "$MODE" in
   start)
     echo -e "${CYAN}═══ Existing Project Setup — Preflight ═══${NC}"
+
+    # §Workflow Fidelity B2 — init state machine + register gates.
+    if [ -x "$WFS" ]; then
+      bash "$WFS" init psk-existing-setup "preflight,fill,validation" >/dev/null 2>&1 || true
+      bash "$WFS" register-gate psk-existing-setup preflight "true" >/dev/null 2>&1 || true
+      bash "$WFS" register-gate psk-existing-setup fill "bash $SCRIPT_DIR/psk-sync-check.sh --full" >/dev/null 2>&1 || true
+      bash "$WFS" register-gate psk-existing-setup validation "bash $SCRIPT_DIR/psk-validate.sh existing-setup" >/dev/null 2>&1 || true
+    fi
+
 
     # Preflight 1: project actually has existing code
     src_count=$(find "$PROJ_ROOT" -type f \( -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.go" -o -name "*.rs" -o -name "*.rb" -o -name "*.java" \) 2>/dev/null | grep -v node_modules | grep -v __pycache__ | wc -l | tr -d ' ')
@@ -45,6 +60,12 @@ case "$MODE" in
     # Preflight 3: warn if README already exists (won't overwrite)
     if [ -f "$PROJ_ROOT/README.md" ]; then
       echo -e "  ${GREEN}✓${NC} README.md already exists — kit will augment not overwrite"
+    fi
+
+    if [ -x "$WFS" ]; then
+      bash "$WFS" verify-gate psk-existing-setup preflight >/dev/null 2>&1 || true
+      bash "$WFS" mark-done psk-existing-setup preflight >/dev/null 2>&1 || true
+      bash "$WFS" mark-in-progress psk-existing-setup fill >/dev/null 2>&1 || true
     fi
 
     echo -e "\n${CYAN}Next:${NC} retroactively fill agent/*.md per docs/work-flows/04-existing-project-setup.md"
@@ -84,8 +105,18 @@ case "$MODE" in
       echo -e "  ${YELLOW}⚠${NC} No snapshot — run psk-existing-setup.sh start first for destructive-edit protection"
     fi
 
+    if [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-existing-setup.state" ]; then
+      bash "$WFS" verify-gate psk-existing-setup fill >/dev/null 2>&1 \
+        && bash "$WFS" mark-done psk-existing-setup fill >/dev/null 2>&1 \
+        && bash "$WFS" mark-in-progress psk-existing-setup validation >/dev/null 2>&1 || true
+    fi
     bash "$SCRIPT_DIR/psk-validate.sh" existing-setup
-    exit $?
+    rc=$?
+    if [ "$rc" -eq 0 ] && [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-existing-setup.state" ]; then
+      bash "$WFS" verify-gate psk-existing-setup validation >/dev/null 2>&1 \
+        && bash "$WFS" mark-done psk-existing-setup validation >/dev/null 2>&1 || true
+    fi
+    exit $rc
     ;;
 
   *)

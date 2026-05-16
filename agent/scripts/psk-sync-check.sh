@@ -141,6 +141,22 @@ Error codes:
           across .portable-spec-kit/templates/. Criteria: 1=stack-agnostic, 2=domain-agnostic,
           3=scale-agnostic, 4=useful-and-complete, 5=lifecycle-aware, 6=self-documenting,
           7=round-trippable. See portable-spec-kit.md §Template Quality Bar.
+  PSK024: Executable-plan schema conformance — every plan in agent/plans/ that is detected
+          executable (frontmatter phases: OR ## Implementation Order OR ## Phase headings OR
+          slug in .workflow-state/run-plan-*.state) MUST conform to the §Plan Execution
+          Protocol schema. Sub-codes:
+            V=schema_version field present (integer)
+            P=phases array present + non-empty
+            I=phase id present + unique + kebab/alphanumeric
+            N=phase name present
+            R=phase prompt path under agent/plans/<slug>/prompts/<id>.md
+            A=phase artifact path under agent/plans/<slug>/artifacts/<id>.done.md
+            G=phase gate command present
+            C=phase commit_required boolean present
+            D=depends_on references exist + no cycles
+            M=prompt file actually exists on disk (warn in --quick, error in --full)
+            X=compat-mode plan advisory (conversion required on next start)
+          Bypass: PSK_PLAN_EXEC_DISABLED=1
 
 Modes:
   --full         all 11 checks
@@ -1036,13 +1052,18 @@ check_template_choice() {
     return
   fi
 
-  # Polyglot heuristic — ≥2 runtime declarations in Stack table
+  # Polyglot heuristic — ≥2 runtime declarations in Stack table.
+  # Word boundaries (\b) on every keyword to prevent false matches inside
+  # other words (e.g. "Gin" inside "messaGINg" / "enGINe", "Echo" inside
+  # "etched", "Go" inside other identifiers). Library names (Drizzle,
+  # Twilio, Upstash, NextAuth) are intentionally NOT runtimes — they
+  # are services consumed by a single host runtime.
   local runtime_count=0
-  grep -qi -E '\bPython\b|FastAPI|Django|Flask' "$plans" && runtime_count=$((runtime_count + 1))
-  grep -qi -E '\bNode\b|Next\.js|Express|TypeScript' "$plans" && runtime_count=$((runtime_count + 1))
-  grep -qi -E '\bGo\b|Gin|Echo' "$plans" && runtime_count=$((runtime_count + 1))
-  grep -qi -E '\bRust\b|Cargo|Axum' "$plans" && runtime_count=$((runtime_count + 1))
-  grep -qi -E '\bRuby\b|Rails' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\b(Python|FastAPI|Django|Flask)\b' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\b(Node|Express)\b|Next\.js|\bTypeScript\b' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\b(Go|Gin|Echo)\b' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\b(Rust|Cargo|Axum)\b' "$plans" && runtime_count=$((runtime_count + 1))
+  grep -qi -E '\b(Ruby|Rails)\b' "$plans" && runtime_count=$((runtime_count + 1))
 
   if [ "$runtime_count" -ge 2 ] && [ "$has_frontend" -eq 1 ] && [ "$has_backend" -eq 1 ]; then
     emit_pass "PSK022a: template choice — Template 3 (separate services, ${runtime_count}-runtime polyglot)"
@@ -1560,6 +1581,443 @@ check_kit_version_drift() {
   fi
 }
 
+# --- CHECK PSK024: Executable-plan schema conformance ---
+#
+# Enforces §Plan Execution Protocol (5th reliability layer). Every plan in
+# agent/plans/*.md that is detected executable must declare a `phases:`
+# frontmatter block conforming to the v1 schema. Narrative plans (no execution
+# signal) are skipped. Compat-mode plans (`compat_mode: true`) bypass schema
+# validation with a single advisory — they get one one-shot legacy run before
+# conversion is required at the next `start`.
+#
+# Detection signals (any one makes the plan executable):
+#   - frontmatter has `phases:`
+#   - body has a `## Implementation Order` heading
+#   - body has ≥ 2 `## Phase ` headings (v5 template convention)
+#   - the plan's slug appears in any agent/.workflow-state/run-plan-*.state
+#
+# Sub-codes:
+#   V=schema_version  P=phases   I=id          N=name      R=prompt path
+#   A=artifact path   G=gate     C=commit_req  D=depends_on  M=prompt file
+#   X=compat-mode advisory
+#
+# Modes:
+#   --quick: warnings, exit 0 even with violations (PostToolUse-friendly)
+#   --full : errors block, exit 1 on violations (pre-commit gate)
+#
+# Bypass: PSK_PLAN_EXEC_DISABLED=1 short-circuits the entire check.
+check_plan_schema() {
+  if [ "${PSK_PLAN_EXEC_DISABLED:-0}" = "1" ]; then
+    return 0
+  fi
+  local plans_dir="$AGENT_DIR/plans"
+  [ ! -d "$plans_dir" ] && return 0
+  run_check
+
+  local total=0
+  local executable=0
+  local violations=0
+  local quick_mode=false
+  [ "$QUICK" = true ] && quick_mode=true
+
+  # Collect plan files (top-level *.md, skip empty dir / .gitkeep)
+  local plan_files=()
+  while IFS= read -r -d '' f; do
+    plan_files+=("$f")
+  done < <(find "$plans_dir" -maxdepth 1 -type f -name "*.md" -print0 2>/dev/null)
+
+  for plan in "${plan_files[@]}"; do
+    total=$((total + 1))
+    local rel="${plan#$PROJ_ROOT/}"
+    local slug
+    slug=$(basename "$plan" .md)
+    # Strip date prefix if present (YYYY-MM-DD-<slug>.md → <slug>)
+    local plan_slug="$slug"
+    if [[ "$plan_slug" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-(.+)$ ]]; then
+      plan_slug="${BASH_REMATCH[1]}"
+    fi
+
+    # Extract frontmatter into a temp buffer (between first two --- markers).
+    # If file has no frontmatter, awk returns empty string.
+    local fm
+    fm=$(awk '
+      BEGIN { in_fm = 0; done = 0 }
+      NR == 1 && /^---[[:space:]]*$/ { in_fm = 1; next }
+      in_fm && /^---[[:space:]]*$/ { done = 1; in_fm = 0; next }
+      in_fm && !done { print }
+    ' "$plan")
+
+    # Detect executable plan
+    local has_phases_fm=0
+    local has_impl_order=0
+    local has_phase_headings=0
+    local in_state=0
+    local compat_mode=0
+
+    if echo "$fm" | grep -qE '^phases:[[:space:]]*$'; then
+      has_phases_fm=1
+    fi
+    if grep -qE '^## Implementation Order[[:space:]]*$' "$plan" 2>/dev/null; then
+      has_impl_order=1
+    fi
+    local phase_h_count
+    phase_h_count=$(grep -cE '^## Phase [A-Za-z0-9]' "$plan" 2>/dev/null | tr -d '\n ')
+    [ -z "$phase_h_count" ] && phase_h_count=0
+    [ "$phase_h_count" -ge 2 ] 2>/dev/null && has_phase_headings=1
+
+    # Workflow-state slug match
+    if ls "$AGENT_DIR"/.workflow-state/run-plan-*.state >/dev/null 2>&1; then
+      for sf in "$AGENT_DIR"/.workflow-state/run-plan-*.state; do
+        [ -f "$sf" ] || continue
+        local sname
+        sname=$(basename "$sf" .state)
+        # sname looks like run-plan-<slug>
+        if [ "$sname" = "run-plan-$plan_slug" ] || [ "$sname" = "run-plan-$slug" ]; then
+          in_state=1
+          break
+        fi
+      done
+    fi
+
+    # Compat-mode flag in frontmatter (explicit)
+    if echo "$fm" | grep -qE '^compat_mode:[[:space:]]*true[[:space:]]*$'; then
+      compat_mode=1
+    fi
+
+    # Implicit compat-mode: pure-legacy plan with no schema awareness at all
+    # (no schema_version, no phases:, no compat_mode flag). Per §Plan Execution
+    # Protocol — "Plans without phases: frontmatter execute once under
+    # compat_mode: true, set by the driver." PSK024 surfaces the same plans
+    # as advisory rather than hard error, preserving the one-shot conversion
+    # contract while keeping legacy plans from blocking the gate.
+    local has_schema_version=0
+    if echo "$fm" | grep -qE '^schema_version:[[:space:]]*[0-9]+[[:space:]]*$'; then
+      has_schema_version=1
+    fi
+    if [ "$compat_mode" -eq 0 ] && [ "$has_phases_fm" -eq 0 ] && [ "$has_schema_version" -eq 0 ]; then
+      compat_mode=1
+    fi
+
+    # Not executable → skip silently
+    if [ "$has_phases_fm" -eq 0 ] && [ "$has_impl_order" -eq 0 ] \
+       && [ "$has_phase_headings" -eq 0 ] && [ "$in_state" -eq 0 ]; then
+      continue
+    fi
+
+    executable=$((executable + 1))
+
+    # Compat-mode short-circuit (PSK024-X advisory only)
+    if [ "$compat_mode" -eq 1 ]; then
+      if [ "$quick_mode" = false ]; then
+        emit_warn "PSK024 [$rel]: compat-mode plan — conversion required before next \`start\` (PSK024-X)"
+      fi
+      continue
+    fi
+
+    # Track per-plan violations
+    local plan_violations=0
+
+    # PSK024-V — schema_version field present + integer
+    if [ "$has_schema_version" -eq 0 ]; then
+      _psk024_emit "$rel" "missing or non-integer schema_version field (PSK024-V)" "$quick_mode"
+      plan_violations=$((plan_violations + 1))
+    fi
+
+    # PSK024-P — phases: array present + non-empty
+    if [ "$has_phases_fm" -eq 0 ]; then
+      _psk024_emit "$rel" "executable plan lacks 'phases:' frontmatter array (PSK024-P)" "$quick_mode"
+      plan_violations=$((plan_violations + 1))
+      violations=$((violations + plan_violations))
+      continue
+    fi
+
+    # Extract phases block + parse per-phase fields with awk.
+    # Phase entries start with "  - id:" (2-space indent, dash, id key).
+    # Within each entry, recognize id / name / prompt / artifact / gate /
+    # commit_required / depends_on keys (4-space indent).
+    local phases_dump
+    phases_dump=$(echo "$fm" | awk '
+      BEGIN { in_phases = 0 }
+      /^phases:[[:space:]]*$/ { in_phases = 1; next }
+      in_phases && /^[A-Za-z_][A-Za-z0-9_]*:/ { in_phases = 0 }
+      in_phases { print }
+    ')
+
+    if [ -z "$phases_dump" ]; then
+      _psk024_emit "$rel" "phases: array is empty (PSK024-P)" "$quick_mode"
+      plan_violations=$((plan_violations + 1))
+      violations=$((violations + plan_violations))
+      continue
+    fi
+
+    # Parse phases into records. Each record: pipe-delimited
+    # "id|name|prompt|artifact|gate|commit_required|depends_on"
+    local phases_records
+    phases_records=$(echo "$phases_dump" | awk '
+      function strip(s) { sub(/^[[:space:]]+/, "", s); sub(/[[:space:]]+$/, "", s); sub(/^"/, "", s); sub(/"$/, "", s); return s }
+      function any_set() { return (id != "" || name != "" || prompt != "" || artifact != "" || gate != "" || commit_required != "" || depends_on != "") }
+      BEGIN { started=0; id=""; name=""; prompt=""; artifact=""; gate=""; commit_required=""; depends_on="" }
+      /^[[:space:]]*-[[:space:]]*id:/ {
+        if (started && any_set()) {
+          print id "|" name "|" prompt "|" artifact "|" gate "|" commit_required "|" depends_on
+        }
+        started=1
+        sub(/^[[:space:]]*-[[:space:]]*id:[[:space:]]*/, "")
+        id = strip($0); name=""; prompt=""; artifact=""; gate=""; commit_required=""; depends_on=""
+        next
+      }
+      /^[[:space:]]+name:/ { sub(/^[[:space:]]+name:[[:space:]]*/, ""); name=strip($0); next }
+      /^[[:space:]]+prompt:/ { sub(/^[[:space:]]+prompt:[[:space:]]*/, ""); prompt=strip($0); next }
+      /^[[:space:]]+artifact:/ { sub(/^[[:space:]]+artifact:[[:space:]]*/, ""); artifact=strip($0); next }
+      /^[[:space:]]+gate:/ { sub(/^[[:space:]]+gate:[[:space:]]*/, ""); gate=strip($0); next }
+      /^[[:space:]]+commit_required:/ { sub(/^[[:space:]]+commit_required:[[:space:]]*/, ""); commit_required=strip($0); next }
+      /^[[:space:]]+depends_on:/ { sub(/^[[:space:]]+depends_on:[[:space:]]*/, ""); depends_on=strip($0); next }
+      END {
+        if (started && any_set()) {
+          print id "|" name "|" prompt "|" artifact "|" gate "|" commit_required "|" depends_on
+        }
+      }
+    ')
+
+    if [ -z "$phases_records" ]; then
+      _psk024_emit "$rel" "phases: array is empty (PSK024-P)" "$quick_mode"
+      plan_violations=$((plan_violations + 1))
+      violations=$((violations + plan_violations))
+      continue
+    fi
+
+    # Collect all ids first for dup + depends_on cross-check
+    local all_ids=""
+    local seen_ids=""
+    while IFS='|' read -r pid pname pprompt partifact pgate pcommit pdep; do
+      all_ids="$all_ids $pid"
+    done <<< "$phases_records"
+
+    # Per-phase field checks
+    while IFS='|' read -r pid pname pprompt partifact pgate pcommit pdep; do
+      # PSK024-I: id present + unique + kebab/alphanumeric
+      if [ -z "$pid" ]; then
+        _psk024_emit "$rel" "phase has empty id (PSK024-I)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+        continue
+      fi
+      if ! echo "$pid" | grep -qE '^[A-Za-z0-9][A-Za-z0-9._-]*$'; then
+        _psk024_emit "$rel" "phase id '$pid' not kebab/alphanumeric (PSK024-I)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+      if echo "$seen_ids" | tr ' ' '\n' | grep -qxF "$pid"; then
+        _psk024_emit "$rel" "phase id '$pid' duplicated (PSK024-I)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      else
+        seen_ids="$seen_ids $pid"
+      fi
+
+      # PSK024-N: name present
+      if [ -z "$pname" ]; then
+        _psk024_emit "$rel" "phase '$pid' missing name field (PSK024-N)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+
+      # PSK024-R: prompt path under agent/plans/<slug>/prompts/<id>.md
+      local expected_prompt="agent/plans/$plan_slug/prompts/$pid.md"
+      if [ -z "$pprompt" ]; then
+        _psk024_emit "$rel" "phase '$pid' missing prompt field (PSK024-R)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      elif [ "$pprompt" != "$expected_prompt" ]; then
+        _psk024_emit "$rel" "phase '$pid' prompt path '$pprompt' should be '$expected_prompt' (PSK024-R)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+
+      # PSK024-A: artifact path under agent/plans/<slug>/artifacts/<id>.done.md
+      local expected_artifact="agent/plans/$plan_slug/artifacts/$pid.done.md"
+      if [ -z "$partifact" ]; then
+        _psk024_emit "$rel" "phase '$pid' missing artifact field (PSK024-A)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      elif [ "$partifact" != "$expected_artifact" ]; then
+        _psk024_emit "$rel" "phase '$pid' artifact path '$partifact' should be '$expected_artifact' (PSK024-A)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+
+      # PSK024-G: gate command present
+      if [ -z "$pgate" ]; then
+        _psk024_emit "$rel" "phase '$pid' missing gate field (PSK024-G)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+
+      # PSK024-C: commit_required boolean present
+      if [ -z "$pcommit" ]; then
+        _psk024_emit "$rel" "phase '$pid' missing commit_required field (PSK024-C)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      elif [ "$pcommit" != "true" ] && [ "$pcommit" != "false" ]; then
+        _psk024_emit "$rel" "phase '$pid' commit_required must be boolean, got '$pcommit' (PSK024-C)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+
+      # PSK024-D: depends_on references must be existing ids
+      if [ -n "$pdep" ] && [ "$pdep" != "[]" ]; then
+        # Strip brackets/quotes/spaces, split on comma
+        local dep_clean
+        dep_clean=$(echo "$pdep" | tr -d '[]"' | tr ',' ' ')
+        for d in $dep_clean; do
+          d=$(echo "$d" | tr -d ' ')
+          [ -z "$d" ] && continue
+          if ! echo "$all_ids" | tr ' ' '\n' | grep -qxF "$d"; then
+            _psk024_emit "$rel" "phase '$pid' depends_on '$d' which is not a declared phase id (PSK024-D)" "$quick_mode"
+            plan_violations=$((plan_violations + 1))
+          fi
+        done
+      fi
+
+      # PSK024-M: prompt file exists on disk (warn in quick, error in full)
+      if [ -n "$pprompt" ]; then
+        if [ ! -f "$PROJ_ROOT/$pprompt" ]; then
+          if [ "$quick_mode" = true ]; then
+            # warn-only — don't count as violation in --quick
+            :
+          else
+            _psk024_emit "$rel" "phase '$pid' prompt file not found at $pprompt (PSK024-M)" "$quick_mode"
+            plan_violations=$((plan_violations + 1))
+          fi
+        fi
+      fi
+    done <<< "$phases_records"
+
+    # PSK024-D cycle detection (simple DFS over depends_on edges).
+    # Build edge list "from -> to" pairs.
+    local edges
+    edges=$(echo "$phases_records" | awk -F'|' '
+      {
+        from = $1
+        dep = $7
+        gsub(/[\[\]"]/, "", dep)
+        gsub(/,/, " ", dep)
+        n = split(dep, deps, " ")
+        for (i = 1; i <= n; i++) {
+          d = deps[i]
+          gsub(/[[:space:]]/, "", d)
+          if (d != "") print from " " d
+        }
+      }
+    ')
+    if [ -n "$edges" ]; then
+      # Detect cycle via awk DFS — if any node revisits itself in its descendant set
+      local cycle
+      cycle=$(echo "$edges" | awk '
+        { adj[$1] = adj[$1] " " $2; nodes[$1]=1; nodes[$2]=1 }
+        END {
+          for (n in nodes) {
+            # DFS from n; if we revisit n, cycle exists
+            split("", stack)
+            split("", visited)
+            stack[1] = n
+            top = 1
+            while (top > 0) {
+              cur = stack[top]; top--
+              split(adj[cur], children, " ")
+              for (i in children) {
+                c = children[i]
+                if (c == "") continue
+                if (c == n) { print "CYCLE:" n; exit }
+                if (!visited[c]) {
+                  visited[c] = 1
+                  top++
+                  stack[top] = c
+                }
+              }
+            }
+          }
+        }
+      ')
+      if [ -n "$cycle" ]; then
+        local cnode="${cycle#CYCLE:}"
+        _psk024_emit "$rel" "depends_on cycle detected involving phase '$cnode' (PSK024-D)" "$quick_mode"
+        plan_violations=$((plan_violations + 1))
+      fi
+    fi
+
+    violations=$((violations + plan_violations))
+  done
+
+  # Aggregate report
+  local summary="PSK024: $total plans checked, $executable executable, $violations violations"
+  if [ "$violations" -eq 0 ]; then
+    emit_pass "$summary"
+  else
+    if [ "$quick_mode" = true ]; then
+      # Quick mode: warn only, do not emit a hard issue
+      emit_warn "$summary (--quick: warnings only)"
+    else
+      emit_issue "PSK024" "plan-schema" \
+        "$summary — see PSK024-* sub-codes above" \
+        "Convert executable plans to the §Plan Execution Protocol schema (see .portable-spec-kit/templates/plan-executable.md). Bypass: PSK_PLAN_EXEC_DISABLED=1"
+    fi
+  fi
+}
+
+# Helper for check_plan_schema — emit one violation line, respecting quick mode.
+_psk024_emit() {
+  local rel="$1"
+  local msg="$2"
+  local quick="$3"
+  if [ "$quick" = "true" ]; then
+    # Quick: print as inline warning, no issue count
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK024 [$rel]: $msg"
+  else
+    # Full: print as warn line so user sees specifics, aggregate counted via violations
+    echo -e "  ${YELLOW}⚠${NC} PSK024 [$rel]: $msg"
+  fi
+}
+
+# --- CHECK PSK025: UI Completeness Gate (B1 of workflow-fidelity plan, v0.6.57+) ---
+#
+# Wraps agent/scripts/psk-ui-completeness.sh --json. Stack-aware: skips projects
+# without a declared frontend framework. Frontend-declared projects must meet
+# the 10-category UI completeness bar (P/L/D/S/A/T/F/I/R/E sub-codes).
+#
+# Bypass: PSK_UI_COMPLETENESS_DISABLED=1 short-circuits the check.
+#
+check_ui_completeness() {
+  if [ "${PSK_UI_COMPLETENESS_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK025: skipped (PSK_UI_COMPLETENESS_DISABLED=1)"
+    run_check
+    return
+  fi
+  local script="$PROJ_ROOT/agent/scripts/psk-ui-completeness.sh"
+  if [ ! -x "$script" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK025: psk-ui-completeness.sh not present — skip (advisory)"
+    run_check
+    return
+  fi
+  local json; json=$(bash "$script" --json 2>/dev/null)
+  if [ -z "$json" ]; then
+    run_check
+    return
+  fi
+  # Check skip cases
+  if echo "$json" | grep -q '"skipped"'; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK025: no frontend declared — skip"
+    run_check
+    return
+  fi
+  # Parse violations count
+  local violations; violations=$(echo "$json" | grep -oE '"violations":[0-9]+' | head -1 | grep -oE '[0-9]+')
+  local sub_codes; sub_codes=$(echo "$json" | grep -oE '"sub_codes":\[[^]]*\]' | head -1)
+  if [ "${violations:-0}" -eq 0 ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK025: UI completeness — all 10 categories pass"
+    run_check
+    return
+  fi
+  # Emit one warn line per sub-code violation
+  local codes; codes=$(echo "$sub_codes" | grep -oE '"[A-Z]"' | tr -d '"' | tr '\n' ' ')
+  if [ "$QUICK" = true ]; then
+    echo -e "  ${YELLOW}⚠${NC} PSK025: UI completeness — ${violations} violation(s) in: $codes"
+    run_check
+  else
+    issue "PSK025: UI completeness — ${violations} violation(s) in sub-codes: $codes" \
+          "Run: bash agent/scripts/psk-ui-completeness.sh   # see per-sub-code details"
+  fi
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -1576,6 +2034,8 @@ main() {
     check_test_count
     check_kit_version_drift
     check_reflex_protected_files
+    check_plan_schema
+    check_ui_completeness
   else
     # Full: all checks (expanded v0.5.9 with content validation, v0.5.13 with secrets)
     check_version
@@ -1608,6 +2068,8 @@ main() {
     check_reqs_coverage
     check_ui_requirements_coverage
     check_summary_csv_completeness
+    check_plan_schema
+    check_ui_completeness
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

@@ -13,8 +13,14 @@
 
 set -uo pipefail
 
+# §Workflow Fidelity (portable-spec-kit.md): this is an executable kit workflow.
+# The agent executes its defined steps faithfully and completely — no phase
+# compression, no inline substitution where a sub-agent is specified, no scope
+# reduction under rate/context pressure. Pause-and-resume, never reduce-scope.
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
+WFS="$SCRIPT_DIR/psk-workflow-state.sh"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -23,6 +29,15 @@ FEATURE="${1:-}"
 [[ "$FEATURE" =~ ^F[0-9]+$ ]] || { echo "Feature ID must match F<n>, got: $FEATURE"; exit 4; }
 
 echo -e "${CYAN}═══ Feature Completion: $FEATURE ═══${NC}"
+
+# §Workflow Fidelity B2 — init state machine + register gates per feature.
+WF_NAME="psk-feature-complete-$FEATURE"
+if [ -x "$WFS" ]; then
+  bash "$WFS" init "$WF_NAME" "preflight,review,validation" >/dev/null 2>&1 || true
+  bash "$WFS" register-gate "$WF_NAME" preflight "true" >/dev/null 2>&1 || true
+  bash "$WFS" register-gate "$WF_NAME" review "bash $SCRIPT_DIR/psk-sync-check.sh --full && bash $PROJ_ROOT/tests/test-release-check.sh $PROJ_ROOT/agent/SPECS.md" >/dev/null 2>&1 || true
+  bash "$WFS" register-gate "$WF_NAME" validation "bash $SCRIPT_DIR/psk-validate.sh feature-complete" >/dev/null 2>&1 || true
+fi
 
 fails=0
 
@@ -78,6 +93,12 @@ if [ "$fails" -gt 0 ]; then
   exit 1
 fi
 
+if [ -x "$WFS" ]; then
+  bash "$WFS" verify-gate "$WF_NAME" preflight >/dev/null 2>&1 || true
+  bash "$WFS" mark-done "$WF_NAME" preflight >/dev/null 2>&1 || true
+  bash "$WFS" mark-in-progress "$WF_NAME" review >/dev/null 2>&1 || true
+fi
+
 echo -e "\n${CYAN}═══ Pre-gate: mechanical code review ═══${NC}"
 if [ -x "$SCRIPT_DIR/psk-code-review.sh" ]; then
   bash "$SCRIPT_DIR/psk-code-review.sh" 2>&1 | tail -20
@@ -85,6 +106,17 @@ else
   echo -e "  ${YELLOW}⚠ psk-code-review.sh not found — skipping${NC}"
 fi
 
+if [ -x "$WFS" ]; then
+  bash "$WFS" verify-gate "$WF_NAME" review >/dev/null 2>&1 \
+    && bash "$WFS" mark-done "$WF_NAME" review >/dev/null 2>&1 \
+    && bash "$WFS" mark-in-progress "$WF_NAME" validation >/dev/null 2>&1 || true
+fi
+
 echo -e "\n${CYAN}═══ Final gate: dual validation ═══${NC}"
 bash "$SCRIPT_DIR/psk-validate.sh" feature-complete
-exit $?
+rc=$?
+if [ "$rc" -eq 0 ] && [ -x "$WFS" ]; then
+  bash "$WFS" verify-gate "$WF_NAME" validation >/dev/null 2>&1 \
+    && bash "$WFS" mark-done "$WF_NAME" validation >/dev/null 2>&1 || true
+fi
+exit $rc

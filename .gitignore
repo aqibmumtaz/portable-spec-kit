@@ -65,3 +65,4 @@ tests/.psk-optimize-counts.cache
 
 # Per-user profiles (created on first session, not shared across contributors)
 .portable-spec-kit/user-profile/
+reflex/history/.active-cycle

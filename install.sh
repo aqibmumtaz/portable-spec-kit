@@ -180,7 +180,7 @@ download_framework() {
 download_scripts() {
   echo -e "${CYAN}[2/6] Downloading reliability scripts...${NC}"
   # Core scripts every project needs (kit reliability + workflows + self-evolution v0.6.16-23)
-  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh psk-version-cascade.sh psk-generate-ci.sh psk-generate-user-guide.sh psk-plan-save.sh psk-template-quality.sh psk-scaffold-src.sh"
+  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh psk-version-cascade.sh psk-generate-ci.sh psk-generate-user-guide.sh psk-plan-save.sh psk-template-quality.sh psk-scaffold-src.sh psk-workflow-state.sh psk-spawn.sh psk-run-plan.sh psk-ui-completeness.sh"
   local optional="psk-jira-sync.sh psk-tracker.sh psk-tracker-report.sh install-tracker.sh uninstall-tracker.sh sync.sh"
 
   for s in $scripts; do
@@ -210,7 +210,7 @@ download_scripts() {
 download_skills() {
   echo -e "${CYAN}[3/6] Downloading skill files...${NC}"
   # All on-demand skills the kit references (CLAUDE.md skill table is authoritative; this list mirrors it)
-  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md"
+  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md plan-execution.md"
 
   for s in $skills; do
     if fetch ".portable-spec-kit/skills/$s" "./.portable-spec-kit/skills/$s" 2>/dev/null; then
@@ -464,7 +464,8 @@ install_reflex() {
       console-probe.ts cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
       identify-integration-probes.sh intake.sh kit-evolution.sh log-hardening.sh loop.sh mandate-audit.sh \
       orchestration-phase-6-5.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
-      server-lifecycle.sh smoke-test-examples.sh state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh)
+      server-lifecycle.sh smoke-test-examples.sh state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh \
+      workflow-fidelity-audit.sh)
     for f in "${lib_files[@]}"; do
       curl -fsSL "$RAW_BASE/reflex/lib/$f" -o "reflex/lib/$f" 2>/dev/null || continue
       [ "${f##*.}" = "sh" ] && chmod +x "reflex/lib/$f"

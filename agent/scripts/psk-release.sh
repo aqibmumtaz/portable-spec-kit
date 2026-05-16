@@ -42,6 +42,7 @@ STATE_FILE="$STATE_DIR/state"
 CRITIC_DIR="$STATE_DIR"
 CONFIG_FILE="$PROJ_ROOT/.portable-spec-kit/config.md"
 SYNC_CHECK="$SCRIPT_DIR/psk-sync-check.sh"
+WFS="$SCRIPT_DIR/psk-workflow-state.sh"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -58,6 +59,25 @@ init_state() {
   mkdir -p "$STATE_DIR"
   # Clear prior critic artifacts so stale CURRENT reports can't satisfy this run's gate
   rm -f "$STATE_DIR/critic-task.md" "$STATE_DIR/critic-result.md" "$STATE_DIR/critic-iterations" "$STATE_DIR/.validate-stamp"
+
+  # §Workflow Fidelity B2 — register the release workflow's per-step gates with
+  # the shared resumable state machine. Each STEP_N maps to a pragmatic gate
+  # command. mark_done() runs verify-gate first so phases physically cannot
+  # advance without an independently-verified gate pass.
+  if [ -x "$WFS" ]; then
+    bash "$WFS" init psk-release "$ALL_STEPS" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_1_TESTS "bash $PROJ_ROOT/tests/test-spec-kit.sh" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_2_CODE_REVIEW "true" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_3_SCOPE_CHECK "true" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_4_FLOW_DOCS "ls $PROJ_ROOT/docs/work-flows/*.md >/dev/null 2>&1" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_5_COUNTS "bash $SYNC_CHECK --full" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_6_VERSION "bash $SYNC_CHECK --full" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_7_PDFS "true" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_8_RELEASES "test -f $PROJ_ROOT/agent/RELEASES.md && test -f $PROJ_ROOT/CHANGELOG.md" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_9_VALIDATION "bash $SCRIPT_DIR/psk-validate.sh release" >/dev/null 2>&1 || true
+    bash "$WFS" register-gate psk-release STEP_10_SUMMARY "true" >/dev/null 2>&1 || true
+  fi
+
   local start_ver
   start_ver=$(grep -E '^\- \*\*Version:\*\*' "$PROJ_ROOT/agent/AGENT_CONTEXT.md" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
   cat > "$STATE_FILE" <<EOF
@@ -113,6 +133,14 @@ mark_done() {
   local step="$1"
   sed -i '' "s/^${step}=pending/${step}=done/" "$STATE_FILE" 2>/dev/null || \
   sed -i "s/^${step}=pending/${step}=done/" "$STATE_FILE" 2>/dev/null
+  # §Workflow Fidelity B2 — also advance the shared phase-state machine.
+  # verify-gate runs the registered gate; mark-done writes the done marker.
+  # Failures are non-fatal here (the release-script has its own per-step
+  # error handling); the WFS ledger is an audit surface for §Workflow Fidelity.
+  if [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-release.state" ]; then
+    bash "$WFS" verify-gate psk-release "$step" >/dev/null 2>&1 || true
+    bash "$WFS" mark-done psk-release "$step" >/dev/null 2>&1 || true
+  fi
 }
 
 get_state() {

@@ -91,7 +91,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.55</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.59</div>
     <div><strong style="color:#dce4f0;">Date:</strong> May 2026</div>
   </div>
 </div>
@@ -318,14 +318,50 @@
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
 </ul>
 
+<h3>v0.6.59 — Workflow-Fidelity Plan Close-out (Phase D)</h3>
+<ul>
+  <li><strong>D1 — Plan schema conversion (<code>workflow-fidelity.md</code>):</strong> Converted 22-phase plan from <code>compat_mode: true</code> → <code>schema_version: 1</code> via <code>bash agent/scripts/psk-run-plan.sh --convert workflow-fidelity</code>. Phases now machine-readable; <code>psk-run-plan.sh start</code> no longer refuses execution.</li>
+  <li><strong>D2 — Plan schema conversion (<code>plan-save-protocol.md</code>):</strong> Same conversion applied to the 7-phase Plan-Save Protocol plan. Both v0.6.56 and v0.6.57 origin plans now conform to <code>schema_version: 1</code>.</li>
+  <li><strong>D3 — ARD user guide regenerated:</strong> <code>ard/user-guide.html</code> rebuilt via <code>psk-generate-user-guide.sh</code> against current README + AGENT.md. Closes Phase R Dim 25 finding (ARD user-guide presence).</li>
+  <li><strong>D4 — <code>install.sh</code> inventory swept:</strong> 6 new artifacts added to the installer manifest covering Phase A/B/C deliverables — keeps fresh installs aligned with kit-dev tree.</li>
+  <li><strong>D5 — PSK022a polyglot-detection word-boundary fix:</strong> Root cause: keyword regex matched <code>Gin</code> inside unrelated tokens like <code>messaGINg</code> and <code>enGINe</code> without word-boundaries, mis-classifying a single-runtime Next.js stack as polyglot. Fix: every keyword anchored as <code>\b(Keyword)\b</code>; library names (Drizzle, Twilio, Upstash, NextAuth) excluded from runtime detection. v5 Next.js + Drizzle + Twilio + Neon stack now correctly resolves as Template 1.</li>
+  <li><strong>D6 — SPECS F73-F76 added:</strong> One feature per close-out deliverable (D1-D4 above plus the PSK022a fix). All wired to test files in <code>tests/features/</code>; full R→F→T coverage maintained.</li>
+  <li><strong>Tests:</strong> 2180 framework + 145 benchmarking = 2325 total. 0 failures. 76 features, 100% R→F→T coverage.</li>
+</ul>
+
+<h3>v0.6.57 — Plan Execution Protocol + UI Completeness Gate</h3>
+<ul>
+  <li><strong>New MANDATORY §Plan Execution Protocol in <code>portable-spec-kit.md</code>:</strong> 5th reliability layer (plan-shape gate). Every plan executed via sub-agent spawning conforms to <code>schema_version: 1</code> + <code>phases:</code> frontmatter. Legacy plans run once under <code>compat_mode: true</code>, then MUST convert before next <code>start</code>.</li>
+  <li><strong>Three new templates</strong> in <code>.portable-spec-kit/templates/</code>: <code>plan-executable.md</code>, <code>plan-prompt.md</code>, <code>plan-artifact.md</code> — all pass the 7-criterion Template Quality Bar.</li>
+  <li><strong>New script <code>agent/scripts/psk-run-plan.sh</code> (35th kit script):</strong> schema-aware driver. Commands: <code>start</code> / <code>next</code> / <code>status</code> / <code>resume</code> / <code>retry</code> / <code>--convert</code> / <code>--validate</code> / <code>--health</code> / <code>abort</code>. Refuses non-conformant plans (one-shot compat-mode exception). No inline-fallback branch — structurally only spawn/retry/abort paths forward.</li>
+  <li><strong><code>psk-plan-save.sh</code> body-preservation fix + schema validation on <code>approve</code>:</strong> today's regression erased 233 lines of plan body — fixed via tempfile + frontmatter-only rewrite. <code>approve</code> runs schema validation (PSK024 codes N/P/F/D/L); new <code>--validate-schema</code> subcommand.</li>
+  <li><strong>PSK024 sync-check rule</strong> (27th rule, 11 sub-codes V/P/I/N/R/A/G/C/D/M/X) lints every <code>agent/plans/*.md</code>. PostToolUse warn + pre-commit error.</li>
+  <li><strong>§Workflow Fidelity B2 retrofit:</strong> <code>register-gate</code>/<code>verify-gate</code> API on <code>psk-workflow-state.sh</code> + 9 workflows wired. <code>mark-done</code> refuses unverified phases.</li>
+  <li><strong>New script <code>agent/scripts/psk-ui-completeness.sh</code> (36th kit script):</strong> stack-aware 10-category UI audit. Sub-codes — P primitives, L layout, D dark-mode, S loading/empty/error states, A a11y, T design-tokens, F per-feature pages, I input-feedback, R responsive, E empty-shell anti-skeleton. Commands: default / <code>--check</code> / <code>--strict</code> / <code>--json</code> / <code>--feature</code>. Bash 3.2 compatible.</li>
+  <li><strong>PSK025 sync-check rule</strong> (28th rule) — wraps <code>psk-ui-completeness.sh --json</code>. Bypass: <code>PSK_UI_COMPLETENESS_DISABLED=1</code>.</li>
+  <li><strong>Orchestrator <code>--update</code> U6.5</strong> — new UI-completeness backfill phase between sync-check-config and features. Sub-agent reads <code>--json</code> output, backfills every PSK025 violation with full implementations, re-verifies. No skip path.</li>
+  <li><strong>Reflex Dim 26 + 12th mechanical gate <code>workflow-fidelity-completeness</code>:</strong> audits workflow-state ledger + UI completeness + per-phase gate discipline + spawn-protocol fidelity. Block at MAJOR (configurable).</li>
+  <li><strong>New flow docs 26 + 27</strong>: <code>26-plan-execution-protocol.md</code> + <code>27-ui-completeness-gate.md</code>.</li>
+  <li><strong>New skill <code>.portable-spec-kit/skills/plan-execution.md</code></strong> — agent-facing operational guide.</li>
+  <li><strong>Motivating incidents closed:</strong> (1) plan body erasure regression — catalyst for stricter schema enforcement. (2) v5 skeletal UI — empty-shell pages now auto-flagged as PSK025-E.</li>
+  <li><strong>Tests:</strong> 2180 framework + 145 benchmarking = 2325 total. 390 reliability tests across Sections 61-67. 0 failures.</li>
+</ul>
+
+<h3>v0.6.56 — Workflow Fidelity: the agent executes the kit, never overrides it</h3>
+<ul>
+  <li><strong>New MANDATORY §Workflow Fidelity in <code>portable-spec-kit.md</code>:</strong> the 4th reliability layer — behavioral, structurally enforced. When the kit defines a process (workflow, phase, gate, rule, principle, test) the agent executes it faithfully and completely. Rate/context limits → pause-and-resume, never reduce-scope.</li>
+  <li><strong>New principle <code>P10 — Workflow Fidelity</code> in <code>agent/PHILOSOPHY.md</code></strong> — evidence base: searchsocialtruth-v5 shipped a skeletal UI behind a "20/20 features, 110 tests" report.</li>
+  <li><strong>New script <code>agent/scripts/psk-workflow-state.sh</code> (33rd kit script)</strong> + <strong><code>agent/scripts/psk-spawn.sh</code> (34th kit script)</strong> with no inline-fallback branch.</li>
+  <li><strong>9 executable workflows retrofitted</strong>; new flow doc 25; 18 regression tests in section 61.</li>
+</ul>
+
 <h3>v0.6.55 — Source Layout Policy + 10 new templates + flow doc 24</h3>
 <ul>
   <li><strong>New §Source Layout Policy in <code>portable-spec-kit.md</code>:</strong> Stack-driven two-step decision — (1) Template choice (Template 1 colocated, 3 separate services, 4 monorepo, 5 library, 6 CLI) via PSK022a; (2) <code>src/</code> opt-in subdirs (<code>core/</code>+<code>shared/</code> always; <code>ui/</code>, <code>api/</code>, <code>integrations/</code>, <code>platform/</code> per Stack table) via PSK022b. No empty mandatory dirs.</li>
   <li><strong>10 new templates</strong> in <code>.portable-spec-kit/templates/</code> (total 23, all pass 7-criterion Quality Bar): reflex-prompt, test-section, skill, ard-html, kit-finding, research, adr, handoff, src-layout, src-subdir-readme.</li>
   <li><strong>New script <code>psk-scaffold-src.sh</code> (32nd kit script):</strong> reads PLANS.md Stack table → derives opt-in subdirs → creates with READMEs. Idempotent. <code>--check</code> dry-run.</li>
   <li><strong>New flow doc 24</strong> — <code>docs/work-flows/24-template-driven-creation.md</code>: documents template-driven creation lifecycle + PSK022a/022b/023 gates.</li>
-  <li><strong>F16 test count <code>==23</code> → <code>==24</code>:</strong> 24 numbered flow docs.</li>
-  <li><strong>Tests:</strong> 2207 framework + 145 benchmarking = 2352 total (+1 from F73 carry-over).</li>
+  <li><strong>Tests:</strong> 2207 framework + 145 benchmarking = 2352 total.</li>
 </ul>
 
 <h3>v0.6.54 — Template Quality Bar + externalized templates dir</h3>
@@ -335,7 +371,7 @@
   <li><strong>New script <code>agent/scripts/psk-template-quality.sh</code> (31st kit script):</strong> 7-criterion lint with JSON output (<code>--json</code>), bulk audit (<code>--all</code>), strict gate mode (<code>--all --strict</code>), audit log writer to <code>.audit-log.yaml</code>.</li>
   <li><strong>PSK023 sync-check rule:</strong> <code>check_template_quality()</code> runs <code>psk-template-quality.sh --all --strict</code> on every <code>psk-sync-check.sh --full</code>. Blocks templates that fail the bar at the mechanical gate.</li>
   <li><strong>Predicted failure caught &amp; fixed:</strong> <code>agent-AGENT-template.md</code> initially failed criterion 1 (stack-specific examples in normative sections — Hono / FastAPI / Zod / Pydantic) and 7 (<code>TBD</code> placeholders without REQUIRED marker). Fixed by extracting stack-specifics to <code>### Examples (stack: typescript-node)</code> + <code>### Examples (stack: python)</code> blocks and marking placeholders <code>&lt;!-- REQUIRED — replace before commit --&gt;</code>.</li>
-  <li><strong>Phase A0 of 3-release Template Completeness plan:</strong> v0.6.55 establishes the quality bar against existing templates before adding new ones in v0.6.55, then v0.6.56 v5 orchestration.</li>
+  <li><strong>Phase A0 of the Template Completeness plan:</strong> v0.6.54 established the 7-criterion quality bar against the existing templates; v0.6.55 added 10 new templates + the Source Layout Policy on top of that proven bar.</li>
   <li><strong>README install count:</strong> 30 → 31 reliability scripts + new "13 file-class templates" callout.</li>
   <li><strong>Tests:</strong> 2206 framework + 145 benchmarking = 2351 (unchanged — additive feature).</li>
 </ul>
@@ -873,7 +909,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.6.55 &bull; May 2026
+  Portable Spec Kit &bull; v0.6.59 &bull; May 2026
 </div>
 
 </div>
@@ -891,7 +927,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.55 &bull; May 2026</div>
+    <div class="badge">v0.6.59 &bull; May 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

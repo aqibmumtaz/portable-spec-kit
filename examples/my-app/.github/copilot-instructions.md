@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.55 -->
+<!-- Framework Version: v0.6.59 -->
 
-**Version:** v0.6.55 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2352 (2207 framework · 145 benchmarking)
+**Version:** v0.6.59 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2325 (2180 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -46,7 +46,7 @@ bash agent/scripts/psk-bootstrap-check.sh --remediate
 
 ## Reliability Architecture
 
-The kit uses three enforcement layers to prevent agents from skipping steps or shipping inconsistent content. The agent cannot bypass these — they are structural, not trust-based.
+The kit uses five enforcement layers to prevent agents from skipping steps or shipping inconsistent content. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**.
 
 **Reliability model — dual critic at the end of each workflow, not per step.** A workflow runs its steps normally; at the end it enters a single validation gate that pairs two critics. Both must pass. Either failure blocks the workflow from completing.
 
@@ -68,6 +68,102 @@ The kit uses three enforcement layers to prevent agents from skipping steps or s
 
 ---
 
+## Workflow Fidelity (MANDATORY — the agent executes the kit, never overrides it)
+
+**This is the 4th reliability layer — behavioral, enforced structurally.** Layers 2A/2B/3 stop the agent from shipping inconsistent *content*. This layer stops the agent from substituting its own judgment for the kit's *process*.
+
+**The principle.** When the kit defines a process — a workflow script, a phase sequence, a gate, a rule, a principle, a test contract — the agent executes it faithfully and completely. The agent does NOT:
+- compress, skip, or reorder defined phases
+- substitute inline work when a phase calls for a sub-agent
+- reduce scope or accept "good enough" when the kit defines a completion bar
+- bypass a gate, a test, or a rule under any pressure (rate limit, context limit, "go fast" instruction)
+- replace the kit's definition of "done" with its own judgment
+
+Rate limits and context limits are handled by **pause-and-resume**, never by **reduce-scope**. Full delivery is the contract; token/time cost is acceptable. Partial delivery against a defined workflow is a workflow failure, not an acceptable outcome.
+
+The agent's judgment applies to *what the user wants* and *how to solve a novel problem* — never to *whether to follow a defined kit process*.
+
+**Structural enforcement (not trust-based).** Two mechanisms make violation impossible, not merely discouraged:
+
+1. **Resumable phase-state machine — `agent/scripts/psk-workflow-state.sh`.** Every executable workflow runs as a phase state machine with a committed state file at `agent/.workflow-state/<workflow>.state`. A phase cannot be marked done until its registered completion gate passes. On any interruption (rate limit, context compact, machine switch) the workflow pauses with state persisted; `resume` re-enters at the exact in-progress phase — never restarts, never skips. The agent cannot "compress phase 5" because the state machine will not advance past an ungated phase.
+
+2. **Sub-agent spawn-fidelity protocol — `agent/scripts/psk-spawn.sh`.** Every workflow that spawns a sub-agent goes through this wrapper. On rate-limit or spawn failure it writes `AWAITING_SUBAGENT_RETRY:<phase>` to the workflow state file and **pauses**. The script has **no inline-fallback branch** — there is structurally no path where the agent does a sub-agent's work itself as a shortcut. The only forward command is retry-spawn (via `resume`).
+
+**Covered workflows.** All executable workflows run on the shared state machine: `psk-orchestrate.sh` (new-project + `--update`), `psk-release.sh`, `psk-new-setup.sh`, `psk-existing-setup.sh`, `psk-init.sh`, `psk-reinit.sh`, `psk-feature-complete.sh`, `reflex/run.sh`.
+
+**Emergency bypass:** `PSK_WORKFLOW_STATE_DISABLED=1` skips the state machine; `PSK_SPAWN_FIDELITY_DISABLED=1` allows inline fallback. Both are for genuine emergencies only — each removes a structural guarantee and must be explicit.
+
+> **Skill: Workflow Fidelity** — full state-machine API, phase-gate registry, spawn-retry protocol, resume semantics in `docs/work-flows/25-workflow-fidelity.md`.
+
+---
+
+## Plan Execution Protocol (MANDATORY — every executable plan conforms to the kit's schema)
+
+**This is the 5th reliability layer — plan-shape, enforced structurally.** §Workflow Fidelity (4th layer) makes the agent execute *workflows* faithfully. This layer makes the agent execute *plans* faithfully — by forcing every plan that will run through sub-agent spawning into a single canonical shape the driver can read, verify, and pause on. Without this, "plan-driven" devolves into "the agent reads the plan and does what it thinks the plan said" — the same failure mode §Workflow Fidelity exists to prevent, one level up.
+
+**The principle.** Every plan that will be executed via sub-agent spawning MUST conform to the kit's executable-plan schema. The standard template lives at `.portable-spec-kit/templates/plan-executable.md`. `bash agent/scripts/psk-plan-save.sh approve <slug>` validates the schema and refuses approval if `phases:` frontmatter is missing or malformed. `bash agent/scripts/psk-run-plan.sh start <slug>` refuses to execute non-conformant plans. Legacy plans (no `phases:` frontmatter) get a single one-shot compat-mode run; the next `start` requires conversion. There is structurally no path where the agent reads a free-form plan and improvises its execution — the driver refuses, the schema validator refuses, the gate fails.
+
+**The executable-plan schema (frontmatter).** Every executable plan carries the following frontmatter. `schema_version: 1` is mandatory so the schema can evolve without ambiguity.
+
+```yaml
+---
+status: draft | approved | executing | done | abandoned
+slug: <kebab-case>
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+schema_version: 1
+phases:
+  - id: A1
+    name: "Short phase title"
+    prompt: "agent/plans/<slug>/prompts/A1.md"     # self-contained sub-agent brief
+    artifact: "agent/plans/<slug>/artifacts/A1.done.md"  # written by sub-agent at phase end
+    gate: "bash agent/scripts/psk-sync-check.sh --full"  # completion gate
+    commit_required: true
+    depends_on: []
+  - id: A2
+    name: "Next phase"
+    prompt: "agent/plans/<slug>/prompts/A2.md"
+    artifact: "agent/plans/<slug>/artifacts/A2.done.md"
+    gate: "bash tests/test-spec-kit.sh && bash tests/test-release-check.sh"
+    commit_required: true
+    depends_on: [A1]
+revision: N
+---
+```
+
+**Structural enforcement (not trust-based).** Three mechanisms make schema violation impossible, not merely discouraged:
+
+1. **Schema-aware approval — `agent/scripts/psk-plan-save.sh approve <slug>`.** `approve` runs schema validation against the frontmatter. Missing `phases:`, missing per-phase required fields (`id`, `prompt`, `artifact`, `gate`), or malformed YAML → approval is refused with the specific PSK024 error. `save <slug>` remains the draft surface and does NOT gate on schema (drafts iterate freely) but MUST preserve the markdown body across re-saves — only frontmatter `updated:` and lifecycle status refresh. The body is the human-readable narrative; losing it on save is a regression, fixed in B0.3.
+
+2. **Driver refusal — `agent/scripts/psk-run-plan.sh start <slug>`.** The driver reads the plan's `phases:` array. No `phases:` array → driver refuses to start (one-shot `compat_mode: true` exception below). Each phase: driver reads its prompt file → emits SPAWN signal → pauses → on sub-agent return reads the artifact + runs the gate → advances only on gate pass. The driver is registered with `psk-workflow-state.sh` as workflow `run-plan-<slug>`, so it inherits the resumable phase-state machine from §Workflow Fidelity. Interruption pauses, `resume` re-enters at the exact in-progress phase.
+
+3. **PSK024 sync-check rule — `agent/scripts/psk-sync-check.sh`.** Lints every `agent/plans/*.md` file for schema conformance. Reports compat-mode plans with a deadline (next `start` requires conversion). Fires in `--quick` mode as a PostToolUse warning after every Write/Edit to a plan file, and in `--full` mode as a pre-commit error. The hook layer (§Reliability Architecture Layer 3) is therefore in the loop too — schema drift surfaces immediately, not at execution time.
+
+**Per-phase prompt file contract** (`agent/plans/<slug>/prompts/<id>.md`):
+- Self-contained — the sub-agent reads nothing else from the plan; the prompt file carries every fact it needs
+- Required sections: **Goal · Files to read · Files to write · Completion criteria · Output artifact spec**
+- One commit at the end of the phase with subject `<plan-slug>:<phase-id> — <short>`
+- The sub-agent returns the artifact path + commit SHA to the orchestrator
+
+**Per-phase artifact file contract** (`agent/plans/<slug>/artifacts/<id>.done.md`):
+- Written by the sub-agent at phase end (before returning to orchestrator)
+- Required sections: **Commit SHA · Files changed · Test results · Notes**
+- Used by the orchestrator for completion verification and by future replays / audits to inspect exactly what each phase did
+
+**Migration policy (legacy plans).** Plans without `phases:` frontmatter execute once under `compat_mode: true`, set by the driver. In compat mode the driver derives a single phase from the plan body and spawns a single sub-agent with the full plan as its prompt — this preserves backward compatibility for plans authored before v0.6.57. On the next `start` invocation, the agent MUST convert the legacy plan to schema via `bash agent/scripts/psk-run-plan.sh --convert <slug>` before the driver will execute it again. Conversion is itself a sub-agent task — it reads the plan body, infers phases, writes the frontmatter, refactors the body into per-phase prompt files. Every plan converges on the schema; no plan stays in compat mode forever.
+
+**Plan-Save Protocol integration (cross-reference to §Development Practices → Task Tracking → Plan-Save Protocol).** The four triggers that persist a plan to `agent/plans/YYYY-MM-DD-<slug>.md` already exist. v5 adds: `approve` validates schema. `save` MUST preserve body content. `start` refuses non-conformant plans. The trigger surface is unchanged; only the validation gates are added.
+
+**Where the standard template lives.** `.portable-spec-kit/templates/plan-executable.md` — kit-shipped, externalized in v0.6.57, passes the 7-criterion Template Quality Bar (see §Template Quality Bar). Companion templates: `plan-prompt.md` (per-phase prompt-file template) and `plan-artifact.md` (per-phase artifact-file template). All three are versioned together under `schema_version: 1` so they evolve as a set.
+
+**Covered surfaces.** Every plan in `agent/plans/` and every per-feature plan in `agent/design/f{N}-*.md` that will be executed via sub-agent spawning. Plans that are pure narrative documents (decision logs, post-mortems, exploratory notes) do not need `phases:` frontmatter — they are never passed to `psk-run-plan.sh`, so the schema gate does not fire. PSK024 distinguishes by presence of an `## Implementation Order` / executable section; plans that declare execution intent are linted, narrative plans are not.
+
+**Emergency bypass:** `PSK_PLAN_EXEC_DISABLED=1` skips schema validation in `psk-plan-save.sh approve`, the driver refusal in `psk-run-plan.sh start`, and the PSK024 sync-check rule. This is for genuine emergencies only — each removes a structural guarantee and must be explicit. Re-enabling the gate is the default; the bypass does not persist across sessions.
+
+> **Skill: Plan Execution** — full schema reference, driver state-machine, prompt-file + artifact-file conventions, compat-mode → schema conversion flow, edge cases (multi-revision plans, mid-phase aborts, retry-on-gate-failure semantics) in `docs/work-flows/26-plan-execution-protocol.md`.
+
+---
+
 ## Skill-Based Architecture
 
 This file is the **core brain** — behavioral rules loaded every session. Procedural details live in **skill files** loaded on demand:
@@ -75,6 +171,7 @@ This file is the **core brain** — behavioral rules loaded every session. Proce
 | Trigger | Skill file loaded |
 |---------|------------------|
 | Creating/restructuring agent files | `.portable-spec-kit/skills/templates.md` |
+| Plan drafting / executable plans / sub-agent spawning per phase | `.portable-spec-kit/skills/plan-execution.md` |
 | Python project detected (Python-only legacy) | `.portable-spec-kit/skills/python-environment.md` |
 | **Any stack-runtime command when env not yet selected** (pip / npm / pytest / cargo / go test / etc.) — generic Python · Node · Ruby · Go · Rust | `.portable-spec-kit/skills/env-management.md` |
 | Project setup (init) / auto-scan / existing project | `.portable-spec-kit/skills/project-setup.md` |
@@ -1351,9 +1448,9 @@ bash reflex/lib/kit-evolution.sh \
 
 **Full flow doc:** `docs/work-flows/22-project-kit-feedback-loop.md`.
 
-**Dim 25 — Mandate-Compliance probe (registered in `reflex/prompts/qa-agent.md`).** QA-Agent's dimension set is extensible; Loop-Iter-2 (Phase F) added Dim 25 — every QA pass MUST audit the target against the mandates declared in `portable-spec-kit.md` (required directories, required pipeline files, source-layout sanity, per-feature design plans, ARD docs, README badge currency, `.env.example` placeholder hygiene, CI workflow content). The probe is implemented in `reflex/lib/mandate-audit.sh` and emits structured JSON findings with severity (`MAJOR` / `MINOR` / `ADVISORY`).
+**Dims 25-26 — structural-floor probes (registered in `reflex/prompts/qa-agent.md`).** QA-Agent's dimension set is extensible. Loop-Iter-2 (Phase F) added Dim 25 — every QA pass MUST audit the target against the mandates declared in `portable-spec-kit.md` (required directories, required pipeline files, source-layout sanity, per-feature design plans, ARD docs, README badge currency, `.env.example` placeholder hygiene, CI workflow content). The probe is implemented in `reflex/lib/mandate-audit.sh` and emits structured JSON findings with severity (`MAJOR` / `MINOR` / `ADVISORY`). v0.6.57 Phase B4 added Dim 26 — Workflow-Fidelity & Deliverable-Completeness — every QA pass MUST audit (a) workflow-state ledger presence + `_DISABLED=1` bypass-abuse, (b) UI completeness on frontend projects via `psk-ui-polish-check.sh --json`, (c) phase-gate discipline on `agent/plans/*.md` with `status: executing`, (d) spawn-protocol fidelity (no inline-fallback branches). The probe is implemented in `reflex/lib/workflow-fidelity-audit.sh` and emits the same JSON shape. Together, Dim 25 (required-presence) + Dim 26 (process-fidelity + deliverable-fullness) form the structural floor of every audit.
 
-**11 mechanical gates (was 9 pre-PKFL).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline). Gates 10 and 11 — `kit-evolution-file-scope` (G1) and `kit-genericity-proof` (G2) — activate only on `REFLEX_KIT_EVOLUTION=1` passes to enforce PKFL genericity contracts.
+**12 mechanical gates (was 11 pre-Dim-26).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline). Gates 10 and 11 — `kit-evolution-file-scope` (G1) and `kit-genericity-proof` (G2) — activate only on `REFLEX_KIT_EVOLUTION=1` passes to enforce PKFL genericity contracts. The 12th gate — `workflow-fidelity-completeness` (added v0.6.57 B4) — invokes `workflow-fidelity-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `workflow_fidelity_block_severity`). It is the structural counterpart to Dim 26 — QA surfaces workflow-fidelity + deliverable-completeness gaps; the gate prevents regression across passes. Bypass: `WFC_GATE_DISABLED=1` skips gate 12 with a stderr warning (genuine emergencies only).
 
 ### Convergence (MANDATORY — added in Loop-3, L1-L6)
 

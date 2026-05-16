@@ -32,6 +32,16 @@ When you scaffold or restructure agent files, read the externalized file directl
 | **README.md** | `.portable-spec-kit/templates/project-readme-template.md` | Project root README — overview, tech stack, getting started, env vars, project structure, features, testing, deployment. |
 | **Workflow doc** | `.portable-spec-kit/templates/flow-doc-template.md` | `docs/work-flows/NN-name.md` scaffold for documenting executable kit workflows. |
 
+### Plan Execution Templates
+
+The three templates below form the schema for **executable plans** — multi-phase plans that run as a state machine via `psk-run-plan.sh`. Distinct from `plan-template.md` because phases are machine-executable (each declares a prompt, an artifact, and a completion gate), not narrative. Used for kit-level initiatives and project-level work too large for a single conversation turn.
+
+| Template | File | Purpose |
+|---|---|---|
+| **Executable plan** | `.portable-spec-kit/templates/plan-executable.md` | Multi-phase plan with `phases:` frontmatter — id, prompt path, artifact path, gate command, depends_on edges. Body mirrors the frontmatter in narrative form (Context, Goal, Approach, Decisions, Files, Phases, Risk, Rollback, State, Acceptance). The schema every kit plan executed by the runner must conform to. |
+| **Phase prompt** | `.portable-spec-kit/templates/plan-prompt.md` | Per-phase instruction file at `agent/plans/<slug>/prompts/<phase-id>.md`. Contains Goal, Files-to-read, Files-to-write, Completion-criteria, Output-artifact-spec, Constraints. Handed to a fresh sub-agent with no inherited context. |
+| **Phase artifact** | `.portable-spec-kit/templates/plan-artifact.md` | Per-phase "done" receipt at `agent/plans/<slug>/artifacts/<phase-id>.done.md`. Frontmatter carries phase_id, plan_slug, status, commit_sha. Body lists Files changed, Tests run, Commit, Notes. Machine-readable proof the phase ran. |
+
 > **Audit machinery:** `bash agent/scripts/psk-template-quality.sh --all` lints every externalized template against the 7-criterion Quality Bar. Per-template audit history at `.portable-spec-kit/templates/.audit-log.yaml`.
 
 ---

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Portable Spec Kit — User Guide (v0.6.59)</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1.5em; color: #222; line-height: 1.6; }
+    h1, h2, h3 { color: #1a3a5e; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 0.92em; }
+    pre { background: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
+    table { border-collapse: collapse; margin: 1em 0; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f0f4f8; }
+    .badge { display: inline-block; padding: 2px 8px; background: #1a3a5e; color: white; border-radius: 3px; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+
+<div class="badge">v0.6.59 &bull; May 2026</div>
+
+<h1>Portable Spec Kit — User Guide</h1>
+
+<p><strong>Author:</strong> Dr. Aqib Mumtaz · <strong>License:</strong> MIT · <strong>GitHub:</strong> <a href="https://github.com/aqibmumtaz/portable-spec-kit">aqibmumtaz/portable-spec-kit</a></p>
+
+<p>A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.</p>
+
+<h2>Quick start</h2>
+
+<p>Install into a new or existing project from a local kit checkout:</p>
+
+<pre><code>bash &lt;kit-path&gt;/install.sh --yes --from &lt;kit-path&gt;</code></pre>
+
+<p>Or one-shot network install:</p>
+
+<pre><code>curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash</code></pre>
+
+<p>After install, every supported AI agent (Claude Code, Cursor, Copilot, Windsurf, Cline) reads the kit's rules immediately via the appropriate entry-point file.</p>
+
+<h2>5 reliability layers</h2>
+
+<table>
+  <tr><th>Layer</th><th>Type</th><th>What it stops</th></tr>
+  <tr><td>2A — psk-sync-check.sh</td><td>Content (bash critic)</td><td>Structural drift across version anchors, counts, doc tables</td></tr>
+  <tr><td>2B — psk-critic-spawn.sh</td><td>Content (semantic critic)</td><td>Stale content the bash checks can't see</td></tr>
+  <tr><td>3 — Hooks (PostToolUse + PreCommit)</td><td>Content (outside agent control)</td><td>Bypass of layers 2A/2B</td></tr>
+  <tr><td>4 — §Workflow Fidelity</td><td>Process (behavioral, structurally enforced)</td><td>Agent overriding the kit's defined workflow under pressure</td></tr>
+  <tr><td>5 — §Plan Execution Protocol</td><td>Plan-shape (schema-gated driver)</td><td>Agent improvising plan execution outside the schema</td></tr>
+</table>
+
+<h2>Spec-Persistent Development (SPD) pipeline</h2>
+
+<p>6 pipeline stages + 3 support files: REQS → SPECS → PLANS → DESIGN → TASKS → RELEASES, with RESEARCH/AGENT/AGENT_CONTEXT as cross-cutting support. Full R→F→T traceability: requirement → feature → test.</p>
+
+<h2>Key features (v0.6.59)</h2>
+
+<ul>
+  <li>36 reliability scripts (required) + 6 optional helpers</li>
+  <li>26 skill files (JIT-loaded)</li>
+  <li>27 flow documents</li>
+  <li>26 file-class templates (all pass 7-criterion Quality Bar)</li>
+  <li>2325 automated tests (2180 framework + 145 benchmarking)</li>
+  <li>12 mechanical reflex gates + 26 reflex audit dimensions</li>
+</ul>
+
+<h2>Workflows (executable)</h2>
+
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>bash agent/scripts/psk-orchestrate.sh "your requirement"</code></td><td>Full 10-phase pipeline (new project)</td></tr>
+  <tr><td><code>bash agent/scripts/psk-orchestrate.sh --update</code></td><td>U0-U10 update cascade including U6.5 UI completeness backfill</td></tr>
+  <tr><td><code>bash agent/scripts/psk-release.sh prepare</code></td><td>10-step release ceremony with dual-gate validation</td></tr>
+  <tr><td><code>bash agent/scripts/psk-feature-complete.sh</code></td><td>Single-feature lifecycle with code review + sync</td></tr>
+  <tr><td><code>bash agent/scripts/psk-run-plan.sh start &lt;slug&gt;</code></td><td>Schema-aware plan executor (sub-agent per phase)</td></tr>
+  <tr><td><code>bash reflex/run.sh</code></td><td>Autoloop reflex audit until GRANTED</td></tr>
+</table>
+
+<h2>Documentation</h2>
+
+<ul>
+  <li><a href="Portable_Spec_Kit_Technical_Overview.html">Technical Overview</a> — architecture deep-dive + version changelog</li>
+  <li><a href="Portable_Spec_Kit_Guide.html">Full Guide</a> — comprehensive operator manual</li>
+  <li><a href="../README.md">README</a> — installation + quick reference</li>
+  <li><a href="../CHANGELOG.md">CHANGELOG</a> — version history</li>
+</ul>
+
+<h2>License</h2>
+
+<p>MIT License. See <a href="../LICENSE">LICENSE</a>.</p>
+
+</body>
+</html>

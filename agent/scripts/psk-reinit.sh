@@ -9,8 +9,14 @@
 
 set -uo pipefail
 
+# §Workflow Fidelity (portable-spec-kit.md): this is an executable kit workflow.
+# The agent executes its defined steps faithfully and completely — no phase
+# compression, no inline substitution where a sub-agent is specified, no scope
+# reduction under rate/context pressure. Pause-and-resume, never reduce-scope.
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
+WFS="$SCRIPT_DIR/psk-workflow-state.sh"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -20,6 +26,15 @@ MODE="${1:-complete}"
 case "$MODE" in
   start)
     echo -e "${CYAN}═══ Reinit — Preflight ═══${NC}"
+
+    # §Workflow Fidelity B2 — init state machine + register gates.
+    if [ -x "$WFS" ]; then
+      bash "$WFS" init psk-reinit "preflight,work,validation" >/dev/null 2>&1 || true
+      bash "$WFS" register-gate psk-reinit preflight "true" >/dev/null 2>&1 || true
+      bash "$WFS" register-gate psk-reinit work "bash $SCRIPT_DIR/psk-sync-check.sh --full" >/dev/null 2>&1 || true
+      bash "$WFS" register-gate psk-reinit validation "bash $SCRIPT_DIR/psk-validate.sh reinit" >/dev/null 2>&1 || true
+    fi
+
 
     # Preflight 1: agent/ must exist with content (else this should be init)
     if [ ! -d "$PROJ_ROOT/agent" ] || [ -z "$(ls -A "$PROJ_ROOT/agent"/*.md 2>/dev/null)" ]; then
@@ -41,6 +56,12 @@ case "$MODE" in
       echo -e "  ${YELLOW}⚠${NC} agent/ has uncommitted changes — content-loss detection less reliable"
     else
       echo -e "  ${GREEN}✓${NC} agent/ is clean in git — post-reinit diff will be visible"
+    fi
+
+    if [ -x "$WFS" ]; then
+      bash "$WFS" verify-gate psk-reinit preflight >/dev/null 2>&1 || true
+      bash "$WFS" mark-done psk-reinit preflight >/dev/null 2>&1 || true
+      bash "$WFS" mark-in-progress psk-reinit work >/dev/null 2>&1 || true
     fi
 
     echo -e "\n${CYAN}Next:${NC} do the reinit work (re-sync agent/*.md from codebase)"
@@ -78,8 +99,19 @@ case "$MODE" in
       echo -e "  ${YELLOW}⚠${NC} No snapshot found — run psk-reinit.sh start first for content-loss protection"
     fi
 
+    if [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-reinit.state" ]; then
+      bash "$WFS" verify-gate psk-reinit work >/dev/null 2>&1 \
+        && bash "$WFS" mark-done psk-reinit work >/dev/null 2>&1 \
+        && bash "$WFS" mark-in-progress psk-reinit validation >/dev/null 2>&1 || true
+    fi
+
     bash "$SCRIPT_DIR/psk-validate.sh" reinit
-    exit $?
+    rc=$?
+    if [ "$rc" -eq 0 ] && [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-reinit.state" ]; then
+      bash "$WFS" verify-gate psk-reinit validation >/dev/null 2>&1 \
+        && bash "$WFS" mark-done psk-reinit validation >/dev/null 2>&1 || true
+    fi
+    exit $rc
     ;;
 
   *)
