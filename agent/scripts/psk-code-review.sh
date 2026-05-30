@@ -1,4 +1,5 @@
 #!/bin/bash
+# mechanical-script: psk-code-review.sh — grep-based code review (no AI invocation)
 # =============================================================
 # psk-code-review.sh — Automated Code Review (Mechanical Layer)
 #

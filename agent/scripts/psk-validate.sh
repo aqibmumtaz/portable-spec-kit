@@ -1,4 +1,7 @@
 #!/bin/bash
+# workflow-router: psk-validate.sh — routes dual-gate critic spawns through psk-critic-spawn.sh
+# workflow-decl-exempt: gate-helper (shared end-of-workflow dual-gate critic invoked BY other
+#   workflows; no standalone phase sequence, no .portable-spec-kit/workflows/<name>/phases.yml — PSK034-exempt)
 # =============================================================
 # psk-validate.sh — Generic Dual-Gate Validation Helper
 #
@@ -42,13 +45,24 @@ RESULT_FILE="$STATE_DIR/critic-result.md"
 TASK_FILE="$STATE_DIR/critic-task.md"
 INVOKE_STAMP="$STATE_DIR/.validate-stamp"
 BYPASS_LOG="$SCRIPT_DIR/../.bypass-log"
+BYPASS_LOG_SCRIPT="$SCRIPT_DIR/psk-bypass-log.sh"
 
 log_bypass() {
+  # HF9 (v0.6.60): delegate to psk-bypass-log.sh for JSONL audit trail.
+  # Falls back to legacy plaintext append if the script is missing
+  # (graceful degradation for older kit installs / partial bootstrap).
   local gate="$1" workflow="$2"
-  mkdir -p "$(dirname "$BYPASS_LOG")"
-  local user
-  user=$(git config user.name 2>/dev/null || whoami 2>/dev/null || echo "unknown")
-  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $user bypass=$gate workflow=$workflow" >> "$BYPASS_LOG"
+  if [ -x "$BYPASS_LOG_SCRIPT" ]; then
+    bash "$BYPASS_LOG_SCRIPT" log \
+      --env-var "$gate" \
+      --command "psk-validate.sh $workflow" \
+      --justification "${PSK_BYPASS_REASON:-not provided}" 2>/dev/null || true
+  else
+    mkdir -p "$(dirname "$BYPASS_LOG")"
+    local user
+    user=$(git config user.name 2>/dev/null || whoami 2>/dev/null || echo "unknown")
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $user bypass=$gate workflow=$workflow" >> "$BYPASS_LOG"
+  fi
 }
 
 # Verify every CURRENT: line in critic-result.md is followed by a QUOTE: line
@@ -136,7 +150,7 @@ workflow_to_template() {
     release)          echo "STEP_9_VALIDATION" ;;
     feature-complete) echo "FEATURE_COMPLETE" ;;
     init)             echo "INIT" ;;
-    reinit)           echo "REINIT" ;;
+    reinit)           echo "INIT" ;;   # folded into init — one template (create + refresh)
     new-setup)        echo "NEW_SETUP" ;;
     existing-setup)   echo "EXISTING_SETUP" ;;
     *)                echo "" ;;
@@ -276,6 +290,14 @@ if ! verify_quotes "$RESULT_FILE"; then
 fi
 
 echo -e "  ${GREEN}✓ Sub-agent critic: $current_count file(s) CURRENT, 0 STALE${NC}"
+
+# HF2 (v0.6.60): the critic spawn was routed through psk-spawn.sh by
+# psk-critic-spawn.sh write — clear the AWAITING_SUBAGENT marker now that
+# the result is verified clean. The state machine reflects "critic phase
+# complete" so any later resume of the outer workflow sees the right state.
+if [ -x "$CRITIC_SPAWN" ]; then
+  bash "$CRITIC_SPAWN" complete "$TEMPLATE" >/dev/null 2>&1 || true
+fi
 
 # Clean up stamp so next invocation (next workflow) starts fresh
 rm -f "$INVOKE_STAMP"

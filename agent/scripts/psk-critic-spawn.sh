@@ -1,30 +1,56 @@
 #!/bin/bash
+# mechanical-script: psk-critic-spawn.sh — Sub-Agent Critic File Protocol (HF2 §Spawn Fidelity router)
 # =============================================================
 # psk-critic-spawn.sh — Sub-Agent Critic File Protocol
 #
-# Manages the file-based protocol between psk-release.sh and
-# the main agent for spawning sub-agent critics.
+# Manages the file-based protocol between psk-release.sh / psk-validate.sh
+# and the main agent for spawning sub-agent critics. After the HF2 retrofit
+# (v0.6.60+) the spawn lifecycle is delegated to agent/scripts/psk-spawn.sh
+# so all 6 critic templates inherit the §Spawn Fidelity no-inline-fallback
+# guarantee structurally — this script writes the task file and routes
+# through psk-spawn.sh; it has NO path to do the critic work itself.
 #
-# Protocol:
-#   1. psk-release.sh calls: psk-critic-spawn.sh write <step> <task>
-#      → Writes critic-task.md with the prompt
-#      → Sets AWAITING_CRITIC state
+# Protocol (post-HF2):
+#   1. Caller (psk-release.sh / psk-validate.sh) invokes:
+#        psk-critic-spawn.sh write <STEP>
+#      → Writes critic-task.md with the prompt (schema unchanged from v0.6.59)
+#      → Calls psk-spawn.sh request <wf> critic <task-file> <result-file>
+#        which marks the phase AWAITING_SUBAGENT_SPAWN in the workflow state
+#        machine. On request failure → psk-spawn.sh retry → AWAITING_SUBAGENT_RETRY.
+#      → Prints AWAITING_CRITIC banner
 #
 #   2. Main agent reads critic-task.md, spawns sub-agent via Task tool,
 #      writes response to critic-result.md
 #
-#   3. psk-release.sh calls: psk-critic-spawn.sh check <step>
-#      → Reads critic-result.md
-#      → Returns 0 if all CURRENT, 1 if any STALE
+#   3. Caller invokes:
+#        psk-critic-spawn.sh check <STEP>      — verdict parsing (CURRENT/STALE)
+#        psk-critic-spawn.sh complete <STEP>   — calls psk-spawn.sh complete to
+#                                                clear the AWAITING marker
+#        psk-critic-spawn.sh retry <STEP>      — calls psk-spawn.sh retry on
+#                                                sub-agent failure / timeout
+#
+# Workflow name routed to psk-spawn.sh:
+#   "psk-critic" — single shared workflow keyed by phase=<STEP>. The state
+#   machine entry per pass is psk-critic.<STEP>.request. Distinct from the
+#   outer workflow that triggered the critic (psk-release / psk-feature-complete
+#   / psk-init / psk-reinit / psk-new-setup / psk-existing-setup); the outer
+#   workflow already tracks its own phases via psk-workflow-state.sh.
+#
+# §Spawn Fidelity contract: this script has NO inline-fallback branch. The
+# only forward command after a spawn request is another spawn (psk-spawn.sh
+# retry → re-spawn). Doing the critic work inline as a shortcut is
+# structurally impossible.
 #
 # Usage:
 #   bash agent/scripts/psk-critic-spawn.sh write STEP_4_FLOW_DOCS
 #   bash agent/scripts/psk-critic-spawn.sh check STEP_4_FLOW_DOCS
+#   bash agent/scripts/psk-critic-spawn.sh complete STEP_4_FLOW_DOCS
+#   bash agent/scripts/psk-critic-spawn.sh retry STEP_4_FLOW_DOCS
 #   bash agent/scripts/psk-critic-spawn.sh status
 #   bash agent/scripts/psk-critic-spawn.sh clear
 #
 # Exit codes:
-#   0 = critic passed (all CURRENT) or task written successfully
+#   0 = critic passed (all CURRENT) or task/complete/retry written successfully
 #   1 = critic failed (STALE found) or iteration cap reached
 #   2 = configuration error
 # =============================================================
@@ -37,6 +63,12 @@ TASK_FILE="$STATE_DIR/critic-task.md"
 RESULT_FILE="$STATE_DIR/critic-result.md"
 ITERATION_FILE="$STATE_DIR/critic-iterations"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
+
+# HF2 (v0.6.60): spawn-fidelity wrapper for sub-agent critic spawn lifecycle.
+# psk-critic-spawn.sh delegates request/complete/retry to psk-spawn.sh so all
+# 6 critic templates inherit the structural no-inline-fallback guarantee.
+PSK_SPAWN="$SCRIPT_DIR/psk-spawn.sh"
+SPAWN_WF="psk-critic"
 
 MAX_ITERATIONS=5
 
@@ -237,7 +269,13 @@ PROMPT
       cat <<'PROMPT'
 You are an init-workflow verification critic. You have NOT seen the main conversation. Your job is to confirm `init` produced a fully coherent agent/ state.
 
-Task: After `init` ran, verify all 9 agent/ files exist and are populated from the codebase (not left as empty templates).
+`init` is idempotent and state-detected — it CREATEs the pipeline on an empty
+project and REFRESHes (conforms, content-loss-protected) an existing one. The
+checks below cover BOTH paths (reinit is folded into init — there is no separate
+reinit critic). Apply the CREATE checks always; apply the REFRESH (no-content-loss)
+checks when agent/* files already existed before this run (git history present).
+
+Task: After `init` ran, verify all 9 agent/ files exist and are populated from the codebase (not left as empty templates), and — for an existing project — that no prior content was lost.
 
 Mandatory checks (apply to agent/ directory):
 1. File presence: REQS.md, SPECS.md, PLANS.md, DESIGN.md, RESEARCH.md, TASKS.md, RELEASES.md, AGENT.md, AGENT_CONTEXT.md — all present, non-empty.
@@ -248,6 +286,8 @@ Mandatory checks (apply to agent/ directory):
 6. TASKS.md: has a current version heading matching AGENT_CONTEXT.md Version. Completed tasks (if any from git history) marked [x].
 7. AGENT_CONTEXT.md: Version set (not "v0.0.0"), Phase describes current work (not placeholder), What's Done lists real items.
 8. No empty "must fill" sections — any line like "TODO: fill this" or empty bullet lists under required headings is STALE.
+9. REFRESH — no content loss (existing-project path): check `git diff HEAD~1 -- agent/` (or equivalent). Any file that LOST completed [x] tasks, decided ADL rows, or release entries is STALE — a REFRESH should only ADD or UPDATE, never DELETE history.
+10. REFRESH — ADL continuity: agent/PLANS.md ADL has no orphan Plan Ref (every Plan Ref points to an existing agent/design/*.md file) and no design/ file lacks an ADL entry.
 
 Return in EXACT format (each CURRENT REQUIRES a QUOTE on the next line — verbatim line ≥20 chars; bash will grep-verify):
 CURRENT: agent/REQS.md
@@ -259,27 +299,7 @@ QUOTE: <exact line showing a feature row>
 Or:
 STALE: agent/<file> — "<specific problem>"
 STALE: agent/AGENT.md — "Stack says Python but repo has package.json (Node)"
-PROMPT
-      ;;
-    REINIT)
-      cat <<'PROMPT'
-You are a reinit verification critic. You have NOT seen the main conversation. Your job is to confirm `reinit` synced agent/ to current codebase state WITHOUT losing prior content.
-
-Task: After `reinit` ran, verify the existing agent/ files were enriched (not overwritten) and match current codebase.
-
-Mandatory checks:
-1. No content loss: check `git diff HEAD~1 -- agent/` (or equivalent). Any file that LOST completed [x] tasks, decided ADL rows, or release entries is STALE — reinit should only ADD or UPDATE, never DELETE history.
-2. Stack freshness: agent/AGENT.md Stack matches package.json/requirements.txt. Flag drift.
-3. SPECS vs TASKS sync: count of [x] in SPECS features vs count of [x] tasks in TASKS.md matches (within +/-1 for in-progress work).
-4. AGENT_CONTEXT.md Version == the version shown in portable-spec-kit.md `<!-- Framework Version -->` comment.
-5. ADL continuity: agent/PLANS.md ADL has no orphan Plan Ref (every Plan Ref points to an existing agent/design/*.md file) and no design/ file lacks an ADL entry.
-6. If new pipeline files were added in this framework version (e.g. DESIGN.md, RESEARCH.md), they must exist and be populated.
-
-Return in EXACT format (each CURRENT REQUIRES a QUOTE on the next line — verbatim line ≥20 chars; bash will grep-verify):
-CURRENT: agent/<file>
-QUOTE: <exact line from that file>
-or
-STALE: agent/<file> — "<lost content / drift / missing ADL>"
+STALE: agent/TASKS.md — "REFRESH lost 3 completed [x] tasks vs HEAD~1 (content clobber)"
 PROMPT
       ;;
     NEW_SETUP)
@@ -391,6 +411,24 @@ EOF
   # Clear previous result
   rm -f "$RESULT_FILE"
 
+  # --- HF2: route the critic spawn through psk-spawn.sh (§Spawn Fidelity) ---
+  # psk-spawn.sh request records the spawn request in the workflow state
+  # machine and inherits the no-inline-fallback contract automatically.
+  # The script has no path to do the critic work itself; the only forward
+  # command on retry is another spawn (psk-spawn.sh retry → re-spawn). All
+  # 6 critic templates inherit the same routing equally — no per-template
+  # bypass exists.
+  if [ -x "$PSK_SPAWN" ]; then
+    bash "$PSK_SPAWN" request "$SPAWN_WF" "$STEP" "$TASK_FILE" "$RESULT_FILE" >/dev/null 2>&1 || {
+      # psk-spawn.sh request failed (e.g. state machine error). Per the
+      # §Spawn Fidelity contract there is NO inline-fallback branch — mark
+      # AWAITING_SUBAGENT_RETRY and proceed with the AWAITING banner. The
+      # next invocation (after main agent re-spawns) re-routes through
+      # psk-spawn.sh retry → request → complete.
+      bash "$PSK_SPAWN" retry "$SPAWN_WF" "$STEP" >/dev/null 2>&1 || true
+    }
+  fi
+
   echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
   echo -e "${CYAN}  AWAITING CRITIC — $STEP (iteration $current_iter/$MAX_ITERATIONS)${NC}"
   echo -e "${CYAN}═══════════════════════════════════════════════════════════${NC}"
@@ -403,7 +441,46 @@ EOF
   echo ""
   echo -e "  ${YELLOW}Then run: bash agent/scripts/psk-release.sh done${NC}"
   echo ""
+  if [ -x "$PSK_SPAWN" ]; then
+    echo -e "  ${CYAN}Spawn fidelity:${NC} routed through psk-spawn.sh (workflow=$SPAWN_WF, phase=$STEP)"
+    echo -e "  ${CYAN}On failure:${NC} bash agent/scripts/psk-critic-spawn.sh retry $STEP  (no inline fallback)"
+  fi
+  echo ""
 
+  return 0
+}
+
+# --- HF2: complete the critic spawn (called after critic-result.md is verified) ---
+complete_spawn() {
+  if [ -z "$STEP" ]; then
+    echo -e "${RED}Usage: psk-critic-spawn.sh complete <STEP_NAME>${NC}"
+    exit 2
+  fi
+  if [ ! -x "$PSK_SPAWN" ]; then
+    # No psk-spawn.sh available (older / partial install). Degrade gracefully —
+    # callers proceed with the legacy quote-verification path; spawn-fidelity
+    # contract NOT enforced for this invocation.
+    return 0
+  fi
+  bash "$PSK_SPAWN" complete "$SPAWN_WF" "$STEP" "$RESULT_FILE" >/dev/null 2>&1 || true
+  return 0
+}
+
+# --- HF2: retry the critic spawn (on sub-agent failure / SDK timeout) ---
+retry_spawn() {
+  if [ -z "$STEP" ]; then
+    echo -e "${RED}Usage: psk-critic-spawn.sh retry <STEP_NAME>${NC}"
+    exit 2
+  fi
+  if [ ! -x "$PSK_SPAWN" ]; then
+    echo -e "${YELLOW}⚠ psk-spawn.sh not found — spawn-fidelity contract NOT enforced${NC}" >&2
+    echo -e "${YELLOW}  Legacy behavior: re-spawn the sub-agent and write critic-result.md${NC}" >&2
+    return 0
+  fi
+  bash "$PSK_SPAWN" retry "$SPAWN_WF" "$STEP"
+  echo ""
+  echo -e "  ${YELLOW}The sub-agent rate-limited or failed. The forward path is to spawn it again.${NC}"
+  echo -e "  ${YELLOW}Waiting for the rate limit to clear is acceptable. Doing the critic work inline is NOT.${NC}"
   return 0
 }
 
@@ -475,17 +552,25 @@ show_status() {
 # --- Clear ---
 clear_state() {
   rm -f "$TASK_FILE" "$RESULT_FILE" "$ITERATION_FILE"
+  # HF2: also clear any pending spawn-fidelity request records so a fresh
+  # release / feature-complete run doesn't see stale AWAITING markers.
+  if [ -d "$SCRIPT_DIR/../.workflow-state/spawn" ]; then
+    rm -f "$SCRIPT_DIR/../.workflow-state/spawn/${SPAWN_WF}".*.request \
+          "$SCRIPT_DIR/../.workflow-state/spawn/${SPAWN_WF}".*.request.done 2>/dev/null || true
+  fi
   echo -e "${GREEN}Critic state cleared.${NC}"
 }
 
 # === MAIN ===
 case "$ACTION" in
-  write)   write_task ;;
-  check)   check_result ;;
-  status)  show_status ;;
-  clear)   clear_state ;;
+  write)    write_task ;;
+  check)    check_result ;;
+  complete) complete_spawn ;;
+  retry)    retry_spawn ;;
+  status)   show_status ;;
+  clear)    clear_state ;;
   *)
-    echo "Usage: bash agent/scripts/psk-critic-spawn.sh [write|check|status|clear] [STEP_NAME]"
+    echo "Usage: bash agent/scripts/psk-critic-spawn.sh [write|check|complete|retry|status|clear] [STEP_NAME]"
     exit 2
     ;;
 esac

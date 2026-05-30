@@ -1,5 +1,23 @@
 # Flow 17 — Reflex (Adversarial Verbal Actor-Critic Refinement Loop, AVACR)
 
+## Cycle vs Pass semantics
+
+**1 cycle = 1 autoloop run.** A reflex cycle is bounded by `.active-cycle` state:
+
+- New cycle starts when `.active-cycle` is absent (fresh autoloop invocation)
+- Each pass within the cycle increments `pass-NNN` (`pass-001`, `pass-002`, ...)
+- Cycle ends on GRANTED verdict → `.active-cycle` cleared
+- Cycle ends on safety cap (`max_iterations_safety` in `reflex/config.yml`)
+- A new top-level `cycle-NN` dir is created ONLY when (a) the prior cycle was GRANTED + `.active-cycle` cleared, OR (b) `--purge-history` is used, OR (c) safety cap was hit (escalation)
+
+**Naming:** `cycle-NN/pass-NNN` where `NN` is monotonic across all autoloop runs ever performed; `NNN` resets to `001` within each cycle.
+
+**The `--self-test` flag follows the same rule** — no special-case bypass. Each invocation reads `.active-cycle` and continues the active cycle (or starts a new one when the prior cycle is GRANTED + cleared).
+
+**Anti-pattern (PSK032 sync-check rule v0.6.61+):** consecutive `cycle-NN` dirs where each has only `pass-001` (with `verdict.md` present, i.e. not in-flight) indicates the kit's cycle-tracking was bypassed. Likely caused by a script writing to `.cycle-meta` in YAML format (`cycle: N`) when the parser expected KV format (`cycle=N`), or by an external runner setting `REFLEX_AUTOLOOP_CYCLE` mid-flow. The rule fires WARNING in `--quick` mode and ERROR in `--full` mode when 3+ of the last 5 cycles match this pattern.
+
+**Note on historical migration (v0.6.61):** `reflex/history/cycle-17/`, `cycle-18/`, and `cycle-20/` were created under pre-v0.6.61 cycle-tracking that suffered the misuse pattern above. They SHOULD have been `cycle-04/pass-001..pass-003` of the v0.6.60 spawn-fidelity-hardening autoloop. Per the migration-notes in each cycle dir, they are retained as-is to preserve `git` history and `summary.csv` references. Forward (cycle-21+) uses the corrected numbering.
+
 ## Overview
 
 | Field | Value |
@@ -308,6 +326,69 @@ After 3 autoloop invocations (cycle 1: 3 iters, cycle 2: 2 iters, cycle 3: 3 ite
 - On-disk pass dirs capped at `history_retention.pass_dirs_keep` (default 10) via `prune-history.sh`.
 - Older pass dirs pruned, but their rows persist in `summary.csv` + `REFLEX_EVAL_TRACE.md` as `_(archived)_` blocks (status still resolvable from `agent/TASKS.md`, drill-down links removed — no dead links).
 - Pass numbers **per-cycle** (v0.6.26+ — each cycle starts fresh at `pass-001`); cycle numbers **monotonic across autoloops**. Composite key `(cycle, pass)` gives unique row identity in `summary.csv` (schema v5+). Flat identity (`cycle-NN-pass-NNN` or `standalone-pass-NNN`) remains globally unique because cycle numbers are monotonic.
+
+## Standalone pass-dir layout (single-pass invocations, v0.6.13+)
+
+`reflex/history/standalone/pass-NNN/` is the destination for **non-autoloop single-pass invocations**. When the operator runs `bash reflex/run.sh single` (or its alias `bash reflex/run.sh --single`), the run produces a single pass that is NOT part of any convergence cycle — it lands under `standalone/` so flat `ls reflex/history/` keeps cycle boundaries visible at a glance.
+
+**Lifecycle and semantics:**
+
+| Property | Standalone pass | Autoloop pass (cycle-NN/pass-NNN/) |
+|---|---|---|
+| Triggered by | `bash reflex/run.sh single` / `--single` / `--qa-only` (implies single) | `bash reflex/run.sh` (default autoloop) |
+| Cycle membership | None — flat numbered series under `standalone/` | Belongs to an active cycle; advances `pass-NNN` within cycle |
+| Pass numbering | `find_next_pass_dir()` scans only `standalone/pass-NNN/` for next free N | Scans only that cycle's pass-* for next free N |
+| GRANTED verdict effect | Does NOT trigger cycle-id advance — standalone is not convergence-bound | Triggers cycle exit; next autoloop creates next cycle-NN |
+| Branch name | `reflex/dev-standalone-pass-NNN` | `reflex/dev-cycle-NN-pass-NNN` |
+| `.cycle-meta` cycle id | `single` | numeric cycle id |
+| Use case | Ad-hoc / one-shot audit, debugging, `--qa-only` Phase 1 surface | Convergence — iterate until GRANTED / REGRESSION / plateau |
+
+**When to use standalone:**
+
+- Debugging a single QA or Dev phase without committing to a full autoloop.
+- Running `--qa-only` to surface the current state of findings without applying fixes.
+- Ad-hoc audits where convergence is not the goal (e.g., one-off compliance check on demand).
+- Targeting a non-kit project with a quick audit, where the operator does not want a full multi-pass loop.
+
+**When NOT to use standalone:** for normal convergence work (closing all MAJOR/CRITICAL findings until GRANTED), use autoloop. Repeated `standalone single` invocations are a misuse signal — they fragment the audit trail across many flat passes instead of grouping them under a cycle. PSK033 sync-check rule surfaces this pattern as ADVISORY when the standalone backlog grows beyond ~10 passes.
+
+**Retention.** Standalone pass dirs are subject to the same `history_retention.pass_dirs_keep` cap (default 10) as autoloop passes — see `reflex/config.yml`. Pruning runs at the start of every reflex invocation.
+
+**Recovery.** Recover an interrupted standalone pass with `bash reflex/run.sh --recover-from-abort standalone-pass-NNN` — the recovery flag accepts both flat identity forms (`cycle-NN-pass-NNN` and `standalone-pass-NNN`). See §Convergence (`portable-spec-kit.md`).
+
+## Watchdog Hooks
+
+The HF4b workflow watchdog (`agent/scripts/psk-workflow-watchdog.sh`) detects hung (60+ min) and stale (24+ h) workflow phases. It is invoked unconditionally at three points so paused phases cannot age silently across passes (closes QA-D4-03 / cycle-20 widening, v0.6.61 P4):
+
+| Hook point | Script | When it fires | Behavior |
+|---|---|---|---|
+| Session start | `agent/scripts/psk-resume-bootstrap.sh` Step 4 | First action of every kit-project session | Surfaces HUNG/STALE lines + auto-enqueues HUNG phases into the retry queue |
+| Reflex preconditions | `reflex/lib/preconditions.sh` Gate 5 | Inside `reflex/run.sh` precondition chain, before pass dir creation | Advisory by default; hard-block if `REFLEX_WATCHDOG_BLOCK=1` |
+| Reflex pass-start | `reflex/run.sh` Step 1b | After preconditions, before pass dir + QA spawn | Advisory by default; hard-block if `REFLEX_WATCHDOG_BLOCK=1` |
+| Manual operator | direct CLI | Anytime | `bash agent/scripts/psk-workflow-watchdog.sh scan` |
+
+**Why three invocation points:** session start catches paused phases the moment a session reopens (durable-execution complement to durable-storage retry queue). Reflex precondition + pass-start catch hung/stale phases on the autoloop critical path so the operator sees them at the exact moment a new pass would otherwise start on top of stale state. Together they make it structurally impossible for a paused phase to survive >1 hour without surfacing to either the operator or the retry queue.
+
+**Strict mode for CI:** export `REFLEX_WATCHDOG_BLOCK=1` to turn both reflex hooks (preconditions + pass-start) into hard gates. Pass-start fails fast until the operator resolves the hung/stale phase via `psk-workflow-watchdog.sh kick <workflow> <phase>` or `psk-retry-queue.sh drain`.
+
+## Findings Registry (PSK031, v0.6.61+)
+
+`reflex/lib/findings-registry.sh` (~450 LOC) maintains a cross-pass canonical-ID registry at `reflex/history/findings-registry.yaml`. Every QA-Agent finding gets a content-fingerprint (`SHA1(dimension|citable_quote_normalized|regression_vector_iv_normalized)`); identical fingerprints across passes are unified under one canonical ID with alias links, preventing the same finding from spawning a fresh duplicate ID each pass.
+
+**Lifecycle commands:**
+
+| Command | Effect |
+|---|---|
+| `bash reflex/lib/findings-registry.sh bootstrap` | Ingest historical cycle-17/18/20 findings.yaml entries; assigns canonical IDs |
+| `... register <pass-dir> <findings.yaml>` | Auto-invoked by `file-bugs.sh` per pass; appends new fingerprints, links aliases |
+| `... close <id> <commit-sha>` | Mark finding closed by Dev-Agent fix |
+| `... acknowledge <id> [reason]` | Mark finding acknowledged (kit-design tradeoff, deferred, superseded) |
+| `... list --status open\|closed\|acknowledged` | Filter by status across all passes |
+| `... inspect <id>` | Show full entry including fingerprint, aliases, history |
+
+**Integration with file-bugs.sh:** new finding IDs in the current pass that match an existing fingerprint do not get filed as fresh `agent/TASKS.md` entries — the registry surfaces them as alias rows under the canonical ID. This eliminates the "same bug surfaced 5 cycles in a row gets 5 tracker rows" pollution that motivated PSK031.
+
+**Why this matters for convergence:** the registry is the single source of truth for "what findings are still open" across the autoloop. Closure status persists across the bootstrap reset that test-section 84 performs as a fixture; downstream sections (85/86/87) call `close`/`acknowledge` as test setup before reading status. PSK031 sync-check rule advisory-warns when the registry diverges from `agent/TASKS.md` ledger.
 
 ## Safety rails
 

@@ -183,7 +183,7 @@ Every release since v0.5.8 added a structural enforcement mechanism. This sectio
 | Release | Added | What it enforces |
 |---------|-------|-----------------|
 | v0.5.8 | **Reliability Architecture (v0.5.8)** — 3-layer dual-gate | Bash critic + sub-agent critic + git/editor hooks. No workflow completes without both critics passing. |
-| v0.5.10 | **psk-validate.sh generic dual-gate helper** + **psk-release.sh Step 9 refactored** | Same validation gate reused across all 6 executable workflows (release, feature-complete, init, reinit, new-setup, existing-setup). |
+| v0.5.10 | **psk-validate.sh generic dual-gate helper** + **psk-release.sh Step 9 refactored** | Same validation gate reused across all 5 executable workflows (release, feature-complete, init, new-setup, existing-setup) — `reinit` folded into idempotent `init` in v0.6.62. |
 | v0.5.12 | **Step 4 per-flow-doc critic verdict** + **Bypass audit log** | Step 4 requires `CURRENT:` per flow doc. `agent/.bypass-log` records every `PSK_SYNC_CHECK_DISABLED=1` / `PSK_CRITIC_DISABLED=1` / `--no-verify`; sync-check surfaces 24h warning. |
 | v0.5.13 | **check_secrets added to psk-sync-check.sh --full** (PSK011 — 12 credential patterns) | AWS/GitHub/Anthropic/Google/Slack/Stripe/private-key PEM patterns blocked at commit. Placeholder-aware; masked output. |
 | v0.5.15 | **verify_quotes() added to psk-validate.sh** (sub-agent honesty gate) | Every `CURRENT:` verdict requires a `QUOTE:` line verbatim from the named file. Bash `grep -F` rejects fabricated quotes. |
@@ -236,7 +236,7 @@ Feature cannot be marked [x] until test stubs are fully implemented:
 
 ## Final Validation (Step 9) — dual gate via psk-validate.sh
 
-Step 9 is the terminal gate of the release pipeline. Internally, `psk-release.sh` delegates to the generic `psk-validate.sh` helper that every executable workflow uses. This keeps release validation consistent with `init`, `reinit`, `feature-complete`, `new-setup`, and `existing-setup`.
+Step 9 is the terminal gate of the release pipeline. Internally, `psk-release.sh` delegates to the generic `psk-validate.sh` helper that every executable workflow uses. This keeps release validation consistent with `init`, `feature-complete`, `new-setup`, and `existing-setup` (`reinit` folded into idempotent `init` in v0.6.62).
 
 ```bash
 # Direct invocation (what Step 9 runs):

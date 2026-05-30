@@ -1,38 +1,32 @@
 #!/bin/bash
+# workflow-router: psk-new-setup.sh — new-project setup (fresh scaffold)
+# workflow-decl: .portable-spec-kit/workflows/new-setup/phases.yml
 # =============================================================
-# psk-new-setup.sh — New Project Setup Orchestrator
+# psk-new-setup.sh — New Project Setup (dispatcher-driven, v0.6.62+)
 #
-# Preflight: confirm directory is empty / new, then final gate.
+# Dual-mode router:
+#   • bash psk-new-setup.sh             → delegate to psk-dispatch.sh new-setup
+#   • bash psk-new-setup.sh preflight   → dir-empty + kit-present checks
+#   • bash psk-new-setup.sh scaffold    → scaffold guidance (gate test -d agent verifies)
+#   • bash psk-new-setup.sh <verb> ...  → forward dispatcher verbs
+#
+# Phase sequence + gates live in the declaration; psk-dispatch.sh is the executor.
+#
+# §Workflow Fidelity (portable-spec-kit.md): this is an executable kit workflow.
+# It executes its declared phases faithfully and completely via psk-dispatch.sh —
+# no phase compression, no inline substitution, no scope reduction under pressure.
+# Pause-and-resume, never reduce-scope.
 # =============================================================
 
 set -uo pipefail
 
-# §Workflow Fidelity (portable-spec-kit.md): this is an executable kit workflow.
-# The agent executes its defined steps faithfully and completely — no phase
-# compression, no inline substitution where a sub-agent is specified, no scope
-# reduction under rate/context pressure. Pause-and-resume, never reduce-scope.
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
-WFS="$SCRIPT_DIR/psk-workflow-state.sh"
-
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
-MODE="${1:-complete}"
-
-case "$MODE" in
-  start)
+case "${1:-}" in
+  preflight)
     echo -e "${CYAN}═══ New Project Setup — Preflight ═══${NC}"
-
-    # §Workflow Fidelity B2 — init state machine + register gates.
-    if [ -x "$WFS" ]; then
-      bash "$WFS" init psk-new-setup "preflight,scaffold,validation" >/dev/null 2>&1 || true
-      bash "$WFS" register-gate psk-new-setup preflight "test -e $PROJ_ROOT/portable-spec-kit.md" >/dev/null 2>&1 || true
-      bash "$WFS" register-gate psk-new-setup scaffold "test -d $PROJ_ROOT/agent" >/dev/null 2>&1 || true
-      bash "$WFS" register-gate psk-new-setup validation "bash $SCRIPT_DIR/psk-validate.sh new-setup" >/dev/null 2>&1 || true
-    fi
-
-
     # Preflight 1: directory should be mostly empty (or kit-only)
     non_kit=$(find "$PROJ_ROOT" -maxdepth 1 -mindepth 1 \
       ! -name ".git" ! -name "portable-spec-kit.md" ! -name "CLAUDE.md" \
@@ -44,43 +38,28 @@ case "$MODE" in
     else
       echo -e "  ${GREEN}✓${NC} Project root suitable for fresh scaffold ($non_kit non-kit entries)"
     fi
-
-    # Preflight 2: portable-spec-kit.md symlink or file present
+    # Preflight 2: portable-spec-kit.md present
     if [ -e "$PROJ_ROOT/portable-spec-kit.md" ]; then
       echo -e "  ${GREEN}✓${NC} portable-spec-kit.md present"
     else
       echo -e "  ${RED}✗${NC} portable-spec-kit.md missing — install the kit first (curl or install.sh)"
       exit 1
     fi
-
-    if [ -x "$WFS" ]; then
-      bash "$WFS" verify-gate psk-new-setup preflight >/dev/null 2>&1 || true
-      bash "$WFS" mark-done psk-new-setup preflight >/dev/null 2>&1 || true
-      bash "$WFS" mark-in-progress psk-new-setup scaffold >/dev/null 2>&1 || true
-    fi
-
-    echo -e "\n${CYAN}Next:${NC} scaffold directories + files per docs/work-flows/03-new-project-setup.md"
-    echo -e "${CYAN}Then:${NC} bash agent/scripts/psk-new-setup.sh complete"
+    echo -e "\n${CYAN}Next:${NC} scaffold dirs + files per docs/work-flows/03-new-project-setup.md, then: bash agent/scripts/psk-new-setup.sh next"
+    exit 0
     ;;
-
-  complete)
-    echo -e "${CYAN}═══ New Project Setup — Final Gate ═══${NC}"
-    if [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-new-setup.state" ]; then
-      bash "$WFS" verify-gate psk-new-setup scaffold >/dev/null 2>&1 \
-        && bash "$WFS" mark-done psk-new-setup scaffold >/dev/null 2>&1 \
-        && bash "$WFS" mark-in-progress psk-new-setup validation >/dev/null 2>&1 || true
-    fi
-    bash "$SCRIPT_DIR/psk-validate.sh" new-setup
-    rc=$?
-    if [ "$rc" -eq 0 ] && [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-new-setup.state" ]; then
-      bash "$WFS" verify-gate psk-new-setup validation >/dev/null 2>&1 \
-        && bash "$WFS" mark-done psk-new-setup validation >/dev/null 2>&1 || true
-    fi
-    exit $rc
+  scaffold)
+    echo -e "${CYAN}═══ New Project Setup — Scaffold ═══${NC}"
+    echo -e "  Scaffold the standard structure (agent/*, README, .gitignore, src/, tests/, docs/)"
+    echo -e "  per docs/work-flows/03-new-project-setup.md + the project-setup skill."
+    echo -e "  The phase gate (test -d agent) confirms the scaffold landed."
+    echo -e "  Then: ${CYAN}bash agent/scripts/psk-new-setup.sh next${NC} to advance to validation."
+    exit 0
     ;;
-
+  ""|new-setup)
+    exec bash "$SCRIPT_DIR/psk-dispatch.sh" new-setup
+    ;;
   *)
-    echo "Usage: bash psk-new-setup.sh [start|complete]"
-    exit 4
+    exec bash "$SCRIPT_DIR/psk-dispatch.sh" new-setup "$@"
     ;;
 esac

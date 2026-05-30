@@ -10,7 +10,7 @@ The agent executes every kit-defined process faithfully and completely. It never
 
 | Field | Value |
 |---|---|
-| **Trigger** | Any executable kit workflow starts (`psk-orchestrate.sh`, `psk-release.sh`, `psk-new-setup.sh`, `psk-existing-setup.sh`, `psk-init.sh`, `psk-reinit.sh`, `psk-feature-complete.sh`, `reflex/run.sh`) |
+| **Trigger** | Any executable kit workflow starts (`psk-orchestrate.sh`, `psk-release.sh`, `psk-new-setup.sh`, `psk-existing-setup.sh`, `psk-init.sh` (idempotent — folds the retired `reinit`), `psk-feature-complete.sh`, `reflex/run.sh`) |
 | **Inputs** | The workflow's phase sequence; `agent/.workflow-state/<workflow>.state` (resumable phase state); per-phase completion gates |
 | **Outputs** | Each phase completed to its registered gate; state file recording exact progress; on interruption a paused state with exact resume point |
 | **Script** | `agent/scripts/psk-workflow-state.sh` (phase state machine) · `agent/scripts/psk-spawn.sh` (sub-agent spawn-fidelity protocol) |

@@ -30,7 +30,7 @@
 ┌──────────────────────▼──────────────────────────────────────┐
 │  Gate A — TEST SUITE GREEN (automated)                      │
 │     bash tests/test-spec-kit.sh && test-spd-benchmarking.sh │
-│     All 2337 tests pass after proposed change?              │
+│     All 2832 tests pass after proposed change?              │
 │     FAIL → proposal → rejected/ with rationale              │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -97,7 +97,7 @@ Proposed rule (in agent/tasks/proposed/<Pxx|Gxx>-name.md)
   │
   ├─► Gate A — Test suite green
   │   `bash tests/test-spec-kit.sh && bash tests/test-spd-benchmarking.sh`
-  │   All 2337 tests still pass after the proposed change?
+  │   All 2832 tests still pass after the proposed change?
   │
   ├─► Gate B — No new rule conflicts
   │   `bash agent/scripts/psk-rule-conflicts.sh --json`

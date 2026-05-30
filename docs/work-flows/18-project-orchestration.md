@@ -1,10 +1,12 @@
-# 18 — Professional Project Generation (v0.6.14+)
+# 18 — Project Generation: `orchestrate build` (new + existing, v0.6.62+)
 
-> **What:** Turn raw user requirements (one sentence to a paragraph) into a polished, secure, working application via 8 fully-automated phases. The kit drives research, requirement expansion, UI design, security scaffolding, feature implementation, and reflex audit — end to end.
+> **What:** Turn raw user requirements (one sentence to a paragraph) into a polished, secure, working application via 10 fully-automated phases. The kit drives research, requirement expansion, UI design, security scaffolding, feature implementation, release ceremony, and reflex audit — end to end.
 >
-> **When to use:** any new project where you want the kit to do the heavy lifting (not just scaffold empty files). Also works for retrofitting existing projects (skips Phase 1-5, runs Phases 6-8 against existing code).
+> **One command for new and existing projects.** `build` runs the same 10-phase lifecycle for both. Each phase is idempotent (create-or-update): on a new project it creates each artifact; on an existing project it updates what it finds and creates what's missing. There is no separate "update" or "retrofit" command — `--update` and `--retrofit` were removed (v0.6.62+).
 >
-> **Orchestrator:** `bash agent/scripts/psk-orchestrate.sh "<your raw requirement>"` (or `--reqs-file path`)
+> **Two axes — keep them distinct.** `build` regenerates artifact **content** (the 10 lifecycle phases). `init` conforms an existing project's **structure** to current kit standards (the registry-driven conformance engine — see [05-project-init.md](05-project-init.md)). On an existing project, run `init` to conform structure, then `build` to regenerate/extend content. `build` surfaces standards drift (advisory, non-blocking) and points you at `init`; it never gates on conformance.
+>
+> **Orchestrator:** `bash agent/scripts/psk-orchestrate.sh build "<your raw requirement>"` (or `build --reqs-file path`, `build --target path`)
 >
 > **Companion skills:** `project-orchestration.md` (orchestrator) · `requirement-research.md` (Phase 2-3) · `ui-design-system.md` (Phase 5) · `security-baseline.md` (Phase 6)
 
@@ -12,10 +14,10 @@
 
 | Field | Value |
 |---|---|
-| **Trigger** | User says `"create a project for X"` · `"build me an app"` · `"make it production-ready"` · `"generate the app from these requirements"` |
-| **Inputs** | Raw user requirement (one sentence to a paragraph) · optional `--reqs-file path` · optional `--retrofit` for existing projects |
+| **Trigger** | User says `"create a project for X"` · `"build me an app"` · `"make it production-ready"` · `"generate the app from these requirements"` · `"update / extend this project"` |
+| **Inputs** | Raw user requirement (one sentence to a paragraph) · optional `build --reqs-file path` · optional `build --target path` (orchestrate a different project root) |
 | **Outputs** | Working app with source code · tests · design system (`agent/design/ui-system.md`) · `README.md` · `HANDOFF.md` · `reflex/history/` audit trail · R→F→T traceability |
-| **Script** | `bash agent/scripts/psk-orchestrate.sh "<raw req>"` |
+| **Script** | `bash agent/scripts/psk-orchestrate.sh build "<raw req>"` (dispatcher-driven via `psk-dispatch.sh` + `orchestrate/phases.yml`) |
 | **Gate** | Confirm-with-user gate between each phase (user can redirect) · Phase 6.5 mandate-audit before feature loop · Reflex GRANTED required before final handoff |
 | **When blocked** | Phase 2 requires WebFetch/WebSearch (network-disabled environments skip research) · Phase 6.5 blocks on any MAJOR mandate finding before Phase 7 starts |
 
@@ -113,7 +115,7 @@ The kit listens for trigger phrases in any AI agent session. Just say what you w
 | *"polished"* / *"secure"* / *"research-based"* | Force professional mode |
 | *"redo design system"* | Re-run Phase 5 only |
 | *"audit my project"* | Skip ahead to Phase 9 (reflex on existing code) |
-| *"continue project generation"* / *"resume orchestration"* | Resume a paused orchestration (--resume) |
+| *"continue project generation"* / *"resume orchestration"* | Resume a paused orchestration (dispatcher `next`) |
 | *"abort generation"* / *"stop orchestration"* | Archive state, stop |
 | *"just scaffold"* / *"empty setup"* / *"don't generate code"* | Fall back to legacy scaffold-only mode |
 
@@ -142,27 +144,39 @@ mkdir my-recipe-app && cd my-recipe-app
 curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash
 
 # Kick off the generation
-bash agent/scripts/psk-orchestrate.sh "I want a recipe app where users can save favorites and add notes"
+bash agent/scripts/psk-orchestrate.sh build "I want a recipe app where users can save favorites and add notes"
 ```
 
-The orchestrator drives all 8 phases. Each phase exits `AWAITING_X` for the AI agent (Claude Code / Cursor / etc.) to spawn the appropriate sub-agent, then re-run `psk-orchestrate.sh --resume` to advance.
+The orchestrator drives all 10 phases. Each phase pauses via `await_subagent` for the AI agent (Claude Code / Cursor / etc.) to spawn the appropriate sub-agent, then re-run `psk-orchestrate.sh next` (the dispatcher verb) to advance.
 
 ### From a requirements file
 
 ```bash
-bash agent/scripts/psk-orchestrate.sh --reqs-file requirements.txt
+bash agent/scripts/psk-orchestrate.sh build --reqs-file requirements.txt
 ```
 
 Useful when the requirement is multi-paragraph or has been pre-written by a stakeholder.
 
-### Retrofitting an existing project
+### Existing project (update / extend)
+
+`build` is the same command for existing projects. Each of the 10 phases is idempotent (create-or-update): it updates the artifact it finds and creates what's missing. The recommended sequence on an existing project:
 
 ```bash
-# In an existing project with code already written
-bash agent/scripts/psk-orchestrate.sh --retrofit
+# 1. Conform structure to current kit standards (registry-driven, content-loss-protected)
+bash agent/scripts/psk-init.sh complete
+
+# 2. Run the lifecycle — updates SPECS/PLANS/design, implements pending features,
+#    runs release ceremony, audits via reflex
+bash agent/scripts/psk-orchestrate.sh build "add a meal-planning feature"
 ```
 
-Skips Phase 1-5 (assumes REQS / SPECS / PLANS / DESIGN already exist), runs Phase 6 (security scaffolding to gap-fill what's missing), Phase 7 (incremental feature implementation for any pending features), Phase 8 (reflex audit).
+`build` also surfaces standards drift on entry (advisory `psk-conformance.sh --check`) and points you at `init` — it never blocks on conformance. **Structure** (does each artifact match kit shape) is `init`'s axis; **content** (re-derive reqs → … → ship) is `build`'s axis.
+
+### Target a different project root
+
+```bash
+bash agent/scripts/psk-orchestrate.sh build --target /path/to/project "<raw req>"
+```
 
 ### Conversational invocation (no script)
 
@@ -170,11 +184,12 @@ The agent listens for trigger phrases and drives the flow without the user invok
 
 | Phrase | What kicks off |
 |---|---|
-| *"create a project for X"* / *"build me an app that does Y"* | Full 8-phase flow |
+| *"create a project for X"* / *"build me an app that does Y"* | Full 10-phase `build` |
 | *"polished"* / *"professional"* / *"production-ready"* | Force professional mode |
+| *"update / extend this project"* / *"add feature X"* | `build` on the existing project (idempotent per phase) |
 | *"just scaffold"* / *"empty setup"* | Skip generation, scaffold only |
 | *"redo design system"* | Re-run Phase 5 |
-| *"audit my project"* | Skip to Phase 8 |
+| *"audit my project"* | Skip to Phase 9 (reflex) |
 
 ## Per-phase gates — what the user sees
 
@@ -212,7 +227,7 @@ Design system:
 Approve / tweak palette / different fonts / more components?
 ```
 
-### Phase 8 gate
+### Phase 9 gate
 ```
 ✓ Reflex GRANTED at iter 2
   - 14 findings filed in pass-001 (1 CRIT, 4 MAJ, 9 MIN)
@@ -252,7 +267,7 @@ A complete working application with:
 - **One feature = one atomic commit in Phase 7:** design plan → tests (RED) → implement (GREEN) → mechanical gates → commit. Do not bundle multiple features into one commit.
 - **Reflex GRANTED is required before final handoff:** Phase 9 runs the reflex autoloop until convergence. The project is not handed off while any CRITICAL or blocking finding is open.
 - **Phase 2 requires network access:** domain research uses WebFetch/WebSearch. Network-disabled environments must either pre-supply a requirements file (`--reqs-file`) or skip Phase 2 with a manual research note.
-- **`--retrofit` skips Phases 1-5:** for existing projects with code already written, the orchestrator skips capture/research/specs/plans/ui-system and jumps directly to Phase 6 (security gap-fill), Phase 7 (pending features), and Phase 8 (reflex audit).
+- **One command, new + existing:** `build` runs all 10 phases for both. There is no `--retrofit` / `--update` (removed v0.6.62+). Each phase is idempotent — on an existing project a phase updates the artifact it finds and creates what's missing, so the pipeline self-adapts instead of needing a separate "existing" flag. Conform structure first with `init` (separate axis); `build` regenerates content.
 
 ---
 

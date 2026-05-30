@@ -198,7 +198,10 @@ done
 # refuse cleanly when no prior pass exists. Either behaviour is correct —
 # what must NEVER happen is an actual gh issue creation.
 submit_out=$(bash "$PROJ/reflex/run.sh" --submit-to-kit 2>&1 || true)
-if echo "$submit_out" | grep -q "Dry-run\|no reflex pass has run yet\|findings.yaml missing"; then
+# An unauthenticated gh CLI is ALSO a clean refusal (no issue is created) — accept
+# it alongside dry-run / no-pass / missing-findings so the test is robust to the
+# environment's gh auth state.
+if echo "$submit_out" | grep -q "Dry-run\|no reflex pass has run yet\|findings.yaml missing\|gh CLI is not authenticated\|not authenticated"; then
   pass "reflex-submit: --submit-to-kit without --confirm is safe (dry-run or refuses cleanly)"
 else
   fail "reflex-submit: --submit-to-kit must dry-run or refuse — unexpected output: $submit_out"
@@ -1025,9 +1028,9 @@ grep -qF "Probe 23.4 — Cross-surface terminology consistency" "$PROJ/reflex/pr
 grep -qF "Probe 23.5 — Self-output validation loop" "$PROJ/reflex/prompts/qa-agent.md" \
   && pass "N45/Dim23: Probe 23.5 self-output validation present" \
   || fail "N45/Dim23: Probe 23.5 missing"
-grep -qE "25 dimensions of review|across 25 dimensions" "$PROJ/reflex/prompts/qa-agent.md" \
-  && pass "N45/Dim23: prompt heading bumped to 25 dimensions (Dim 25 added v0.6.30)" \
-  || fail "N45/Dim23: dim count not bumped to 25"
+grep -qE "(2[5-9]|[3-9][0-9]) dimensions of review|across (2[5-9]|[3-9][0-9]) dimensions" "$PROJ/reflex/prompts/qa-agent.md" \
+  && pass "N45/Dim23: prompt heading at ≥25 dimensions (Dim 25 added v0.6.30, extensible)" \
+  || fail "N45/Dim23: dim count not bumped to ≥25"
 
 # v0.6.27+ — bookend pattern (ADR-039): iter 1 = prepare (version bump),
 # iter 2+ = SKIP release ceremony, GRANTED convergence = one final refresh.
@@ -1701,11 +1704,11 @@ else
   fail "N57/bootstrap: qa-agent.md missing Dimension 16 or 17"
 fi
 
-# Dimension count updated to 25 (v0.6.30 — Dim 25 mandate-compliance)
-if grep -qE "25 dimensions of review" "$PROJ/reflex/prompts/qa-agent.md"; then
-  pass "N57/bootstrap: qa-agent.md header says 25 dimensions"
+# Dimension count ≥25 (v0.6.30 — Dim 25 mandate-compliance; extensible v0.6.60+ HF7/HF7b added Dims 27-28)
+if grep -qE "(2[5-9]|[3-9][0-9]) dimensions of review" "$PROJ/reflex/prompts/qa-agent.md"; then
+  pass "N57/bootstrap: qa-agent.md header at ≥25 dimensions"
 else
-  fail "N57/bootstrap: qa-agent.md header not updated to 25 dimensions"
+  fail "N57/bootstrap: qa-agent.md header not updated to ≥25 dimensions"
 fi
 
 rm -rf "$NB_TMP"
@@ -1879,6 +1882,43 @@ grep -qE "direction: (doc-to-code|code-to-doc|count-mismatch)" "$N60_DC_OUT" \
   || pass "N60/L2: bidirectional drift schema present (or 0 drifts)" \
   && true  # tolerate either case
 rm -f "$N60_DC_OUT"
+
+# --- doc-coverage-exempt opt-out (QA-C22-08, v0.6.62) ---
+# A script declaring `# doc-coverage-exempt:` in its header is an internal
+# mechanical helper and must NOT be flagged code-to-doc even with no doc mention.
+N60_EXEMPT_TMP=$(mktemp -d)
+mkdir -p "$N60_EXEMPT_TMP/agent/scripts"
+# Kit-self markers so doc-code-diff audits agent/scripts/psk-*.sh (IS_KIT_SELF=true)
+mkdir -p "$N60_EXEMPT_TMP/examples/starter" "$N60_EXEMPT_TMP/tests/sections"
+touch "$N60_EXEMPT_TMP/install.sh" "$N60_EXEMPT_TMP/agent/PHILOSOPHY.md"
+# A documented-nowhere helper WITH the exempt marker → not flagged
+cat > "$N60_EXEMPT_TMP/agent/scripts/psk-zz-internal-helper.sh" <<'EOF'
+#!/usr/bin/env bash
+# mechanical-script: psk-zz-internal-helper.sh — internal helper
+# doc-coverage-exempt: internal mechanical helper — no user-facing R->F->T claim
+true
+EOF
+# A documented-nowhere helper WITHOUT the marker → still flagged
+cat > "$N60_EXEMPT_TMP/agent/scripts/psk-zz-undocumented.sh" <<'EOF'
+#!/usr/bin/env bash
+# mechanical-script: psk-zz-undocumented.sh — internal helper
+true
+EOF
+# README.md is a recognized doc surface; mentions neither helper
+echo "# Project with no mention of either helper" > "$N60_EXEMPT_TMP/README.md"
+N60_EX_OUT=$(mktemp)
+IS_KIT_SELF=true bash "$DOC_CODE" "$N60_EXEMPT_TMP" --out "$N60_EX_OUT" 2>/dev/null
+if grep -q 'psk-zz-internal-helper.sh' "$N60_EX_OUT" 2>/dev/null; then
+  fail "N60/L2: doc-coverage-exempt marker should suppress code-to-doc flag"
+else
+  pass "N60/L2: doc-coverage-exempt marker suppresses code-to-doc flag"
+fi
+if grep -q 'psk-zz-undocumented.sh' "$N60_EX_OUT" 2>/dev/null; then
+  pass "N60/L2: unmarked undocumented helper still flagged (no blanket silencing)"
+else
+  fail "N60/L2: unmarked undocumented helper should still be flagged"
+fi
+rm -f "$N60_EX_OUT"; rm -rf "$N60_EXEMPT_TMP"
 
 # --- QA-Agent prompt updates ---
 QA_PROMPT="$PROJ/reflex/prompts/qa-agent.md"
@@ -2309,10 +2349,10 @@ grep -qF "assumptions.md" "$QA_PROMPT" \
   && pass "N59/qa-prompt: assumption-surfacing documented" \
   || fail "N59/qa-prompt: assumption-surfacing missing"
 
-# --- 25-dim checklist preserved as safety net (not replaced) ---
-grep -qE "25 dimensions of review" "$QA_PROMPT" \
-  && pass "N59/qa-prompt: 25-dim checklist preserved as safety net (not replaced by Phase 0)" \
-  || fail "N59/qa-prompt: 25-dim checklist missing — Phase 0 should augment, not replace"
+# --- ≥25-dim checklist preserved as safety net (not replaced) ---
+grep -qE "(2[5-9]|[3-9][0-9]) dimensions of review" "$QA_PROMPT" \
+  && pass "N59/qa-prompt: ≥25-dim checklist preserved as safety net (not replaced by Phase 0)" \
+  || fail "N59/qa-prompt: ≥25-dim checklist missing — Phase 0 should augment, not replace"
 
 grep -qiE "safety net|short-circuit" "$QA_PROMPT" \
   && pass "N59/qa-prompt: prompt describes how Phase 0 and 22-dim interact (safety net / short-circuit)" \
@@ -3033,24 +3073,29 @@ section "N66. v0.6.14 prep-release integration with /optimize advisory scan"
 # actual cuts. Bypass: PSK_OPTIMIZE_SCAN_DISABLED=1.
 
 RELEASE_SH="$PROJ/agent/scripts/psk-release.sh"
+# v0.6.62 release migration: Step-10 psk-optimize advisory scan moved from the
+# monolithic psk-release.sh into the dispatcher-driven step-10-summary phase
+# command in release/phases.yml. Migration-aware: assert the integration in its
+# new home (the declaration), not the old inline location.
+RELEASE_DECL="$PROJ/.portable-spec-kit/workflows/release/phases.yml"
 
-# --- 1. psk-release.sh references psk-optimize.sh in Step 10 ---
-grep -q 'psk-optimize.sh' "$RELEASE_SH" \
-  && pass "N66/integration: psk-release.sh references psk-optimize.sh" \
-  || fail "N66/integration: psk-release.sh missing psk-optimize.sh reference"
+# --- 1. release declaration references psk-optimize.sh in step-10 ---
+grep -q 'psk-optimize.sh' "$RELEASE_DECL" \
+  && pass "N66/integration: release/phases.yml references psk-optimize.sh" \
+  || fail "N66/integration: release/phases.yml missing psk-optimize.sh reference"
 
-# --- 2. Integration is in run_step_10_summary (final summary, not blocking) ---
-grep -A 30 'run_step_10_summary()' "$RELEASE_SH" | grep -q 'psk-optimize' \
-  && pass "N66/integration: integration in Step 10 (final summary, non-blocking)" \
-  || fail "N66/integration: psk-optimize call not in Step 10"
+# --- 2. Integration is in the step-10-summary phase (final summary, non-blocking) ---
+awk '/id: step-10-summary/,/depends_on:/' "$RELEASE_DECL" | grep -q 'psk-optimize' \
+  && pass "N66/integration: integration in step-10-summary (final summary, non-blocking)" \
+  || fail "N66/integration: psk-optimize call not in step-10-summary"
 
 # --- 3. Bypass env var present ---
-grep -q 'PSK_OPTIMIZE_SCAN_DISABLED' "$RELEASE_SH" \
+grep -q 'PSK_OPTIMIZE_SCAN_DISABLED' "$RELEASE_DECL" \
   && pass "N66/integration: PSK_OPTIMIZE_SCAN_DISABLED bypass present" \
   || fail "N66/integration: missing scan-disable bypass"
 
-# --- 4. Re-entrancy guard set when calling psk-optimize from release script ---
-grep -q 'PSK_OPTIMIZE_SKIP_TESTRUN=1' "$RELEASE_SH" \
+# --- 4. Re-entrancy guard set when calling psk-optimize from release ---
+grep -q 'PSK_OPTIMIZE_SKIP_TESTRUN=1' "$RELEASE_DECL" \
   && pass "N66/integration: re-entrancy guard set (skip-testrun) when called from release" \
   || fail "N66/integration: missing re-entrancy guard"
 
@@ -3262,14 +3307,22 @@ grep -A 5 "### New Project Setup (MANDATORY)" "$FRAMEWORK" | grep -q "env-manage
   || fail "N68/setup: new-project setup doesn't reference env-management"
 
 # --- 10. Prep-release Step 5 includes lock-file freshness check per stack ---
-RELEASE_SH="$PROJ/agent/scripts/psk-release.sh"
-grep -q "Lock-file freshness" "$RELEASE_SH" \
-  && pass "N68/prep-release: lock-file freshness check present in Step 5" \
+# v0.6.62 release migration: the inline Step-5 lock-file logic was extracted
+# verbatim into psk-lockfile-check.sh; release/phases.yml step-5-counts now
+# invokes it. Migration-aware: assert the logic in its new home (the helper),
+# and assert the declaration wires it into step-5.
+LOCKFILE_SH="$PROJ/agent/scripts/psk-lockfile-check.sh"
+RELEASE_DECL="$PROJ/.portable-spec-kit/workflows/release/phases.yml"
+grep -q "Lock-file freshness" "$LOCKFILE_SH" \
+  && pass "N68/prep-release: lock-file freshness check present in psk-lockfile-check.sh" \
   || fail "N68/prep-release: lock-file freshness check missing"
+grep -q 'psk-lockfile-check.sh' "$RELEASE_DECL" \
+  && pass "N68/prep-release: release step-5 wires psk-lockfile-check.sh" \
+  || fail "N68/prep-release: release declaration missing lock-file check wiring"
 
 # Per-stack auto-regenerate commands present
 for stack_check in "npm install --package-lock-only" "poetry lock" "uv lock" "bundle install" "go mod tidy" "cargo update"; do
-  if grep -q "$stack_check" "$RELEASE_SH"; then
+  if grep -q "$stack_check" "$LOCKFILE_SH"; then
     pass "N68/prep-release: auto-regenerate cmd present: '$stack_check'"
   else
     fail "N68/prep-release: missing auto-regenerate cmd '$stack_check'"
@@ -3277,7 +3330,7 @@ for stack_check in "npm install --package-lock-only" "poetry lock" "uv lock" "bu
 done
 
 # Activation prefix wired into lock-file regen
-grep -q 'activate-cmd "$stack"' "$RELEASE_SH" \
+grep -q 'activate-cmd "$stack"' "$LOCKFILE_SH" \
   && pass "N68/prep-release: lock-file regen runs inside project's saved env (activate-cmd prefix)" \
   || fail "N68/prep-release: regen not wired through activate-cmd prefix"
 
@@ -4084,10 +4137,10 @@ grep -q "blind_spots_open" "$PROJ/agent/scripts/psk-optimize.sh" \
   && pass "N80/optimize-wired: psk-optimize.sh cat 12 surfaces open BS count" \
   || fail "N80/optimize-wired: psk-optimize.sh missing blind_spots_open check"
 
-# install.sh references the new script
-grep -q "psk-blind-spot-synthesize.sh" "$PROJ/install.sh" \
-  && pass "N80/install: install.sh downloads psk-blind-spot-synthesize.sh" \
-  || fail "N80/install: install.sh missing psk-blind-spot-synthesize.sh reference"
+# install.sh is manifest-driven — the script must be in agent/scripts/.manifest
+grep -q "psk-blind-spot-synthesize.sh" "$PROJ/agent/scripts/.manifest" \
+  && pass "N80/install: .manifest downloads psk-blind-spot-synthesize.sh" \
+  || fail "N80/install: .manifest missing psk-blind-spot-synthesize.sh reference"
 
 # ADR-038 documented
 grep -q "^| ADR-038 " "$PROJ/agent/PLANS.md" \
@@ -4217,10 +4270,10 @@ grep -q "^### OL-001" "$PROJ/reflex/history/qa-blind-spots.md" \
   && pass "N82/ol-seed: OL-001 seed entry (Mode C) present" \
   || fail "N82/ol-seed: OL-001 missing"
 
-# install.sh references new script
-grep -q "psk-coverage-overlap-check.sh" "$PROJ/install.sh" \
-  && pass "N82/install: install.sh downloads psk-coverage-overlap-check.sh" \
-  || fail "N82/install: install.sh missing psk-coverage-overlap-check.sh reference"
+# install.sh is manifest-driven — the script must be in agent/scripts/.manifest
+grep -q "psk-coverage-overlap-check.sh" "$PROJ/agent/scripts/.manifest" \
+  && pass "N82/install: .manifest downloads psk-coverage-overlap-check.sh" \
+  || fail "N82/install: .manifest missing psk-coverage-overlap-check.sh reference"
 
 # ADR-040 documented
 grep -q "^| ADR-040 " "$PROJ/agent/PLANS.md" \
@@ -4542,10 +4595,12 @@ grep -q "Kit:\*\* v0.9.99" "$CASC_TMP/examples/starter/agent/AGENT_CONTEXT.md" \
   || fail "Loop6/PhaseC-applies-fix: cascade did not bump examples Kit field"
 rm -rf "$CASC_TMP"
 
-# psk-release.sh Step 6 invokes psk-version-cascade.sh
-grep -q "psk-version-cascade.sh" "$PROJ/agent/scripts/psk-release.sh" \
-  && pass "Loop6/PhaseC-wired: psk-release.sh Step 6 invokes psk-version-cascade" \
-  || fail "Loop6/PhaseC-wired: psk-release.sh missing cascade invocation"
+# Release Step 6 invokes psk-version-cascade.sh.
+# v0.6.62 release migration: the cascade invocation is the step-6-version phase
+# command in release/phases.yml. Migration-aware: assert it in the declaration.
+grep -q "psk-version-cascade.sh" "$PROJ/.portable-spec-kit/workflows/release/phases.yml" \
+  && pass "Loop6/PhaseC-wired: release step-6-version invokes psk-version-cascade" \
+  || fail "Loop6/PhaseC-wired: release declaration missing cascade invocation"
 
 # --- Phase D — gate-execution isolation (closes SELFTEST-ISOLATION-DEEPER) ---
 # Loop 6 v0.6.34. Doc 19 §15.4.
@@ -4829,6 +4884,28 @@ grep -q 'analysis_phase.*enabled\|analysis_phase: enabled' "$PROJ/reflex/config.
 grep -q 'cascade_check' "$PROJ/reflex/config.yml" \
   && pass "Loop7/Dev-config-cascade: dev_agent.cascade_check configured" \
   || fail "Loop7/Dev-config-cascade: cascade_check MISSING from config"
+
+# --- prune-history.sh handles checkout paths containing spaces (regression) ---
+# A checkout under e.g. "/Users/Jane Doe/..." must not break retention pruning.
+# Pre-fix, `local all=($(...))` word-split spaced paths into bogus array entries,
+# inflating the count and prune-rm-ing fragmented paths.
+PRUNE_SP_ROOT=$(mktemp -d)
+PRUNE_SP_DIR="$PRUNE_SP_ROOT/with space dir"
+mkdir -p "$PRUNE_SP_DIR/reflex/history/standalone"
+cp "$PROJ/reflex/lib/prune-history.sh" "$PRUNE_SP_DIR/reflex/lib/prune-history.sh" 2>/dev/null \
+  || { mkdir -p "$PRUNE_SP_DIR/reflex/lib"; cp "$PROJ/reflex/lib/prune-history.sh" "$PRUNE_SP_DIR/reflex/lib/prune-history.sh"; }
+# 15 pass dirs, default keep=10 → expect 10 to survive, newest-first
+for i in $(seq -w 1 15); do
+  mkdir -p "$PRUNE_SP_DIR/reflex/history/standalone/pass-0$i"
+  touch "$PRUNE_SP_DIR/reflex/history/standalone/pass-0$i/verdict.md"
+  sleep 0.01 2>/dev/null || true
+done
+REFLEX_PROJ_ROOT="$PRUNE_SP_DIR" bash "$PRUNE_SP_DIR/reflex/lib/prune-history.sh" --apply >/dev/null 2>&1
+PRUNE_SP_REMAIN=$(find "$PRUNE_SP_DIR/reflex/history/standalone" -maxdepth 1 -type d -name "pass-*" | wc -l | tr -d ' ')
+[ "$PRUNE_SP_REMAIN" -eq 10 ] \
+  && pass "N84/prune-spaces: prune-history.sh prunes correctly under spaced path (10 of 15 kept)" \
+  || fail "N84/prune-spaces: spaced-path prune left $PRUNE_SP_REMAIN dirs (expected 10) — word-split regression"
+rm -rf "$PRUNE_SP_ROOT"
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""

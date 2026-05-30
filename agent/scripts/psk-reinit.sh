@@ -1,121 +1,29 @@
 #!/bin/bash
+# mechanical-script: psk-reinit.sh — folded into init (thin redirect alias)
 # =============================================================
-# psk-reinit.sh — Reinit Workflow Orchestrator
-# Workflow doc: docs/work-flows/05-project-init.md
+# psk-reinit.sh — RETIRED, folded into `init` (v0.6.62+)
 #
-# Preflight: snapshot current agent/* byte counts so post-reinit
-# dual gate can detect content loss. Final gate is dual critic.
+# `reinit` no longer exists as a distinct workflow. The registry-driven `init`
+# is idempotent and state-detected: it CREATES the pipeline on an empty project
+# and REFRESHES (conforms, content-loss-protected) an existing one. There is no
+# longer a create-vs-resync split — one command does both.
+#
+# This script is a thin redirect kept only so existing muscle-memory / scripts
+# that call `psk-reinit.sh` get a clear breadcrumb instead of a cryptic failure
+# (DISCARD POLICY, reflex-restore-and-rebuild plan round 14). It prints a
+# one-line removal notice and delegates to psk-init.sh, forwarding all args.
+#
+# §Workflow Fidelity (portable-spec-kit.md): init — the workflow this redirects
+# to — executes its declared phases faithfully via psk-dispatch.sh. This alias
+# adds no behavior of its own; it only forwards.
 # =============================================================
 
 set -uo pipefail
 
-# §Workflow Fidelity (portable-spec-kit.md): this is an executable kit workflow.
-# The agent executes its defined steps faithfully and completely — no phase
-# compression, no inline substitution where a sub-agent is specified, no scope
-# reduction under rate/context pressure. Pause-and-resume, never reduce-scope.
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
-WFS="$SCRIPT_DIR/psk-workflow-state.sh"
+YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
-GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+echo -e "${YELLOW}reinit is folded into init${NC} — use: bash agent/scripts/psk-init.sh" >&2
+echo -e "  ${CYAN}init${NC} is idempotent: it CREATEs an empty project's pipeline and REFRESHes an existing one (content-loss-protected)." >&2
 
-SNAPSHOT_DIR="$PROJ_ROOT/agent/.reinit-snapshot"
-MODE="${1:-complete}"
-
-case "$MODE" in
-  start)
-    echo -e "${CYAN}═══ Reinit — Preflight ═══${NC}"
-
-    # §Workflow Fidelity B2 — init state machine + register gates.
-    if [ -x "$WFS" ]; then
-      bash "$WFS" init psk-reinit "preflight,work,validation" >/dev/null 2>&1 || true
-      bash "$WFS" register-gate psk-reinit preflight "true" >/dev/null 2>&1 || true
-      bash "$WFS" register-gate psk-reinit work "bash $SCRIPT_DIR/psk-sync-check.sh --full" >/dev/null 2>&1 || true
-      bash "$WFS" register-gate psk-reinit validation "bash $SCRIPT_DIR/psk-validate.sh reinit" >/dev/null 2>&1 || true
-    fi
-
-
-    # Preflight 1: agent/ must exist with content (else this should be init)
-    if [ ! -d "$PROJ_ROOT/agent" ] || [ -z "$(ls -A "$PROJ_ROOT/agent"/*.md 2>/dev/null)" ]; then
-      echo -e "  ${RED}✗${NC} agent/*.md files missing — use init instead of reinit"
-      exit 1
-    fi
-
-    # Preflight 2: snapshot byte counts of existing agent/*.md
-    mkdir -p "$SNAPSHOT_DIR"
-    rm -f "$SNAPSHOT_DIR"/*
-    for f in "$PROJ_ROOT"/agent/*.md; do
-      [ -f "$f" ] || continue
-      echo "$(wc -c < "$f" | tr -d ' ') $(basename "$f")" >> "$SNAPSHOT_DIR/byte-counts.txt"
-    done
-    echo -e "  ${GREEN}✓${NC} Snapshot taken: $(wc -l < "$SNAPSHOT_DIR/byte-counts.txt" | tr -d ' ') file(s)"
-
-    # Preflight 3: git status clean (so any loss is visible in diff)
-    if [ -n "$(cd "$PROJ_ROOT" && git status --porcelain agent/ 2>/dev/null)" ]; then
-      echo -e "  ${YELLOW}⚠${NC} agent/ has uncommitted changes — content-loss detection less reliable"
-    else
-      echo -e "  ${GREEN}✓${NC} agent/ is clean in git — post-reinit diff will be visible"
-    fi
-
-    if [ -x "$WFS" ]; then
-      bash "$WFS" verify-gate psk-reinit preflight >/dev/null 2>&1 || true
-      bash "$WFS" mark-done psk-reinit preflight >/dev/null 2>&1 || true
-      bash "$WFS" mark-in-progress psk-reinit work >/dev/null 2>&1 || true
-    fi
-
-    echo -e "\n${CYAN}Next:${NC} do the reinit work (re-sync agent/*.md from codebase)"
-    echo -e "${CYAN}Then:${NC} bash agent/scripts/psk-reinit.sh complete"
-    ;;
-
-  complete)
-    echo -e "${CYAN}═══ Reinit — Post-check + Final Gate ═══${NC}"
-
-    # Post-check: compare byte counts against snapshot
-    if [ -f "$SNAPSHOT_DIR/byte-counts.txt" ]; then
-      local_fail=0
-      while read -r old_bytes fname; do
-        current="$PROJ_ROOT/agent/$fname"
-        if [ ! -f "$current" ]; then
-          echo -e "  ${RED}✗${NC} $fname was DELETED by reinit (lost $old_bytes bytes)"
-          local_fail=$((local_fail + 1))
-          continue
-        fi
-        new_bytes=$(wc -c < "$current" | tr -d ' ')
-        # Allow growth; flag if reinit REDUCED byte count by more than 20%
-        if [ "$new_bytes" -lt $((old_bytes * 80 / 100)) ]; then
-          echo -e "  ${RED}✗${NC} $fname shrank: $old_bytes → $new_bytes bytes (possible content loss)"
-          local_fail=$((local_fail + 1))
-        fi
-      done < "$SNAPSHOT_DIR/byte-counts.txt"
-
-      if [ "$local_fail" -gt 0 ]; then
-        echo -e "\n${RED}Content loss detected — review git diff agent/ and restore.${NC}"
-        exit 1
-      fi
-      echo -e "  ${GREEN}✓${NC} No content loss detected vs snapshot"
-      rm -rf "$SNAPSHOT_DIR"
-    else
-      echo -e "  ${YELLOW}⚠${NC} No snapshot found — run psk-reinit.sh start first for content-loss protection"
-    fi
-
-    if [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-reinit.state" ]; then
-      bash "$WFS" verify-gate psk-reinit work >/dev/null 2>&1 \
-        && bash "$WFS" mark-done psk-reinit work >/dev/null 2>&1 \
-        && bash "$WFS" mark-in-progress psk-reinit validation >/dev/null 2>&1 || true
-    fi
-
-    bash "$SCRIPT_DIR/psk-validate.sh" reinit
-    rc=$?
-    if [ "$rc" -eq 0 ] && [ -x "$WFS" ] && [ -f "$PROJ_ROOT/agent/.workflow-state/psk-reinit.state" ]; then
-      bash "$WFS" verify-gate psk-reinit validation >/dev/null 2>&1 \
-        && bash "$WFS" mark-done psk-reinit validation >/dev/null 2>&1 || true
-    fi
-    exit $rc
-    ;;
-
-  *)
-    echo "Usage: bash psk-reinit.sh [start|complete]"
-    exit 4
-    ;;
-esac
+exec bash "$SCRIPT_DIR/psk-init.sh" "$@"

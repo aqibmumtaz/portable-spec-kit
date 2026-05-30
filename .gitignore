@@ -66,3 +66,7 @@ tests/.psk-optimize-counts.cache
 # Per-user profiles (created on first session, not shared across contributors)
 .portable-spec-kit/user-profile/
 reflex/history/.active-cycle
+
+# HF3 (v0.6.60) — retry-queue.yml itself IS committed (durable across sessions);
+# only the ephemeral lock directory is excluded.
+agent/.workflow-state/.retry-queue.lock/

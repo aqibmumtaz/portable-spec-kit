@@ -14,7 +14,7 @@ Agent reads framework in a workspace that already has `agent/` files.
 | **Trigger** | Agent starts in a workspace that already has `agent/` files (returning user, any agent) |
 | **Inputs** | `portable-spec-kit.md`, `.portable-spec-kit/user-profile/`, `agent/AGENT.md`, `agent/AGENT_CONTEXT.md`, `agent/TASKS.md`, `agent/PLANS.md` |
 | **Outputs** | Session greeting with progress summary; `agent/AGENT_CONTEXT.md` updated at session end |
-| **Script** | n/a — agent-driven lifecycle; kit update flow runs `reinit` if version mismatch detected |
+| **Script** | n/a — agent-driven lifecycle; kit update flow runs `init` (idempotent conform) if version mismatch detected |
 | **Gate** | Kit version check (Step 1); profile lookup (Step 3); no-slip rule verified at session end |
 | **When blocked** | Profile not found anywhere → must complete first-time profile setup before proceeding; kit version mismatch → must complete update flow before working |
 

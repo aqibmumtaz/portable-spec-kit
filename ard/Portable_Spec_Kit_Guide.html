@@ -91,7 +91,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.59</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.63</div>
     <div><strong style="color:#dce4f0;">Date:</strong> May 2026</div>
   </div>
 </div>
@@ -318,15 +318,22 @@
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
 </ul>
 
-<h3>v0.6.59 — Workflow-Fidelity Plan Close-out (Phase D)</h3>
+<h3>v0.6.60 — Spawn Fidelity Hardening</h3>
 <ul>
-  <li><strong>D1 — Plan schema conversion (<code>workflow-fidelity.md</code>):</strong> Converted 22-phase plan from <code>compat_mode: true</code> → <code>schema_version: 1</code> via <code>bash agent/scripts/psk-run-plan.sh --convert workflow-fidelity</code>. Phases now machine-readable; <code>psk-run-plan.sh start</code> no longer refuses execution.</li>
-  <li><strong>D2 — Plan schema conversion (<code>plan-save-protocol.md</code>):</strong> Same conversion applied to the 7-phase Plan-Save Protocol plan. Both v0.6.56 and v0.6.57 origin plans now conform to <code>schema_version: 1</code>.</li>
-  <li><strong>D3 — ARD user guide regenerated:</strong> <code>ard/user-guide.html</code> rebuilt via <code>psk-generate-user-guide.sh</code> against current README + AGENT.md. Closes Phase R Dim 25 finding (ARD user-guide presence).</li>
-  <li><strong>D4 — <code>install.sh</code> inventory swept:</strong> 6 new artifacts added to the installer manifest covering Phase A/B/C deliverables — keeps fresh installs aligned with kit-dev tree.</li>
-  <li><strong>D5 — PSK022a polyglot-detection word-boundary fix:</strong> Root cause: keyword regex matched <code>Gin</code> inside unrelated tokens like <code>messaGINg</code> and <code>enGINe</code> without word-boundaries, mis-classifying a single-runtime Next.js stack as polyglot. Fix: every keyword anchored as <code>\b(Keyword)\b</code>; library names (Drizzle, Twilio, Upstash, NextAuth) excluded from runtime detection. v5 Next.js + Drizzle + Twilio + Neon stack now correctly resolves as Template 1.</li>
-  <li><strong>D6 — SPECS F73-F76 added:</strong> One feature per close-out deliverable (D1-D4 above plus the PSK022a fix). All wired to test files in <code>tests/features/</code>; full R→F→T coverage maintained.</li>
-  <li><strong>Tests:</strong> 2180 framework + 145 benchmarking = 2325 total. 0 failures. 76 features, 100% R→F→T coverage.</li>
+  <li><strong>§Spawn Fidelity — 6th reliability layer:</strong> New MANDATORY section in <code>portable-spec-kit.md</code>. Every sub-agent invocation routes through <code>agent/scripts/psk-spawn.sh</code> with no inline-fallback branch. P11 — Spawn Fidelity principle added to <code>agent/PHILOSOPHY.md</code>.</li>
+  <li><strong>HF1 — Reflex spawn-qa/spawn-dev retrofit:</strong> <code>reflex/lib/spawn-qa.sh</code> and <code>reflex/lib/spawn-dev.sh</code> route through <code>psk-spawn.sh</code>, inheriting the no-inline-fallback contract automatically.</li>
+  <li><strong>HF1b — Orchestrate --update per-phase split:</strong> <code>psk-orchestrate.sh --update</code> U3-U10 split from single batch into per-U-phase spawns. Closes the 15h-batch context-overflow risk surfaced in v5 Phase C.</li>
+  <li><strong>HF2 — psk-critic-spawn retrofit:</strong> All 6 critic templates (STEP_9_VALIDATION, FEATURE_COMPLETE, INIT, REINIT, NEW_SETUP, EXISTING_SETUP) route through the spawn-fidelity wrapper.</li>
+  <li><strong>HF3 — Persistent retry queue:</strong> <code>agent/.workflow-state/retry-queue.yml</code> + <code>psk-retry-queue.sh</code> CLI. Exponential backoff (5min → 30min → 2h → 6h → AWAITING_HUMAN_ARBITRATION). Survives session ends.</li>
+  <li><strong>HF4 — Resume-on-session-start MANDATORY rule:</strong> First agent action on every session entry runs <code>psk-resume-bootstrap.sh</code>. PSK029 sync-check detects sessions that started without bootstrap.</li>
+  <li><strong>HF4b — Workflow watchdog + phase idempotency:</strong> <code>psk-workflow-watchdog.sh</code> (15min WARN / 1h HUNG / 24h STALE) + phase idempotency contract (gate-check + artifact-check + atomic writes + idempotent commits).</li>
+  <li><strong>HF5/HF6 — Synthesis-detection probe + 13th gate:</strong> <code>reflex/lib/check-audit-completeness.sh</code> 6-signature analysis. Gate 13 <code>audit-completeness</code> blocks at synthesis-confirmed verdict. PSK026 sync-check mirrors for critic-result.md files.</li>
+  <li><strong>HF7/HF7b — Dim 27 + Dim 28:</strong> Recursive synthesis audit of previous pass's findings.yaml (Dim 27); grep-detects kit scripts doing inline AI work without psk-spawn.sh (Dim 28, 4 patterns). Both surface as scope:kit findings routed through PKFL.</li>
+  <li><strong>HF8/HF8b — §Spawn Fidelity + Standard Spawn Recipe skill:</strong> New skill at <code>.portable-spec-kit/skills/spawn-fidelity.md</code> codifies the recipe: 7-section prompt template, 4-field artifact template, workload-driven spawn-count mandate, 8-step Dev-Agent fix protocol for Dim 28 findings.</li>
+  <li><strong>HF9 — PSK027 bypass-tamper-detection:</strong> <code>psk-bypass-log.sh</code> logs every <code>PSK_*_DISABLED=1</code> invocation to <code>agent/.bypass-log</code>. PSK027 fires WARNING at 1-2 bypasses / ERROR at 3+ in 24h.</li>
+  <li><strong>HF0 — Cascade-as-user-update purge + PSK028:</strong> Cascade-as-user-update path purged from 5 kit sites. Canonical user-project update is now <code>bash agent/scripts/psk-orchestrate.sh --update</code>. PSK028 anti-pattern rule flags reintroduction.</li>
+  <li><strong>SPECS F77-F84 added:</strong> One feature per HF mechanism. 28 flow documents (added <code>28-spawn-fidelity.md</code>). New flow doc 28 (Spawn Fidelity).</li>
+  <li><strong>Tests:</strong> 2377 framework + 145 benchmarking = 2522 total. 0 failures. 84 features, 100% R→F→T coverage. 30/30 sync-check rules (PSK026 + PSK027 + PSK028 + PSK029 added).</li>
 </ul>
 
 <h3>v0.6.57 — Plan Execution Protocol + UI Completeness Gate</h3>
@@ -909,7 +916,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.6.59 &bull; May 2026
+  Portable Spec Kit &bull; v0.6.63 &bull; May 2026
 </div>
 
 </div>
@@ -927,7 +934,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.59 &bull; May 2026</div>
+    <div class="badge">v0.6.63 &bull; May 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

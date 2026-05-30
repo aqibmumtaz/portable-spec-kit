@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.6.59-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.6.63-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-2325%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2832%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -22,7 +22,7 @@
 <tr>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
 <td width="25%" align="center"><strong>🧠 Context-Persistent</strong><br><sub>Remembers across sessions<br>Pick up after weeks<br>Never lose context</sub></td>
-<td width="25%" align="center"><strong>🛡️ Reliably Enforced</strong><br><sub>3-layer gate architecture<br>Dual critic at every workflow<br>Agent physically can't skip steps</sub></td>
+<td width="25%" align="center"><strong>🛡️ Reliably Enforced</strong><br><sub>7-layer reliability architecture<br>Dual critic at every workflow<br>Agent physically can't skip steps</sub></td>
 <td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
 </tr>
 <tr>
@@ -34,7 +34,7 @@
 <tr>
 <td width="25%" align="center"><strong>🧪 Automated Test Generation</strong><br><sub>Criteria → stubs instantly<br>Stack-aware formats<br>Stub gate blocks incomplete work</sub></td>
 <td width="25%" align="center"><strong>🔁 CI/CD Ready</strong><br><sub>Stack-aware templates shipped<br>Kit gates run on every push/PR<br>R→F→T gate enforced server-side</sub></td>
-<td width="25%" align="center"><strong>🧰 6 Executable Workflows</strong><br><sub>release · feature-complete<br>init · reinit · new-setup · existing-setup<br>Each with preflight + dual gate</sub></td>
+<td width="25%" align="center"><strong>🧰 5 Executable Workflows</strong><br><sub>release · feature-complete<br>init · new-setup · existing-setup<br>Each with preflight + dual gate</sub></td>
 <td width="25%" align="center"><strong>📝 Bypass Audit Log</strong><br><sub>Every gate bypass recorded<br>Surfaced on next sync-check<br>No silent reliability loss</sub></td>
 </tr>
 </table>
@@ -58,13 +58,21 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-sp
 **Or paste to any AI agent (Claude, Cursor, Copilot, Windsurf, Cline):**
 > Install the Portable Spec Kit: run `curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash` then read CLAUDE.md and set up my project.
 
-Installs: `portable-spec-kit.md` (~980 lines) · 36 reliability scripts (required) + 6 optional helpers — 42 total `.sh` files in `agent/scripts/` · 26 skill files (JIT-loaded) · 23 file-class templates (`.portable-spec-kit/templates/`) · 27 flow documents (`docs/work-flows/`) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
+Installs: `portable-spec-kit.md` (~980 lines) · 51 `psk-*` reliability scripts + 3 helper scripts (install-tracker, sync, uninstall-tracker) — 54 total `.sh` files in `agent/scripts/` · 28 skill files (JIT-loaded) · 24 file-class templates (`.portable-spec-kit/templates/`) · 29 flow documents (`docs/work-flows/`) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
 
 Open any AI agent after install — personalized profile, project scan, 4-step guided tour, and you're building in under 2 minutes. **[Full install details ↓](#setup)** · **Uninstall:** `bash agent/scripts/psk-uninstall.sh` (preserves your `agent/*.md` pipeline files).
 
 ---
 
 ## Latest Release
+
+**v0.6.63 (Reflex Convergence + Workflow Declaration Flow Doc):** Closes the v0.6.62 follow-up. Every QA-Agent finding from reflex cycle-22 fixed at the kit-machinery level. **QA-C22-04 CRITICAL** — `findings-registry.sh` honors `REFLEX_FINDINGS_REGISTRY` + `REFLEX_HISTORY_DIR` env overrides so registry tests no longer mutate the committed registry (suite is now deterministic). **QA-C22-07 CRITICAL** — `update-eval-trace.sh` emits the "Cycle-numbering note" callout from the generator instead of relying on a hand-committed header; test 82.19 stable. **QA-C22-09 MINOR** — PSK032 grandfather exemption for cycles carrying `migration-note.md` (documented historical mis-numbering); regression test 82.21. **QA-C22-08 MINOR** — `doc-code-diff.sh` honors a `# doc-coverage-exempt:` header marker; 4 internal mechanical helpers marked, precise (only marked scripts opt out, no blanket silencing). **Added** — `docs/work-flows/29-workflow-declaration-schema.md` documents the 7th reliability layer introduced in v0.6.62 (PSK034/PSK035 + Class A/B/B′/B-plan-driver/C taxonomy + phases.yml schema). **Changed** — stale `reinit` references in `13-release-workflow.md` repointed (5 executable workflows: release · feature-complete · init · new-setup · existing-setup). **2832 tests** (2687 framework + 145 benchmarking), 0 failures; 3 new regression tests; 30 flow documents.
+
+**v0.6.62 (Command-Model Redesign + Dispatcher Migration):** Collapses the kit to a clean idempotent command model. Two-command model — idempotent `install` + `init` (registry-driven conformance engine, CREATE-or-REFRESH, folds the retired `reinit`). Unified `orchestrate build` — one workflow for new + existing projects. PSK034 + PSK035 sync-check rules implemented (were documented but never coded) — workflow-router↔phases.yml mapping + phases.yml schema validation. `psk-run-plan.sh` delegates start/next/resume/retry to `psk-dispatch.sh --plan` — every plan spawn routes through `psk-spawn.sh`. Reflex resolved as monolithic-by-design (Class B′). `--update`/`--retrofit` orchestrator modes removed. **2832 tests** (2687 framework + 145 benchmarking).
+
+**v0.6.61 (Strict-GRANT Convergence):** PSK031 cross-pass findings registry (content-fingerprint canonical-ID tracking, bootstraps 89 canonical IDs from cycle-17/18/20). PSK032 cycle-numbering misuse detection. PSK033 standalone-pass overuse advisory. Watchdog hooks wired across `reflex/run.sh` + `preconditions.sh` + session-start. cycle-21 STRICT GRANT (trajectory 53→30→0 open findings).
+
+**v0.6.60 (Spawn Fidelity Hardening):** §Spawn Fidelity as the 6th reliability layer with 9 enforcement mechanisms. No inline-fallback branch in `psk-spawn.sh`; persistent retry queue (`agent/.workflow-state/retry-queue.yml`); resume-on-session-start MANDATORY (PSK029); workflow watchdog + phase idempotency; synthesis-detection probe (`check-audit-completeness.sh`); 13th mechanical gate; Dim 27 + Dim 28 added; PSK027 bypass-tamper detection; flow doc 28.
 
 **v0.6.59 (Workflow-Fidelity Plan Close-out — Phase D):** Hygiene release sweeping every open ADVISORY from Phase R + fixing the PSK022a polyglot-detection word-boundary bug. Two legacy plans converted from compat_mode → `schema_version: 1` via `psk-run-plan.sh --convert` (workflow-fidelity 22 phases, plan-save-protocol 7 phases — body-preserved). `ard/user-guide.html` present. `install.sh` inventory swept: 6 v0.6.56+v0.6.57 artifacts enumerated. **PSK022a fix** — root cause: `Gin` regex matched "messaGINg"/"enGINe"/"loGINg" without word-boundary anchors. Fixed by `\b(Keyword)\b` everywhere in `check_template_choice()`; library names (Drizzle, Twilio, Upstash, NextAuth) excluded from runtime detection. v5's Next.js + Drizzle + Twilio + Neon + Upstash stack now correctly resolves as Template 1. v5 sync-check no longer needs `--no-verify`. SPECS gained F73-F76 (Workflow Fidelity, Plan Execution Protocol, UI Completeness Gate, PSK022a fix) with R→F→T test refs. **2325 tests** (2180 framework + 145 benchmarking), 76 features, 100% coverage.
 
@@ -691,7 +699,7 @@ Content is never lost. Existing files are reorganized, not overwritten.
 | Section | What It Governs |
 |---------|----------------|
 | **Reliability Architecture** | 3-layer enforcement: Layer 2A bash critic (12 checks), Layer 2B sub-agent critic (verbatim-quote gate), Layer 3 hooks (PostToolUse warn, PreCommit BLOCK). Dual gate at end of all 6 executable workflows. Error codes PSK001–PSK011. |
-| **Skill-Based Architecture** | Core brain (behavioral rules, always loaded) + 17 skill files loaded JIT on demand. Core file under 1000 lines. |
+| **Skill-Based Architecture** | Core brain (behavioral rules, always loaded) + 28 skill files loaded JIT on demand. Core file under 1000 lines. |
 | **User Profile** | Personalized AI — GitHub auto-detect, communication style, working pattern, AI delegation |
 | **Project Config** | `.portable-spec-kit/config.md` — CI/CD, Jira, code review, scope drift toggles. Disabled-by-default CI. Review anytime. |
 | **Git & GitHub** | Commit rules, push rules, critical ops requiring approval |
@@ -974,6 +982,8 @@ Detailed step-by-step diagrams for every work flow:
 | 25 | **[Workflow Fidelity](docs/work-flows/25-workflow-fidelity.md)** | The agent executes every kit-defined workflow faithfully — no phase compression, no inline substitution for sub-agents, no scope reduction under pressure; `psk-workflow-state.sh` resumable phase state machine + `psk-spawn.sh` spawn protocol with no inline-fallback branch |
 | 26 | **[Plan Execution Protocol](docs/work-flows/26-plan-execution-protocol.md)** | 5th reliability layer — every executable plan conforms to `schema_version: 1` + `phases:` frontmatter; `psk-run-plan.sh` driver spawns one sub-agent per phase with commit-per-deliverable boundary; PSK024 sync-check rule lints schema; `psk-plan-save.sh approve` gates on validation; legacy plans run once under `compat_mode: true` then convert |
 | 27 | **[UI Completeness Gate](docs/work-flows/27-ui-completeness-gate.md)** | Deliverable-bar counterpart to layer 5 — 10-category audit (primitives/layout/dark-mode/states/a11y/tokens/per-feature pages/input-feedback/responsive/anti-skeleton); `psk-ui-completeness.sh` stack-aware audit; PSK025 sync-check rule; orchestrator `--update` U6.5 backfills violations; Reflex Dim 26 + Gate 12 surface and block regressions; closes the v5-skeletal-UI failure structurally |
+| 28 | **[Spawn Fidelity](docs/work-flows/28-spawn-fidelity.md)** | 6th reliability layer — every sub-agent invocation routes through `psk-spawn.sh` with no inline-fallback branch; persistent retry queue + resume-on-session-start + workflow watchdog + synthesis-detection probe + Dim 27/28 + PSK026/027/029 sync-check rules; closes the synthesis-as-shortcut failure surfaced by the v0.6.59 reflex incident |
+| 29 | **[Workflow Declaration Schema](docs/work-flows/29-workflow-declaration-schema.md)** | 7th reliability layer (v0.6.62) — every kit workflow declares its phases as data in `.portable-spec-kit/workflows/<name>/phases.yml`; `psk-dispatch.sh` reads the declaration at runtime instead of hardcoded loops; PSK034 (router↔phases.yml mapping) + PSK035 (schema validation) sync-check rules; Class A/B/B′/B-plan-driver/C taxonomy makes scope unambiguous |
 
 ---
 

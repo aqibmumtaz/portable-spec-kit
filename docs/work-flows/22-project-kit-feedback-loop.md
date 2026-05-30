@@ -10,9 +10,9 @@
 
 | Field | Value |
 |---|---|
-| **Trigger** | `file-bugs.sh` routes ≥1 `scope:kit` findings to `agent/tasks/Gxx-*.md` (auto) or `bash reflex/lib/kit-evolution.sh --kit-root … --source-project … --auto-cascade` (manual) |
+| **Trigger** | `file-bugs.sh` routes ≥1 `scope:kit` findings to `agent/tasks/Gxx-*.md` (auto) or `bash reflex/lib/kit-evolution.sh --kit-root … --source-project … --auto-update` (manual) |
 | **Inputs** | `findings.yaml` (with `scope:kit` + `genericity_proof`), `reflex/config.yml` (`kit_evolution.auto`), `agent/tasks/Gxx-*.md` |
-| **Outputs** | Kit commit(s) with generic fix, updated kit version, project re-synced via `install.sh`, post-cascade reflex GRANTED verdict |
+| **Outputs** | Kit commit(s) with generic fix, updated kit version, project updated via `psk-orchestrate.sh build`, post-update reflex GRANTED verdict |
 | **Script** | `reflex/lib/kit-evolution.sh` (6-phase orchestrator), `reflex/lib/file-bugs.sh` (G4 gate), `reflex/lib/gates.sh` (G1–G2 on kit branch) |
 | **Gate** | 6 KGG gates (G1: file scope · G2: vocabulary · G3: disposition deadline · G4: genericity_proof · G5: kit test suite · G6: smoke install) |
 | **When blocked** | G4: `genericity_proof` absent → finding downgraded to `target-project`. G5: kit test suite fails → fix before merge. G6: smoke-test-examples fails → fix install path. |
@@ -21,7 +21,7 @@
 
 ## Purpose
 
-Every project that runs reflex is also stress-testing the kit. When QA-Agent surfaces a finding that belongs in the kit (not in the project), PKFL converts that finding into a verified kit improvement — automatically, generically, and safely — then cascades the updated kit back into the triggering project.
+Every project that runs reflex is also stress-testing the kit. When QA-Agent surfaces a finding that belongs in the kit (not in the project), PKFL converts that finding into a verified kit improvement — automatically, generically, and safely — then runs `psk-orchestrate.sh build` in the triggering project to bring it current.
 
 This is how the kit evolves empirically: real-world projects surface real gaps; PKFL closes them at the root.
 
@@ -98,7 +98,7 @@ Manual trigger:
 bash reflex/lib/kit-evolution.sh \
   --kit-root /path/to/portable-spec-kit \
   --source-project /path/to/your-project \
-  --auto-cascade
+  --auto-update
 ```
 
 ---

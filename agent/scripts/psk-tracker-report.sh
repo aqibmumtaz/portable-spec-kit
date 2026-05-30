@@ -1,4 +1,5 @@
 #!/bin/bash
+# mechanical-script: deterministic, no AI prompts (Dim 28 allowlist — v0.6.60 HF7b)
 # =============================================================
 # psk-tracker-report.sh — Track B Time Report Generator
 #
@@ -48,11 +49,19 @@ fi
 # Convert ISO8601 to epoch seconds (portable)
 iso_to_epoch() {
   local ts="$1"
-  if date -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" "+%s" 2>/dev/null; then
-    return
-  fi
-  # GNU date fallback
-  date -d "$ts" "+%s" 2>/dev/null || echo "0"
+  # QA-PORT-D19-01: portable BSD-first + GNU-fallback, never silent-zero.
+  # If BOTH branches fail (truly malformed input) emit "0" + a stderr note
+  # so the operator sees the degradation instead of getting silent zero.
+  case "$(uname -s)" in
+    Darwin|FreeBSD|*BSD)
+      date -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" "+%s" 2>/dev/null || \
+        { echo "iso_to_epoch: unparseable BSD-date input: $ts" >&2; echo "0"; }
+      ;;
+    *)
+      date -d "$ts" "+%s" 2>/dev/null || \
+        { echo "iso_to_epoch: unparseable GNU-date input: $ts" >&2; echo "0"; }
+      ;;
+  esac
 }
 
 # Extract YYYY-MM-DD from ISO8601
@@ -61,10 +70,17 @@ iso_to_date() {
 }
 
 epoch_to_iso() {
-  if date -r "$1" -u "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null; then
-    return
-  fi
-  date -u -d "@$1" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo ""
+  # QA-PORT-D19-01: portable BSD-first + GNU-fallback, no silent empty.
+  case "$(uname -s)" in
+    Darwin|FreeBSD|*BSD)
+      date -r "$1" -u "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || \
+        { echo "epoch_to_iso: invalid BSD-date epoch: $1" >&2; echo ""; }
+      ;;
+    *)
+      date -u -d "@$1" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || \
+        { echo "epoch_to_iso: invalid GNU-date epoch: $1" >&2; echo ""; }
+      ;;
+  esac
 }
 
 # --- Compute date range (list of YYYY-MM-DD between since and until) ---
@@ -76,13 +92,19 @@ date_range() {
   local current="$start_date"
   while [[ "$current" < "$end_date" ]] || [[ "$current" == "$end_date" ]]; do
     echo "$current"
-    # Increment by 1 day (portable)
-    if date -v+1d -j -f "%Y-%m-%d" "$current" "+%Y-%m-%d" 2>/dev/null; then
-      current=$(date -v+1d -j -f "%Y-%m-%d" "$current" "+%Y-%m-%d" 2>/dev/null)
-    else
-      current=$(date -d "$current + 1 day" "+%Y-%m-%d" 2>/dev/null)
-    fi
-    [ -z "$current" ] && break
+    # QA-PORT-D19-01: portable BSD-first + GNU-fallback, single-call (no
+    # double-call test+value pattern that wasted a fork per loop iteration).
+    local next
+    case "$(uname -s)" in
+      Darwin|FreeBSD|*BSD)
+        next=$(date -v+1d -j -f "%Y-%m-%d" "$current" "+%Y-%m-%d" 2>/dev/null)
+        ;;
+      *)
+        next=$(date -d "$current + 1 day" "+%Y-%m-%d" 2>/dev/null)
+        ;;
+    esac
+    [ -z "$next" ] && break
+    current="$next"
   done
 }
 

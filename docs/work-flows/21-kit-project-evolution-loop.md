@@ -232,7 +232,7 @@ Iteration 1 found that `install.sh` missed `console-probe.ts` (new file, not in 
 
 ### 8.4 Phase 0 cost in self-test mode
 
-Kit-self-test reflex Phase 0 takes >30 min on cold cache because `test-release-check.sh + psk-sync-check.sh + mandate-audit.sh` each independently invoke `test-spec-kit.sh` (the kit has 2192 tests). Project-mode reflex doesn't share this cost (vitest is the project's runner, ~2 sec). Kit-self-test convergence is fundamentally costlier.
+Kit-self-test reflex Phase 0 takes >30 min on cold cache because `test-release-check.sh + psk-sync-check.sh + mandate-audit.sh` each independently invoke `test-spec-kit.sh` (the kit has 2687 framework tests). Project-mode reflex doesn't share this cost (vitest is the project's runner, ~2 sec). Kit-self-test convergence is fundamentally costlier.
 
 **Mitigation roadmap (v0.6.31+):** cache test-spec-kit results across Phase 0 helpers (compute once, share via temp file), or shard Phase 0 to skip already-computed inputs.
 
@@ -573,7 +573,7 @@ A real surprise: when Stage 4 ran `cp portable-spec-kit.md` to sync the kit fram
 
 Stage 5 caught this: project's `check-rft-integrity.sh` was at v0.6.32 vintage (no L5.1 comma-split fix) while project's `portable-spec-kit.md` was at v0.6.34. The sync was inconsistent.
 
-**Permanent insight:** kit version-bump ceremonies must also propagate `reflex/`, `agent/scripts/psk-*.sh`, and any other kit-installed machinery. v0.6.35 will extend `psk-version-cascade.sh` to also `cp` updated kit machinery into projects (or document the user-facing `bash <kit-path>/install.sh --upgrade` flow).
+**Permanent insight:** kit version-bump ceremonies must also propagate `reflex/`, `agent/scripts/psk-*.sh`, and any other kit-installed machinery. Resolved via `install` (which pulls/refreshes kit machinery) chained to `psk-orchestrate.sh build` (v0.6.62+ — the unified update path; `--update` removed), syncing kit machinery into user projects through the §Spawn Fidelity contract. `psk-version-cascade.sh` remains kit-internal-only (Step 6 of release ceremony for kit examples + registered sibling projects).
 
 ### 16.3 Field-anchored cascade (Phase C) — a regex lesson
 

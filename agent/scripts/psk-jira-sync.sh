@@ -1,4 +1,5 @@
 #!/bin/bash
+# mechanical-script: psk-jira-sync.sh — Jira REST API sync (no AI invocation)
 # =============================================================
 # psk-jira-sync.sh — Jira REST API v3 Sync Script
 #

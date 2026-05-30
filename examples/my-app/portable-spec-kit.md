@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.59 -->
+<!-- Framework Version: v0.6.63 -->
 
-**Version:** v0.6.59 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2325 (2180 framework · 145 benchmarking)
+**Version:** v0.6.63 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2832 (2687 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -46,7 +46,7 @@ bash agent/scripts/psk-bootstrap-check.sh --remediate
 
 ## Reliability Architecture
 
-The kit uses five enforcement layers to prevent agents from skipping steps or shipping inconsistent content. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**.
+The kit uses six enforcement layers to prevent agents from skipping steps, shipping inconsistent content, or substituting synthesis for adversarial audit. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**; §Spawn Fidelity (6th layer) gates **sub-agent invocations**.
 
 **Reliability model — dual critic at the end of each workflow, not per step.** A workflow runs its steps normally; at the end it enters a single validation gate that pairs two critics. Both must pass. Either failure blocks the workflow from completing.
 
@@ -58,9 +58,9 @@ The kit uses five enforcement layers to prevent agents from skipping steps or sh
 
 **Critic protocol rule (MANDATORY):** When any workflow's final validation step exits with AWAITING_CRITIC, the agent MUST read `critic-task.md`, spawn a sub-agent via Task tool with that exact prompt, write the sub-agent's response to `critic-result.md`, then re-run the workflow `next` command. The gate re-reads the result file, verifies freshness and content, and advances only on a clean result.
 
-**Workflow coverage — dual gate at end of every executable workflow:** All six executable workflows terminate in the same dual-gate validation step via the shared `agent/scripts/psk-validate.sh <workflow>` helper. Workflows covered: `release` · `feature-complete` · `init` · `reinit` · `new-setup` · `existing-setup`. Each maps to a dedicated critic template (`STEP_9_VALIDATION`, `FEATURE_COMPLETE`, `INIT`, `REINIT`, `NEW_SETUP`, `EXISTING_SETUP`) inside `psk-critic-spawn.sh`. Agent MUST run the helper at the end of any workflow that modifies `agent/*` or project scaffold — no workflow marks complete until both critics pass.
+**Workflow coverage — dual gate at end of every executable workflow:** All five executable workflows terminate in the same dual-gate validation step via the shared `agent/scripts/psk-validate.sh <workflow>` helper. Workflows covered: `release` · `feature-complete` · `init` · `new-setup` · `existing-setup`. Each maps to a dedicated critic template (`STEP_9_VALIDATION`, `FEATURE_COMPLETE`, `INIT`, `NEW_SETUP`, `EXISTING_SETUP`) inside `psk-critic-spawn.sh`. (`reinit` is folded into `init` — the idempotent `init` CREATEs an empty project's pipeline and REFRESHes an existing one, content-loss-protected, so one critic template covers both.) Agent MUST run the helper at the end of any workflow that modifies `agent/*` or project scaffold — no workflow marks complete until both critics pass.
 
-**MANDATORY rule — agent behavior:** When ending any executable workflow (release, feature completion, init, reinit, new/existing project setup), agent runs `bash agent/scripts/psk-validate.sh <workflow>`. Exit 0 = workflow complete. Exit 2 = `AWAITING_CRITIC` — agent reads `agent/.release-state/critic-task.md`, spawns fresh sub-agent via Task tool with that exact prompt, writes sub-agent response to `agent/.release-state/critic-result.md`, re-runs validate. Exit 1 or 3 = a critic failed; fix flagged issues and re-run.
+**MANDATORY rule — agent behavior:** When ending any executable workflow (release, feature completion, init, new/existing project setup), agent runs `bash agent/scripts/psk-validate.sh <workflow>`. Exit 0 = workflow complete. Exit 2 = `AWAITING_CRITIC` — agent reads `agent/.release-state/critic-task.md`, spawns fresh sub-agent via Task tool with that exact prompt, writes sub-agent response to `agent/.release-state/critic-result.md`, re-runs validate. Exit 1 or 3 = a critic failed; fix flagged issues and re-run.
 
 **Emergency bypass:** `PSK_SYNC_CHECK_DISABLED=1` bypasses the bash critic; `PSK_CRITIC_DISABLED=1` bypasses the sub-agent critic; `git commit --no-verify` bypasses the PreCommit hook. All three are for genuine emergencies only — each breaks a gate and should be explicit.
 
@@ -89,11 +89,83 @@ The agent's judgment applies to *what the user wants* and *how to solve a novel 
 
 2. **Sub-agent spawn-fidelity protocol — `agent/scripts/psk-spawn.sh`.** Every workflow that spawns a sub-agent goes through this wrapper. On rate-limit or spawn failure it writes `AWAITING_SUBAGENT_RETRY:<phase>` to the workflow state file and **pauses**. The script has **no inline-fallback branch** — there is structurally no path where the agent does a sub-agent's work itself as a shortcut. The only forward command is retry-spawn (via `resume`).
 
-**Covered workflows.** All executable workflows run on the shared state machine: `psk-orchestrate.sh` (new-project + `--update`), `psk-release.sh`, `psk-new-setup.sh`, `psk-existing-setup.sh`, `psk-init.sh`, `psk-reinit.sh`, `psk-feature-complete.sh`, `reflex/run.sh`.
+**Covered workflows.** All executable workflows run on the shared state machine: `psk-orchestrate.sh` (single `orchestrate` workflow via `build` — serves new + existing), `psk-release.sh`, `psk-new-setup.sh`, `psk-existing-setup.sh`, `psk-init.sh` (idempotent — folds the retired `reinit`), `psk-feature-complete.sh`, `reflex/run.sh`.
 
 **Emergency bypass:** `PSK_WORKFLOW_STATE_DISABLED=1` skips the state machine; `PSK_SPAWN_FIDELITY_DISABLED=1` allows inline fallback. Both are for genuine emergencies only — each removes a structural guarantee and must be explicit.
 
-> **Skill: Workflow Fidelity** — full state-machine API, phase-gate registry, spawn-retry protocol, resume semantics in `docs/work-flows/25-workflow-fidelity.md`.
+### Resume-on-Session-Start (MANDATORY — first action on every session in a kit project)
+
+**The Resume-on-session-start rule** is the durable-execution complement to the resumable state machine. The state machine + retry queue give pause/resume durable *storage*; this rule gives durable *execution*. Without it, in-progress work sits frozen on disk forever waiting for a manual `psk-run-plan.sh resume` invocation the user has no reason to remember.
+
+**The principle.** On entering any kit project, the first agent action MUST be checking for in-progress work and processing it BEFORE responding to the user's first message:
+
+1. Read `agent/.workflow-state/*.state` and identify any workflow with phases in `AWAITING_SUBAGENT_RETRY:<phase>` or `AWAITING:SUBAGENT_SPAWN` status.
+2. Read `agent/.workflow-state/retry-queue.yml` and identify entries whose `next_attempt_at` has elapsed.
+3. If ANY in-progress work exists, the agent MUST resume it (re-emit SPAWN signal for the paused phase, or drain due retry-queue entries) BEFORE responding to the user.
+
+**Why.** Sessions end mid-workflow constantly — rate limits, context compaction, machine switch, user steps away overnight. The retry queue (HF3) gives durable storage of paused spawn intent. This rule closes the loop by guaranteeing the agent picks the paused work up on the next session entry, not whenever the user happens to remember to type `resume`.
+
+**The two pre-response checks (in order):**
+
+1. `bash agent/scripts/psk-retry-queue.sh drain` — process all due retry-queue entries, re-spawning paused sub-agents per their persisted prompt/artifact paths.
+2. `bash agent/scripts/psk-workflow-state.sh list-paused` — surface any workflow phases in AWAITING:* status that aren't already mirrored in the retry queue.
+
+If either returns a non-empty result, the agent processes them inline using the Standard Spawn Recipe (per §Spawn Fidelity, established in HF8) before reading the user's prompt.
+
+**Canonical entry point — `psk-resume-bootstrap.sh`.** The two pre-response checks are wrapped in a single helper. The session-start protocol becomes:
+
+```bash
+bash agent/scripts/psk-resume-bootstrap.sh && <respond to user>
+```
+
+The helper bootstrap-checks the kit, drains the retry queue, lists paused workflow phases, and writes a `<ISO timestamp> session-start-resume-check ran` marker to `agent/.workflow-state/session-audit.log` (rotated at 1000 lines). It always exits 0 — it is a status report, not a gate.
+
+**Surface to the user.** After processing, the agent's first reply tells the user what was resumed. Example: "Resumed paused phase HF4 of plan spawn-fidelity-hardening from before the prior context compact." The user is never blindsided — every resume is visible in the first reply.
+
+**Structural enforcement (not trust-based).** Sync-check rule **PSK029** (`check_resume_bootstrap()`) detects sessions that started without checking workflow state. The rule reads `agent/.workflow-state/session-audit.log`, compares the most-recent `session-start-resume-check ran` marker against the most-recent commit touching `agent/` or `src/`. A commit landing without a fresh marker → PSK029 violation. Recursion-guard: the rule only fires when `agent/.workflow-state/*.state` files exist with `STARTED=<ts>` more recent than the last commit touching `.workflow-state/` — so normal kit-dev state does not self-flag. Severity: ADVISORY in `--quick` mode, ERROR in `--full` mode.
+
+**Emergency bypass:** `PSK_RESUME_BOOTSTRAP_DISABLED=1` skips the check and prints `Resume-bootstrap: disabled via env var.` Both the helper and PSK029 honor it. Each invocation is logged to `agent/.bypass-log` per PSK027 sync-check rule (HF9 deliverable) — repeated bypassing surfaces as an ERROR in sync-check. Bypass is for genuine emergencies only — each removes a structural guarantee and must be explicit.
+
+### Phase Idempotency (MANDATORY — every phase must be safely re-runnable)
+
+**The principle.** Every executable phase in every kit workflow MUST be idempotent — running the same phase twice (e.g. after a rate-limit retry, a session-start auto-resume, or a manual operator `kick` via `psk-workflow-watchdog.sh`) MUST produce the same end state as running it once. No duplicate commits. No partial-state corruption. No "almost done" intermediate state that confuses the next phase. This is the **phase-idempotency** contract.
+
+**Why.** With durable retry queue (HF3) + auto-resume on session start (HF4) + watchdog re-spawn (HF4b), the kit may invoke the same phase 2-5 times before it actually completes. If the phase isn't idempotent, those retries corrupt the state. Idempotency is the missing safety property that makes retries SAFE rather than just durable.
+
+**The contract — every phase prompt MUST:**
+
+1. **Check gate state first.** Use `psk-workflow-state.sh` to check `GATE_PASSED_<phase>=<ts>` before doing any phase work. If the gate already passed, the phase is done — exit 0 with no further action.
+2. **Check artifact existence.** If the phase's primary deliverable already exists and is fresh (mtime ≥ phase start time), return it as-is instead of re-creating.
+3. **Use atomic file writes.** Write to `<file>.tmp`, then `mv` (POSIX rename guarantees atomicity). Never leave half-written files.
+4. **Make git commits idempotent.** Check `git log -1 --pretty=%s` against the expected commit subject before committing. If the commit already exists, skip the commit step (don't create an empty duplicate commit).
+
+**Structural enforcement (not trust-based).** `psk-run-plan.sh next` and `psk-spawn.sh request` both check the gate state BEFORE emitting a SPAWN signal. If `GATE_PASSED_<phase>` is recorded for the current/requested phase, no SPAWN is emitted — the phase is considered done and the driver advances. This is the **outer** safety net. The **inner** safety net is the per-phase prompt's own idempotency checks (the 4 steps above). Both must work — together they guarantee that retry-after-success cannot corrupt state.
+
+**Test rule.** Every phase added via a sub-agent spawn MUST have a "re-run idempotency" test in its phase's test section. The test invokes the phase twice in succession and asserts:
+
+- Second invocation completes at least as fast as the first (because most work is skipped via gate check).
+- No new git commits land on the second run.
+- The artifact file's content is byte-identical.
+
+This is added to the test stub generation rule for executable plans.
+
+**Test pattern for kit tests:**
+
+```bash
+# In tests/sections/<NN>-<phase>.sh
+before_state=$(git rev-parse HEAD)
+bash <phase-script>   # first run
+mid_state=$(git rev-parse HEAD)
+bash <phase-script>   # second run — should be no-op
+after_state=$(git rev-parse HEAD)
+assert "$mid_state" == "$after_state"   # second run added no commit
+```
+
+**Watchdog integration.** `psk-workflow-watchdog.sh` is the hung-phase detector — every paused phase older than the WARN threshold (15 min default) is surfaced; every phase older than HUNG (60 min) is auto-enqueued into the retry queue. The watchdog runs unconditionally as Step 4 of `psk-resume-bootstrap.sh` (session-start). Because every phase respects the phase-idempotency contract above, the watchdog's auto-enqueue is structurally safe — retried phases that finished in the meantime exit 0 immediately on the gate check.
+
+**Emergency bypass:** `PSK_IDEMPOTENCY_DISABLED=1` allows phases to bypass the outer gate-check safety net (force re-spawn even when GATE_PASSED is recorded). For genuine emergencies only (e.g. need to force re-create an artifact deliberately). The inner safety net (per-phase prompt checks) is the phase's own responsibility; disabling the outer net does not disable the inner.
+
+> **Skill: Workflow Fidelity** — full state-machine API, phase-gate registry, spawn-retry protocol, resume semantics, resume-bootstrap protocol, watchdog protocol, phase-idempotency contract, audit log format in `docs/work-flows/25-workflow-fidelity.md`.
 
 ---
 
@@ -164,6 +236,175 @@ revision: N
 
 ---
 
+## Spawn Fidelity (MANDATORY — every sub-agent spawn routes through `psk-spawn.sh`)
+
+**This is the 6th reliability layer — spawn-shape, enforced structurally.** §Workflow Fidelity (4th layer) makes the agent execute workflows faithfully. §Plan Execution Protocol (5th layer) makes the agent execute plans faithfully. This layer makes the agent execute *sub-agent spawns* faithfully — by forcing every sub-agent invocation through a single wrapper that has no inline-fallback branch, plus a workload-driven count that matches one spawn to one natural unit of work.
+
+**The principle.** Every sub-agent invocation, anywhere in the kit, MUST route through `agent/scripts/psk-spawn.sh`. There is structurally no path where a kit script invokes the Task tool directly. The wrapper enforces the no-inline-fallback contract (HF1-HF2), persists failure state to the retry queue (HF3), auto-resumes on next session (HF4), and is monitored by the workflow watchdog (HF4b) for hung phases. Together: durable storage + durable execution + durable supervision.
+
+**Why this matters.** The failure mode that motivated §Spawn Fidelity: in the prior session, SDK stream-idle-timeouts caused the orchestrator to skip real adversarial QA-Agent spawns and write findings inline. The kit's "structural" enforcement was actually trust-based — the agent could quietly substitute synthesis for adversarial audit when external infrastructure failed. The 6 mechanisms below close that hole.
+
+**Six structural-enforcement mechanisms (not trust-based).**
+
+1. **No inline-fallback branch (HF1, HF2).** `agent/scripts/psk-spawn.sh` has no synthesis path. The only forward command on spawn failure is retry-spawn. Reflex `spawn-qa.sh` + `spawn-dev.sh` (HF1) and `psk-critic-spawn.sh` (HF2 — all 5 critic templates) route through it. Verified by Dim 28's audit (HF7b) which grep-detects future regressions.
+2. **Persistent retry queue (HF3).** `agent/.workflow-state/retry-queue.yml` survives session ends. Exponential backoff `5min → 15min → 45min → 2h → 6h → AWAITING_HUMAN_ARBITRATION`. CLI surface `agent/scripts/psk-retry-queue.sh` with `list / add / drain / clear / inspect`.
+3. **Resume-on-session-start (HF4).** `agent/scripts/psk-resume-bootstrap.sh` runs as the first action on every session entry. Drains due retry-queue entries + lists paused workflow phases before responding to the user. PSK029 sync-check rule detects sessions that started without checking workflow state.
+4. **Workflow watchdog + phase idempotency (HF4b).** `agent/scripts/psk-workflow-watchdog.sh` detects hung phases (15min WARN, 1h HUNG, 24h STALE). The phase-idempotency contract guarantees a re-spawn produces the same end state — gate-check + artifact-check + atomic writes + idempotent commits. Retry-after-success is structurally safe.
+5. **Synthesis-detection probe + 13th mechanical gate (HF5, HF6).** `reflex/lib/check-audit-completeness.sh` reads a pass's `findings.yaml` + `qa-usage.yaml` and emits `real / suspect / synthesis-confirmed` verdict via 6 signatures (invocation_verbatim coverage, citable_quote with file:line, file_read_trace, wall_clock, qa_usage consistency, single-author write). Wired as gate 13 `audit-completeness` in `reflex/lib/gates.sh` with PSK026 sync-check parallel for `critic-result.md` files.
+6. **Spawn-coverage audit by Dim 27 + Dim 28 (HF7, HF7b).** QA-Agent's recurring audit. Dim 27 detects synthesis in the previous pass (recursive guard — cycle-N synthesis flagged by cycle-(N+1)); Dim 28 detects future kit scripts that bypass `psk-spawn.sh`. Both surface as `scope: kit` + `genericity_proof` findings routed to PKFL.
+
+### Standard Spawn Recipe (mandated by §Spawn Fidelity — codified as skill in HF8b)
+
+Every sub-agent spawn anywhere in the kit MUST follow this exact recipe — no ad-hoc spawn flows allowed. This is the single source of truth that Dev-Agent applies when fixing any Dim 28 spawn-coverage finding.
+
+**1. Routing through `psk-spawn.sh`.** No direct Task-tool invocations from kit scripts. The flow is always: caller script → `psk-spawn.sh request <workflow> <phase> <prompt-file> <artifact-file>` → AWAITING_SUBAGENT → main agent spawns sub-agent via Task tool reading the prompt file → sub-agent writes artifact → caller script reads artifact → `psk-spawn.sh complete <workflow> <phase> <artifact-file>` → advance.
+
+**2. Prompt template** — `.portable-spec-kit/templates/plan-prompt.md` is the canonical structure for every per-spawn brief:
+
+| Required section | Purpose |
+|---|---|
+| Goal | One paragraph: what this phase produces |
+| Files to read | Paths the sub-agent must read FIRST (framework sections, prior artifacts, source files) |
+| Files to write | Paths the sub-agent creates or modifies |
+| Completion criteria | Bash commands the sub-agent runs to verify done-ness; exit codes; expected outputs |
+| Output artifact spec | Schema of the `<phase>.done.md` file the sub-agent writes at phase end |
+| Constraints | Hard limits (don't touch X, must use Y, gate must pass) |
+| Commit | Subject format: `<plan-slug>:<phase-id> — <short>`; single commit per phase |
+
+**3. Artifact template** — `.portable-spec-kit/templates/plan-artifact.md` is the canonical structure for every sub-agent's completion artifact:
+
+| Required field | Purpose |
+|---|---|
+| Commit SHA | Single SHA produced by this phase |
+| Files changed | Paths touched |
+| Tests run | Gate commands + outputs |
+| Notes | Non-obvious decisions, edge cases discovered |
+
+**4. Workload-driven spawn count (MANDATORY — fixed counts prohibited).**
+
+The number of sub-agents spawned per workflow phase is determined by the workload size, not a hardcoded constant. Examples:
+
+| Phase | Spawn count rule | Why workload-driven |
+|---|---|---|
+| Orchestrate `build` features phase | N spawns where N = number of `[ ]` features in SPECS.md | Some projects have 5 features, some have 80 (same for new + existing — `build` is one command) |
+| Orchestrate `build` UI-completeness backfill | M spawns where M = number of PSK025 sub-code violations × backfill-scope | structural conformance is `init`'s axis; lifecycle UI gaps backfill per-violation, not 1 batch |
+| Reflex QA orchestrator | `ceil(active_dims / max_dims_per_spawn)` waves of `max_parallel_agents` per wave | Currently uses config dials (`max_dims_per_spawn=10`, `max_parallel_agents=4`). Works for 26 dims, scales to 50+ dims |
+| Reflex Dev-Agent fix loop | K spawns where K = number of unique root-cause groups in findings.yaml | Symptom findings auto-close when root is fixed; spawn-per-symptom would be wasteful |
+| psk-run-plan.sh per phase | Determined by plan's `phases:` array length | Plan author defines workload |
+| Per-feature within a feature spawn (if feature is large) | Recursive: feature-scoped plan with its own `phases:` array | Heuristic: ≥5 acceptance criteria OR ≥3 files = use psk-run-plan |
+
+**Config dials** — every workflow exposes `max_<unit>_per_spawn` and `max_parallel_<unit>_spawns` config keys in `reflex/config.yml` or `.portable-spec-kit/config.md` so the operator can tune throughput vs cost without changing kit code. Defaults err on the side of one-spawn-per-unit; raise the batch size only when the unit is genuinely small (e.g., reflex dims at 10 dims/spawn).
+
+**Hardcoded counts are §Spawn Fidelity violations.** Dim 28 detects them (grep for numeric loop limits like `for i in {1..N}` around spawn calls).
+
+**5. Dev-Agent fix protocol for Dim 28 spawn-coverage findings.**
+
+When QA-Agent surfaces a Dim 28 finding ("workflow X does inline AI work that should be sub-agent spawn"), Dev-Agent fixes it by applying the Standard Spawn Recipe verbatim:
+
+1. **Identify the unit of work** — features? UI gaps? dims? plan phases? Whatever the natural granularity is.
+2. **Move the prompt** from inline heredoc into a per-spawn prompt file under `agent/plans/<slug>/prompts/<id>.md` (or `reflex/prompts/<workflow>-<phase>.md` if it's a reflex spawn). Use the canonical prompt template — same 7 sections.
+3. **Define the artifact** at `agent/plans/<slug>/artifacts/<id>.done.md` per the canonical artifact template.
+4. **Wire through `psk-spawn.sh`** — the caller script's invocation pattern is: `bash agent/scripts/psk-spawn.sh request <workflow> <phase-id> <prompt-path> <artifact-path>` followed by AWAITING_SUBAGENT pause and the main-agent Task-tool spawn on resume.
+5. **Make spawn count workload-driven** — iterate over the natural units; one spawn per unit (or batched per config dial). Never `for i in {1..3}` style hardcoding.
+6. **Register the phase gate** with `psk-workflow-state.sh register-gate <workflow> <phase> <gate-cmd>` so the workflow state machine enforces completion.
+7. **Add retry-queue integration** — every spawn site automatically gets retry-on-failure via HF3's retry queue (because `psk-spawn.sh` writes the queue entry). No extra work from Dev-Agent.
+8. **Document the spawn** in the relevant flow doc + add a regression test in `tests/sections/` that mocks the spawn protocol and verifies the workflow advances on success / pauses on failure.
+
+Full skill at `.portable-spec-kit/skills/spawn-fidelity.md` (HF8b deliverable — created in the next phase). Every Dim 28 finding's `recommendation` field in `findings.yaml` references this skill — so Dev-Agent has a single mechanical procedure to follow, never improvises a spawn flow.
+
+### Covered surfaces
+
+Every kit script that invokes a sub-agent. The current set (as of v0.6.60):
+
+- `reflex/lib/spawn-qa.sh` (HF1)
+- `reflex/lib/spawn-dev.sh` (HF1)
+- `agent/scripts/psk-critic-spawn.sh` (HF2 — all 5 critic templates: STEP_9_VALIDATION, FEATURE_COMPLETE, INIT, NEW_SETUP, EXISTING_SETUP)
+- `agent/scripts/psk-orchestrate.sh` `build` — the unified `orchestrate` workflow's per-phase spawns (new + existing)
+- `agent/scripts/psk-run-plan.sh` per-phase spawns
+- `reflex/lib/file-bugs.sh` PKFL kit-evolution trigger (G3)
+- Any new spawn site added after v0.6.60 — must follow the Standard Spawn Recipe.
+
+**Emergency bypass:** `PSK_SPAWN_FIDELITY_DISABLED=1` allows inline fallback (existing from HF4). Logged to `agent/.bypass-log` per PSK027 sync-check rule (HF9 deliverable). Each invocation is an explicit operator decision to remove a structural guarantee, and repeated bypassing surfaces as an ERROR in sync-check.
+
+> **Skill: Spawn Fidelity** — full Standard Spawn Recipe + Dev-Agent fix protocol + worked examples in `.portable-spec-kit/skills/spawn-fidelity.md` (HF8b deliverable).
+
+---
+
+## Workflow Declaration Schema (MANDATORY — every multi-phase workflow declares its phases as data)
+
+**This is the 7th reliability layer — workflow-shape, enforced structurally.** §Plan Execution Protocol (5th layer) forces every executable plan into a canonical shape; this layer forces every kit *workflow* into the same canonical shape. Without it, "the kit ships well-defined workflows" devolves into "the kit ships hardcoded phase loops inside bash scripts that drift from their announce-echoes" — the same failure mode §Plan Execution Protocol exists to prevent, one level up. Workflow declarations and plan declarations converge on a single schema so the operator who learns one knows the other.
+
+**The principle.** Every kit workflow with a `# workflow-router:` header declares its phases in a data file at `.portable-spec-kit/workflows/<workflow-name>/phases.yml`, plus per-phase prompt files at `.portable-spec-kit/workflows/<workflow-name>/phases/<phase-id>.md`. The workflow's dispatch script READS these declarations at runtime and delegates each phase via `psk-spawn.sh` (sub-agent phases) or runs a command directly (mechanical phases). There is structurally no path where a workflow hardcodes phase enumeration inside its script body — the schema is the contract, the script is the executor.
+
+**The phases.yml schema.** Every workflow declaration carries `schema_version: 1` so the schema can evolve without ambiguity. Required top-level fields: `workflow` (kebab-case name), `description` (one paragraph), `phases` (array). Optional: `mode_variants` (when a workflow exposes more than one mode that each run a subset of `phases` — each mode references phase ids by name). NB the `orchestrate` workflow itself is single-mode: `build` runs the full phase set for both new and existing projects (each phase is idempotent create-or-update), so it declares no `mode_variants`.
+
+```yaml
+schema_version: 1
+workflow: <workflow-name>
+description: |
+  One paragraph: what this workflow does, when it runs, what it produces.
+
+# Optional — only if a workflow genuinely has more than one mode
+mode_variants:
+  - mode: quick
+    phases: [scan, report]
+  - mode: full
+    phases: [scan, deep-analysis, report, archive]
+
+phases:
+  - id: <phase-id>                    # kebab-case unique within workflow
+    name: "<short phase title>"
+    goal: "<one-line goal — what this phase produces>"
+    spawn_type: sub-agent              # sub-agent | mechanical | manual-checkpoint
+    prompt: ".portable-spec-kit/workflows/<workflow>/phases/<phase-id>.md"   # required for sub-agent
+    artifact: "agent/.workflow-artifacts/<workflow>/<phase-id>.done.md"      # required for sub-agent
+    # command: "bash agent/scripts/<script>.sh"                              # required for mechanical (alternative to prompt+artifact)
+    gate: "<bash command that exits 0 when phase done>"
+    inputs:
+      - "<file path>"
+    files_written:
+      - "<path pattern>"
+    files_modified:
+      - "<path pattern>"
+    commit_required: true              # true | false
+    estimated_tokens: 5000
+    estimated_wall_clock_min: 15
+    depends_on: []                      # list of phase IDs that must complete first
+```
+
+**Per-phase prompt file contract** (`.portable-spec-kit/workflows/<workflow>/phases/<phase-id>.md`): identical 5-section schema as `.portable-spec-kit/templates/plan-prompt.md` — **Goal · Files to read · Files to write · Completion criteria · Output artifact spec**. Reused by intent, not duplicated. The operator who learns plan-prompt schema already knows workflow-phase schema. Self-documenting header required: `<!-- TEMPLATE-KIND: workflow-phase-prompt · GENERICITY: passing · LAST-AUDITED: YYYY-MM-DD -->`.
+
+**Per-phase artifact spec.** Matches `.portable-spec-kit/templates/plan-artifact.md` — the sub-agent writes one `.done.md` file per phase with `phase_id` / `workflow` / `commit_sha` / `status` frontmatter plus `Files changed` / `Tests run` / `Notes` sections.
+
+**Mechanical phases skip the prompt-file requirement.** Phases with `spawn_type: mechanical` declare a `command:` field directly in `phases.yml` instead of a prompt + artifact pair. No separate prompt file. No sub-agent spawn. The dispatch script runs the command, captures exit code against the `gate`, and advances.
+
+**Manual-checkpoint phases** use `spawn_type: manual-checkpoint` for human-in-the-loop confirmations (e.g. "user confirms requirements expansion before proceeding"). The dispatch pauses, surfaces the checkpoint prompt to the operator, and resumes on explicit input.
+
+**Dispatch contract.** Workflow scripts (e.g. `psk-release.sh`, `psk-orchestrate.sh`, `reflex/run.sh`) read `phases.yml` at runtime, iterate `phases` in dependency order, and dispatch each phase per its `spawn_type`. Sub-agent phases route through `psk-spawn.sh request <workflow> <phase-id> <prompt-path> <artifact-path>` per §Spawn Fidelity. Mechanical phases shell-exec the declared `command` and check the `gate`. Manual-checkpoint phases pause for operator input. No hardcoded phase loops in script bodies — the data file is the single source of truth.
+
+**Quality Bar enforcement.** Every `phases.yml` and every `phases/<id>.md` is a kit-shipped template subject to §Template Quality Bar (PSK023). `bash agent/scripts/psk-template-quality.sh --strict` audits every declaration file and refuses to ship templates that fail any of the 7 criteria (stack-agnostic, domain-agnostic, scale-agnostic, useful-and-complete, lifecycle-aware, self-documenting, round-trippable). The `--all` mode auto-discovers `.portable-spec-kit/workflows/*/phases.yml` and `.portable-spec-kit/workflows/*/phases/*.md` once that directory exists.
+
+**Sync-check enforcement — PSK034 + PSK035.** Two sync-check rules ship in A8 of the unified-workflow-declarations plan:
+
+- **PSK034** — every script carrying a `# workflow-router:` header MUST have a corresponding `.portable-spec-kit/workflows/<name>/phases.yml`, and the script MUST `source` or otherwise read `phases.yml` at dispatch time. Hardcoded phase loops without a matching declaration → MAJOR violation.
+- **PSK035** — every `phases.yml` MUST pass schema validation (required per-phase fields present, valid `spawn_type`, valid dependency graph), and every `phases/<id>.md` MUST pass `psk-template-quality.sh` with all 7 criteria. Quality regressions → MAJOR violation.
+
+**Class A / B / C taxonomy** (workflow classification — informs retrofit scope, never authority):
+
+| Class | Identity | Examples | Status |
+|---|---|---|---|
+| **Class A** — canonical | Plan-driven via `phases.yml` + the dispatcher (`psk-dispatch.sh`) | `psk-run-plan.sh`, `psk-spawn.sh`, and every migrated workflow below | Dispatcher-driven; declarations are the source of truth |
+| **Class B** — MIGRATED to dispatcher (v0.6.62+) | Were legacy `# workflow-router:`, now thin routers delegating to `psk-dispatch.sh` + `phases.yml` | `psk-release.sh`, `psk-orchestrate.sh` (single `orchestrate` workflow — `build` serves new + existing; `--update`/`--retrofit` removed), `psk-feature-complete.sh`, `psk-init.sh` (idempotent — folds the retired `reinit`), `psk-new-setup.sh`, `psk-existing-setup.sh` | Retrofit COMPLETE for all linear workflows. |
+| **Class B′** — monolithic-by-design | Orchestrators whose iterate-until-convergence control flow does NOT fit the dispatcher's linear `phases.yml` model | `reflex/run.sh` (AVACR autoloop — GRANTED/DENIED branching + stateful convergence L1-L6). Already §Spawn-Fidelity-compliant: `spawn-qa.sh`/`spawn-dev.sh` route through `psk-spawn.sh`. | Intentionally NOT dispatcher-migrated — see plan `2026-05-22-reflex-restore-and-rebuild.md` §STAGE 4 RESOLUTION |
+| **Class B-plan-driver** — exempt | Plan/CLI drivers that read frontmatter/plan files at runtime, not a fixed `phases.yml` | `psk-run-plan.sh` (delegates phase-driving to `psk-dispatch.sh --plan`), `psk-validate.sh`, `psk-resume-bootstrap.sh` | Carry `# workflow-decl-exempt:` — PSK034-exempt |
+| **Class C** — helpers / CLIs / mechanical | No phases concept — single-purpose scripts | ~28 scripts marked `# mechanical-script:` (e.g. `psk-sync-check.sh`, `psk-env.sh`, `psk-template-quality.sh`) | EXEMPT from PSK034 — they don't have phases |
+
+**Emergency bypass.** `PSK_WORKFLOW_DECL_DISABLED=1` skips PSK034's enforcement on a given run. For genuine emergencies only — each invocation is an explicit operator decision to ship a workflow without its data declaration, and the bypass is logged to `agent/.bypass-log` per PSK027.
+
+> **Skill: Workflow Preview** — full schema reference, `phases.yml` semantics, `psk-preview.sh` usage for inspecting any workflow or plan declaration, dispatch-script integration patterns, retrofit recipes in `.portable-spec-kit/skills/workflow-preview.md` (A9 deliverable of the unified-workflow-declarations plan).
+
+---
+
 ## Skill-Based Architecture
 
 This file is the **core brain** — behavioral rules loaded every session. Procedural details live in **skill files** loaded on demand:
@@ -172,6 +413,7 @@ This file is the **core brain** — behavioral rules loaded every session. Proce
 |---------|------------------|
 | Creating/restructuring agent files | `.portable-spec-kit/skills/templates.md` |
 | Plan drafting / executable plans / sub-agent spawning per phase | `.portable-spec-kit/skills/plan-execution.md` |
+| Sub-agent spawning / "AWAITING_SUBAGENT" state / Dim 28 finding fix / Standard Spawn Recipe | `.portable-spec-kit/skills/spawn-fidelity.md` |
 | Python project detected (Python-only legacy) | `.portable-spec-kit/skills/python-environment.md` |
 | **Any stack-runtime command when env not yet selected** (pip / npm / pytest / cargo / go test / etc.) — generic Python · Node · Ruby · Go · Rust | `.portable-spec-kit/skills/env-management.md` |
 | Project setup (init) / auto-scan / existing project | `.portable-spec-kit/skills/project-setup.md` |
@@ -204,7 +446,7 @@ When the user provides any actual requirement (formal or informal, single senten
 
 **Trigger phrases (any of these):** *"create a project for X"* · *"build me an app that does Y"* · *"make this a full working project"* · *"generate the app from these requirements"* · *"make it polished / professional / production-ready / secure / research-based"*
 
-**Behind the scenes:** the agent invokes `bash agent/scripts/psk-orchestrate.sh "<raw req>"`. The orchestrator chains 10 phases: capture → 7-dim research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature implementation (one feature per atomic commit) → release ceremony → reflex audit (until convergence) → final handoff with `HANDOFF.md`. Each phase has a confirm-with-user gate where the user can redirect.
+**Behind the scenes:** the agent invokes `bash agent/scripts/psk-orchestrate.sh build "<raw req>"`. The orchestrator chains 10 phases: capture → 7-dim research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature implementation (one feature per atomic commit) → release ceremony → reflex audit (until convergence) → final handoff with `HANDOFF.md`. Each phase has a confirm-with-user gate where the user can redirect.
 
 **Output:** a working app with secure backend, polished frontend (design tokens, 12+ components, WCAG AA, dark mode), input validation at every boundary, auth scaffolding (Argon2id + JWT + email verify + reset), CI workflow, R→F→T traceability, reflex GRANTED audit verdict, and `HANDOFF.md` with run instructions. **The user does not have to QA the result manually — reflex did that.**
 
@@ -436,14 +678,14 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 - **"push"** → push to remote (pre-push gate applies)
 - **"prepare release and push"** / **"prepare release, commit and push"** → steps 1–10 + commit all release changes + push to remote (via `git push` or project sync script) + show release summary. No confirmation needed between steps — user has given the full instruction.
 - **"refresh release and push"** / **"refresh release, commit and push"** → same as above but no version bump.
-- **"init"** → scan project thoroughly, create/fill all agent/ files from codebase
-- **"reinit"** → re-scan project, sync all agent files to current codebase state
+- **"init"** → conform project to current kit standards — idempotent CREATE (scan + create/fill all agent/ files from codebase on an empty project) or REFRESH (re-scan + sync existing agent files, content-loss-protected). Registry-driven via the conformance engine.
+- **"reinit"** → folded into `init` (v0.6.62+) — recognized as a trigger word but runs the same idempotent `init` (CREATE-or-REFRESH). No separate behavior. `psk-reinit.sh` is a thin alias that forwards to `psk-init.sh`.
 
 **Release execution:** Agent runs `bash agent/scripts/psk-release.sh prepare` (or `refresh`), then repeats `bash agent/scripts/psk-release.sh next` until all steps complete. Automated steps (tests, code review, scope check, counts, version bump, PDFs) are executed by the script. Agent-required steps (flow docs, releases) pause with instructions — the agent does the work, sub-agent critic verifies, then `bash agent/scripts/psk-release.sh done` to proceed. No step can be skipped. Validation is Step 9 (final gate).
 
 > **Skill: Release Process** — Full prepare/refresh release sequences (10 steps), release summary format, release notes publishing, edge cases, prepare+push flow in `.portable-spec-kit/skills/release-process.md`. Loaded on `prepare release` / `refresh release` / `push` command.
 
-> **Skill: Init/Reinit Process** — Full `init` (10 steps) and `reinit` (9 steps) procedures in `.portable-spec-kit/skills/init-process.md`. Loaded on `init` / `reinit` command.
+> **Skill: Init Process** — Full idempotent `init` (CREATE-or-REFRESH, registry-driven conformance) procedure in `.portable-spec-kit/skills/init-process.md`. Loaded on `init` (or `reinit`, which is folded into `init`).
 
 ### Critical Operations (ALWAYS ASK FIRST)
 - Creating or deleting repositories
@@ -1407,7 +1649,7 @@ Every reflex/AVACR finding carries a `scope:` field that classifies where the fi
 **Kit-Evolution Protocol — how reflex findings become kit improvements (automated via PKFL):**
 1. QA surfaces finding → sets `scope: kit` + `genericity_proof` field → `file-bugs.sh` G4 gate checks genericity_proof; absent = downgraded to `target-project`.
 2. `file-bugs.sh` routes verified `scope:kit` findings to `agent/tasks/Gxx-*.md` in the kit repo.
-3. If `kit_evolution.auto: true` in `reflex/config.yml`, `kit-evolution.sh` triggers automatically: runs a kit Dev-Agent pass under `REFLEX_KIT_EVOLUTION=1`, enforces G1–G6 KGG gates, runs full kit test suite, runs multi-project smoke test, cascades updated kit into source project.
+3. If `kit_evolution.auto: true` in `reflex/config.yml`, `kit-evolution.sh` triggers automatically: runs a kit Dev-Agent pass under `REFLEX_KIT_EVOLUTION=1`, enforces G1–G6 KGG gates, runs full kit test suite, runs multi-project smoke test, then runs `psk-orchestrate.sh build` in source project to bring it current.
 4. Manual path: kit maintainer reviews `agent/tasks/Gxx-*.md`, verifies genericity, commits under normal R→F→T + ADL + mechanical-gate discipline. Commit message references source: `[source: avacr-eval-<project>/pass-NNN/Gxx]`.
 5. Rejected fixes stay in `agent/tasks/rejected/Gxx-*.md` with rationale — audit trail of "why not."
 
@@ -1436,21 +1678,21 @@ genericity_proof: |
   Counter-check: the fix targets a kit script/prompt/template/rule, not project-specific code.
 ```
 
-**PKFL auto-trigger (when `kit_evolution.auto: true`):** after `file-bugs.sh` routes Gxx tasks, `reflex/lib/kit-evolution.sh` runs automatically — kit Dev-Agent fix → G1-G6 gates → cascade to source project → source project reruns reflex to verify.
+**PKFL auto-trigger (when `kit_evolution.auto: true`):** after `file-bugs.sh` routes Gxx tasks, `reflex/lib/kit-evolution.sh` runs automatically — kit Dev-Agent fix → G1-G6 gates → `psk-orchestrate.sh build` in source project → source project reruns reflex to verify.
 
 **Manual trigger:**
 ```bash
 bash reflex/lib/kit-evolution.sh \
   --kit-root /path/to/portable-spec-kit \
   --source-project /path/to/your-project \
-  --auto-cascade
+  --auto-update
 ```
 
 **Full flow doc:** `docs/work-flows/22-project-kit-feedback-loop.md`.
 
 **Dims 25-26 — structural-floor probes (registered in `reflex/prompts/qa-agent.md`).** QA-Agent's dimension set is extensible. Loop-Iter-2 (Phase F) added Dim 25 — every QA pass MUST audit the target against the mandates declared in `portable-spec-kit.md` (required directories, required pipeline files, source-layout sanity, per-feature design plans, ARD docs, README badge currency, `.env.example` placeholder hygiene, CI workflow content). The probe is implemented in `reflex/lib/mandate-audit.sh` and emits structured JSON findings with severity (`MAJOR` / `MINOR` / `ADVISORY`). v0.6.57 Phase B4 added Dim 26 — Workflow-Fidelity & Deliverable-Completeness — every QA pass MUST audit (a) workflow-state ledger presence + `_DISABLED=1` bypass-abuse, (b) UI completeness on frontend projects via `psk-ui-polish-check.sh --json`, (c) phase-gate discipline on `agent/plans/*.md` with `status: executing`, (d) spawn-protocol fidelity (no inline-fallback branches). The probe is implemented in `reflex/lib/workflow-fidelity-audit.sh` and emits the same JSON shape. Together, Dim 25 (required-presence) + Dim 26 (process-fidelity + deliverable-fullness) form the structural floor of every audit.
 
-**12 mechanical gates (was 11 pre-Dim-26).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline). Gates 10 and 11 — `kit-evolution-file-scope` (G1) and `kit-genericity-proof` (G2) — activate only on `REFLEX_KIT_EVOLUTION=1` passes to enforce PKFL genericity contracts. The 12th gate — `workflow-fidelity-completeness` (added v0.6.57 B4) — invokes `workflow-fidelity-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `workflow_fidelity_block_severity`). It is the structural counterpart to Dim 26 — QA surfaces workflow-fidelity + deliverable-completeness gaps; the gate prevents regression across passes. Bypass: `WFC_GATE_DISABLED=1` skips gate 12 with a stderr warning (genuine emergencies only).
+**13 mechanical gates (was 12 pre-HF6).** `reflex/lib/gates.sh` runs the mechanical gate set after every Dev-Agent fix. The 8th gate — `mandate-compliance` — invokes `mandate-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `reflex/config.yml` `mandate_compliance_block_severity`). MINOR findings are advisory (added to `agent/TASKS.md` backlog). The 8th gate is the structural counterpart to Dim 25: QA surfaces mandate gaps, the gate prevents regressions on subsequent passes. The 9th gate — `convergence-audit` (added in Loop-3 Phase L) — reads the active pass dir's `verdict.md` and **fails any pass that left an `INTERRUPTED` verdict without an `operator-recovered` annotation** (see §Convergence below for the full discipline). Gates 10 and 11 — `kit-evolution-file-scope` (G1) and `kit-genericity-proof` (G2) — activate only on `REFLEX_KIT_EVOLUTION=1` passes to enforce PKFL genericity contracts. The 12th gate — `workflow-fidelity-completeness` (added v0.6.57 B4) — invokes `workflow-fidelity-audit.sh` against `PROJ_ROOT` and blocks at severity `MAJOR` (configurable via `workflow_fidelity_block_severity`). It is the structural counterpart to Dim 26 — QA surfaces workflow-fidelity + deliverable-completeness gaps; the gate prevents regression across passes. Bypass: `WFC_GATE_DISABLED=1` skips gate 12 with a stderr warning (genuine emergencies only). The 13th gate — `audit-completeness` (added v0.6.60 HF6) — invokes `reflex/lib/check-audit-completeness.sh` against the current `PASS_DIR` and fails the pass when the synthesis-detection probe returns `verdict: synthesis-confirmed` (or `verdict: suspect` when `audit_completeness_block_severity: SUSPECT` is set, default `CONFIRMED`). It is the structural counterpart to the HF5 probe + the forthcoming HF7 Dim 27: QA-Agent surfaces synthesis signatures; gate 13 prevents synthesized findings from satisfying a pass. Bypass: `AUDIT_COMPLETENESS_GATE_DISABLED=1` skips gate 13 with a stderr warning.
 
 ### Convergence (MANDATORY — added in Loop-3, L1-L6)
 
@@ -1624,7 +1866,7 @@ Two decisions automated by the orchestrator reading `agent/PLANS.md` Stack table
 
 **Scaffold machinery:** `bash agent/scripts/psk-scaffold-src.sh <project-root>` reads PLANS.md Stack table → derives required subdirs → creates them with READMEs from `src-subdir-readme-template.md`. Idempotent — only creates missing subdirs, never overwrites. `--check` mode reports without writing.
 
-**Orchestrator integration:** `psk-orchestrate.sh` Phase 6 (secure scaffold) calls `psk-scaffold-src.sh` after `mkdir -p src/`. `--update` mode also calls it to backfill missing subdirs.
+**Orchestrator integration:** `psk-orchestrate.sh` `build` (secure scaffold phase) calls `psk-scaffold-src.sh` after `mkdir -p src/`. `init` conformance (src-layout check) also calls it to backfill missing subdirs on existing projects.
 
 ### Template Quality Bar (MANDATORY — applies to every kit-shipped template)
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+# mechanical-script: psk-doc-sync.sh — ARD/docs reconciliation (no AI invocation)
 # =============================================================
 # psk-doc-sync.sh — CHANGELOG → Full Documentation Coverage Analyzer
 #

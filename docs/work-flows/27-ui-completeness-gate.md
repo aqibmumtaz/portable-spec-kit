@@ -10,7 +10,7 @@
 | Script | `agent/scripts/psk-ui-completeness.sh` (36th kit script) |
 | Reflex dim | Dim 26 wraps the audit (`reflex/lib/workflow-fidelity-audit.sh`) |
 | Reflex gate | 12th mechanical gate `workflow-fidelity-completeness` |
-| Orchestrator phase | U6.5 in `psk-orchestrate.sh --update` |
+| Orchestrator phase | UI-completeness backfill in `psk-orchestrate.sh build` (existing-project lifecycle) |
 | Released | v0.6.57 |
 
 ## Key Rules
@@ -40,14 +40,14 @@
 │    Any violations → exit 1; state-machine gate blocks       │
 └──────────────────────────────┬──────────────────────────────┘
 ┌──────────────────────────────┴──────────────────────────────┐
-│ 5. --update U6.5 backfill phase invoked by orchestrator     │
+│ 5. UI-backfill phase invoked by `orchestrate build`         │
 │    Sub-agent scaffolds missing primitives, layout, dark-    │
 │    mode, states, a11y, tokens, pages, input-feedback,       │
 │    responsive; replaces empty shells with full impls        │
 └──────────────────────────────┬──────────────────────────────┘
 ┌──────────────────────────────┴──────────────────────────────┐
 │ 6. Re-run psk-ui-completeness.sh --strict; gate clears      │
-│    Workflow advances to next phase (U7 features → U8 etc)   │
+│    Workflow advances to next phase (features → release)     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -59,7 +59,7 @@
 | `psk-sync-check.sh --quick` (PSK025) | PostToolUse hook after every Write/Edit | warn |
 | `psk-sync-check.sh --full` (PSK025) | pre-commit hook | error (blocks) |
 | `psk-orchestrate.sh` Phase 5 (new mode) | new project scaffold | strict via state-machine gate |
-| `psk-orchestrate.sh --update` U6.5 | upgrading existing project | strict via state-machine gate; sub-agent backfills until clean |
+| `psk-orchestrate.sh build` (existing project) | upgrading existing project | strict via state-machine gate; sub-agent backfills until clean |
 | `reflex/lib/workflow-fidelity-audit.sh` Dim 26 | every reflex QA pass | --json parsed; findings filed |
 | `reflex/lib/gates.sh` Gate 12 | after every Dev-Agent fix | block at MAJOR (configurable severity) |
 
@@ -90,7 +90,7 @@
 
 - Flow 25 — Workflow Fidelity (4th reliability layer, the parent process gate)
 - Flow 26 — Plan Execution Protocol (5th reliability layer, plan-shape gate; this UI Completeness gate is the deliverable-bar counterpart)
-- Flow 18 — Project Orchestration (where U6.5 lives in the `--update` flow)
+- Flow 18 — Project Orchestration (UI-backfill lives in `orchestrate build`; the retired `--update`/`--retrofit` modes were folded in v0.6.62)
 
 ## Bypass
 
@@ -99,11 +99,11 @@
 ## Worked example — searchsocialtruth-v5 fix path
 
 1. Pre-v0.6.57: v5 shipped with skeletal admin pages (`<div>Coming soon</div>`) behind a "20 features / 110 tests passing" report. Empty shells passed every existing gate.
-2. v0.6.57 lands: `psk-ui-completeness.sh` + PSK025 + U6.5 active.
-3. Operator runs `bash agent/scripts/psk-orchestrate.sh --update` on v5 (Phase C of plan `workflow-fidelity`).
+2. v0.6.57 lands: `psk-ui-completeness.sh` + PSK025; UI-backfill folded into `orchestrate build` in v0.6.62.
+3. Operator runs `bash agent/scripts/psk-orchestrate.sh build` on v5 (existing-project lifecycle; Phase C of plan `workflow-fidelity`).
 4. U0-U6 advance normally (kit-currency sync, mandate audit, reflex install, design plans, feature stubs, ARD, sync-check-config).
-5. U6.5 fires: `psk-ui-completeness.sh --json` reports 7 sub-code violations (P/S/D/F/I/T/E).
+5. UI-backfill fires: `psk-ui-completeness.sh --json` reports 7 sub-code violations (P/S/D/F/I/T/E).
 6. Sub-agent backfills: scaffolds 12 component primitives, adds dark-mode toggle, replaces 9 empty-shell admin pages with full implementations matching their SPECS.md acceptance criteria, wires error states, adds design tokens, adds aria-labels.
 7. Re-run `--strict` → exit 0. State-machine gate clears.
-8. U7-U10 advance. Release prep, reflex audit until GRANTED, HANDOFF.md regenerated.
+8. Subsequent phases advance: features → release-prep, reflex audit until GRANTED, HANDOFF.md regenerated.
 9. v5 ships as v0.2.0 with rich professional UI, fully verified.

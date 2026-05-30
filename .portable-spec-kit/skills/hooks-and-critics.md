@@ -12,12 +12,11 @@ A workflow runs its steps normally. At the end it enters a single **validation g
 |----------|---------|-----------------|
 | Release (Step 9) | `psk-validate.sh release` | `STEP_9_VALIDATION` |
 | Feature completion | `psk-validate.sh feature-complete` | `FEATURE_COMPLETE` |
-| Init | `psk-validate.sh init` | `INIT` |
-| Reinit | `psk-validate.sh reinit` | `REINIT` |
+| Init (create + refresh) | `psk-validate.sh init` | `INIT` |
 | New project setup | `psk-validate.sh new-setup` | `NEW_SETUP` |
 | Existing project setup | `psk-validate.sh existing-setup` | `EXISTING_SETUP` |
 
-The same helper runs both critics identically across workflows. Each critic template has workflow-specific checks (e.g. `FEATURE_COMPLETE` verifies R→F→T and ADL; `INIT` verifies all 9 agent/* files populated from code; `REINIT` verifies no content was lost during re-sync).
+The same helper runs both critics identically across workflows. Each critic template has workflow-specific checks (e.g. `FEATURE_COMPLETE` verifies R→F→T and ADL; `INIT` verifies all 9 agent/* files populated from code — and, on an existing project, that no prior content was lost during the REFRESH). `reinit` is folded into `init`: the idempotent `init` CREATEs an empty project's pipeline and REFRESHes an existing one, so one critic template covers both paths.
 
 **Exit codes from psk-validate.sh:**
 - `0` — both gates passed; workflow complete

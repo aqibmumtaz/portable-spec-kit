@@ -8,7 +8,90 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.59 · **Tests:** 2325 (2180 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.63 · **Tests:** 2832 (2687 framework + 145 benchmarking)
+
+### v0.6.63 — Reflex Convergence + Workflow Declaration Flow Doc (2026-05-28)
+- **QA-C22-04 fix (CRITICAL):** `reflex/lib/findings-registry.sh` honors `REFLEX_FINDINGS_REGISTRY` + `REFLEX_HISTORY_DIR` env overrides so registry tests no longer mutate the committed registry. Section 84 fixtures isolate via temp registry; suite is now deterministic (commit `023f006`).
+- **QA-C22-07 fix (CRITICAL):** `reflex/lib/update-eval-trace.sh` now emits the "Cycle-numbering note" callout in the generated `REFLEX_EVAL_TRACE.md` header, so per-pass regeneration no longer wipes it. Test 82.19 deterministic (commit `fd4b702`).
+- **QA-C22-09 fix (MINOR):** PSK032 grandfather exemption — cycles carrying a `migration-note.md` (documented historical mis-numbering per v0.6.61 P1 "document, not rename") are skipped from the misuse count. New regression test 82.21 (commit `fd4b702`).
+- **QA-C22-08 fix (MINOR):** `reflex/lib/doc-code-diff.sh` honors a `# doc-coverage-exempt:` marker in script headers; 4 internal mechanical helpers (`psk-behavior-live`, `psk-behavior-parity`, `psk-gen-manifest`, `psk-state-cleanup`) carry the marker. Precise (only marked scripts opt out — no blanket mechanical-script silencing). Two new regression tests in `04-reflex.sh` (commit `67caca6`).
+- **Flow doc 29 added:** `docs/work-flows/29-workflow-declaration-schema.md` documents the 7th reliability layer (Workflow Declaration Schema) introduced in v0.6.62. PSK034 + PSK035 enforcement, Class A/B/B′/B-plan-driver/C taxonomy, phases.yml schema, dispatch contract. Closes the documentation gap surfaced by the step-4 release critic.
+- **Stale `reinit` references removed from `13-release-workflow.md`** (2 lines): the validation lineage table + Final Validation prose now correctly cite 5 executable workflows (release · feature-complete · init · new-setup · existing-setup), with `reinit` documented as folded into idempotent `init` in v0.6.62.
+- **Count cascade:** README badge, ARD, CHANGELOG, RELEASES, SPECS, portable-spec-kit.md (+ root mirror) updated to 2687 framework / 2832 total / 30 flow documents (29 user-facing + 1 template). README row 29 added for `29-workflow-declaration-schema.md`.
+
+### v0.6.62 — Command-Model Redesign + Dispatcher Migration (2026-05-27)
+- **Two-command model:** collapsed to idempotent `install` + `init`. `init` is now a registry-driven conformance engine (CREATE-or-REFRESH, content-loss-protected) that folds the retired `reinit` (`psk-reinit.sh` is a thin alias).
+- **Unified `orchestrate build`:** one command + one `orchestrate` workflow serves both new and existing projects (each phase idempotent create-or-update). `--update` and `--retrofit` removed; existing-project structural conformance is `init`'s separate axis.
+- **Dispatcher migration:** `psk-run-plan.sh` now delegates phase-driving (start/next/resume/retry) to `psk-dispatch.sh --plan`, routing every plan spawn through `psk-spawn.sh` (closes the bare-`SPAWN:`-echo §Spawn-Fidelity gap). Compat-mode execution ported into the dispatcher; absolute-artifact-path robustness added.
+- **Workflow Declaration enforcement implemented:** PSK034 (every `# workflow-router:` script must have a `workflows/<name>/phases.yml` unless `# workflow-decl-exempt:`) + PSK035 (phases.yml schema validation) — previously documented but never implemented. Exempt markers added to plan-driver/session/gate helpers.
+- **reflex** resolved as monolithic-by-design (Class B′): its iterate-until-convergence control flow does not fit the dispatcher's linear phases.yml model; already §Spawn-Fidelity-compliant via spawn-qa/spawn-dev → psk-spawn.sh.
+- **Docs unified:** 05-project-init rewritten for idempotent init; 18-project-orchestration is the canonical `orchestrate build` doc; 23-project-update redirects to init+build; stale `reinit`/`--update` references repointed.
+- Tests: 2832 (2687 framework + 145 benchmarking), 0 failures.
+
+### v0.6.61 — Strict-GRANT Convergence (2026-05-18)
+
+> **Theme:** Close the convergence gap between v0.6.60 mechanical-shipping and v0.6.60 strict-GRANT. Adds PSK031 findings-registry (cross-pass canonical-ID tracking), watchdog re-spawn for paused phases, wall_clock multi-wave aggregator, and 28 deferred MINOR/ADVISORY developer-ergonomics closures. Target: cycle-21 strict GRANT verdict.
+
+#### Added
+
+- **PSK031 findings-registry** — `reflex/lib/findings-registry.sh` + `reflex/history/findings-registry.yaml`. Content-fingerprint canonical-ID tracking across cycles; aliases for widened/residual finding lifecycle. Closes the cycle-18→cycle-20 "is this the same finding?" ambiguity. (P3, commit c9270a4)
+- **psk-workflow-watchdog.sh** invoked in `reflex/run.sh` preconditions — detects paused phases ≥WARN/HUNG/STALE thresholds, auto-enqueues into retry queue. (P4, commit 2c4e3fb)
+- **wall_clock multi-wave aggregator** — `reflex/lib/check-audit-completeness.sh` correctly sums wave-level qa-usage.yaml entries instead of orchestrator-only timing. (P5, commit 10ece5b)
+- **psk-release.sh class declaration** — `script-class: orchestrator` header tag added. 43/43 psk-* scripts now declared. (P6)
+- **CHANGELOG/RELEASES v0.6.61 stub** — visibility for in-flight cycle-19/20/21 work. (P6, this commit)
+
+#### Convergence
+
+- 5 POSITIVE closure-confirmations from cycle-20 acknowledged (PSK030, Dim 20 fidelity, Dim 22 autodetect, Dim 27 parser, Dim 26 WFC clean).
+- 8 kit-design tradeoffs acknowledged as deferred to v0.7+ (wall_clock budget, IN-FLIGHT trace mode, stat-fallback portability, convergence-audit preventive paths, llm_probe).
+- README narrative test-counts acknowledged as historical-version-anchored (not drift).
+
+### v0.6.60 — Spawn Fidelity Hardening (May 2026)
+
+> **Theme:** structural prevention of synthesis-as-shortcut. After the v0.6.59 reflex incident where SDK stream-idle-timeouts caused inline-synthesis fallback, this release establishes **§Spawn Fidelity** as the 6th reliability layer with 9 enforcement mechanisms.
+
+#### Added
+
+- **§Spawn Fidelity (6th reliability layer)** in `portable-spec-kit.md` — sub-agent spawn protocol with no-inline-fallback contract. §Reliability Architecture opening updated to "six enforcement layers". Includes the Standard Spawn Recipe (7-section prompt template, 4-field artifact template, workload-driven spawn count mandate, 8-step Dev-Agent fix protocol for Dim 28 findings). (HF8, commit ca2adbe)
+- **Standard Spawn Recipe skill** at `.portable-spec-kit/skills/spawn-fidelity.md` — codifies the recipe so Dev-Agent has a deterministic procedure to follow when QA-Agent Dim 28 surfaces a spawn-coverage gap. (HF8b, commit 2d8cc85)
+- **Persistent retry queue** at `agent/.workflow-state/retry-queue.yml` + `agent/scripts/psk-retry-queue.sh` CLI (list/add/drain/clear/show). Exponential backoff `5min → 30min → 2h → 6h → AWAITING_HUMAN_ARBITRATION`. Survives session ends, context compacts, and machine switches. (HF3, commit 06db0b5)
+- **Resume-on-session-start MANDATORY rule** + `agent/scripts/psk-resume-bootstrap.sh` — first agent action on every session entry MUST drain the retry queue and list paused workflow phases before responding to the user. PSK029 sync-check rule detects sessions that started without the bootstrap-check. Session-audit log marker format implemented. (HF4, commit 4246a39)
+- **Workflow watchdog** at `agent/scripts/psk-workflow-watchdog.sh` — detects hung phases at 15min WARN / 1h HUNG / 24h STALE thresholds. **Phase idempotency contract** documented in `portable-spec-kit.md` §Phase Idempotency: every phase gate + artifact write + commit MUST be safely re-runnable. (HF4b, commit 7f4ab20)
+- **Synthesis-detection probe** at `reflex/lib/check-audit-completeness.sh` — 6-signature analysis (invocation_verbatim coverage, citable_quote with file:line, file_read_trace, wall_clock, qa_usage consistency, single-author write) on reflex pass dirs producing real/suspect/synthesis-confirmed verdict. (HF5, commit 65ef0f6)
+- **13th mechanical gate `audit-completeness`** in `reflex/lib/gates.sh` — blocks at synthesis-confirmed (configurable via `audit_completeness_block_severity`). **PSK026 critic-completeness** sync-check rule mirrors the probe for `critic-result.md` files in non-reflex workflows. (HF6, commit a9a5b60)
+- **Dim 27 Synthesis-Detection** in `reflex/prompts/qa-agent.md` — recursive audit of previous pass's `findings.yaml` for synthesis signatures. cycle-N synthesis flagged by cycle-(N+1) Dim 27 audit. (HF7, commit 1318d7c)
+- **Dim 28 Spawn-Coverage Audit** in `reflex/prompts/qa-agent.md` — grep-detects kit scripts that do inline AI work without `psk-spawn.sh`. 4 detection patterns. Surfaces as `scope: kit` + `genericity_proof` findings routed through PKFL. (HF7b, commit 6c3e45f)
+- **PSK027 bypass-tamper-detection** + `agent/scripts/psk-bypass-log.sh` — all `PSK_*_DISABLED=1` bypass env var sites log to `agent/.bypass-log` with timestamp, env var, command, justification. PSK027 sync-check fires WARNING at 1-2 bypasses / ERROR at 3+ in 24h. (HF9, commit 2f351fe)
+- **P11 — Spawn Fidelity principle** in `agent/PHILOSOPHY.md` with evidence base (the v0.6.59 reflex synthesis incident). (HF8)
+- **Flow doc 28** at `docs/work-flows/28-spawn-fidelity.md` documenting the full Spawn Fidelity workflow with Standard Spawn Recipe, workload-driven spawn-count rules, covered surfaces, bypass log, and edge cases.
+
+#### Changed
+
+- **Reflex `spawn-qa.sh` + `spawn-dev.sh` retrofitted** through `psk-spawn.sh` — both reflex sub-agent dispatchers now inherit the no-inline-fallback contract automatically. Synthesis-as-shortcut is structurally blocked at the reflex spawn sites. (HF1, commit 4958f86)
+- **`psk-critic-spawn.sh` retrofitted** through `psk-spawn.sh` — all 6 critic templates (STEP_9_VALIDATION, FEATURE_COMPLETE, INIT, REINIT, NEW_SETUP, EXISTING_SETUP) now route through the spawn-fidelity wrapper. The release-ceremony dual-gate sub-agent critic is now spawn-fidelity-enforced. (HF2, commit a13c0a5)
+- **`psk-orchestrate.sh --update` U3-U10 split** from single-batch sub-agent to per-U-phase spawns — closes the 15h-batch context-overflow risk surfaced in v5 Phase C. Workload-driven per-phase invocation. (HF1b, commit 15f6351)
+- **§Reliability Architecture opening updated** from "five enforcement layers" → "six enforcement layers" with §Spawn Fidelity listed alongside §Workflow Fidelity and §Plan Execution Protocol. (HF8)
+
+#### Removed
+
+- **Cascade-as-user-update path purged** from 5 sites in kit machinery: `reflex/lib/kit-evolution.sh` Phase 6, `reflex/config.yml` `auto_cascade`→`auto_update`, `portable-spec-kit.md` §Kit-Evolution Protocol, `docs/work-flows/22-project-kit-feedback-loop.md` + `docs/work-flows/21-kit-project-evolution-loop.md`. Canonical user-project update path is now `bash agent/scripts/psk-orchestrate.sh --update`. **PSK028 anti-pattern sync-check rule** flags any reintroduction. (HF0, commit ada220d)
+
+#### Tests
+
+- Reliability suite: 433 → 589 PASS (+156 tests across Sections 68-81)
+- Sync-check rules: 27 → 30 (PSK026 critic-completeness + PSK027 bypass-tamper + PSK028 cascade-anti-pattern + PSK029 resume-bootstrap-currency)
+- All test suites pass: `tests/test-spec-kit.sh` 2377, `tests/test-spd-benchmarking.sh` 145, `tests/test-release-check.sh` 84/84 R→F→T clean
+
+#### Architecture Decision Log
+
+- **ADR-053:** Retrofit (not rewrite) for `spawn-qa.sh`/`spawn-dev.sh`/`psk-critic-spawn.sh` (HF1, HF2)
+- **ADR-054:** Per-U-phase spawn split for `psk-orchestrate.sh --update` — fixes the 15h-batch single-spawn risk (HF1b)
+- **ADR-055:** Global single `retry-queue.yml` + JSONL `bypass-log` — retry queue committed (durable spawn intent across sessions) vs bypass-log gitignored (per-session audit trail) (HF3, HF9)
+- **ADR-056:** Resume-on-session-start as MANDATORY agent rule, not just script — durable execution complement to the resumable state machine (HF4)
+- **ADR-057:** Synthesis detection at Phase 0 helper level + Dim 27 recursive audit — caller-side gate (13th) + auditor-side recursive guard (HF5-HF7)
+- **ADR-058:** §Spawn Fidelity as 6th reliability layer — kit-rule level enforcement, not just script-level (HF8)
+- **ADR-059:** Bypass tamper-detection via JSONL log + PSK027 graduated severity (WARNING 1-2 / ERROR 3+ in 24h) (HF9)
+- **ADR-060:** HF11/HF12 forward — real reflex autoloops on kit + v5 (not single passes) — confirms convergence under v0.6.60 machinery with no synthesis path available
 
 ### v0.6.59 — Workflow-Fidelity Plan Close-out (Phase D, May 2026)
 
@@ -19,6 +102,13 @@ All notable changes to the Portable Spec Kit are documented here.
 - **SPECS + TASKS v0.6.57 sync (D6):** F73 (Workflow Fidelity), F74 (Plan Execution Protocol), F75 (UI Completeness Gate), F76 (PSK022a fix) added to SPECS with R→F→T test refs.
 - **Closes Phase R 4 ADVISORY findings** from cycle-15/pass-001 (compat-mode plans ×2, user-guide ARD missing, install.sh inventory drift).
 - **2325 tests passing** (2180 framework + 145 benchmarking), 76 features tracked, 100% R→F→T coverage.
+
+### v0.6.58 — Consolidated into v0.6.59 (May 2026)
+
+> **Note:** v0.6.58 was the work-in-progress identifier for the Phase D close-out work
+> that ultimately shipped as v0.6.59. There is no standalone v0.6.58 release artifact —
+> all v0.6.58 in-flight changes were rolled forward into v0.6.59 above before tagging.
+> The version identifier is retained in `agent/RELEASES.md:76` for historical traceability.
 
 ### v0.6.57 — Plan Execution Protocol + UI Completeness Gate (May 2026)
 

@@ -12,8 +12,8 @@ Never automatically run tests, update counts, bump versions, regenerate PDFs, or
 - **"push"** → push to remote (pre-push gate applies)
 - **"prepare release and push"** / **"prepare release, commit and push"** → steps 1–9 + commit all release changes + push via `bash agent/scripts/sync.sh` + show release summary. No confirmation needed between steps — user has given the full instruction.
 - **"refresh release and push"** / **"refresh release, commit and push"** → same as above but no version bump.
-- **"init"** → scan project thoroughly, create/fill all agent/ files from codebase
-- **"reinit"** → re-scan project, sync all agent files to current codebase state
+- **"init"** → conform project to current kit standards — idempotent CREATE (scan + create/fill agent/ files) or REFRESH (re-scan + sync existing, content-loss-protected). Folds `reinit`.
+- **"reinit"** → folded into `init` (v0.6.62+) — recognized as a trigger word but runs the same idempotent `init`. No separate behavior.
 
 **"prepare release" / "update release" sequence (steps 1–9, no commit/push):**
 1. Run **Test Execution Flow** — do not proceed to step 2 until all suites pass. User declines to fix → stop release.
@@ -188,12 +188,12 @@ Explicit trigger for full project scan and agent file setup. Handles any kit sta
     Status: ✅ Mapped
     ```
 
-**"reinit" — Re-scan and sync agent files:**
-Re-scans the entire project and brings all agent files in sync with the current codebase. Use when significant code changes have been made since the last scan and agent files are stale.
+**"reinit" — folded into idempotent `init` (v0.6.62+):**
+`reinit` no longer has separate behavior. The trigger word is recognized but runs the same idempotent `init`, which on an existing project enters REFRESH mode: re-scans the project and conforms all agent files to current kit standards (content-loss-protected). `psk-reinit.sh` is a thin alias forwarding to `psk-init.sh`. The REFRESH-mode steps `init` runs on an existing project:
 
-1. Announce: "Re-scanning — syncing agent files to current codebase..."
-2. Read current `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` as baseline.
-3. **Deep scan** — same scope as `init` step 5. Read source files, config files, directory structure.
+1. Announce: "Re-scanning — conforming agent files to current kit standards..."
+2. Snapshot `agent/*.md` byte counts (content-loss guard), read current `agent/AGENT.md` + `agent/AGENT_CONTEXT.md` as baseline.
+3. **Deep scan** — same scope as `init` CREATE-mode scan. Read source files, config files, directory structure.
 4. **Update `agent/AGENT.md`** — update only fields that changed (stack versions, new tools, port, conda env). Note what changed.
 5. **Rebuild `agent/AGENT_CONTEXT.md`** — rewrite from current codebase state:
    - Phase — inferred from TASKS.md progress + codebase completeness
@@ -203,9 +203,10 @@ Re-scans the entire project and brings all agent files in sync with the current 
    - File structure — current directory tree
 6. **SPECS.md staleness check** — count `[x]` tasks in TASKS.md vs features in SPECS.md. If completed tasks are not represented in SPECS → list them: "3 completed tasks not in SPECS.md — add as features? (y/n)"
 7. **PLANS.md vs code** — if architecture visible in the code differs from PLANS.md → flag it: "PLANS.md may be stale — <field> shows <X> in code but <Y> in PLANS. Update? (y/n)"
-8. Show reinit summary:
+8. **Content-loss check** — flag any `agent/*.md` that shrank >20% vs snapshot before completing.
+9. Show init (REFRESH) summary:
    ```
-   ✅ Reinit complete — <project-name>
+   ✅ Init complete (REFRESH) — <project-name>
    AGENT.md:      <fields updated, or "no changes">
    AGENT_CONTEXT: rebuilt — phase: <X> · <Y> tasks pending
    SPECS.md:      <N stale features> / current ✅

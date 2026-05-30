@@ -723,9 +723,13 @@ grep -q "Critical Scenarios" "$PROJ/README.md" \
   && pass "docs consistency: README has Critical Scenarios section" \
   || fail "docs consistency: README missing Critical Scenarios section — update README"
 
-# RELEASES.md current version must reference this framework version
-LATEST_RELEASE_RANGE=$(grep "^Kit:" "$PROJ/agent/RELEASES.md" | head -1)
-echo "$LATEST_RELEASE_RANGE" | grep -q "$PROJ_VER" \
+# RELEASES.md current version must reference this framework version.
+# Check the first 2 Kit: lines — an IN-FLIGHT release block at the top may
+# already carry the NEXT version (e.g. v0.6.61 stub before version bump
+# completes during prepare-release). Both the in-flight head AND the most
+# recent stable entry are valid landing zones for the current version.
+LATEST_RELEASE_RANGES=$(grep "^Kit:" "$PROJ/agent/RELEASES.md" | head -2)
+echo "$LATEST_RELEASE_RANGES" | grep -q "$PROJ_VER" \
   && pass "docs consistency: RELEASES.md current range includes $PROJ_VER" \
   || fail "docs consistency: RELEASES.md range doesn't include $PROJ_VER — update range"
 

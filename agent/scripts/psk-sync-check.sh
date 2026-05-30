@@ -1,4 +1,5 @@
 #!/bin/bash
+# mechanical-script: psk-sync-check.sh — consistency rule engine (no AI invocation)
 # =============================================================
 # psk-sync-check.sh — Consistency Verifier (Bash Critic)
 #
@@ -47,6 +48,15 @@ set -uo pipefail
 
 # --- Emergency bypass ---
 if [ "${PSK_SYNC_CHECK_DISABLED:-0}" = "1" ]; then
+  # HF9 (v0.6.60): durable bypass-tamper audit trail. Failure tolerant
+  # — logger errors must not block emergency bypass path.
+  _bypass_log_script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/psk-bypass-log.sh"
+  if [ -x "$_bypass_log_script" ]; then
+    bash "$_bypass_log_script" log \
+      --env-var "PSK_SYNC_CHECK_DISABLED" \
+      --command "psk-sync-check.sh $*" \
+      --justification "${PSK_BYPASS_REASON:-not provided}" 2>/dev/null || true
+  fi
   exit 0
 fi
 
@@ -157,6 +167,87 @@ Error codes:
             M=prompt file actually exists on disk (warn in --quick, error in --full)
             X=compat-mode plan advisory (conversion required on next start)
           Bypass: PSK_PLAN_EXEC_DISABLED=1
+  PSK026: Critic-result.md synthesis-detection (v0.6.60+ HF6). Counterpart
+          to HF5's check-audit-completeness.sh probe applied to release-
+          ceremony / feature-complete / init / reinit / new-setup /
+          existing-setup workflow critic-result.md files. Three signatures:
+          (a) missing QUOTE: evidence pairs for CURRENT: entries (WARNING),
+          (b) impossibly-fast mtime diff vs parent commit <10s (ERROR), and
+          (c) zero path overlap with critic-task.md (ERROR). Fires --full
+          mode only; recursion-guarded against tests/sections/ and /tmp/.
+          Bypass: PSK_PSK026_DISABLED=1
+  PSK028: Cascade-as-user-update anti-pattern detection (v0.6.60+). The canonical
+          user-project update path is `psk-orchestrate.sh build` (v0.6.62+ — one
+          command for new + existing; `--update` was removed). Cascade
+          wording is reserved for kit-internal version-anchor sync
+          (psk-version-cascade.sh) and reflex Dev-Agent auto-closure
+          (cascade-check). Other "cascade kit into project" wording in kit's
+          normative surfaces (portable-spec-kit.md, docs/work-flows/, reflex/lib/,
+          reflex/prompts/, reflex/config.yml, agent/scripts/) is flagged.
+          Bypass: PSK_PSK028_DISABLED=1
+  PSK029: Resume-on-session-start audit (v0.6.60+ HF4). When a project has
+          AWAITING:* phases in agent/.workflow-state/*.state and commits
+          landed without a matching session-start-resume-check ran marker
+          in agent/.workflow-state/session-audit.log → flagged. Forces
+          agents to run psk-resume-bootstrap.sh at session start so paused
+          sub-agent work resumes durably across context-compact / session-end.
+          Severity: ADVISORY in --quick, ERROR in --full.
+          Recursion guard: only fires when *.state files have STARTED= newer
+          than the last commit touching .workflow-state/.
+          Bypass: PSK_RESUME_BOOTSTRAP_DISABLED=1
+  PSK030: Script class declaration audit (v0.6.60+ HF11 cycle-19 — §Spawn
+          Fidelity Dim 28 Probe 4). Every agent/scripts/psk-*.sh MUST declare
+          its class in the header lines 1-5: mechanical-script (no AI
+          invocation), workflow-router (routes spawns through psk-spawn.sh /
+          psk-critic-spawn.sh), or ai-invoker (direct AI invocation).
+          Alternative: script contains `psk-spawn.sh request` (implicit
+          workflow-router). Closes the discovery-surface contract Probe 4
+          relies on — without this gate, future PRs can land undeclared
+          psk-* scripts that bypass §Spawn Fidelity audit.
+          Bypass: PSK_PSK030_DISABLED=1
+  PSK031: Findings-registry de-dup audit (v0.6.61+ P3 — §Spawn Fidelity
+          audit-trail integrity). The kit ships a cross-pass canonical-ID
+          registry at reflex/history/findings-registry.yaml. PSK031 scans
+          recent reflex/history/cycle-*/pass-*/findings.yaml files for two
+          regressions:
+            (a) duplicate fingerprints assigned different canonical IDs
+                across passes (the cycle-17 → cycle-20 -RESIDUAL/-WIDENED
+                pattern that motivated the registry)
+            (b) findings whose ID is a suffix-variant (-RESIDUAL-*,
+                -WIDENED-*, -CYC<N>) of an existing registered canonical_id
+                but not registered as that canonical's alias
+          Severity: MAJOR (overlapping findings = audit-trail integrity gap).
+          Bypass: PSK_PSK031_DISABLED=1
+  PSK032: Cycle-numbering misuse (v0.6.61+ — kit's reflex cycle-tracking
+          was bypassed). Contract: 1 cycle = 1 autoloop run with multiple
+          passes (pass-001, pass-002, ...). When 3+ of the last 5 cycle-NN
+          dirs in reflex/history/ contain ONLY pass-001 (with verdict.md
+          present, i.e. not in-flight), it signals that the kit's
+          find_next_pass_dir / .active-cycle state machine was bypassed —
+          each reflex invocation created a new cycle-NN instead of
+          incrementing pass-NNN within an active cycle.
+          Severity: WARNING in --quick, ERROR in --full.
+          Bypass: PSK_PSK032_DISABLED=1
+  PSK033: Standalone-pass overuse (v0.6.61+ P2 — operator is mis-using
+          single-pass mode). Contract: standalone/ is for ad-hoc / one-shot
+          audits, not convergence. Repeated standalone invocations
+          fragment the audit trail across flat passes instead of grouping
+          them under cycle-NN. When reflex/history/standalone/ contains
+          more than the configured threshold (default 10) of pass-* dirs,
+          PSK033 surfaces as ADVISORY suggesting the operator switch to
+          autoloop for convergence work. ADVISORY only — never blocks.
+          Bypass: PSK_PSK033_DISABLED=1
+  PSK034: Workflow-declaration linkage (v0.6.62+ — §Workflow Declaration
+          Schema enforcement, previously documented but unimplemented). Every
+          script carrying a `# workflow-router:` header MUST have a matching
+          .portable-spec-kit/workflows/<name>/phases.yml (name from psk-<name>.sh)
+          UNLESS it declares `# workflow-decl-exempt: <reason>` (dispatcher /
+          plan-driver / session-helper / gate-helper). ERROR in --full.
+          Bypass: PSK_PSK034_DISABLED=1
+  PSK035: Workflow phases.yml schema validation (v0.6.62+ — §Workflow
+          Declaration Schema). Every .portable-spec-kit/workflows/*/phases.yml
+          MUST declare the required top-level fields schema_version, workflow,
+          and phases. ERROR in --full. Bypass: PSK_PSK035_DISABLED=1
 
 Modes:
   --full         all 11 checks
@@ -860,6 +951,50 @@ check_readme_content() {
   fi
 
   emit_pass "README 'Latest Release' references $minor_ver, substantive, links to CHANGELOG"
+}
+
+check_installer_manifest() {
+  # PSK036 — install.sh is manifest-driven (QA-KIT-INSTALLER-01). The committed
+  # manifests must equal disk reality, or a network install silently omits scripts.
+  [ "$FULL" = false ] && return
+  [ ! -f "$PROJ_ROOT/install.sh" ] && return  # only kit-self has install.sh
+  run_check
+
+  local fails=""
+
+  # agent/scripts/.manifest must enumerate exactly the on-disk psk-*.sh set.
+  local sm="$PROJ_ROOT/agent/scripts/.manifest"
+  if [ -f "$sm" ]; then
+    local disk_scripts manifest_scripts diff_scripts
+    disk_scripts=$(find "$PROJ_ROOT/agent/scripts" -maxdepth 1 -name 'psk-*.sh' -type f -print0 2>/dev/null | xargs -0 -n1 basename 2>/dev/null | sort -u)
+    manifest_scripts=$(grep -vE '^#' "$sm" 2>/dev/null | awk '{print $1}' | grep -E '^psk-.*\.sh$' | sort -u)
+    diff_scripts=$(comm -3 <(echo "$disk_scripts") <(echo "$manifest_scripts") | tr -d '\t' | grep -v '^$' | tr '\n' ' ')
+    [ -n "$diff_scripts" ] && fails="${fails} scripts-manifest-drift:[${diff_scripts% }]"
+  else
+    fails="${fails} scripts-manifest-missing"
+  fi
+
+  # reflex/lib/.manifest must enumerate exactly the on-disk reflex/lib helper set.
+  local lm="$PROJ_ROOT/reflex/lib/.manifest"
+  if [ -d "$PROJ_ROOT/reflex/lib" ]; then
+    if [ -f "$lm" ]; then
+      local disk_lib manifest_lib diff_lib
+      disk_lib=$(find "$PROJ_ROOT/reflex/lib" -maxdepth 1 -type f \
+        \( -name '*.sh' -o -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' \) -print0 \
+        | xargs -0 -n1 basename 2>/dev/null | sort -u)
+      manifest_lib=$(grep -vE '^#' "$lm" 2>/dev/null | awk '{print $1}' | grep -v '^$' | sort -u)
+      diff_lib=$(comm -3 <(echo "$disk_lib") <(echo "$manifest_lib") | tr -d '\t' | grep -v '^$' | tr '\n' ' ')
+      [ -n "$diff_lib" ] && fails="${fails} lib-manifest-drift:[${diff_lib% }]"
+    else
+      fails="${fails} lib-manifest-missing"
+    fi
+  fi
+
+  if [ -n "$fails" ]; then
+    emit_issue "PSK036" "installer-manifest-drift" "install.sh manifest drifted from disk:${fails}" "Run: bash agent/scripts/psk-gen-manifest.sh to regenerate the committed manifests."
+  else
+    emit_pass "Installer manifests current (agent/scripts/.manifest + reflex/lib/.manifest match disk)"
+  fi
 }
 
 check_readme_install_list() {
@@ -1608,6 +1743,14 @@ check_kit_version_drift() {
 # Bypass: PSK_PLAN_EXEC_DISABLED=1 short-circuits the entire check.
 check_plan_schema() {
   if [ "${PSK_PLAN_EXEC_DISABLED:-0}" = "1" ]; then
+    # HF9 (v0.6.60): durable bypass-tamper audit trail. Failure tolerant.
+    local _bypass_log_script="$SCRIPT_DIR/psk-bypass-log.sh"
+    if [ -x "$_bypass_log_script" ]; then
+      bash "$_bypass_log_script" log \
+        --env-var "PSK_PLAN_EXEC_DISABLED" \
+        --command "psk-sync-check.sh check_plan_schema" \
+        --justification "${PSK_BYPASS_REASON:-not provided}" 2>/dev/null || true
+    fi
     return 0
   fi
   local plans_dir="$AGENT_DIR/plans"
@@ -1717,6 +1860,18 @@ check_plan_schema() {
     # Track per-plan violations
     local plan_violations=0
 
+    # Honor lifecycle status for PSK024-M (missing-prompt-file) probe:
+    #   - done | abandoned → historical, prompts not actionable (work in git history)
+    #   - draft            → not yet approved; prompts written JIT when phase spawns
+    #   - approved | executing → about to run / running, prompts ARE required
+    # Schema lint (V/P/I/N/R/A/G/C/D) still applies to all statuses.
+    local plan_status=""
+    plan_status=$(echo "$fm" | grep -E '^status:[[:space:]]*' | head -1 | sed -E 's/^status:[[:space:]]*//' | tr -d '"' | tr -d "[:space:]")
+    local skip_prompt_existence=0
+    if [ "$plan_status" = "done" ] || [ "$plan_status" = "abandoned" ] || [ "$plan_status" = "draft" ]; then
+      skip_prompt_existence=1
+    fi
+
     # PSK024-V — schema_version field present + integer
     if [ "$has_schema_version" -eq 0 ]; then
       _psk024_emit "$rel" "missing or non-integer schema_version field (PSK024-V)" "$quick_mode"
@@ -1752,14 +1907,18 @@ check_plan_schema() {
 
     # Parse phases into records. Each record: pipe-delimited
     # "id|name|prompt|artifact|gate|commit_required|depends_on"
+    # PSK024-D fix: records are \x1f (Unit Separator) delimited, NOT pipe — gate
+    # commands legitimately contain '|' / '||' which would corrupt pipe-split
+    # fields (leaking the gate into depends_on / commit_required). \x1f never
+    # appears in shell commands so field splitting is robust.
     local phases_records
-    phases_records=$(echo "$phases_dump" | awk '
+    phases_records=$(echo "$phases_dump" | awk -v SEP=$'\x1f' '
       function strip(s) { sub(/^[[:space:]]+/, "", s); sub(/[[:space:]]+$/, "", s); sub(/^"/, "", s); sub(/"$/, "", s); return s }
       function any_set() { return (id != "" || name != "" || prompt != "" || artifact != "" || gate != "" || commit_required != "" || depends_on != "") }
       BEGIN { started=0; id=""; name=""; prompt=""; artifact=""; gate=""; commit_required=""; depends_on="" }
       /^[[:space:]]*-[[:space:]]*id:/ {
         if (started && any_set()) {
-          print id "|" name "|" prompt "|" artifact "|" gate "|" commit_required "|" depends_on
+          print id SEP name SEP prompt SEP artifact SEP gate SEP commit_required SEP depends_on
         }
         started=1
         sub(/^[[:space:]]*-[[:space:]]*id:[[:space:]]*/, "")
@@ -1774,7 +1933,7 @@ check_plan_schema() {
       /^[[:space:]]+depends_on:/ { sub(/^[[:space:]]+depends_on:[[:space:]]*/, ""); depends_on=strip($0); next }
       END {
         if (started && any_set()) {
-          print id "|" name "|" prompt "|" artifact "|" gate "|" commit_required "|" depends_on
+          print id SEP name SEP prompt SEP artifact SEP gate SEP commit_required SEP depends_on
         }
       }
     ')
@@ -1789,12 +1948,12 @@ check_plan_schema() {
     # Collect all ids first for dup + depends_on cross-check
     local all_ids=""
     local seen_ids=""
-    while IFS='|' read -r pid pname pprompt partifact pgate pcommit pdep; do
+    while IFS=$'\x1f' read -r pid pname pprompt partifact pgate pcommit pdep; do
       all_ids="$all_ids $pid"
     done <<< "$phases_records"
 
     # Per-phase field checks
-    while IFS='|' read -r pid pname pprompt partifact pgate pcommit pdep; do
+    while IFS=$'\x1f' read -r pid pname pprompt partifact pgate pcommit pdep; do
       # PSK024-I: id present + unique + kebab/alphanumeric
       if [ -z "$pid" ]; then
         _psk024_emit "$rel" "phase has empty id (PSK024-I)" "$quick_mode"
@@ -1868,8 +2027,10 @@ check_plan_schema() {
         done
       fi
 
-      # PSK024-M: prompt file exists on disk (warn in quick, error in full)
-      if [ -n "$pprompt" ]; then
+      # PSK024-M: prompt file exists on disk (warn in quick, error in full).
+      # Skipped for historical/not-yet-active plans (done|abandoned|draft) — see
+      # skip_prompt_existence above; prompts for those are not actionable.
+      if [ -n "$pprompt" ] && [ "$skip_prompt_existence" -eq 0 ]; then
         if [ ! -f "$PROJ_ROOT/$pprompt" ]; then
           if [ "$quick_mode" = true ]; then
             # warn-only — don't count as violation in --quick
@@ -1883,9 +2044,10 @@ check_plan_schema() {
     done <<< "$phases_records"
 
     # PSK024-D cycle detection (simple DFS over depends_on edges).
-    # Build edge list "from -> to" pairs.
+    # Build edge list "from -> to" pairs. \x1f-delimited (see PSK024-D fix above).
     local edges
-    edges=$(echo "$phases_records" | awk -F'|' '
+    edges=$(echo "$phases_records" | awk -v SEP=$'\x1f' '
+      BEGIN { FS = SEP }
       {
         from = $1
         dep = $7
@@ -2018,6 +2180,875 @@ check_ui_completeness() {
   fi
 }
 
+# --- CHECK PSK028: Cascade-as-user-update anti-pattern detection (v0.6.60+) ---
+#
+# The canonical user-project update path is `psk-orchestrate.sh build` (v0.6.62+
+# — one command for new + existing; `--update` removed). The legacy "cascade kit into project" wording
+# (and the install.sh-from-PKFL invocation it implied) is retired. PSK028
+# grep-scans the kit's normative surfaces (portable-spec-kit.md, docs/work-flows/,
+# reflex/lib/, reflex/prompts/, reflex/config.yml, agent/scripts/) for the
+# anti-pattern. Detection patterns:
+#
+#   - "cascade(s|d|ing)?\s+(the\s+)?(updated\s+)?kit"     — wording leak
+#   - "cascade(s|d|ing)?\s+.*\s+(into|to)\s+(the\s+)?(source\s+|triggering\s+)?project"
+#   - "--auto-cascade" used outside deprecation marker
+#   - kit-evolution.sh-style raw "install.sh --yes --from <kit> --target"
+#     pattern when the script context is PKFL / kit-evolution (not install itself)
+#
+# Allowlist (legitimate occurrences that stay):
+#   - psk-version-cascade.sh (kit-internal version-anchor sync — Step 6 of release)
+#   - "cascade_check" / "cascade-check" (reflex Dev-Agent finding-auto-closure)
+#   - "cascade(s)?" in historical/journal docs (docs/work-flows/17, /21 — past tense)
+#   - "manual cascade pattern (retired ...)" — explicit deprecation copy in doc 23
+#   - The deprecation lines in reflex/config.yml + reflex/lib/kit-evolution.sh
+#     that retain --auto-cascade / auto_cascade as backward-compat aliases
+#   - This check itself (which obviously mentions the anti-pattern words)
+#
+# Bypass: PSK_PSK028_DISABLED=1
+#
+check_cascade_anti_pattern() {
+  if [ "${PSK_PSK028_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK028: skipped (PSK_PSK028_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  # Only run in kit-mode (the rule is about the kit's own surface)
+  if [ "$MODE" != "kit" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK028: skip (non-kit mode)"
+    run_check
+    return
+  fi
+
+  # Search surfaces — kit's normative files only. Excludes:
+  #   - reflex/sandbox/ + reflex/history/  (transient + historical)
+  #   - .session-archive/                  (transient)
+  #   - examples/                          (downstream installed copies)
+  #   - agent/RELEASES.md + agent/PLANS.md (historical journals)
+  #   - agent/plans/ + agent/tasks/        (working plans + filed kit-tasks reference patterns by design)
+  #   - tests/                             (test fixtures legitimately contain anti-pattern strings)
+  #   - this script itself                 (obviously mentions the words)
+  local violations=0
+  local violation_files=""
+
+  # Use a here-doc style file list to keep grep deterministic across machines.
+  local files
+  files=$(find "$PROJ_ROOT" \
+    \( -path "$PROJ_ROOT/portable-spec-kit.md" \
+    -o -path "$PROJ_ROOT/docs/work-flows/*.md" \
+    -o -path "$PROJ_ROOT/reflex/lib/*.sh" \
+    -o -path "$PROJ_ROOT/reflex/prompts/*.md" \
+    -o -path "$PROJ_ROOT/reflex/config.yml" \
+    -o -path "$PROJ_ROOT/reflex/run.sh" \
+    -o -path "$PROJ_ROOT/agent/scripts/psk-orchestrate.sh" \
+    -o -path "$PROJ_ROOT/agent/scripts/psk-release.sh" \
+    \) -type f 2>/dev/null)
+
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    [ -f "$f" ] || continue
+    local base; base=$(basename "$f")
+
+    # Allowlist scripts (legitimate cascade machinery)
+    case "$base" in
+      psk-version-cascade.sh) continue ;;
+    esac
+
+    # Scan for the two main anti-patterns. We grep then filter out
+    # allowlisted contexts via inverse grep against legitimate markers.
+    local hits
+    hits=$(grep -nE \
+      "cascade[sd]?[[:space:]]+(the[[:space:]]+)?(updated[[:space:]]+)?kit|cascade[sd]?[[:space:]]+.*[[:space:]]+(into|to)[[:space:]]+(the[[:space:]]+)?(source[[:space:]]+|triggering[[:space:]]+)?project|install\.sh[[:space:]]+--yes[[:space:]]+--from[[:space:]].*--target" \
+      "$f" 2>/dev/null \
+      | grep -viE "cascade_check|cascade-check|version-cascade|version cascade|version-drift cascade|field-anchored cascade|cascade scripts must|cascade ceremony|cascade Kit field|cascade auto-closure|cascade-script|cascade auto-closures|symptom .* cascade|DEPRECATED|backward-compat alias|manual cascade pattern|retired in v0\.6\.4[78]|retires the manual cascade|cascade auto-closes|cascade kit vX|hand-committing|--auto-cascade.*backward|auto_cascade.*backward|chapter|history|sandbox" \
+      || true)
+
+    if [ -n "$hits" ]; then
+      violations=$((violations + 1))
+      violation_files="${violation_files}
+    $f"
+      if [ "$QUICK" = false ]; then
+        echo -e "  ${RED}✗${NC} PSK028 cascade-anti-pattern in $f:"
+        echo "$hits" | sed 's/^/      /'
+      fi
+    fi
+  done <<< "$files"
+
+  if [ "$violations" -eq 0 ]; then
+    emit_pass "PSK028: cascade-as-user-update anti-pattern — 0 violations"
+  else
+    if [ "$QUICK" = true ]; then
+      echo -e "  ${YELLOW}⚠${NC} PSK028: cascade-as-user-update anti-pattern — $violations file(s)"
+      run_check
+    else
+      emit_issue "PSK028" "cascade-anti-pattern" \
+        "cascade-as-user-update wording detected in $violations kit file(s):$violation_files" \
+        "Use 'psk-orchestrate.sh build' for user-project updates (v0.6.62+ — one command for new + existing; '--update' removed). Cascade wording is reserved for kit-internal version-anchor sync (psk-version-cascade.sh) and reflex Dev-Agent auto-closure (cascade-check). See HF0 in agent/plans/spawn-fidelity-hardening/ for migration guide."
+    fi
+  fi
+}
+
+# --- CHECK PSK029: Resume-on-session-start audit (v0.6.60+ HF4) ---
+#
+# Reads agent/.workflow-state/session-audit.log and verifies the most-recent
+# `session-start-resume-check ran` marker is fresher than the most-recent
+# commit that touched agent/ or src/. The rule only fires when there is
+# in-progress workflow state — i.e., at least one *.state file in
+# .workflow-state/ has `STARTED=<ts>` more recent than the last commit
+# touching .workflow-state/ itself. This recursion-guard keeps normal
+# kit-dev state from self-flagging while still catching gaps in genuine
+# user projects.
+#
+# Severity: ADVISORY in --quick mode, ERROR in --full mode.
+# Bypass: PSK_RESUME_BOOTSTRAP_DISABLED=1
+check_resume_bootstrap() {
+  if [ "${PSK_RESUME_BOOTSTRAP_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK029: skipped (PSK_RESUME_BOOTSTRAP_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local state_dir="$PROJ_ROOT/agent/.workflow-state"
+  local audit_log="$state_dir/session-audit.log"
+
+  # No state dir → nothing to audit (clean project, never used workflows)
+  if [ ! -d "$state_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK029: no workflow-state present — skip"
+    run_check
+    return
+  fi
+
+  # Recursion guard — only fire when there's *active* paused workflow state.
+  # "Active" = at least one *.state file has STARTED= more recent than the
+  # last commit touching .workflow-state/. Without this, the kit's OWN
+  # in-progress workflow state (which is normal kit-dev) would self-flag.
+  local has_state_files=0
+  for sf in "$state_dir"/*.state; do
+    [ -f "$sf" ] || continue
+    has_state_files=1
+    break
+  done
+  if [ "$has_state_files" -eq 0 ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK029: no .state files — skip"
+    run_check
+    return
+  fi
+
+  # Recursion guard: compare *.state STARTED timestamps to last commit
+  # touching .workflow-state/. If no .state STARTED is newer than the
+  # last commit, the in-progress state is already-committed history,
+  # not a genuine "uncovered" pause. Skip.
+  local last_wfstate_commit_ts=0
+  if git -C "$PROJ_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    last_wfstate_commit_ts=$(git -C "$PROJ_ROOT" log -1 --format=%ct -- agent/.workflow-state/ 2>/dev/null || echo 0)
+    [ -z "$last_wfstate_commit_ts" ] && last_wfstate_commit_ts=0
+  fi
+
+  local active_state=0
+  for sf in "$state_dir"/*.state; do
+    [ -f "$sf" ] || continue
+    local started_iso started_epoch
+    started_iso=$(grep '^STARTED=' "$sf" 2>/dev/null | head -1 | cut -d= -f2)
+    [ -z "$started_iso" ] && continue
+    # Parse ISO timestamp to epoch (portable across BSD / GNU date)
+    started_epoch=$(python3 -c "
+import sys, re, calendar
+m = re.match(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$', '$started_iso'.strip())
+if m:
+    p = [int(x) for x in m.groups()]
+    print(calendar.timegm((p[0],p[1],p[2],p[3],p[4],p[5],0,0,0)))
+else:
+    print(0)
+" 2>/dev/null || echo 0)
+    if [ "$started_epoch" -gt "$last_wfstate_commit_ts" ]; then
+      active_state=1
+      break
+    fi
+  done
+
+  if [ "$active_state" -eq 0 ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK029: workflow state already committed — skip"
+    run_check
+    return
+  fi
+
+  # We have genuine active in-progress state. Check audit log freshness
+  # against the last commit touching agent/ or src/.
+  local last_commit_ts last_marker_ts
+  if git -C "$PROJ_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    last_commit_ts=$(git -C "$PROJ_ROOT" log -1 --format=%ct -- agent/ src/ 2>/dev/null || echo 0)
+    [ -z "$last_commit_ts" ] && last_commit_ts=0
+  else
+    last_commit_ts=0
+  fi
+
+  if [ ! -f "$audit_log" ]; then
+    # Missing audit log + active state + commits exist → violation
+    if [ "$last_commit_ts" -gt 0 ]; then
+      if [ "$QUICK" = true ]; then
+        echo -e "  ${YELLOW}⚠${NC} PSK029: session-audit.log missing despite active workflow state"
+        run_check
+      else
+        emit_issue "PSK029" "resume-bootstrap-skipped" \
+          "agent/.workflow-state/session-audit.log missing despite active in-progress workflow state" \
+          "Run 'bash agent/scripts/psk-resume-bootstrap.sh' at the start of every session in this project. This drains the retry queue and surfaces paused phases before the agent responds to the user."
+      fi
+    else
+      emit_pass "PSK029: no commits yet — skip"
+    fi
+    return
+  fi
+
+  # Parse the most-recent marker timestamp from the audit log
+  last_marker_ts=$(tail -100 "$audit_log" 2>/dev/null \
+    | grep 'session-start-resume-check ran' \
+    | tail -1 \
+    | awk '{print $1}' \
+    | python3 -c "
+import sys, re, calendar
+s = sys.stdin.read().strip()
+m = re.match(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$', s)
+if m:
+    p = [int(x) for x in m.groups()]
+    print(calendar.timegm((p[0],p[1],p[2],p[3],p[4],p[5],0,0,0)))
+else:
+    print(0)
+" 2>/dev/null || echo 0)
+  [ -z "$last_marker_ts" ] && last_marker_ts=0
+
+  # Grace window (QA-DIM-22-PSK029-RACE-01, v0.6.64): a cosmetic 1-300 second
+  # gap between the marker and a fresh commit is not a real signal — fast
+  # iterative dev hits it routinely on healthy workflows. Only fire when the
+  # marker is genuinely stale AND the retry queue carries AWAITING_HUMAN_ARBITRATION
+  # entries (the queue entry is the durable record — its absence means there is
+  # no paused work to pick up regardless of marker freshness).
+  local grace_window="${PSK029_GRACE_SECONDS:-300}"
+  local marker_age_vs_commit=$(( last_commit_ts - last_marker_ts ))
+  local awaiting_arbitration=0
+  local retry_queue="$PROJ_ROOT/agent/.workflow-state/retry-queue.yml"
+  if [ -f "$retry_queue" ] && grep -qE 'AWAITING_HUMAN_ARBITRATION' "$retry_queue" 2>/dev/null; then
+    awaiting_arbitration=1
+  fi
+  if [ "$last_marker_ts" -ge "$last_commit_ts" ]; then
+    emit_pass "PSK029: resume-bootstrap audit log fresh (marker ≥ last commit)"
+  elif [ "$marker_age_vs_commit" -le "$grace_window" ] && [ "$awaiting_arbitration" -eq 0 ]; then
+    emit_pass "PSK029: marker within ${grace_window}s grace window of last commit and no AWAITING_HUMAN_ARBITRATION entries — healthy"
+  else
+    if [ "$QUICK" = true ]; then
+      echo -e "  ${YELLOW}⚠${NC} PSK029: resume-bootstrap not run since last commit (active workflow state present)"
+      run_check
+    else
+      emit_issue "PSK029" "resume-bootstrap-stale" \
+        "session-start-resume-check marker (epoch=$last_marker_ts) is older than the most-recent commit (epoch=$last_commit_ts) by ${marker_age_vs_commit}s, exceeding grace window of ${grace_window}s${awaiting_arbitration:+ AND retry queue has AWAITING_HUMAN_ARBITRATION entries}" \
+        "Run 'bash agent/scripts/psk-resume-bootstrap.sh' before resuming work. The helper drains agent/.workflow-state/retry-queue.yml and lists paused phases so the agent picks them up before responding."
+    fi
+  fi
+}
+
+# --- CHECK PSK026: Critic-result.md synthesis-detection audit (v0.6.60+ HF6) ---
+#
+# Counterpart to HF5's check-audit-completeness.sh probe (for reflex
+# findings.yaml) — applies the same three synthesis-signature checks to
+# release-ceremony / feature-complete / init / reinit / new-setup /
+# existing-setup workflow critic-result.md files at agent/.release-state/.
+#
+# Three signatures (all check critic-result.md as written by the sub-agent
+# critic in response to critic-task.md):
+#   (a) Has QUOTE evidence — at least one QUOTE: line paired with a CURRENT:
+#       line (the file:line citation surface used by the dual-critic protocol)
+#   (b) Reasonable timestamp diff — critic-result.md mtime must be ≥10sec
+#       after the parent commit timestamp (genuine sub-agent runs take time;
+#       impossibly fast diffs signal the result was canned in advance)
+#   (c) Result references task files — at least one path mentioned in
+#       critic-result.md overlaps with paths called out in critic-task.md
+#
+# Severity:
+#   WARNING — missing QUOTE evidence (signature a)
+#   ERROR   — impossibly-fast timestamp diff (signature b)
+#   ERROR   — zero path overlap with critic-task.md (signature c)
+#
+# When fires: --full mode AND agent/.release-state/critic-result.md exists
+# AND the parent path is NOT under tests/sections/ or /tmp/ (recursion
+# guard for unit-tests that synthesize critic-result.md fixtures).
+#
+# Bypass: PSK_PSK026_DISABLED=1
+check_psk026_critic_completeness() {
+  if [ "${PSK_PSK026_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK026: skipped (PSK_PSK026_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  # Only fires in --full mode (per spec).
+  if [ "$QUICK" = true ]; then
+    return
+  fi
+
+  local critic_result="$PROJ_ROOT/agent/.release-state/critic-result.md"
+  local critic_task="$PROJ_ROOT/agent/.release-state/critic-task.md"
+
+  # Recursion-guard: skip when project root looks like a test fixture path
+  # (kit's own unit-tests synthesize critic-result.md under /tmp/ or
+  # tests/sections/ — they would self-flag without this guard).
+  case "$PROJ_ROOT" in
+    */tests/sections/*|/tmp/*|/private/tmp/*|*/.tmp/*)
+      [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK026: recursion guard (test fixture path) — skip"
+      run_check
+      return
+      ;;
+  esac
+
+  if [ ! -f "$critic_result" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK026: no critic-result.md present — skip"
+    run_check
+    return
+  fi
+
+  local violations_warn=0
+  local violations_err=0
+  local violation_details=""
+
+  # --- Signature (a): QUOTE evidence presence ---
+  # Format used by critic-spawn templates is:
+  #   CURRENT: <filename>
+  #   QUOTE: <verbatim line>
+  # Every CURRENT must have a paired QUOTE per the dual-critic contract.
+  local current_count quote_count
+  current_count=$(grep -cE '^CURRENT:' "$critic_result" 2>/dev/null)
+  [ -z "$current_count" ] && current_count=0
+  quote_count=$(grep -cE '^QUOTE:' "$critic_result" 2>/dev/null)
+  [ -z "$quote_count" ] && quote_count=0
+
+  if [ "$current_count" -gt 0 ] && [ "$quote_count" -eq 0 ]; then
+    violations_warn=$((violations_warn + 1))
+    violation_details="${violation_details}
+    - WARNING: critic-result.md has $current_count CURRENT: entries but 0 QUOTE: lines (synthesis signature: no file evidence)"
+  fi
+
+  # --- Signature (b): mtime diff vs parent commit ---
+  # Genuine sub-agent critic runs take ≥30sec wall-clock to read files and
+  # produce the result. <10sec between the result write and the parent
+  # commit signals a pre-canned response, not a real critic invocation.
+  local result_mtime parent_commit_ts diff_sec
+  result_mtime=$(get_mtime "$critic_result" 2>/dev/null || echo 0)
+  [ -z "$result_mtime" ] && result_mtime=0
+  parent_commit_ts=0
+  if git -C "$PROJ_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    parent_commit_ts=$(git -C "$PROJ_ROOT" log -1 --format=%ct 2>/dev/null || echo 0)
+    [ -z "$parent_commit_ts" ] && parent_commit_ts=0
+  fi
+  if [ "$result_mtime" -gt 0 ] && [ "$parent_commit_ts" -gt 0 ]; then
+    # Take absolute value (mtime can come either before or after the parent
+    # commit depending on whether the critic ran pre- or post-commit).
+    if [ "$result_mtime" -ge "$parent_commit_ts" ]; then
+      diff_sec=$(( result_mtime - parent_commit_ts ))
+    else
+      diff_sec=$(( parent_commit_ts - result_mtime ))
+    fi
+    if [ "$diff_sec" -lt 10 ]; then
+      violations_err=$((violations_err + 1))
+      violation_details="${violation_details}
+    - ERROR: critic-result.md mtime within ${diff_sec}s of parent commit (<10s — synthesis signature: pre-canned response)"
+    fi
+  fi
+
+  # --- Signature (c): path overlap with critic-task.md ---
+  # critic-task.md enumerates files the sub-agent MUST read (e.g. "Read
+  # these files: agent/AGENT_CONTEXT.md, agent/RELEASES.md, ..."). The
+  # result MUST mention at least one of those paths. Zero overlap →
+  # the critic never actually looked at the task.
+  if [ -f "$critic_task" ]; then
+    # Extract distinctive path tokens from critic-task.md. We look for
+    # filenames with extension OR explicit dir paths under agent/ docs/
+    # tests/ src/ ard/.
+    local task_paths
+    task_paths=$(grep -oE '(agent/[A-Za-z_./-]+|docs/[A-Za-z_./-]+|tests/[A-Za-z_./-]+|ard/[A-Za-z_./-]+|src/[A-Za-z_./-]+|[A-Za-z_-]+\.(md|sh|yml|yaml|html|js|ts|py|json))' "$critic_task" 2>/dev/null \
+      | sort -u)
+    if [ -n "$task_paths" ]; then
+      local overlap=0
+      local p
+      while IFS= read -r p; do
+        [ -z "$p" ] && continue
+        # Trim trailing punctuation
+        p="${p%[.,;:)]}"
+        if grep -qF "$p" "$critic_result" 2>/dev/null; then
+          overlap=1
+          break
+        fi
+      done <<< "$task_paths"
+      if [ "$overlap" -eq 0 ] && [ "$current_count" -gt 0 ]; then
+        violations_err=$((violations_err + 1))
+        violation_details="${violation_details}
+    - ERROR: critic-result.md references no paths from critic-task.md (synthesis signature: result ignored the task)"
+      fi
+    fi
+  fi
+
+  if [ "$violations_err" -eq 0 ] && [ "$violations_warn" -eq 0 ]; then
+    emit_pass "PSK026: critic-result.md synthesis-detection — clean ($current_count CURRENT entries, $quote_count QUOTE lines)"
+  elif [ "$violations_err" -gt 0 ]; then
+    emit_issue "PSK026" "critic-completeness" \
+      "critic-result.md fails synthesis-detection (err=$violations_err warn=$violations_warn):$violation_details" \
+      "Re-run the workflow critic phase. The sub-agent must read the files cited in critic-task.md and quote verbatim lines from each."
+  else
+    emit_warn "PSK026: critic-result.md has $violations_warn synthesis warning(s):$violation_details"
+  fi
+}
+
+# --- CHECK PSK027: Bypass-Tamper Detection (v0.6.60+ HF9) ---
+#
+# Counts entries in agent/.bypass-log (JSONL format written by
+# psk-bypass-log.sh). Bypasses remain available for genuine emergencies,
+# but repeated use surfaces as a pattern — making "I'll just bypass it
+# again" structurally visible.
+#
+# Severity (per the v0.6.60 spec):
+#   0 in 24h          → no finding
+#   1-2 in 24h        → WARNING
+#   3+ in 24h         → ERROR  (repeated bypassing)
+#   10+ in 7d         → ERROR  (structural bypass abuse)
+#
+# Recursion-guard: PSK027 itself does NOT call any bypass-respecting
+# code (it shells out to the read-only `count` subcommand of
+# psk-bypass-log.sh — that subcommand has no bypass branch). A missing
+# .bypass-log is treated as 0 bypasses (clean projects).
+#
+# Bypass: PSK_PSK027_DISABLED=1 — emergency only.
+check_psk027_bypass_audit() {
+  if [ "${PSK_PSK027_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK027: skipped (PSK_PSK027_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local bypass_log_script="$SCRIPT_DIR/psk-bypass-log.sh"
+  if [ ! -x "$bypass_log_script" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK027: psk-bypass-log.sh missing — skip"
+    run_check
+    return
+  fi
+
+  local count_24h count_7d
+  count_24h=$(bash "$bypass_log_script" count --since-days 1 2>/dev/null || echo "0")
+  count_7d=$(bash "$bypass_log_script" count --since-days 7 2>/dev/null || echo "0")
+  [ -z "$count_24h" ] && count_24h=0
+  [ -z "$count_7d" ] && count_7d=0
+
+  # Sanitize — guard against any non-numeric output
+  case "$count_24h" in (*[!0-9]*) count_24h=0 ;; esac
+  case "$count_7d" in (*[!0-9]*) count_7d=0 ;; esac
+
+  if [ "$count_24h" -eq 0 ] && [ "$count_7d" -lt 10 ]; then
+    emit_pass "PSK027: bypass-tamper audit clean (0/24h, $count_7d/7d)"
+    return
+  fi
+
+  # Build breakdown of unique env_vars (most-frequent first)
+  local unique_summary
+  unique_summary=$(bash "$bypass_log_script" unique-env-vars 1 2>/dev/null | head -5 \
+    | awk 'NF>0 {printf "%s(x%s) ", $1, $2}')
+  [ -z "$unique_summary" ] && unique_summary="(none)"
+
+  # 10+ in 7 days → strong ERROR (structural abuse)
+  if [ "$count_7d" -ge 10 ]; then
+    emit_issue "PSK027" "bypass-abuse" \
+      "structural bypass abuse — $count_7d bypasses in 7 days ($count_24h in last 24h); env vars: $unique_summary" \
+      "Investigate why these guards are being routinely defeated. Audit agent/.bypass-log and address the root cause; do not silence with PSK_PSK027_DISABLED=1."
+    return
+  fi
+
+  # 3+ in 24h → ERROR (repeated bypassing)
+  if [ "$count_24h" -ge 3 ]; then
+    emit_issue "PSK027" "bypass-repeated" \
+      "repeated bypassing detected — $count_24h bypasses in last 24h; env vars: $unique_summary" \
+      "Inspect with: bash agent/scripts/psk-bypass-log.sh list --since-days 1. Resolve the underlying blocker rather than bypassing again."
+    return
+  fi
+
+  # 1-2 in 24h → WARNING
+  if [ "$count_24h" -ge 1 ]; then
+    emit_warn "PSK027: $count_24h gate bypass(es) in last 24h; env vars: $unique_summary (run: bash agent/scripts/psk-bypass-log.sh list)"
+    return
+  fi
+
+  # Reach here only when count_24h==0 but count_7d>=10 was checked above;
+  # fall-through is a normal pass.
+  emit_pass "PSK027: bypass-tamper audit clean (0/24h, $count_7d/7d)"
+}
+
+# --- CHECK PSK030: Script class declaration audit (cycle-19 HF11 + Dim 28 Probe 4) ---
+# Every kit script under agent/scripts/psk-*.sh MUST declare its class in the
+# header (lines 1-5):
+#   - `mechanical-script:` — no AI invocation, pure bash/awk logic
+#   - `workflow-router:` — routes sub-agent spawns through psk-spawn.sh / psk-critic-spawn.sh
+#   - `ai-invoker:` — directly invokes AI (rare, kit-internal only)
+# Detection alternative: script contains `psk-spawn.sh request` (implicit
+# workflow-router declaration).
+#
+# Why: §Spawn Fidelity's audit surface (Dim 28 Probe 4) walks every kit
+# script and emits a finding for any psk-* that lacks a class declaration.
+# Without this gate, future PRs can land undeclared psk-* scripts, breaking
+# the discovery contract that probe relies on. PSK030 closes the loop by
+# enforcing declaration at commit time (pre-commit) and at sync-check time.
+#
+# Bypass: PSK_PSK030_DISABLED=1 (genuine emergencies only).
+check_psk030_script_declarations() {
+  if [ "${PSK_PSK030_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK030: skipped (PSK_PSK030_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local scripts_dir="$PROJ_ROOT/agent/scripts"
+  if [ ! -d "$scripts_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK030: no agent/scripts/ — skip"
+    run_check
+    return
+  fi
+
+  local undeclared=()
+  local f name has_decl has_spawn
+  for f in "$scripts_dir"/psk-*.sh; do
+    [ ! -f "$f" ] && continue
+    name=$(basename "$f")
+    has_decl=$(head -5 "$f" | grep -cE "mechanical-script:|workflow-router:|ai-invoker:")
+    has_spawn=$(grep -c "psk-spawn.sh request" "$f" 2>/dev/null || echo 0)
+    if [ "$has_decl" = "0" ] && [ "$has_spawn" = "0" ]; then
+      undeclared+=("$name")
+    fi
+  done
+
+  if [ "${#undeclared[@]}" -eq 0 ]; then
+    local total
+    total=$(ls "$scripts_dir"/psk-*.sh 2>/dev/null | wc -l | tr -d ' ')
+    emit_pass "PSK030: all $total psk-* scripts declare class (mechanical-script / workflow-router / ai-invoker)"
+    run_check
+    return
+  fi
+
+  local list
+  list=$(printf '%s ' "${undeclared[@]}" | sed 's/ $//')
+  emit_issue "PSK030" "script-class-undeclared" \
+    "${#undeclared[@]} psk-* script(s) missing class declaration: $list" \
+    "Add a header comment matching /mechanical-script:|workflow-router:|ai-invoker:/ to each. See §Spawn Fidelity in portable-spec-kit.md for class semantics. Bypass with PSK_PSK030_DISABLED=1 for genuine emergencies."
+  run_check
+}
+
+check_psk031_duplicate_findings() {
+  # v0.6.61 P3 — detect cross-pass findings de-dup gaps.
+  # Two patterns flagged:
+  #   (a) two recent passes carry findings with identical fingerprints but
+  #       different IDs (e.g. QA-D4-03 vs QA-D4-03-WIDENED-CYC20)
+  #   (b) a finding's ID is a suffix-variant (-RESIDUAL-*, -WIDENED-*,
+  #       -CYC<N>) of a registered canonical but not registered as alias
+  # Severity: MAJOR. Bypass: PSK_PSK031_DISABLED=1.
+  if [ "${PSK_PSK031_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK031: skipped (PSK_PSK031_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local registry_sh="$PROJ_ROOT/reflex/lib/findings-registry.sh"
+  local registry_yaml="$PROJ_ROOT/reflex/history/findings-registry.yaml"
+  if [ ! -x "$registry_sh" ] || [ ! -f "$registry_yaml" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK031: no findings-registry yet — skip"
+    run_check
+    return
+  fi
+
+  local history_dir="$PROJ_ROOT/reflex/history"
+  if [ ! -d "$history_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK031: no reflex/history/ — skip"
+    run_check
+    return
+  fi
+
+  # Collect the last 5 cycle-*/pass-*/findings.yaml files
+  local yamls
+  yamls=$(ls -1t "$history_dir"/cycle-*/pass-*/findings.yaml 2>/dev/null | head -5)
+  if [ -z "$yamls" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK031: no recent findings.yaml — skip"
+    run_check
+    return
+  fi
+
+  # Build "id|fingerprint" pairs across recent yamls
+  local pairs_tmp
+  pairs_tmp=$(mktemp)
+  local y id fp
+  while IFS= read -r y; do
+    [ -z "$y" ] && continue
+    while IFS= read -r id; do
+      [ -z "$id" ] && continue
+      case "$id" in QA-*) ;; *) continue ;; esac
+      fp=$(bash "$registry_sh" fingerprint "$y" "$id" 2>/dev/null)
+      [ -n "$fp" ] && printf '%s|%s|%s\n' "$id" "$fp" "$(basename "$(dirname "$y")")" >> "$pairs_tmp"
+    done < <(grep -E '^[[:space:]]*-[[:space:]]+id:[[:space:]]*' "$y" | awk '{sub(/^[[:space:]]*-[[:space:]]+id:[[:space:]]*/, ""); gsub(/[[:space:]"]+$/, ""); gsub(/^"|"$/, ""); print}')
+  done <<< "$yamls"
+
+  # Detect duplicate fingerprints with different IDs across DIFFERENT passes.
+  # Same-pass duplicates (within one cycle's findings.yaml) are legitimate
+  # (two dim-agents independently filed overlap; registered as internal
+  # aliases by file-bugs.sh integration) — don't flag those.
+  local dup_lines
+  dup_lines=$(awk -F'|' '{print $2"\t"$1"\t"$3}' "$pairs_tmp" | sort | awk -F'\t' '
+    { if ($1 == prev_fp && $2 != prev_id && $3 != prev_pass) print prev_id"\t"$2"\t"$1"\t"prev_pass"→"$3; prev_fp=$1; prev_id=$2; prev_pass=$3 }
+  ')
+
+  # Detect suffix-variant IDs not registered as aliases in the registry
+  local unreg_aliases=""
+  local all_ids
+  all_ids=$(awk -F'|' '{print $1}' "$pairs_tmp" | sort -u)
+  local canon_ids canon_aliases
+  canon_ids=$(grep -E '^[[:space:]]*-[[:space:]]+canonical_id:' "$registry_yaml" | sed -E 's/^[[:space:]]*-[[:space:]]+canonical_id:[[:space:]]*//; s/[[:space:]"]+$//; s/^"|"$//')
+  canon_aliases=$(awk '/^[[:space:]]+aliases:[[:space:]]*$/{f=1;next} f && /^[[:space:]]+-[[:space:]]+/{a=$0; sub(/^[[:space:]]+-[[:space:]]+/,"",a); print a; next} f && !/^[[:space:]]+-/{f=0}' "$registry_yaml")
+  local known_ids="$canon_ids"$'\n'"$canon_aliases"
+
+  while IFS= read -r id; do
+    [ -z "$id" ] && continue
+    # Strip suffix variants
+    local stripped="$id" prev
+    while :; do
+      prev="$stripped"
+      stripped=$(printf '%s' "$stripped" | sed -E 's/-[A-Z0-9]+(-CYC[0-9]+)?$//')
+      [ "$stripped" = "$prev" ] && break
+      [ "$stripped" = "$id" ] && break
+      if printf '%s\n' "$known_ids" | grep -qxF "$stripped"; then
+        if ! printf '%s\n' "$known_ids" | grep -qxF "$id"; then
+          unreg_aliases="$unreg_aliases $id→$stripped"
+        fi
+        break
+      fi
+    done
+  done <<< "$all_ids"
+
+  rm -f "$pairs_tmp"
+
+  local dup_count
+  dup_count=$(printf '%s\n' "$dup_lines" | grep -cE '.' || true)
+  local unreg_count
+  unreg_count=$(printf '%s' "$unreg_aliases" | wc -w | tr -d ' ')
+
+  if [ "$dup_count" -eq 0 ] && [ "$unreg_count" -eq 0 ]; then
+    emit_pass "PSK031: findings-registry de-dup integrity clean (no duplicate fingerprints, no orphan suffix-variants)"
+  else
+    local msg=""
+    [ "$dup_count" -gt 0 ] && msg="$dup_count duplicate-fingerprint pair(s)"
+    if [ "$unreg_count" -gt 0 ]; then
+      [ -n "$msg" ] && msg="$msg + "
+      msg="${msg}$unreg_count orphan suffix-variant ID(s)"
+    fi
+    emit_issue "PSK031" "findings-registry-dedup" \
+      "$msg detected across recent passes" \
+      "Run \`bash reflex/lib/findings-registry.sh bootstrap\` to refresh registry, or audit duplicate findings by fingerprint. Bypass: PSK_PSK031_DISABLED=1"
+  fi
+  run_check
+}
+
+check_psk032_cycle_misuse() {
+  # v0.6.61 P1 — detect cycle-numbering misuse pattern.
+  # Contract: 1 cycle = 1 autoloop run with multiple passes. If 3+ of the
+  # last 5 cycle-NN dirs contain ONLY pass-001 (with verdict.md = not
+  # in-flight), the kit's cycle-tracking was bypassed (find_next_pass_dir
+  # / .active-cycle / compute_next_cycle_id).
+  # Grandfather exemption (v0.6.62): cycles carrying a migration-note.md are
+  # documented historical mis-numbering (v0.6.61 P1 "document, not rename")
+  # and are skipped from both numerator and denominator — they are an
+  # explained one-time artifact, not live cycle-tracking misuse.
+  if [ "${PSK_PSK032_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK032: skipped (PSK_PSK032_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local history_dir="$PROJ_ROOT/reflex/history"
+  if [ ! -d "$history_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK032: no reflex/history/ — skip"
+    run_check
+    return
+  fi
+
+  # Collect cycle-NN dirs sorted by numeric N descending (latest first)
+  local cycles=()
+  local d
+  for d in "$history_dir"/cycle-*/; do
+    [ -d "$d" ] || continue
+    local seg name num
+    seg=$(basename "${d%/}")
+    if [[ "$seg" =~ ^cycle-0*([0-9]+)$ ]]; then
+      num="${BASH_REMATCH[1]}"
+      cycles+=("$num:$d")
+    fi
+  done
+
+  if [ "${#cycles[@]}" -eq 0 ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK032: no cycle-NN dirs — skip"
+    run_check
+    return
+  fi
+
+  # Sort numerically descending; keep top 5
+  local sorted
+  sorted=$(printf '%s\n' "${cycles[@]}" | sort -t: -k1,1 -n -r | head -5)
+
+  local total_checked=0
+  local single_pass_count=0
+  local bad_cycles=()
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    local cdir="${line#*:}"
+    # Grandfather exemption: a cycle carrying migration-note.md is a documented
+    # historical mis-numbering (v0.6.61 P1 "document, not rename" migration).
+    # It is not live misuse — skip it from both the numerator and denominator.
+    if [ -f "${cdir}migration-note.md" ]; then
+      continue
+    fi
+    total_checked=$((total_checked + 1))
+    # Count pass dirs in this cycle
+    local pass_count
+    pass_count=$(ls -1d "$cdir"pass-*/ 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$pass_count" -eq 1 ]; then
+      # Verify pass-001 is not in-flight (verdict.md present)
+      local p001="${cdir}pass-001"
+      if [ -f "$p001/verdict.md" ]; then
+        single_pass_count=$((single_pass_count + 1))
+        bad_cycles+=("$(basename "${cdir%/}")")
+      fi
+    fi
+  done <<< "$sorted"
+
+  # Threshold: 3+ of last 5 cycles have only pass-001 (not in-flight)
+  if [ "$single_pass_count" -ge 3 ]; then
+    local cycle_list
+    cycle_list=$(printf '%s ' "${bad_cycles[@]}" | sed 's/ $//')
+    emit_issue "PSK032" "cycle-numbering-misuse" \
+      "$single_pass_count of last $total_checked cycles ($cycle_list) have only pass-001 — kit cycle-tracking bypassed (1 cycle = 1 autoloop run; passes within = iterations)" \
+      "See docs/work-flows/17-reflex.md §Cycle vs Pass semantics. Verify find_next_pass_dir() / .active-cycle / compute_next_cycle_id() — passes should increment pass-NNN within cycle. Bypass: PSK_PSK032_DISABLED=1"
+  else
+    emit_pass "PSK032: cycle-numbering pattern healthy ($single_pass_count single-pass of $total_checked recent cycles)"
+  fi
+  run_check
+}
+
+check_psk033_standalone_overuse() {
+  # v0.6.61 P2 — detect standalone-pass overuse pattern.
+  # Contract: reflex/history/standalone/ is for ad-hoc / one-shot audits,
+  # not for convergence work. When the count of pass-* dirs under
+  # standalone/ exceeds PSK033_STANDALONE_THRESHOLD (default 10), surface
+  # ADVISORY suggesting the operator switch to autoloop. Never blocks.
+  if [ "${PSK_PSK033_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK033: skipped (PSK_PSK033_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local standalone_dir="$PROJ_ROOT/reflex/history/standalone"
+  if [ ! -d "$standalone_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK033: no reflex/history/standalone/ — skip"
+    run_check
+    return
+  fi
+
+  local threshold="${PSK033_STANDALONE_THRESHOLD:-10}"
+  local count
+  count=$(ls -1d "$standalone_dir"/pass-* 2>/dev/null | wc -l | tr -d ' ')
+
+  if [ "$count" -gt "$threshold" ]; then
+    emit_issue "PSK033" "standalone-pass-overuse" \
+      "$count standalone passes accumulated (threshold $threshold) — repeated 'reflex/run.sh single' invocations fragment audit trail across flat passes" \
+      "Switch to autoloop (\`bash reflex/run.sh\` default mode) for convergence work. Standalone is for ad-hoc / one-shot audits only. See docs/work-flows/17-reflex.md §Standalone pass-dir layout. Bypass: PSK_PSK033_DISABLED=1 or raise threshold via PSK033_STANDALONE_THRESHOLD=N."
+  else
+    emit_pass "PSK033: standalone-pass count healthy ($count of threshold $threshold)"
+  fi
+  run_check
+}
+
+check_psk034_workflow_decl() {
+  # v0.6.62 — §Workflow Declaration Schema enforcement (rule was documented in
+  # portable-spec-kit.md but never implemented before now). Every script with a
+  # `# workflow-router:` header MUST have a matching
+  # .portable-spec-kit/workflows/<name>/phases.yml (where <name> derives from
+  # psk-<name>.sh), UNLESS it carries `# workflow-decl-exempt:` (dispatcher,
+  # plan-driver, session-helper, gate-helper). Bypass: PSK_PSK034_DISABLED=1.
+  if [ "${PSK_PSK034_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK034: skipped (PSK_PSK034_DISABLED=1)"
+    run_check
+    return
+  fi
+  local scripts_dir="$PROJ_ROOT/agent/scripts"
+  local wf_dir="$PROJ_ROOT/.portable-spec-kit/workflows"
+  if [ ! -d "$scripts_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK034: no agent/scripts/ — skip"
+    run_check
+    return
+  fi
+  local missing=()
+  local f base name has_router has_exempt
+  for f in "$scripts_dir"/psk-*.sh; do
+    [ -f "$f" ] || continue
+    has_router=$(head -6 "$f" | grep -cE '^# workflow-router:')
+    [ "$has_router" = "0" ] && continue
+    has_exempt=$(head -6 "$f" | grep -cE '^# workflow-decl-exempt:')
+    [ "$has_exempt" != "0" ] && continue
+    base=$(basename "$f" .sh)        # e.g. psk-release
+    name="${base#psk-}"              # e.g. release
+    if [ ! -f "$wf_dir/$name/phases.yml" ]; then
+      missing+=("$base.sh→workflows/$name/phases.yml")
+    fi
+  done
+  if [ "${#missing[@]}" -eq 0 ]; then
+    emit_pass "PSK034: every workflow-router script has a phases.yml declaration (or is decl-exempt)"
+    run_check
+    return
+  fi
+  local list
+  list=$(printf '%s ' "${missing[@]}" | sed 's/ $//')
+  emit_issue "PSK034" "workflow-decl-missing" \
+    "${#missing[@]} workflow-router script(s) lack a phases.yml declaration: $list" \
+    "Create .portable-spec-kit/workflows/<name>/phases.yml (see §Workflow Declaration Schema in portable-spec-kit.md) OR add a '# workflow-decl-exempt: <reason>' header line if the script is a dispatcher / plan-driver / helper. Bypass: PSK_PSK034_DISABLED=1."
+  run_check
+}
+
+check_psk035_phases_schema() {
+  # v0.6.62 — §Workflow Declaration Schema validation (rule documented but never
+  # implemented before now). Every .portable-spec-kit/workflows/*/phases.yml MUST
+  # carry the required top-level fields: schema_version, workflow, phases.
+  # Bypass: PSK_PSK035_DISABLED=1.
+  if [ "${PSK_PSK035_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK035: skipped (PSK_PSK035_DISABLED=1)"
+    run_check
+    return
+  fi
+  local wf_dir="$PROJ_ROOT/.portable-spec-kit/workflows"
+  if [ ! -d "$wf_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK035: no workflows/ — skip"
+    run_check
+    return
+  fi
+  local bad=()
+  local y name
+  for y in "$wf_dir"/*/phases.yml; do
+    [ -f "$y" ] || continue
+    name=$(basename "$(dirname "$y")")
+    grep -qE '^schema_version:' "$y" || { bad+=("$name:no-schema_version"); continue; }
+    grep -qE '^workflow:' "$y"       || { bad+=("$name:no-workflow"); continue; }
+    grep -qE '^phases:' "$y"         || { bad+=("$name:no-phases"); continue; }
+  done
+  if [ "${#bad[@]}" -eq 0 ]; then
+    local total
+    total=$(ls -1 "$wf_dir"/*/phases.yml 2>/dev/null | wc -l | tr -d ' ')
+    emit_pass "PSK035: all $total phases.yml carry required schema fields (schema_version / workflow / phases)"
+    run_check
+    return
+  fi
+  local list
+  list=$(printf '%s ' "${bad[@]}" | sed 's/ $//')
+  emit_issue "PSK035" "phases-schema-invalid" \
+    "${#bad[@]} phases.yml fail schema validation: $list" \
+    "Every .portable-spec-kit/workflows/<name>/phases.yml must declare schema_version:, workflow:, and phases: (see §Workflow Declaration Schema). Bypass: PSK_PSK035_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -2036,6 +3067,13 @@ main() {
     check_reflex_protected_files
     check_plan_schema
     check_ui_completeness
+    check_cascade_anti_pattern
+    check_resume_bootstrap
+    check_psk031_duplicate_findings
+    check_psk032_cycle_misuse
+    check_psk033_standalone_overuse
+    check_psk034_workflow_decl
+    check_psk035_phases_schema
   else
     # Full: all checks (expanded v0.5.9 with content validation, v0.5.13 with secrets)
     check_version
@@ -2055,6 +3093,7 @@ main() {
     check_agent_md_stack
     check_readme_content
     check_readme_install_list
+    check_installer_manifest
     check_readme_agent_table
     check_readme_flow_table
     check_flow_docs_content
@@ -2070,6 +3109,16 @@ main() {
     check_summary_csv_completeness
     check_plan_schema
     check_ui_completeness
+    check_cascade_anti_pattern
+    check_resume_bootstrap
+    check_psk026_critic_completeness
+    check_psk027_bypass_audit
+    check_psk030_script_declarations
+    check_psk031_duplicate_findings
+    check_psk032_cycle_misuse
+    check_psk033_standalone_overuse
+    check_psk034_workflow_decl
+    check_psk035_phases_schema
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

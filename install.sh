@@ -18,6 +18,13 @@
 #   bash install.sh --verify            # download SHA and print for audit
 #   bash install.sh --from LOCAL        # use local directory as source (for testing)
 #   bash install.sh --install-reflex  # also install F70 Reflex (QA+Dev loop)
+#   bash install.sh --no-init           # install machinery only; skip the init conformance chain
+#
+# After a successful install, the script auto-chains `init` — the registry-driven
+# conformance pass that conforms the project to current kit standards (the
+# escalation reads install → init → orchestrate build). Pass --no-init (or set
+# PSK_INSTALL_NO_INIT=1) to install machinery only, without the conformance pass —
+# for CI and kit self-tests (EDGE E6).
 #
 # Exit codes:
 #   0 = installed successfully
@@ -48,6 +55,10 @@ AUTO_YES=false
 VERIFY_ONLY=false
 LOCAL_SOURCE=""
 INSTALL_REFLEX=false
+# EDGE E6 — install auto-chains `init`. --no-init (or PSK_INSTALL_NO_INIT=1)
+# installs machinery only, skipping the conformance pass (CI / kit self-tests).
+NO_INIT="${PSK_INSTALL_NO_INIT:-false}"
+case "$NO_INIT" in 1|true|yes) NO_INIT=true ;; *) NO_INIT=false ;; esac
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -55,6 +66,7 @@ while [ $# -gt 0 ]; do
     --verify)            VERIFY_ONLY=true; shift ;;
     --from)              LOCAL_SOURCE="$2"; shift 2 ;;
     --install-reflex)  INSTALL_REFLEX=true; shift ;;
+    --no-init)           NO_INIT=true; shift ;;
     *)                   shift ;;
   esac
 done
@@ -179,9 +191,48 @@ download_framework() {
 
 download_scripts() {
   echo -e "${CYAN}[2/6] Downloading reliability scripts...${NC}"
-  # Core scripts every project needs (kit reliability + workflows + self-evolution v0.6.16-23)
-  local scripts="psk-sync-check.sh psk-install-hooks.sh psk-code-review.sh psk-scope-check.sh psk-release.sh psk-critic-spawn.sh psk-validate.sh psk-feature-complete.sh psk-init.sh psk-reinit.sh psk-new-setup.sh psk-existing-setup.sh psk-uninstall.sh psk-doc-sync.sh psk-reflex.sh psk-bootstrap-check.sh psk-env.sh psk-optimize.sh psk-orchestrate.sh psk-rule-conflicts.sh psk-evolution-gauntlet.sh psk-ui-polish-check.sh psk-soak-schedule.sh psk-blind-spot-synthesize.sh psk-coverage-overlap-check.sh psk-close-finding.sh psk-version-cascade.sh psk-generate-ci.sh psk-generate-user-guide.sh psk-plan-save.sh psk-template-quality.sh psk-scaffold-src.sh psk-workflow-state.sh psk-spawn.sh psk-run-plan.sh psk-ui-completeness.sh"
-  local optional="psk-jira-sync.sh psk-tracker.sh psk-tracker-report.sh install-tracker.sh uninstall-tracker.sh sync.sh"
+  # Manifest-driven — closes QA-KIT-INSTALLER-01. The committed manifest
+  # agent/scripts/.manifest is the single source of truth for which psk-*.sh
+  # scripts ship. Both the LOCAL_SOURCE (--from) path and the curl network path
+  # read it, so a newly added script can never be silently omitted again.
+  # PSK036 sync-check fails when the manifest drifts from disk reality
+  # (remediate: bash agent/scripts/psk-gen-manifest.sh).
+  local scripts="" optional=""
+
+  # Fetch the manifest first. fetch() copies from LOCAL_SOURCE or curls from RAW_BASE.
+  if fetch "agent/scripts/.manifest" "./agent/scripts/.manifest"; then
+    while read -r name kind _rest; do
+      case "$name" in ""|\#*) continue ;; esac
+      if [ "$kind" = "optional" ]; then
+        optional="$optional $name"
+      else
+        scripts="$scripts $name"
+      fi
+    done < "./agent/scripts/.manifest"
+  fi
+
+  # LOCAL backstop: union the on-disk psk-*.sh glob into the required set so a
+  # local install is correct even if the committed manifest is momentarily stale.
+  if [ -n "${LOCAL_SOURCE:-}" ] && [ -d "$LOCAL_SOURCE/agent/scripts" ]; then
+    local g base
+    for g in "$LOCAL_SOURCE"/agent/scripts/psk-*.sh; do
+      [ -f "$g" ] || continue
+      base=$(basename "$g")
+      case "$base" in
+        psk-jira-sync.sh|psk-tracker.sh|psk-tracker-report.sh)
+          case " $optional " in *" $base "*) ;; *) optional="$optional $base" ;; esac ;;
+        *)
+          case " $scripts " in *" $base "*) ;; *) scripts="$scripts $base" ;; esac ;;
+      esac
+    done
+  fi
+
+  # Hard fallback if both manifest fetch and local glob produced nothing (defensive).
+  if [ -z "$(echo "$scripts" | tr -d ' ')" ]; then
+    scripts="psk-sync-check.sh psk-install-hooks.sh psk-bootstrap-check.sh"
+    echo -e "  ${YELLOW}⚠ manifest unavailable — using minimal bootstrap set${NC}"
+  fi
+  optional="$optional install-tracker.sh uninstall-tracker.sh sync.sh"
 
   for s in $scripts; do
     if fetch "agent/scripts/$s" "./agent/scripts/$s"; then
@@ -210,7 +261,7 @@ download_scripts() {
 download_skills() {
   echo -e "${CYAN}[3/6] Downloading skill files...${NC}"
   # All on-demand skills the kit references (CLAUDE.md skill table is authoritative; this list mirrors it)
-  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md plan-execution.md"
+  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md plan-execution.md spawn-fidelity.md workflow-preview.md"
 
   for s in $skills; do
     if fetch ".portable-spec-kit/skills/$s" "./.portable-spec-kit/skills/$s" 2>/dev/null; then
@@ -363,6 +414,31 @@ verify_install() {
   fi
 }
 
+# --- Chain to init (EDGE E6) ---
+# After machinery is installed, conform the project to current kit standards via
+# the registry-driven `init` workflow. Skipped on --no-init / PSK_INSTALL_NO_INIT=1
+# (CI + kit self-tests want machinery only). The escalation reads:
+#   install (kit machinery) → init (project conformance) → orchestrate build (product).
+chain_init() {
+  if [ "$NO_INIT" = true ]; then
+    echo -e "${YELLOW}⊘${NC} init chain skipped (--no-init / PSK_INSTALL_NO_INIT) — machinery installed, no conformance pass"
+    return 0
+  fi
+  if [ ! -x "./agent/scripts/psk-init.sh" ]; then
+    echo -e "  ${YELLOW}⊘${NC} psk-init.sh not present — skipping init conformance pass"
+    return 0
+  fi
+  echo ""
+  echo -e "${CYAN}═══ Conforming project to kit standards (init) ═══${NC}"
+  # init NEVER pulls source (EDGE E4) — it only conforms the now-installed project.
+  # Advisory: a non-zero init does not fail the install (machinery is already in).
+  if bash "./agent/scripts/psk-init.sh" 2>&1 | sed 's/^/  /'; then
+    echo -e "  ${GREEN}✓${NC} init conformance pass complete"
+  else
+    echo -e "  ${YELLOW}⚠${NC} init reported pending work — review above; machinery install succeeded"
+  fi
+}
+
 # --- Next steps ---
 print_next_steps() {
   echo ""
@@ -374,8 +450,12 @@ print_next_steps() {
   echo ""
   echo -e "  1. Open your AI agent (Claude Code, Cursor, Copilot, etc.)"
   echo -e "  2. The agent reads ${YELLOW}CLAUDE.md${NC} (or equivalent) automatically"
-  echo -e "  3. Run ${YELLOW}init${NC} command — agent will scan and set up agent/ files"
-  echo -e "  4. Start describing what you want to build"
+  if [ "$NO_INIT" = true ]; then
+    echo -e "  3. Run ${YELLOW}init${NC} command — conform the project to kit standards (skipped via --no-init)"
+  else
+    echo -e "  3. Project conformed to kit standards via ${YELLOW}init${NC} (ran automatically above)"
+  fi
+  echo -e "  4. Start describing what you want to build (${YELLOW}orchestrate build${NC})"
   echo ""
   echo -e "  ${CYAN}Reliability infrastructure is active:${NC}"
   echo -e "    • PreCommit hook blocks commits with factual drift"
@@ -420,6 +500,8 @@ main() {
     install_reflex
   fi
 
+  chain_init
+
   print_next_steps
 }
 
@@ -460,8 +542,9 @@ install_reflex() {
     # Curl fallback — static list (must be kept in sync manually for network installs)
     local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
       anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
-      check-abort-integrity.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
+      check-abort-integrity.sh check-audit-completeness.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
       console-probe.ts cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
+      findings-registry.sh \
       identify-integration-probes.sh intake.sh kit-evolution.sh log-hardening.sh loop.sh mandate-audit.sh \
       orchestration-phase-6-5.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
       server-lifecycle.sh smoke-test-examples.sh state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh \

@@ -1,4 +1,5 @@
 #!/bin/bash
+# mechanical-script: deterministic, no AI prompts (Dim 28 allowlist — v0.6.60 HF7b)
 # =============================================================
 # psk-tracker.sh — OS-Level Background Daemon
 #
