@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.6.63-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.6.64-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-2832%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2865%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -22,7 +22,7 @@
 <tr>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
 <td width="25%" align="center"><strong>🧠 Context-Persistent</strong><br><sub>Remembers across sessions<br>Pick up after weeks<br>Never lose context</sub></td>
-<td width="25%" align="center"><strong>🛡️ Reliably Enforced</strong><br><sub>7-layer reliability architecture<br>Dual critic at every workflow<br>Agent physically can't skip steps</sub></td>
+<td width="25%" align="center"><strong>🛡️ Reliably Enforced</strong><br><sub>8-layer reliability architecture<br>Dual critic at every workflow<br>Agent physically can't skip steps</sub></td>
 <td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
 </tr>
 <tr>
@@ -58,13 +58,15 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/aqibmumtaz/portable-sp
 **Or paste to any AI agent (Claude, Cursor, Copilot, Windsurf, Cline):**
 > Install the Portable Spec Kit: run `curl -fsSL https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/install.sh | bash` then read CLAUDE.md and set up my project.
 
-Installs: `portable-spec-kit.md` (~980 lines) · 51 `psk-*` reliability scripts + 3 helper scripts (install-tracker, sync, uninstall-tracker) — 54 total `.sh` files in `agent/scripts/` · 28 skill files (JIT-loaded) · 24 file-class templates (`.portable-spec-kit/templates/`) · 29 flow documents (`docs/work-flows/`) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
+Installs: `portable-spec-kit.md` (~1100 lines) · 52 `psk-*` reliability scripts + 3 helper scripts (install-tracker, sync, uninstall-tracker) — 55 total `.sh` files in `agent/scripts/` · 29 skill files (JIT-loaded) · 24 file-class templates (`.portable-spec-kit/templates/`) · 30 flow documents (`docs/work-flows/`) · 4 stack-aware CI templates · PreCommit + PostToolUse hooks · symlinks for all supported agents.
 
 Open any AI agent after install — personalized profile, project scan, 4-step guided tour, and you're building in under 2 minutes. **[Full install details ↓](#setup)** · **Uninstall:** `bash agent/scripts/psk-uninstall.sh` (preserves your `agent/*.md` pipeline files).
 
 ---
 
 ## Latest Release
+
+**v0.6.64 (Kit Fidelity — 8th Reliability Layer):** Closes the recurring "agent silently deviates from canonical kit commands" failure class — the same trust-based failure mode §Spawn Fidelity closed for sub-agent spawns in v0.6.60, repeated one level up at the operator-command surface. Two principles, structurally enforced: (1) **Canonical default form** — every kit command runs in its canonical default form; non-canonical variants require `--rationale "<text>"` committed to `agent/.kit-deviation-log`. (2) **Friction = kit bug** — workarounds are forbidden; the agent's first action on friction is to file a `KIT-GAP-NNNN` in `agent/.kit-gap-log`, then either fix the kit inline or escalate. **Added** — wrapper `agent/scripts/psk-kit-cmd.sh` (no inline-fallback branch), canonical-command inventory `.portable-spec-kit/kit-commands.yml` (data-driven extension), two committed audit-trail logs, sync-check rule PSK040 (defense-in-depth), flow doc `30-kit-fidelity.md`, JIT-loaded skill, test section `97-kit-fidelity.sh` (33 assertions), ADR-089. **Changed** — §Reliability Architecture overview text bumped from "six enforcement layers" to "eight enforcement layers" (the 7th — §Workflow Declaration — was already shipped in v0.6.62 but the overview text wasn't synced). **2865 tests** (2720 framework + 145 benchmarking), 0 failures; 33 new regression tests in §97; 30 flow documents (added #30).
 
 **v0.6.63 (Reflex Convergence + Workflow Declaration Flow Doc):** Closes the v0.6.62 follow-up. Every QA-Agent finding from reflex cycle-22 fixed at the kit-machinery level. **QA-C22-04 CRITICAL** — `findings-registry.sh` honors `REFLEX_FINDINGS_REGISTRY` + `REFLEX_HISTORY_DIR` env overrides so registry tests no longer mutate the committed registry (suite is now deterministic). **QA-C22-07 CRITICAL** — `update-eval-trace.sh` emits the "Cycle-numbering note" callout from the generator instead of relying on a hand-committed header; test 82.19 stable. **QA-C22-09 MINOR** — PSK032 grandfather exemption for cycles carrying `migration-note.md` (documented historical mis-numbering); regression test 82.21. **QA-C22-08 MINOR** — `doc-code-diff.sh` honors a `# doc-coverage-exempt:` header marker; 4 internal mechanical helpers marked, precise (only marked scripts opt out, no blanket silencing). **Added** — `docs/work-flows/29-workflow-declaration-schema.md` documents the 7th reliability layer introduced in v0.6.62 (PSK034/PSK035 + Class A/B/B′/B-plan-driver/C taxonomy + phases.yml schema). **Changed** — stale `reinit` references in `13-release-workflow.md` repointed (5 executable workflows: release · feature-complete · init · new-setup · existing-setup). **2832 tests** (2687 framework + 145 benchmarking), 0 failures; 3 new regression tests; 30 flow documents.
 
@@ -984,6 +986,7 @@ Detailed step-by-step diagrams for every work flow:
 | 27 | **[UI Completeness Gate](docs/work-flows/27-ui-completeness-gate.md)** | Deliverable-bar counterpart to layer 5 — 10-category audit (primitives/layout/dark-mode/states/a11y/tokens/per-feature pages/input-feedback/responsive/anti-skeleton); `psk-ui-completeness.sh` stack-aware audit; PSK025 sync-check rule; orchestrator `--update` U6.5 backfills violations; Reflex Dim 26 + Gate 12 surface and block regressions; closes the v5-skeletal-UI failure structurally |
 | 28 | **[Spawn Fidelity](docs/work-flows/28-spawn-fidelity.md)** | 6th reliability layer — every sub-agent invocation routes through `psk-spawn.sh` with no inline-fallback branch; persistent retry queue + resume-on-session-start + workflow watchdog + synthesis-detection probe + Dim 27/28 + PSK026/027/029 sync-check rules; closes the synthesis-as-shortcut failure surfaced by the v0.6.59 reflex incident |
 | 29 | **[Workflow Declaration Schema](docs/work-flows/29-workflow-declaration-schema.md)** | 7th reliability layer (v0.6.62) — every kit workflow declares its phases as data in `.portable-spec-kit/workflows/<name>/phases.yml`; `psk-dispatch.sh` reads the declaration at runtime instead of hardcoded loops; PSK034 (router↔phases.yml mapping) + PSK035 (schema validation) sync-check rules; Class A/B/B′/B-plan-driver/C taxonomy makes scope unambiguous |
+| 30 | **[Kit Fidelity](docs/work-flows/30-kit-fidelity.md)** | 8th reliability layer (v0.6.64) — every kit-command invocation routes through `psk-kit-cmd.sh` with no workaround branch; canonical-command inventory at `.portable-spec-kit/kit-commands.yml`; `--rationale "<text>"` required for non-canonical variants + logged to `agent/.kit-deviation-log`; friction-as-feedback rule converts every workaround impulse into a tracked `KIT-GAP-NNNN` entry in `agent/.kit-gap-log`; PSK040 sync-check enforces deviation-log coverage; closes the operator-command-substitution failure class |
 
 ---
 

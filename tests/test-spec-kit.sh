@@ -42,6 +42,7 @@ SECTIONS=(
   "$SCRIPT_DIR/sections/03-reliability.sh"
   "$SCRIPT_DIR/sections/04-reflex.sh"
   "$SCRIPT_DIR/sections/05-mandate-compliance.sh"
+  "$SCRIPT_DIR/sections/97-kit-fidelity.sh"
 )
 
 for s in "${SECTIONS[@]}"; do

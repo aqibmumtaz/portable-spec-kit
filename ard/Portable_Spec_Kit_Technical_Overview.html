@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.63 &bull; May 2026</div>
+    <div class="badge">v0.6.64 &bull; May 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.63</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 2832 passing (2687 framework + 145 benchmarking), 101 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.64</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 2865 passing (2720 framework + 145 benchmarking), 102 sections</div>
   </div>
 </div>
 
@@ -77,13 +77,13 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 30 flow documents, 2832 automated tests (2687 framework + 145 benchmarking), 101 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 30 flow documents, 2865 automated tests (2720 framework + 145 benchmarking), 102 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.6.63</td></tr>
+  <tr><td>Current version</td><td>v0.6.64</td></tr>
   <tr><td>Framework size</td><td>Single markdown file (approx. 980 lines)</td></tr>
   <tr><td>Skill files</td><td>25 (loaded JIT at peak attention)</td></tr>
   <tr><td>Reliability scripts</td><td>29 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker, orchestrate, version-cascade, generate-ci, generate-user-guide, and more)</td></tr>
@@ -105,8 +105,9 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.0 — v0.6.63</p>
+<p>Kit: v0.6.0 — v0.6.64</p>
 <ul>
+  <li><strong>v0.6.64 — Kit Fidelity (8th Reliability Layer) (May 2026):</strong> Closes the recurring "agent silently deviates from canonical kit commands" failure class — the same trust-based failure mode §Spawn Fidelity closed for sub-agent spawns in v0.6.60, repeated one level up at the operator-command surface. <strong>Added:</strong> §Kit Fidelity in <code>portable-spec-kit.md</code> with two principles: (1) <em>canonical default form</em> — every kit command runs in its canonical default form; non-canonical variants require <code>--rationale "&lt;text&gt;"</code> (≥20 chars) committed to <code>agent/.kit-deviation-log</code>; (2) <em>friction = kit bug</em> — workarounds are forbidden; the agent's first action on friction is to file a <code>KIT-GAP-NNNN</code> in <code>agent/.kit-gap-log</code>, then either fix the kit inline or escalate to user. <strong>New wrapper</strong> <code>agent/scripts/psk-kit-cmd.sh</code> with no inline-fallback branch. Subcommands: <code>reflex | prepare-release | refresh-release | init | orchestrate | feature-complete | new-setup | existing-setup | run-plan</code>. <strong>New canonical-command inventory</strong> <code>.portable-spec-kit/kit-commands.yml</code> (schema_version: 1, data-driven extension). <strong>New sync-check rule PSK040</strong> in <code>agent/scripts/psk-sync-check.sh</code> — defense-in-depth audit of git log for marker-shaped commits without matching deviation-log entries. <strong>New flow doc</strong> <code>docs/work-flows/30-kit-fidelity.md</code> + <strong>JIT-loaded skill</strong> <code>.portable-spec-kit/skills/kit-fidelity.md</code> + <strong>test section</strong> <code>tests/sections/97-kit-fidelity.sh</code> (33 assertions wired into orchestrator) + <strong>ADR-089</strong> in <code>agent/PLANS.md</code>. <strong>Changed:</strong> §Reliability Architecture overview text bumped from "six enforcement layers" to "eight enforcement layers" (the 7th — §Workflow Declaration — was shipped in v0.6.62 but the overview text wasn't synced). <strong>Tests:</strong> 2865 (2720 framework + 145 benchmarking), 0 failures; 33 new regression tests in §97; 30 flow documents (added #30). Plan: <code>agent/plans/2026-05-31-kit-fidelity-8th-layer.md</code> (status: done, commits 45bb4cb7..9cd4f565).</li>
   <li><strong>v0.6.63 — Reflex Convergence + Workflow Declaration Flow Doc (May 2026):</strong> Closes the v0.6.62 follow-up — every QA-Agent finding from reflex cycle-22 fixed at the kit-machinery level, plus the documentation gap for v0.6.62's 7th reliability layer. <strong>Fixed:</strong> QA-C22-04 CRITICAL — <code>findings-registry.sh</code> honors <code>REFLEX_FINDINGS_REGISTRY</code> + <code>REFLEX_HISTORY_DIR</code> env overrides so Section 84 tests no longer mutate the committed registry (deterministic suite); QA-C22-07 CRITICAL — <code>update-eval-trace.sh</code> emits the "Cycle-numbering note" callout in the generated header so per-pass regeneration is deterministic (test 82.19 stable); QA-C22-09 MINOR — PSK032 grandfather exemption for cycles carrying <code>migration-note.md</code> (documented historical mis-numbering) plus regression test 82.21; QA-C22-08 MINOR — <code>doc-code-diff.sh</code> honors <code># doc-coverage-exempt:</code> header marker applied to 4 internal mechanical helpers (<code>psk-behavior-live</code>, <code>psk-behavior-parity</code>, <code>psk-gen-manifest</code>, <code>psk-state-cleanup</code>), precise (only marked scripts opt out — no blanket silencing), 2 new regression tests in <code>04-reflex.sh</code>. <strong>Added:</strong> <code>docs/work-flows/29-workflow-declaration-schema.md</code> documents the 7th reliability layer introduced in v0.6.62 (PSK034/PSK035 + Class A/B/B′/B-plan-driver/C taxonomy + phases.yml schema + dispatch contract). <strong>Changed:</strong> stale <code>reinit</code> references in <code>13-release-workflow.md</code> repointed — 5 executable workflows (release · feature-complete · init · new-setup · existing-setup) with <code>reinit</code> documented as folded into idempotent <code>init</code>. <strong>Tests:</strong> 2832 (2687 framework + 145 benchmarking), 0 failures; 3 new regression tests (82.21 PSK032 grandfather + 2 doc-coverage-exempt in 04-reflex.sh); 30 flow documents (29 user-facing + 1 template).</li>
   <li><strong>v0.6.62 — Command-Model Redesign + Dispatcher Migration (May 2026):</strong> Collapses the kit to a clean idempotent command model and completes the dispatcher migration. <strong>Added:</strong> Two-command model — idempotent <code>install</code> (pull machinery) + <code>init</code> (registry-driven conformance engine, CREATE-or-REFRESH, content-loss-protected, folds the retired <code>reinit</code> via <code>psk-reinit.sh</code> thin alias). Unified <code>orchestrate build</code> — one workflow for new + existing projects (each phase idempotent create-or-update). PSK034 + PSK035 sync-check rules implemented (were documented but never coded) — workflow-router↔phases.yml mapping + phases.yml schema validation. <code># workflow-decl-exempt:</code> markers on plan-driver/session/gate helpers (Class B-plan-driver). <strong>Changed:</strong> <code>psk-run-plan.sh</code> delegates start/next/resume/retry to <code>psk-dispatch.sh --plan</code> — every plan spawn now routes through <code>psk-spawn.sh</code> (closes the bare-<code>SPAWN:</code>-echo §Spawn-Fidelity gap); compat-mode execution ported into the dispatcher; absolute-artifact-path robustness added. Class A/B/B′/B-plan-driver/C taxonomy formalised. <strong>Removed:</strong> <code>--update</code> / <code>--retrofit</code> orchestrator modes (existing-project structural conformance is <code>init</code>'s separate axis); separate <code>reinit</code>/<code>reinstall</code>/<code>new-project</code> verbs (consolidated into idempotent <code>install</code> + <code>init</code> + <code>build</code>). <strong>Resolved:</strong> reflex as monolithic-by-design (Class B′) — its iterate-until-convergence control flow does not fit the dispatcher's linear phases.yml model; already §Spawn-Fidelity-compliant via <code>spawn-qa.sh</code>/<code>spawn-dev.sh</code> → <code>psk-spawn.sh</code>. <strong>Tests:</strong> 2832 (2687 framework + 145 benchmarking), 0 failures; Section 89 added (11 regression tests for PSK034/PSK035 workflow-declaration enforcement); 29 flow documents.</li>
   <li><strong>v0.6.61 — Strict-GRANT Convergence (May 2026):</strong> Closes the convergence gap between v0.6.60 mechanical shipping and v0.6.60 strict-GRANT verdict. <strong>Added:</strong> PSK031 cross-pass findings registry (<code>reflex/lib/findings-registry.sh</code> ~450 LOC + <code>reflex/history/findings-registry.yaml</code>) — content-fingerprint canonical-ID tracking with widened/residual alias support; bootstraps 89 canonical IDs from cycle-17/18/20. PSK032 cycle-numbering misuse detection — fires when consecutive cycle dirs have only pass-001 with verdict.md present (cycle-tracking bypassed). PSK033 standalone-pass overuse advisory. Watchdog hooks wired into <code>reflex/run.sh</code> Step 1b + <code>reflex/lib/preconditions.sh</code> Gate 5 + session-start (<code>psk-resume-bootstrap.sh</code> Step 4). <code>psk-workflow-state.sh prune</code> subcommand for workflow-state retention. New flow-doc sections in <code>17-reflex.md</code> (§Cycle vs Pass semantics, §Standalone pass-dir layout, §Watchdog Hooks, §Findings Registry). <strong>Changed:</strong> <code>reflex/lib/check-audit-completeness.sh</code> wall_clock multi-wave aggregation (6 fallback strategies; cycle-17/18/20 verdicts <code>suspect</code> → <code>real</code> post-fix); <code>file-bugs.sh</code> integrated with findings-registry de-dup; <code>dev-self-verify.sh</code> <code>eval</code> → <code>bash -c</code> hardening; <code>psk-release.sh</code> declares <code>script-class: orchestrator</code> (43/43 psk-* scripts now classified). <strong>Fixed:</strong> QA-D4-03 MAJOR (workflow watchdog HF4b now structurally invoked across passes); QA-D6-03 MAJOR (wall_clock multi-wave aggregator bug); cycle-numbering bug in <code>compute_next_cycle_id()</code> / <code>next_cycle_id()</code> (KV-vs-YAML parser mismatch — each reflex invocation created new cycle-NN instead of incrementing pass-NNN). <strong>Convergence:</strong> cycle-21 STRICT GRANT (0 MAJOR/CRITICAL/MINOR open, 2 POSITIVE ADVISORY only; trajectory 53→30→0 open findings across cycle-17→cycle-20→cycle-21). <strong>Tests:</strong> 2658 (2513 framework + 145 benchmarking); Sections 85/86/87 added (P4/P5/P6 regression suites, 98 new tests); 33 sync-check rules (PSK001-PSK033); 84 features, 100% R→F→T coverage; 29 flow documents.</li>
@@ -1402,7 +1403,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.6.63 &bull; May 2026
+  Portable Spec Kit — Technical Overview &bull; v0.6.64 &bull; May 2026
 </div>
 
 </div>
@@ -1420,7 +1421,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.63 &bull; May 2026</div>
+    <div class="badge">v0.6.64 &bull; May 2026</div>
   </div>
 </div>
 

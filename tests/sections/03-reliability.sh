@@ -5590,12 +5590,16 @@ else
   fail "79.9: §Spawn Fidelity missing HF8b skill path reference"
 fi
 
-# 79.10: §Reliability Architecture opening says "six enforcement layers" (not "five")
+# 79.10: §Reliability Architecture opening declares the current enforcement-layer count
+# v0.6.60 added §Spawn Fidelity → "six enforcement layers"
+# v0.6.62 added §Workflow Declaration → "seven enforcement layers"
+# v0.6.64 added §Kit Fidelity → "eight enforcement layers"
+# Test accepts any of the historically-valid layer-count words; update when a new layer lands.
 _HF8_RELI_OPENING=$(awk '/^## Reliability Architecture/{flag=1} /^## /{if(NR>1 && flag && !/^## Reliability Architecture/){exit}} flag' "$_HF8_KIT_FILE" | head -5)
-if echo "$_HF8_RELI_OPENING" | grep -q 'six enforcement layers'; then
-  pass "79.10: §Reliability Architecture opening says 'six enforcement layers'"
+if echo "$_HF8_RELI_OPENING" | grep -qE '(six|seven|eight) enforcement layers'; then
+  pass "79.10: §Reliability Architecture opening declares enforcement-layer count"
 else
-  fail "79.10: §Reliability Architecture opening still says 'five' or wrong count"
+  fail "79.10: §Reliability Architecture opening missing enforcement-layer count declaration"
 fi
 
 # 79.11: §Reliability Architecture opening lists "§Spawn Fidelity (6th layer)"

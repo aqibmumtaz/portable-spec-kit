@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.63 -->
+<!-- Framework Version: v0.6.64 -->
 
-**Version:** v0.6.63 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2832 (2687 framework · 145 benchmarking)
+**Version:** v0.6.64 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2865 (2720 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -46,7 +46,7 @@ bash agent/scripts/psk-bootstrap-check.sh --remediate
 
 ## Reliability Architecture
 
-The kit uses six enforcement layers to prevent agents from skipping steps, shipping inconsistent content, or substituting synthesis for adversarial audit. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**; §Spawn Fidelity (6th layer) gates **sub-agent invocations**.
+The kit uses eight enforcement layers to prevent agents from skipping steps, shipping inconsistent content, substituting synthesis for adversarial audit, or quietly substituting convenient command variants for canonical ones. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**; §Spawn Fidelity (6th layer) gates **sub-agent invocations**; §Workflow Declaration Schema (7th layer) gates **workflow shape**; §Kit Fidelity (8th layer) gates **kit-command invocation shape** and converts every operational friction into a tracked kit improvement.
 
 **Reliability model — dual critic at the end of each workflow, not per step.** A workflow runs its steps normally; at the end it enters a single validation gate that pairs two critics. Both must pass. Either failure blocks the workflow from completing.
 
@@ -405,6 +405,67 @@ phases:
 
 ---
 
+## Kit Fidelity (MANDATORY — every kit command runs canonically, every friction becomes a kit fix)
+
+**This is the 8th reliability layer — invocation-shape, enforced structurally.** §Workflow Declaration (7th) forces workflows into a canonical data shape. This layer forces every *kit-command invocation* into its canonical default form, and reframes every friction-point as a kit bug rather than a workaround target. Without it, agents quietly substitute convenient variants for canonical ones — the same trust-based failure mode §Spawn Fidelity already closed for sub-agent spawns, repeated one level up at the operator-command surface.
+
+**The two principles.**
+
+1. **Canonical default form.** Every kit command runs in its canonical default form unless the user has explicitly authorized a deviation. The canonical form is the one the framework names without modifier flags — `bash reflex/run.sh` (autoloop until convergence), `bash agent/scripts/psk-release.sh prepare` (bumps version + full 10-phase ceremony), `bash agent/scripts/psk-init.sh` (registry-driven CREATE-or-REFRESH), and so on. Non-canonical variants (`single`, `refresh`, `--no-bump`, marker commits, bypass env vars, `git --no-verify`, `git push --force`) require `--rationale "<text>"` and land in `agent/.kit-deviation-log` as a committed audit trail.
+
+2. **Friction = kit bug.** When a canonical kit command has friction (precondition fail, version bump unwanted, gate blocks, missing feature), the agent MUST NOT work around it. The friction is the spec for a kit improvement. The agent files a `KIT-GAP-*` entry in `agent/.kit-gap-log`, then either (a) fixes the kit inline + proceeds canonically, or (b) escalates to user with proposed fix. **Workarounds are forbidden even with --rationale.** Every workaround silently rationalizes a kit gap; converting it into a tracked KIT-GAP-* entry makes the kit improvable instead of papering over the gap.
+
+**Why this matters.** Recurring failure surfaced 2026-05-30 / 2026-05-31: the agent picked `bash reflex/run.sh single` (avoids version bump) instead of canonical autoloop, then created an empty marker commit `v0.6.63: reflex single-pass precondition marker` instead of running `prepare release`, then stopped after a DENIED single-pass verdict instead of iterating. Each deviation had an operational excuse. The "follow kit designs" rule existed in CLAUDE.md but was trust-based — the agent could rationalize past it under pressure. Same class as the synthesis-substitution failure that drove §Spawn Fidelity.
+
+**Six structural-enforcement mechanisms (not trust-based).**
+
+1. **Wrapper script `agent/scripts/psk-kit-cmd.sh`.** All canonical kit commands route through this wrapper. The wrapper reads the canonical-command inventory at `.portable-spec-kit/kit-commands.yml`, classifies the invocation form against the canonical default, and either (a) executes the underlying command as-is, or (b) detects a non-canonical flag/variant and pauses with `AWAITING_RATIONALE` until the agent provides `--rationale "<text>"`. There is no inline-fallback branch — the only forward path on a non-canonical invocation is the rationale flag. Same asymmetry as `psk-spawn.sh`.
+
+2. **Canonical-command inventory at `.portable-spec-kit/kit-commands.yml`.** Data-driven inventory of every kit command with its canonical default form and its non-canonical variants. Lives alongside `config.md` so the wrapper can read it dynamically. Operators extend the inventory by editing this file, not by editing the wrapper.
+
+3. **Deviation log at `agent/.kit-deviation-log` (committed).** Every `--rationale` invocation appends one line: `<iso-ts> <cmd> <flag> <rationale-text-hash> <user-msg-sha>`. Survives sessions like `.bypass-log`. The user-msg-sha proves the rationale came from a real user message, not the agent self-rationalizing.
+
+4. **Kit-gap log at `agent/.kit-gap-log` (committed).** Every friction-detected gap appends one entry: `<iso-ts> KIT-GAP-<id> <command> <friction-description> <proposed-fix>`. Becomes the queue of kit improvements. Drained by the kit maintainer like `agent/tasks/Gxx-*.md` for PKFL findings.
+
+5. **Sync-check rule PSK040.** Audits git-log since the §Kit Fidelity introduction commit for kit-command commits whose subject matches a non-canonical pattern (marker commits, `single` mode invocations, bypass env-var commits) AND verifies each such commit has a matching `agent/.kit-deviation-log` entry. Missing entries → ADVISORY in `--quick` mode, ERROR in `--full` mode (pre-commit hook blocks). Defense in depth — the wrapper prevents at invocation time, PSK040 detects post-commit if the wrapper was bypassed.
+
+6. **Friction-as-feedback rule in agent behavior.** When the wrapper or any kit command surfaces friction (precondition fail, gate block, missing feature, ambiguous error), the agent's FIRST action is to log a `KIT-GAP-*` entry. Only AFTER logging may the agent propose a workaround or kit fix. The log entry is the spec; the user can audit `.kit-gap-log` to see what frictions accumulated and decide which to fix at the kit level.
+
+**Canonical-command inventory (initial).** The inventory is data, not code — it lives at `.portable-spec-kit/kit-commands.yml`. The first version covers:
+
+| Command | Canonical default | Non-canonical variants (require --rationale) |
+|---|---|---|
+| `bash reflex/run.sh` | autoloop until convergence | `single`, `--single`, marker-commit shortcuts |
+| `bash agent/scripts/psk-release.sh prepare` | full 10-phase ceremony with version bump | `refresh` (no-bump), bypass env vars |
+| `bash agent/scripts/psk-init.sh` | registry-driven CREATE-or-REFRESH | partial init |
+| `bash agent/scripts/psk-orchestrate.sh build` | full 10-phase orchestration | early-exit phases |
+| `bash agent/scripts/psk-feature-complete.sh` | dual-gate critic validation | gate-skip |
+| `bash agent/scripts/psk-new-setup.sh` | full setup (Step 0 env-select + 8 steps) | env-skip |
+| `bash agent/scripts/psk-existing-setup.sh` | guide-don't-force scan + checklist | force-overwrite |
+| `bash agent/scripts/psk-run-plan.sh start <slug>` | schema-validated phase execution | compat-mode (legacy plans only) |
+| `git commit` | regular commit (signed by hook) | `--no-verify`, `--amend` on pushed commits |
+| `git push` | regular push to origin | `--force`, `--force-with-lease`, `--no-verify` |
+
+Operators extend by editing `.portable-spec-kit/kit-commands.yml` directly. PSK040 reads the same file so new entries propagate to detection.
+
+**Friction-detection examples.** When the agent hits any of these, the canonical response is "log KIT-GAP, then fix kit or escalate", not "work around":
+
+| Friction | Wrong response (workaround) | Right response (kit-fidelity) |
+|---|---|---|
+| `reflex/run.sh` autoloop's iter-1 prep-release would bump v0.6.63 → v0.6.64 too soon | Switch to `single` mode | Log `KIT-GAP: autoloop iter-1 bump cadence is too aggressive after manual release`. Propose: add `--bump-after-grant` flag so version bump moves to convergence-final ceremony. Then either implement the flag or escalate |
+| `psk-release.sh prepare` Phase 1 tests fail on N69 clock-drift | Bypass via `PSK_SYNC_CHECK_DISABLED=1` | Log `KIT-GAP-N69: optimize age-escalation overrides deferred state`. Fix `psk-optimize.sh emit_health()` to skip age-escalation when `active=0 && deferred>0`. Then proceed canonically |
+| Reflex preconditions HEAD-pattern check blocks because HEAD is a chore commit | Empty marker commit `v0.6.X: marker` | Log `KIT-GAP: preconditions HEAD-pattern check should accept post-release chore commits too`. Either widen the check or escalate. Never the marker workaround |
+| `psk-run-plan.sh start` refuses because plan lacks `phases:` schema | Edit plan to add fake `phases:` array | Log `KIT-GAP: narrative plans need explicit compat-mode path that doesn't pollute the schema`. Either improve compat-mode UX or escalate |
+| `psk-init.sh` re-creates a file the user manually customized | Skip the affected file via env var | Log `KIT-GAP: init content-loss protection should detect user customization and prompt before overwrite`. Either harden the snapshot check or escalate |
+
+**Covered surfaces.** Every kit command listed in `.portable-spec-kit/kit-commands.yml`. Plus every kit command added after v0.6.64 — new commands MUST register their canonical default form in the inventory as part of the same commit that ships them.
+
+**Emergency bypass.** `PSK_KIT_FIDELITY_DISABLED=1` skips wrapper enforcement on a given invocation. Logged to `agent/.bypass-log` per PSK027. For genuine emergencies only — each invocation is an explicit operator decision to remove a structural guarantee. Repeated bypassing surfaces as ERROR in sync-check.
+
+> **Skill: Kit Fidelity** — full wrapper protocol, deviation-log format, friction-as-feedback recipe, inventory-extension procedure, worked examples in `.portable-spec-kit/skills/kit-fidelity.md`. Loaded on any kit command invocation when the wrapper pauses with AWAITING_RATIONALE.
+
+---
+
 ## Skill-Based Architecture
 
 This file is the **core brain** — behavioral rules loaded every session. Procedural details live in **skill files** loaded on demand:
@@ -414,6 +475,7 @@ This file is the **core brain** — behavioral rules loaded every session. Proce
 | Creating/restructuring agent files | `.portable-spec-kit/skills/templates.md` |
 | Plan drafting / executable plans / sub-agent spawning per phase | `.portable-spec-kit/skills/plan-execution.md` |
 | Sub-agent spawning / "AWAITING_SUBAGENT" state / Dim 28 finding fix / Standard Spawn Recipe | `.portable-spec-kit/skills/spawn-fidelity.md` |
+| Kit command invocation / "AWAITING_RATIONALE" state / friction-as-feedback / KIT-GAP filing | `.portable-spec-kit/skills/kit-fidelity.md` |
 | Python project detected (Python-only legacy) | `.portable-spec-kit/skills/python-environment.md` |
 | **Any stack-runtime command when env not yet selected** (pip / npm / pytest / cargo / go test / etc.) — generic Python · Node · Ruby · Go · Rust | `.portable-spec-kit/skills/env-management.md` |
 | Project setup (init) / auto-scan / existing project | `.portable-spec-kit/skills/project-setup.md` |

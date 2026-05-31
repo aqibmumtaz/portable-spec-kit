@@ -3058,6 +3058,106 @@ check_psk035_phases_schema() {
   run_check
 }
 
+# --- CHECK PSK040: §Kit Fidelity deviation-log coverage (v0.6.64+) ---
+# Every commit since the §Kit Fidelity introduction whose subject matches a
+# marker_commit_pattern from .portable-spec-kit/kit-commands.yml MUST have a
+# matching entry in agent/.kit-deviation-log. Catches the case where the agent
+# bypasses the psk-kit-cmd.sh wrapper but commits anyway.
+# Severity: ADVISORY in --quick mode, ERROR in --full mode (pre-commit blocks).
+# Bypass: PSK_PSK040_DISABLED=1.
+check_psk040_kit_fidelity_coverage() {
+  if [ "${PSK_PSK040_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK040: skipped (PSK_PSK040_DISABLED=1)"
+    run_check
+    return
+  fi
+  local inventory="$PROJ_ROOT/.portable-spec-kit/kit-commands.yml"
+  local dev_log="$PROJ_ROOT/agent/.kit-deviation-log"
+  if [ ! -f "$inventory" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK040: no kit-commands.yml — skip (kit pre-v0.6.64)"
+    run_check
+    return
+  fi
+
+  # Read marker_commit_patterns from inventory
+  local patterns
+  patterns=$(awk '
+    /^marker_commit_patterns:/ { in_block=1; next }
+    in_block && /^  - pattern:/ {
+      sub(/^[[:space:]]+- pattern: */, "", $0)
+      gsub(/^"|"$/, "", $0)
+      print $0
+    }
+    in_block && /^[^[:space:]#]/ && !/^marker_commit_patterns:/ { in_block=0 }
+  ' "$inventory")
+
+  if [ -z "$patterns" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK040: no marker_commit_patterns defined — skip"
+    run_check
+    return
+  fi
+
+  # The §Kit Fidelity introduction commit is the first commit that added
+  # portable-spec-kit.md text matching "## Kit Fidelity". Find it dynamically
+  # so the check works across kit-version upgrades.
+  local intro_sha
+  intro_sha=$(git -C "$PROJ_ROOT" log --diff-filter=A --pickaxe-regex \
+    -S '^## Kit Fidelity ' --pretty=format:%H -- portable-spec-kit.md 2>/dev/null \
+    | tail -1)
+  if [ -z "$intro_sha" ]; then
+    # Fallback: scan all commits where portable-spec-kit.md gained "Kit Fidelity" section
+    intro_sha=$(git -C "$PROJ_ROOT" log --pickaxe-regex \
+      -S '^## Kit Fidelity ' --reverse --pretty=format:%H -- portable-spec-kit.md 2>/dev/null \
+      | head -1)
+  fi
+  if [ -z "$intro_sha" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK040: §Kit Fidelity not yet committed — skip"
+    run_check
+    return
+  fi
+
+  # Walk every commit since intro and check subjects against patterns
+  local violations=()
+  local commit subject
+  while IFS=$'\t' read -r commit subject; do
+    [ -z "$commit" ] && continue
+    while IFS= read -r pattern; do
+      [ -z "$pattern" ] && continue
+      if echo "$subject" | grep -qE "$pattern"; then
+        # Subject matches a marker-commit pattern. Verify deviation-log has entry
+        # with the same date as the commit author-date.
+        local commit_date
+        commit_date=$(git -C "$PROJ_ROOT" show -s --format=%ad --date=short "$commit" 2>/dev/null)
+        if [ ! -f "$dev_log" ] || ! grep -q "^$commit_date" "$dev_log"; then
+          violations+=("$commit:$subject")
+          break
+        fi
+      fi
+    done <<< "$patterns"
+  done < <(git -C "$PROJ_ROOT" log --pretty=format:'%H	%s' "$intro_sha..HEAD" 2>/dev/null)
+
+  if [ "${#violations[@]}" -eq 0 ]; then
+    emit_pass "PSK040: §Kit Fidelity deviation-log coverage clean (0 unaudited marker commits)"
+    run_check
+    return
+  fi
+
+  local list
+  list=$(printf '  - %s\n' "${violations[@]}" | head -5)
+  if [ "$QUICK" = true ]; then
+    # Advisory in --quick (PostToolUse hook): warn but don't block
+    echo -e "  ${YELLOW}⚠${NC} PSK040: ${#violations[@]} unaudited marker commit(s) since §Kit Fidelity intro"
+    echo "$list" | head -3
+    run_check
+    return
+  fi
+  # Error in --full (pre-commit hook): block
+  emit_issue "PSK040" "kit-fidelity-coverage" \
+    "${#violations[@]} marker-shaped commit(s) since §Kit Fidelity intro have no matching agent/.kit-deviation-log entry: $(printf '%s; ' "${violations[@]}" | head -c 200)" \
+    "Each non-canonical kit-command invocation must route through psk-kit-cmd.sh with --rationale, which appends to agent/.kit-deviation-log. Bypass: PSK_PSK040_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -3083,6 +3183,7 @@ main() {
     check_psk033_standalone_overuse
     check_psk034_workflow_decl
     check_psk035_phases_schema
+    check_psk040_kit_fidelity_coverage
   else
     # Full: all checks (expanded v0.5.9 with content validation, v0.5.13 with secrets)
     check_version
@@ -3128,6 +3229,7 @@ main() {
     check_psk033_standalone_overuse
     check_psk034_workflow_decl
     check_psk035_phases_schema
+    check_psk040_kit_fidelity_coverage
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h
