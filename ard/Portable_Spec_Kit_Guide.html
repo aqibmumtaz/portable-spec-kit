@@ -318,6 +318,50 @@
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
 </ul>
 
+<h3>v0.6.64 — Kit Fidelity (8th Reliability Layer)</h3>
+<ul>
+  <li><strong>§Kit Fidelity — 8th reliability layer:</strong> New MANDATORY section in <code>portable-spec-kit.md</code>. Every kit-command invocation routes through <code>agent/scripts/psk-kit-cmd.sh</code> wrapper with no inline-fallback branch (same asymmetry as <code>psk-spawn.sh</code> from v0.6.60). Two principles: (1) canonical default form — non-canonical variants require <code>--rationale "&lt;text&gt;"</code> (≥20 chars, user-authored) committed to <code>agent/.kit-deviation-log</code>; (2) friction = kit bug — workarounds are forbidden; agent files <code>KIT-GAP-NNNN</code> in <code>agent/.kit-gap-log</code> instead.</li>
+  <li><strong>New wrapper <code>agent/scripts/psk-kit-cmd.sh</code>:</strong> routes every canonical kit command via a single entry point. Subcommands: <code>reflex | prepare-release | refresh-release | init | orchestrate | feature-complete | new-setup | existing-setup | run-plan</code>. Utilities: <code>--list</code> (inventory display), <code>--check</code> (dry-run classification), <code>--log-gap</code> (file friction without running). Pauses with <code>AWAITING_RATIONALE</code> on non-canonical invocation.</li>
+  <li><strong>New canonical-command inventory <code>.portable-spec-kit/kit-commands.yml</code>:</strong> data-driven, <code>schema_version: 1</code>. Lists each command's canonical default + non-canonical variants with <code>why_non_canonical</code> reasons + <code>marker_commit_patterns</code> for PSK040 audit. Operators extend by editing YAML, not the wrapper.</li>
+  <li><strong>Two committed audit-trail files:</strong> <code>agent/.kit-deviation-log</code> (append-only TSV per <code>--rationale</code> invocation: <em>ts CMD FLAG hash text</em>) and <code>agent/.kit-gap-log</code> (auto-incremented <code>KIT-GAP-NNNN</code> friction ledger: <em>ts ID CMD FRICTION FIX</em>).</li>
+  <li><strong>New sync-check rule PSK040:</strong> audits git log since the §Kit Fidelity introduction commit for marker-shaped commits without matching deviation-log entries. ADVISORY in <code>--quick</code> mode (PostToolUse hook), ERROR in <code>--full</code> mode (PreCommit hook). Defense-in-depth: wrapper PREVENTS at invocation time, PSK040 DETECTS post-commit if the wrapper was bypassed.</li>
+  <li><strong>New flow doc <code>docs/work-flows/30-kit-fidelity.md</code></strong> + <strong>JIT-loaded skill</strong> <code>.portable-spec-kit/skills/kit-fidelity.md</code> + <strong>test section</strong> <code>tests/sections/97-kit-fidelity.sh</code> (33 assertions across 13 test groups, wired into orchestrator) + <strong>ADR-089</strong> in <code>agent/PLANS.md</code> + <strong>F85</strong> in SPECS.md.</li>
+  <li><strong>§Reliability Architecture overview text:</strong> bumped from "six enforcement layers" to "eight enforcement layers" (the 7th — §Workflow Declaration — was already shipped in v0.6.62 but the overview text wasn't synced).</li>
+  <li><strong>Why this layer:</strong> recurring agent failure 2026-05-30/31 where the agent picked <code>reflex/run.sh single</code> instead of canonical autoloop, then empty marker commit instead of <code>prepare release</code>, then stopped after DENIED single-pass instead of iterating. Each deviation had operational excuse; "follow kit designs" rule existed but got rationalized past under pressure. Same class as the synthesis-substitution failure that drove §Spawn Fidelity in v0.6.60.</li>
+  <li><strong>Emergency bypass:</strong> <code>PSK_KIT_FIDELITY_DISABLED=1</code> logged to <code>agent/.bypass-log</code> per PSK027.</li>
+  <li><strong>Tests:</strong> 2720 framework + 145 benchmarking = 2865. 0 failures. 85 features, 100% R→F→T coverage on v0.6.64 additions. 30 flow documents (added 30-kit-fidelity.md).</li>
+</ul>
+
+<h3>v0.6.63 — Reflex Convergence + Workflow Declaration Flow Doc</h3>
+<ul>
+  <li><strong>QA-C22-04 fix (CRITICAL):</strong> <code>reflex/lib/findings-registry.sh</code> honors <code>REFLEX_FINDINGS_REGISTRY</code> + <code>REFLEX_HISTORY_DIR</code> env overrides so registry tests no longer mutate the committed registry. Section 84 fixtures isolate via temp registry — suite is now deterministic.</li>
+  <li><strong>QA-C22-07 fix (CRITICAL):</strong> <code>reflex/lib/update-eval-trace.sh</code> emits the "Cycle-numbering note" callout in the generated <code>REFLEX_EVAL_TRACE.md</code> header so per-pass regeneration no longer wipes it. Test 82.19 deterministic.</li>
+  <li><strong>QA-C22-09 fix (MINOR):</strong> PSK032 grandfather exemption for cycles carrying <code>migration-note.md</code> (documented historical mis-numbering). Regression test 82.21.</li>
+  <li><strong>QA-C22-08 fix (MINOR):</strong> <code>reflex/lib/doc-code-diff.sh</code> honors <code># doc-coverage-exempt:</code> header marker on 4 internal mechanical helpers — precise (only marked scripts opt out, no blanket silencing). 2 regression tests.</li>
+  <li><strong>Added <code>docs/work-flows/29-workflow-declaration-schema.md</code>:</strong> documents the 7th reliability layer introduced in v0.6.62 (PSK034 + PSK035 + Class A/B/B′/B-plan-driver/C taxonomy + phases.yml schema + dispatch contract).</li>
+  <li><strong>Changed:</strong> stale <code>reinit</code> references in <code>13-release-workflow.md</code> repointed — 5 executable workflows (release, feature-complete, init, new-setup, existing-setup) with <code>reinit</code> documented as folded into idempotent <code>init</code>.</li>
+  <li><strong>Tests:</strong> 2687 framework + 145 benchmarking = 2832. 0 failures. 3 new regression tests (82.21 PSK032 grandfather + 2 doc-coverage-exempt in <code>04-reflex.sh</code>). 30 flow documents (29 user-facing + 1 template).</li>
+</ul>
+
+<h3>v0.6.62 — Command-Model Redesign + Dispatcher Migration</h3>
+<ul>
+  <li><strong>Two-command model:</strong> idempotent <code>install</code> + <code>init</code>. <code>init</code> becomes the registry-driven CREATE-or-REFRESH conformance engine, content-loss-protected. The retired <code>reinit</code> command is folded into <code>init</code> — one command covers empty-project create AND existing-project refresh.</li>
+  <li><strong>Unified <code>orchestrate build</code>:</strong> one workflow for new + existing projects. Each phase is idempotent create-or-update so the same dispatch handles both modes. <code>--update</code> / <code>--retrofit</code> modes removed.</li>
+  <li><strong>PSK034 + PSK035 sync-check rules implemented</strong> (were documented in v0.6.57 but never coded): PSK034 audits workflow-router↔phases.yml mapping; PSK035 validates the <code>phases.yml</code> schema (schema_version, workflow, phases array per-phase fields, dependency-graph validity).</li>
+  <li><strong><code>psk-run-plan.sh</code> delegates start/next/resume/retry to <code>psk-dispatch.sh --plan</code>:</strong> every plan-phase spawn now routes through <code>psk-spawn.sh</code> — extends §Spawn Fidelity coverage to plan execution. Compat-mode preserved for legacy narrative plans (one-shot then convert).</li>
+  <li><strong>Reflex resolved as monolithic-by-design (Class B′):</strong> <code>reflex/run.sh</code>'s iterate-until-convergence control flow (GRANTED/DENIED branching + stateful L1-L6) does not fit the dispatcher's linear <code>phases.yml</code> model. Documented as architecturally-distinct, NOT pending migration. The §Spawn Fidelity protocol already covers reflex's sub-agent spawns via <code>spawn-qa.sh</code> + <code>spawn-dev.sh</code>.</li>
+  <li><strong>Class A / B / B′ / B-plan-driver / C workflow taxonomy</strong> formalized so retrofit scope is unambiguous.</li>
+  <li><strong>Tests:</strong> 2687 framework + 145 benchmarking = 2832. 0 failures.</li>
+</ul>
+
+<h3>v0.6.61 — Strict-GRANT Convergence</h3>
+<ul>
+  <li><strong>Strict-GRANT convergence discipline:</strong> reflex autoloop no longer advances cycles on findings-zero-but-DENIED states — only on explicit GRANTED verdicts. Closes the false-convergence class where a pass with 0 NEW findings still left prior-cycle findings unresolved.</li>
+  <li><strong>Verdict integrity hardening:</strong> reflex/lib write-verdict structural field emitting explicit <code>verdict: GRANTED|DENIED</code>. Per-pass <code>.iter-status.yml</code> audit trail tracks PENDING → RUNNING → COMPLETE-GRANTED / COMPLETE-DENIED transitions.</li>
+  <li><strong>Convergence-audit gate (9th mechanical gate):</strong> <code>reflex/lib/gates.sh</code> fails any pass that left an <code>INTERRUPTED</code> verdict without an <code>operator-recovered</code> annotation. Recovery requires explicit <code>--recover-from-abort &lt;pass-id&gt;</code> flag.</li>
+  <li><strong>Tests:</strong> 2687 framework + 145 benchmarking = 2832. 0 failures.</li>
+</ul>
+
 <h3>v0.6.60 — Spawn Fidelity Hardening</h3>
 <ul>
   <li><strong>§Spawn Fidelity — 6th reliability layer:</strong> New MANDATORY section in <code>portable-spec-kit.md</code>. Every sub-agent invocation routes through <code>agent/scripts/psk-spawn.sh</code> with no inline-fallback branch. P11 — Spawn Fidelity principle added to <code>agent/PHILOSOPHY.md</code>.</li>
