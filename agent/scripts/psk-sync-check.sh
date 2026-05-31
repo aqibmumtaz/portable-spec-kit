@@ -2438,8 +2438,17 @@ else:
       echo -e "  ${YELLOW}⚠${NC} PSK029: resume-bootstrap not run since last commit (active workflow state present)"
       run_check
     else
+      # QA-D15-PSK029-MESSAGE-FALSE-POSITIVE fix (cycle-22-pass-002):
+      # awaiting_arbitration is initialised to "0" (set + non-empty), so the
+      # bash :+ operator ALWAYS expanded the suffix — including when zero
+      # AWAITING_HUMAN_ARBITRATION entries exist in the queue. Replaced with
+      # explicit -eq 1 test so the suffix only appears when truly applicable.
+      local arbitration_suffix=""
+      if [ "$awaiting_arbitration" -eq 1 ]; then
+        arbitration_suffix=" AND retry queue has AWAITING_HUMAN_ARBITRATION entries"
+      fi
       emit_issue "PSK029" "resume-bootstrap-stale" \
-        "session-start-resume-check marker (epoch=$last_marker_ts) is older than the most-recent commit (epoch=$last_commit_ts) by ${marker_age_vs_commit}s, exceeding grace window of ${grace_window}s${awaiting_arbitration:+ AND retry queue has AWAITING_HUMAN_ARBITRATION entries}" \
+        "session-start-resume-check marker (epoch=$last_marker_ts) is older than the most-recent commit (epoch=$last_commit_ts) by ${marker_age_vs_commit}s, exceeding grace window of ${grace_window}s${arbitration_suffix}" \
         "Run 'bash agent/scripts/psk-resume-bootstrap.sh' before resuming work. The helper drains agent/.workflow-state/retry-queue.yml and lists paused phases so the agent picks them up before responding."
     fi
   fi
