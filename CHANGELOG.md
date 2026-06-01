@@ -8,7 +8,12 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.64 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.65 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.65 — Reflex Autoloop Convergence (2026-06-01)
+- **Convergence run on v0.6.64 surface.** Autoloop iter-1 prep-release ceremony executed via canonical `psk-kit-cmd.sh reflex` wrapper — first §Kit Fidelity canonical-wrapper invocation in production. Iters 2+ will run QA→Dev cycles until GRANTED / REGRESSION / plateau on the v0.6.64 release surface.
+- **Scope:** convergence-driving release. Kit-machinery findings surfaced by reflex during this cycle land here as fixes.
+- **2865 tests passing** (2720 framework + 145 benchmarking) — baseline from v0.6.64; grows as new regression tests land per finding.
 
 ### v0.6.64 — Kit Fidelity (8th Reliability Layer) (2026-05-31)
 - **Added §Kit Fidelity as 8th reliability layer (`portable-spec-kit.md`):** structural enforcement that every kit-command invocation runs in its canonical default form. Non-canonical variants require `--rationale "<text>"` (≥20 chars, user-authored). Two committed audit trails: `agent/.kit-deviation-log` (every deviation) + `agent/.kit-gap-log` (every friction-detected gap becomes a tracked KIT-GAP-NNNN entry instead of silent workaround). Commit `45bb4cb7`.
