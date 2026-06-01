@@ -3158,6 +3158,86 @@ check_psk040_kit_fidelity_coverage() {
   run_check
 }
 
+# --- CHECK PSK041: KIT-GAP pending-disposition audit (v0.6.66 KIT-GAP-0008 fix) ---
+# When an agent files a KIT-GAP via psk-kit-cmd.sh --log-gap, a pending-disposition
+# marker is written to agent/.workflow-state/pending-kit-gap/<gap-id>.pending.
+# Disposition must be set to "kit-fixed" (a commit message that references the
+# KIT-GAP-NNNN) OR "escalated" (operator explicitly chose to defer).
+# Pending markers older than 1 commit (since their filing time) indicate the
+# "filed-then-workaround" anti-pattern §Kit Fidelity was supposed to prevent.
+# Severity: ADVISORY in --quick mode, ERROR in --full mode.
+# Bypass: PSK_PSK041_DISABLED=1.
+check_psk041_kit_gap_disposition() {
+  if [ "${PSK_PSK041_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK041: skipped (PSK_PSK041_DISABLED=1)"
+    run_check
+    return
+  fi
+  local pending_dir="$PROJ_ROOT/agent/.workflow-state/pending-kit-gap"
+  if [ ! -d "$pending_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK041: no pending-kit-gap dir — skip"
+    run_check
+    return
+  fi
+
+  # Find pending markers + check disposition against git log
+  local pending_files
+  pending_files=$(find "$pending_dir" -maxdepth 1 -name '*.pending' -type f 2>/dev/null)
+  if [ -z "$pending_files" ]; then
+    emit_pass "PSK041: KIT-GAP disposition — 0 pending markers"
+    run_check
+    return
+  fi
+
+  local violations=()
+  local f gap_id ts_str ts_epoch now_epoch age_sec disposition
+  now_epoch=$(date +%s)
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    gap_id=$(grep '^id=' "$f" 2>/dev/null | head -1 | cut -d= -f2)
+    ts_str=$(grep '^ts=' "$f" 2>/dev/null | head -1 | cut -d= -f2)
+    disposition=$(grep '^disposition=' "$f" 2>/dev/null | head -1 | cut -d= -f2)
+
+    [ -z "$gap_id" ] && continue
+    [ "$disposition" != "pending" ] && continue
+
+    # Convert ts to epoch (macOS-compatible)
+    ts_epoch=$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$ts_str" +%s 2>/dev/null || echo "0")
+    [ "$ts_epoch" = "0" ] && continue
+    age_sec=$((now_epoch - ts_epoch))
+
+    # Check if any commit since filing references the gap_id
+    local matched
+    matched=$(git -C "$PROJ_ROOT" log --since="@$ts_epoch" --pretty=format:%H -- 2>/dev/null \
+      | xargs -I{} git -C "$PROJ_ROOT" log -1 --format='%B' {} 2>/dev/null \
+      | grep -c "$gap_id" 2>/dev/null || echo 0)
+
+    if [ "$matched" = "0" ] && [ "$age_sec" -gt 60 ]; then
+      # No commit references this gap and it's been >1min since filing
+      violations+=("$gap_id (age=${age_sec}s, no commit references it)")
+    fi
+  done <<< "$pending_files"
+
+  if [ "${#violations[@]}" -eq 0 ]; then
+    emit_pass "PSK041: KIT-GAP disposition — 0 pending workarounds"
+    run_check
+    return
+  fi
+
+  local list
+  list=$(printf '%s; ' "${violations[@]}" | head -c 200)
+  if [ "$QUICK" = true ]; then
+    echo -e "  ${YELLOW}⚠${NC} PSK041: ${#violations[@]} undispositioned KIT-GAP marker(s) — possible workaround anti-pattern"
+    echo "    $list"
+    run_check
+    return
+  fi
+  emit_issue "PSK041" "kit-gap-disposition" \
+    "${#violations[@]} pending KIT-GAP marker(s) without matching fix-commit: $list" \
+    "Each pending marker means a KIT-GAP was filed but no commit since references it. Either commit the kit fix (with KIT-GAP-NNNN in commit message) OR set disposition=escalated in agent/.workflow-state/pending-kit-gap/<gap>.pending. Bypass: PSK_PSK041_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -3184,6 +3264,7 @@ main() {
     check_psk034_workflow_decl
     check_psk035_phases_schema
     check_psk040_kit_fidelity_coverage
+    check_psk041_kit_gap_disposition
   else
     # Full: all checks (expanded v0.5.9 with content validation, v0.5.13 with secrets)
     check_version
@@ -3230,6 +3311,7 @@ main() {
     check_psk034_workflow_decl
     check_psk035_phases_schema
     check_psk040_kit_fidelity_coverage
+    check_psk041_kit_gap_disposition
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h
