@@ -8,7 +8,17 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.65 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.66 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.66 — Kit-Machinery Hardening (5 KIT-GAPs closed) (2026-06-01)
+- **First production validation of §Kit Fidelity friction-as-feedback loop.** v0.6.64 shipped the §Kit Fidelity layer; v0.6.65 exercised it across two release ceremonies + an autoloop debug session, surfacing 7 distinct kit-machinery bugs (all filed as KIT-GAP-NNNN entries in `agent/.kit-gap-log`). v0.6.66 closes 5 of them at the kit-machinery level — no workarounds.
+- **KIT-GAP-0002 + KIT-GAP-0007** (psk-release.sh phase-6-version not bumping): NEW `agent/scripts/psk-version-bump.sh` auto-increments patch in AGENT_CONTEXT.md BEFORE `psk-version-cascade.sh` propagates. `phases.yml step-6-version` command now chains `psk-version-bump.sh && psk-version-cascade.sh`.
+- **KIT-GAP-0005** (psk-workflow-state.sh path-with-spaces): two-stage quoting in verify-gate (defensive re-substitution + printf %q).
+- **KIT-GAP-0006** (autoloop can't recover from DENIED): NEW `--next-cycle` escape hatch in `reflex/run.sh` clears workflow-state + dev branch + .active-cycle.
+- **KIT-GAP-0008** (file-then-workaround anti-pattern not caught): `psk-kit-cmd.sh --log-gap` writes pending-disposition marker + NEW PSK041 sync-check audits markers. Bypass: `PSK_PSK041_DISABLED=1`.
+- **Octal-interpretation bug** in log_gap auto-increment (triggered at KIT-GAP-0008): `next_id=$((10#$last_id + 1))` forces base-10.
+- **Backlog state:** 7 RESOLVED, 1 DROPPED, 0 OPEN.
+- **2865 tests passing** (2720 framework + 145 benchmarking) — baseline maintained; 33 §97-kit-fidelity assertions all pass.
 
 ### v0.6.65 — Reflex Autoloop Convergence (2026-06-01)
 - **Convergence run on v0.6.64 surface.** Autoloop iter-1 prep-release ceremony executed via canonical `psk-kit-cmd.sh reflex` wrapper — first §Kit Fidelity canonical-wrapper invocation in production. Iters 2+ will run QA→Dev cycles until GRANTED / REGRESSION / plateau on the v0.6.64 release surface.

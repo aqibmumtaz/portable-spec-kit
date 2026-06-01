@@ -261,7 +261,7 @@ download_scripts() {
 download_skills() {
   echo -e "${CYAN}[3/6] Downloading skill files...${NC}"
   # All on-demand skills the kit references (CLAUDE.md skill table is authoritative; this list mirrors it)
-  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md plan-execution.md spawn-fidelity.md workflow-preview.md"
+  local skills="templates.md python-environment.md source-structures.md profile-setup.md document-generation.md test-release-check-template.md release-process.md hooks-and-critics.md init-process.md onboarding-tour.md dashboard.md multi-agent.md jira-integration.md project-setup.md self-help.md ci-setup.md config-details.md env-management.md optimize.md project-orchestration.md requirement-research.md security-baseline.md session-trace.md test-templates.md ui-design-system.md plan-execution.md spawn-fidelity.md workflow-preview.md kit-fidelity.md"
 
   for s in $skills; do
     if fetch ".portable-spec-kit/skills/$s" "./.portable-spec-kit/skills/$s" 2>/dev/null; then

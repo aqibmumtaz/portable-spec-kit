@@ -117,6 +117,11 @@ grep -q "friction-A-$$" "$GAP_LOG" \
 # Restore log to keep tests idempotent
 mv "$GAP_BACKUP" "$GAP_LOG"
 
+# Clean up the .pending markers log_gap wrote for the test gaps so the test
+# stays idempotent and does not leak markers into the working tree.
+[ -n "$id1" ] && rm -f "$PROJ/agent/.workflow-state/pending-kit-gap/KIT-GAP-$(printf '%04d' "$((10#$id1))").pending"
+[ -n "$id2" ] && rm -f "$PROJ/agent/.workflow-state/pending-kit-gap/KIT-GAP-$(printf '%04d' "$((10#$id2))").pending"
+
 # --- 97.7: PSK040 sync-check function exists + registered ---
 grep -q 'check_psk040_kit_fidelity_coverage()' "$SYNC_CHECK" \
   && pass "97.7: PSK040 check function defined in psk-sync-check.sh" \

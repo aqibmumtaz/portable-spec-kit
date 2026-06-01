@@ -5,7 +5,8 @@
 #
 # Installs reliability architecture hooks:
 #   - .claude/settings.json (PostToolUse warning hook)
-#   - .git/hooks/pre-commit (blocking hook)
+#   - .git/hooks/pre-commit (blocking hook — runs psk-sync-check.sh --full)
+#   - .git/hooks/post-commit (refreshes PSK029 resume-bootstrap marker)
 #
 # Wraps existing hooks, never overwrites:
 #   - Existing .git/hooks/pre-commit → chains our check before it
@@ -67,6 +68,7 @@ fi
 # Claude settings live in project dir; git hooks live in actual git root
 CLAUDE_SETTINGS="$PROJ_ROOT/.claude/settings.json"
 GIT_HOOK="$GIT_ROOT/.git/hooks/pre-commit"
+GIT_POST_COMMIT_HOOK="$GIT_ROOT/.git/hooks/post-commit"
 HUSKY_HOOK="$PROJ_ROOT/.husky/pre-commit"
 PRE_COMMIT_CONFIG="$PROJ_ROOT/.pre-commit-config.yaml"
 
@@ -95,6 +97,16 @@ show_status() {
     fi
   else
     echo -e "  ${RED}✗${NC} Git pre-commit hook: .git/hooks/pre-commit (not installed)"
+  fi
+
+  if [ -f "$GIT_POST_COMMIT_HOOK" ]; then
+    if grep -q "psk-resume-bootstrap-marker-refresh" "$GIT_POST_COMMIT_HOOK" 2>/dev/null; then
+      echo -e "  ${GREEN}✓${NC} Git post-commit hook: .git/hooks/post-commit (PSK029 marker-refresh wired)"
+    else
+      echo -e "  ${YELLOW}⚠${NC} Git post-commit hook exists but PSK marker-refresh not wired"
+    fi
+  else
+    echo -e "  ${RED}✗${NC} Git post-commit hook: .git/hooks/post-commit (not installed)"
   fi
 
   if [ -f "$HUSKY_HOOK" ]; then
@@ -152,13 +164,47 @@ EOF
   echo -e "  ${GREEN}✓${NC} Created .claude/settings.json"
 }
 
+# --- Safe hook write helper (KIT-GAP-0013 fix, v0.6.67) ---
+# Writes a hook atomically with a bash -n syntax check before committing.
+# If syntax check fails, restores from .psk-backup (if any) and exits 1.
+#
+# Usage: safe_install_hook <dest> <tmp_content_file>
+safe_install_hook() {
+  local dest="$1"
+  local tmp="$2"
+
+  # Syntax check the proposed content BEFORE moving into place
+  if ! bash -n "$tmp" 2>/tmp/psk-hook-syntax.err; then
+    echo -e "  ${RED}✗${NC} Generated hook has syntax errors — aborting install:" >&2
+    sed 's/^/    /' < /tmp/psk-hook-syntax.err >&2
+    # Restore latest backup if exists
+    local latest_backup
+    latest_backup=$(ls -t "${dest}.psk-backup."* 2>/dev/null | head -1)
+    if [ -n "$latest_backup" ] && [ -f "$latest_backup" ]; then
+      cp "$latest_backup" "$dest" 2>/dev/null || true
+      echo -e "  ${YELLOW}⚠${NC} Restored from $latest_backup" >&2
+    fi
+    rm -f "$tmp"
+    return 1
+  fi
+
+  # Atomic move
+  mv "$tmp" "$dest"
+  chmod +x "$dest"
+  return 0
+}
+
 # --- Install git pre-commit hook ---
 install_git_hook() {
   echo -e "${CYAN}Installing git pre-commit hook...${NC}"
 
+  local tmp
+  tmp=$(mktemp)
+
   if [ -f "$GIT_HOOK" ]; then
     if grep -q "psk-sync-check" "$GIT_HOOK" 2>/dev/null && [ "$FORCE" = false ]; then
       echo -e "  ${YELLOW}⚠${NC} Already installed. Use --force to reinstall."
+      rm -f "$tmp"
       return 0
     fi
 
@@ -166,11 +212,26 @@ install_git_hook() {
     cp "$GIT_HOOK" "$GIT_HOOK.psk-backup.$(date +%s)" 2>/dev/null || true
     echo -e "  ${CYAN}ℹ${NC} Backed up existing .git/hooks/pre-commit"
 
-    # Wrap existing hook: add our check before it
+    # Wrap existing hook: extract original content, drop shebang + any prior PSK marker line
     local existing_content
     existing_content=$(grep -v "^#!" "$GIT_HOOK" 2>/dev/null | grep -v "psk-sync-check")
 
-    cat > "$GIT_HOOK" <<EOF
+    # KIT-GAP-0013 fix: validate existing_content before splicing. If the
+    # extracted body is non-trivial but has unbalanced quotes / backticks /
+    # unterminated heredocs, splicing it into our template will produce a
+    # broken hook. Test the body in isolation first.
+    if [ -n "$existing_content" ]; then
+      local body_check
+      body_check=$(mktemp)
+      printf '#!/bin/bash\n%s\nexit 0\n' "$existing_content" > "$body_check"
+      if ! bash -n "$body_check" 2>/dev/null; then
+        echo -e "  ${YELLOW}⚠${NC} Existing hook body has syntax issues — skipping preservation, installing PSK-only hook" >&2
+        existing_content=""
+      fi
+      rm -f "$body_check"
+    fi
+
+    cat > "$tmp" <<EOF
 #!/bin/bash
 # PSK pre-commit hook (installed by psk-install-hooks.sh)
 # Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git commit ...
@@ -183,10 +244,11 @@ fi
 
 # --- Original pre-commit hook content (preserved) ---
 $existing_content
+exit 0
 EOF
   else
     # Fresh install
-    cat > "$GIT_HOOK" <<'EOF'
+    cat > "$tmp" <<'EOF'
 #!/bin/bash
 # PSK pre-commit hook (installed by psk-install-hooks.sh)
 # Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git commit ...
@@ -200,8 +262,103 @@ exit 0
 EOF
   fi
 
-  chmod +x "$GIT_HOOK"
-  echo -e "  ${GREEN}✓${NC} Created .git/hooks/pre-commit"
+  if safe_install_hook "$GIT_HOOK" "$tmp"; then
+    echo -e "  ${GREEN}✓${NC} Created .git/hooks/pre-commit"
+  else
+    return 1
+  fi
+}
+
+# --- Install git post-commit hook (refreshes PSK029 resume-bootstrap marker) ---
+# QA-D15 fix: PSK029 re-stales after every commit. The marker is meant to
+# detect "session started without resume-bootstrap", not "commit landed
+# without resume-bootstrap". A post-commit hook refreshes the marker
+# automatically so normal kit activity keeps PSK029 clean.
+install_git_post_commit_hook() {
+  echo -e "${CYAN}Installing git post-commit hook (PSK029 marker refresh)...${NC}"
+
+  local tmp
+  tmp=$(mktemp)
+
+  if [ -f "$GIT_POST_COMMIT_HOOK" ]; then
+    if grep -q "psk-resume-bootstrap-marker-refresh" "$GIT_POST_COMMIT_HOOK" 2>/dev/null && [ "$FORCE" = false ]; then
+      echo -e "  ${YELLOW}⚠${NC} Already installed. Use --force to reinstall."
+      rm -f "$tmp"
+      return 0
+    fi
+
+    # Back up existing hook
+    cp "$GIT_POST_COMMIT_HOOK" "$GIT_POST_COMMIT_HOOK.psk-backup.$(date +%s)" 2>/dev/null || true
+    echo -e "  ${CYAN}ℹ${NC} Backed up existing .git/hooks/post-commit"
+
+    # Wrap existing hook: add our marker refresh before it
+    local existing_content
+    existing_content=$(grep -v "^#!" "$GIT_POST_COMMIT_HOOK" 2>/dev/null | grep -v "psk-resume-bootstrap-marker-refresh")
+
+    # KIT-GAP-0013 fix: validate existing_content syntax before splicing.
+    if [ -n "$existing_content" ]; then
+      local body_check
+      body_check=$(mktemp)
+      printf '#!/bin/bash\n%s\nexit 0\n' "$existing_content" > "$body_check"
+      if ! bash -n "$body_check" 2>/dev/null; then
+        echo -e "  ${YELLOW}⚠${NC} Existing hook body has syntax issues — skipping preservation, installing PSK-only hook" >&2
+        existing_content=""
+      fi
+      rm -f "$body_check"
+    fi
+
+    cat > "$tmp" <<EOF
+#!/bin/bash
+# PSK post-commit hook (installed by psk-install-hooks.sh)
+# Marker: psk-resume-bootstrap-marker-refresh
+# Refreshes session-audit.log marker so PSK029 stays clean on every commit.
+# Emergency bypass: PSK_POST_COMMIT_DISABLED=1 git commit ...
+
+if [ "\${PSK_POST_COMMIT_DISABLED:-0}" != "1" ]; then
+  ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"
+  if [ -n "\$ROOT" ] && [ -d "\$ROOT" ]; then
+    LOG_DIR="\$ROOT/agent/.workflow-state"
+    if [ -d "\$LOG_DIR" ]; then
+      LOG_FILE="\$LOG_DIR/session-audit.log"
+      TS=\$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      echo "\$TS session-start-resume-check ran (auto: post-commit hook)" >> "\$LOG_FILE"
+    fi
+  fi
+fi
+
+# --- Original post-commit hook content (preserved) ---
+$existing_content
+exit 0
+EOF
+  else
+    # Fresh install
+    cat > "$tmp" <<'EOF'
+#!/bin/bash
+# PSK post-commit hook (installed by psk-install-hooks.sh)
+# Marker: psk-resume-bootstrap-marker-refresh
+# Refreshes session-audit.log marker so PSK029 stays clean on every commit.
+# Emergency bypass: PSK_POST_COMMIT_DISABLED=1 git commit ...
+
+if [ "${PSK_POST_COMMIT_DISABLED:-0}" != "1" ]; then
+  ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+  if [ -n "$ROOT" ] && [ -d "$ROOT" ]; then
+    LOG_DIR="$ROOT/agent/.workflow-state"
+    if [ -d "$LOG_DIR" ]; then
+      LOG_FILE="$LOG_DIR/session-audit.log"
+      TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      echo "$TS session-start-resume-check ran (auto: post-commit hook)" >> "$LOG_FILE"
+    fi
+  fi
+fi
+exit 0
+EOF
+  fi
+
+  if safe_install_hook "$GIT_POST_COMMIT_HOOK" "$tmp"; then
+    echo -e "  ${GREEN}✓${NC} Created .git/hooks/post-commit"
+  else
+    return 1
+  fi
 }
 
 # --- Detect Husky and advise ---
@@ -256,6 +413,7 @@ main() {
 
   install_claude_hook
   install_git_hook
+  install_git_post_commit_hook
   check_husky
   check_pre_commit_framework
   smoke_test

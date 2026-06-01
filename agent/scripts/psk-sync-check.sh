@@ -3117,10 +3117,30 @@ check_psk040_kit_fidelity_coverage() {
   fi
 
   # Walk every commit since intro and check subjects against patterns
+  #
+  # Recursion-fix (v0.6.67): release-ceremony commits and KIT-GAP fix commits
+  # legitimately CONTAIN the "vX.Y.Z" marker pattern. They are NOT workarounds
+  # — they are real release work. Whitelist subjects matching:
+  #
+  #   ^release: vX.Y.Z            — full release ceremony output
+  #   ^fix\(KIT-GAP-NNNN\):       — KIT-GAP closer commit
+  #   ^v0\.\d+\.\d+:              — version-prefixed release commit
+  #   ^chore\(release\):          — release-chore commit
+  #   ^docs\(release\):           — release-docs commit
+  #
+  # These subjects sit OUTSIDE the §Kit Fidelity workaround scope.
   local violations=()
   local commit subject
   while IFS=$'\t' read -r commit subject; do
     [ -z "$commit" ] && continue
+    # Skip legitimate release-ceremony / KIT-GAP commits
+    case "$subject" in
+      release:\ v[0-9]*) continue ;;
+      fix\(KIT-GAP-[0-9]*\)*) continue ;;
+      v[0-9]*.[0-9]*.[0-9]*:*) continue ;;
+      chore\(release\)*) continue ;;
+      docs\(release\)*) continue ;;
+    esac
     while IFS= read -r pattern; do
       [ -z "$pattern" ] && continue
       if echo "$subject" | grep -qE "$pattern"; then
@@ -3199,20 +3219,36 @@ check_psk041_kit_gap_disposition() {
     disposition=$(grep '^disposition=' "$f" 2>/dev/null | head -1 | cut -d= -f2)
 
     [ -z "$gap_id" ] && continue
-    [ "$disposition" != "pending" ] && continue
+    # Recursion-fix (v0.6.67): legitimate-exception taxonomy. Only "pending"
+    # markers are checked. Operator-controlled non-pending states all skip:
+    #   deferred     — postponed to a future version (via --defer flag)
+    #   escalated    — operator-only decision required, routed elsewhere
+    #   bypassed     — used canonical bypass flag (e.g. --skip-preconditions)
+    #   kit-fixed    — fix landed in a commit referencing the gap_id
+    #   outside-repo — fix lives outside tracked files (e.g. .git/hooks/)
+    # Unknown values also skip — operator must use canonical names.
+    case "$disposition" in
+      pending) ;;
+      *) continue ;;
+    esac
 
     # Convert ts to epoch (macOS-compatible)
     ts_epoch=$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$ts_str" +%s 2>/dev/null || echo "0")
     [ "$ts_epoch" = "0" ] && continue
     age_sec=$((now_epoch - ts_epoch))
 
-    # Check if any commit since filing references the gap_id
+    # Check if any commit since filing references the gap_id.
+    # Use --all so commits on main (outside the current branch's first-parent
+    # ancestry) are considered too. Collapse newlines so the result is a single
+    # integer — earlier "|| echo 0" appended a second "0" line when grep
+    # produced no output, breaking the [ "$matched" = "0" ] comparison.
     local matched
-    matched=$(git -C "$PROJ_ROOT" log --since="@$ts_epoch" --pretty=format:%H -- 2>/dev/null \
+    matched=$(git -C "$PROJ_ROOT" log --all --since="@$ts_epoch" --pretty=format:%H -- 2>/dev/null \
       | xargs -I{} git -C "$PROJ_ROOT" log -1 --format='%B' {} 2>/dev/null \
-      | grep -c "$gap_id" 2>/dev/null || echo 0)
+      | grep -c "$gap_id" 2>/dev/null | tr -d '\n')
+    [ -z "$matched" ] && matched=0
 
-    if [ "$matched" = "0" ] && [ "$age_sec" -gt 60 ]; then
+    if [ "$matched" -eq 0 ] && [ "$age_sec" -gt 60 ]; then
       # No commit references this gap and it's been >1min since filing
       violations+=("$gap_id (age=${age_sec}s, no commit references it)")
     fi
