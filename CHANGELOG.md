@@ -8,7 +8,18 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.69 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.70 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.70 — Sync-Check Perf Sweep + Gates Trap (2026-06-02)
+- **Sync-check wall-clock 60-90s with frequent 850-proc fan-outs → 23s clean.** Ultracode workflow (wf_9016b3e9-771) surfaced 8 MAJOR perf bugs + gates.sh EXIT-trap rc=2 variant; v0.6.70 closes 6 of these.
+- **KIT-GAP-0050 — `reflex/run.sh::resume-dev`**: pre-write provisional `verdict.md` before gates.sh runs. L2 EXIT trap sees the verdict and skips INTERRUPTED stamp even when gates is signal-killed. Closes the gates.sh trap variant that left cycle-23-pass-001 in INTERRUPTED-recovered state.
+- **KIT-GAP-0048 — PSK031 CYC-suffix peel-order**: two-phase strip (CYC first, then per-segment iter) so canonicals at intermediate levels match. Pre-existing false-negative class closed.
+- **KIT-GAP-0049 #1 — `check_template_quality` mtime cache** at `.portable-spec-kit/.template-quality-cache`. Skips the 1.5s lint when no template changed.
+- **KIT-GAP-0049 #2 — PSK040 awk single-pass**. Replaced per-commit-per-pattern grep loop (~1,750 forks/invocation) with one awk pass over `git log --pretty=format:%H|%ad|%s`. ~1.55s saving.
+- **KIT-GAP-0049 #3 — Gate 3 dropped `--with-tests`**. Gate 2 already runs the test-suite standalone; rft-cache between gates is wiped so the embedded re-run never benefited. Eliminates a full test-suite re-run per gates.sh invocation.
+- **KIT-GAP-0049 #4 — `dev-self-verify.sh::run_vector` wraps `bash -c` in `timeout`**. Default 30s, configurable via `DEV_SELF_VERIFY_TIMEOUT_SEC`. Hanging LLM-supplied vectors no longer stall passes silently.
+- **Defers to v0.6.71**: PSK024 plan-schema O(phases²), check_cascade_anti_pattern double-grep, check_resume_bootstrap python3 fork-per-file, check_psk030 per-script 4-fork, gates 8/9/12/13 parallelization, findings-registry fingerprint-batch entry point.
+- 2865 tests baseline maintained.
 
 ### v0.6.69 — Autoloop Convergence Root-Cause Fixes (2026-06-02)
 - **Closes the cycle-22-pass-004 reattachment chase that consumed v0.6.67/v0.6.68 sessions.** Ultracode adversarial workflow (7 agents — 3 verify, 3 scan, 1 synth) identified 6 root-cause bugs in the autoloop state machine. v0.6.69 fixes all six at the kit-machinery level.

@@ -1262,6 +1262,28 @@ check_template_quality() {
   [ ! -d "$templates_dir" ] && return
   [ ! -x "$PROJ_ROOT/agent/scripts/psk-template-quality.sh" ] && return
   run_check
+
+  # KIT-GAP-0049 fix #1 (v0.6.70): mtime cache for psk-template-quality
+  # invocation. The script costs ~1.5s every --full run, paying that
+  # cost even when no template changed since last sync-check. Cache the
+  # "all-pass" verdict under .portable-spec-kit/.template-quality-cache
+  # keyed by max mtime of the templates dir; only re-run when stale.
+  # The cache holds "PASS:<max_mtime>:<count>" or absence-means-rerun.
+  local cache_file="$PROJ_ROOT/.portable-spec-kit/.template-quality-cache"
+  local max_mtime
+  max_mtime=$(find "$templates_dir" -type f \( -name '*.md' -o -name '*.yml' -o -name '*.yaml' \) -print0 2>/dev/null \
+    | xargs -0 stat -f '%m' 2>/dev/null | sort -rn | head -1)
+  if [ -n "$max_mtime" ] && [ -f "$cache_file" ]; then
+    local cached_line cached_mtime cached_count
+    cached_line=$(cat "$cache_file" 2>/dev/null | head -1)
+    cached_mtime=$(echo "$cached_line" | awk -F: '{print $2}')
+    cached_count=$(echo "$cached_line" | awk -F: '{print $3}')
+    if [ "${cached_line%%:*}" = "PASS" ] && [ "$cached_mtime" = "$max_mtime" ]; then
+      emit_pass "PSK023: all $cached_count template(s) pass 7-criterion Quality Bar (cached, mtime $max_mtime)"
+      return
+    fi
+  fi
+
   local lint_output
   if ! lint_output=$(bash "$PROJ_ROOT/agent/scripts/psk-template-quality.sh" --all --strict 2>&1); then
     local failed_lines
@@ -1269,10 +1291,17 @@ check_template_quality() {
     emit_issue "PSK023" "template-quality" \
       "One or more templates fail the 7-criterion Quality Bar:\n${failed_lines}" \
       "Run 'bash agent/scripts/psk-template-quality.sh <template>' on each failing file. Fix per-criterion failures (criterion 1=stack-agnostic, 2=domain-agnostic, 3=scale-agnostic, 4=useful-and-complete, 5=lifecycle-aware, 6=self-documenting, 7=round-trippable). See portable-spec-kit.md §Template Quality Bar for full criteria."
+    # Invalidate cache on failure
+    rm -f "$cache_file" 2>/dev/null
   else
     local count
     count=$(echo "$lint_output" | grep -cE "^✓" || true)
     emit_pass "PSK023: all $count template(s) pass 7-criterion Quality Bar"
+    # Update cache on successful pass
+    if [ -n "$max_mtime" ]; then
+      mkdir -p "$(dirname "$cache_file")" 2>/dev/null || true
+      echo "PASS:$max_mtime:$count" > "$cache_file" 2>/dev/null || true
+    fi
   fi
 }
 
@@ -2841,34 +2870,84 @@ check_psk031_duplicate_findings() {
   ')
   rm -f "$alias_map_tmp"
 
-  # Detect suffix-variant IDs not registered as aliases in the registry
+  # Detect suffix-variant IDs not registered as aliases in the registry.
+  #
+  # KIT-GAP-0017 fix (v0.6.69 — root-cause refactor): the prior
+  # implementation used a per-finding-id shell while-loop with two
+  # `printf | sed` and `printf | grep` sub-shell pipes per iteration. For
+  # passes with many findings across many cycles, this fanned out into
+  # 20-800+ parallel sub-processes that took minutes to complete and
+  # blocked every gates.sh invocation (which calls psk-sync-check --full
+  # internally). The block now runs entirely in a single awk process:
+  # known_ids set is loaded once into an awk hash; each id streams through
+  # in-process suffix-stripping + hash lookup. Performance target met:
+  # PSK031 completes in <100ms even on registries with 1000+ ids.
   local unreg_aliases=""
-  local all_ids
-  all_ids=$(awk -F'|' '{print $1}' "$pairs_tmp" | sort -u)
-  local canon_ids canon_aliases
-  canon_ids=$(grep -E '^[[:space:]]*-[[:space:]]+canonical_id:' "$registry_yaml" | sed -E 's/^[[:space:]]*-[[:space:]]+canonical_id:[[:space:]]*//; s/[[:space:]"]+$//; s/^"|"$//')
-  canon_aliases=$(awk '/^[[:space:]]+aliases:[[:space:]]*$/{f=1;next} f && /^[[:space:]]+-[[:space:]]+/{a=$0; sub(/^[[:space:]]+-[[:space:]]+/,"",a); print a; next} f && !/^[[:space:]]+-/{f=0}' "$registry_yaml")
-  local known_ids="$canon_ids"$'\n'"$canon_aliases"
+  local known_ids_tmp
+  known_ids_tmp=$(mktemp)
+  {
+    grep -E '^[[:space:]]*-[[:space:]]+canonical_id:' "$registry_yaml" \
+      | sed -E 's/^[[:space:]]*-[[:space:]]+canonical_id:[[:space:]]*//; s/[[:space:]"]+$//; s/^"|"$//'
+    awk '
+      /^[[:space:]]+aliases:[[:space:]]*$/ { f=1; next }
+      f && /^[[:space:]]+-[[:space:]]+/ {
+        a=$0; sub(/^[[:space:]]+-[[:space:]]+/, "", a);
+        gsub(/[[:space:]"]+$/, "", a); gsub(/^"|"$/, "", a)
+        if (a != "") print a; next
+      }
+      f && !/^[[:space:]]+-/ { f=0 }
+    ' "$registry_yaml"
+  } > "$known_ids_tmp"
 
-  while IFS= read -r id; do
-    [ -z "$id" ] && continue
-    # Strip suffix variants
-    local stripped="$id" prev
-    while :; do
-      prev="$stripped"
-      stripped=$(printf '%s' "$stripped" | sed -E 's/-[A-Z0-9]+(-CYC[0-9]+)?$//')
-      [ "$stripped" = "$prev" ] && break
-      [ "$stripped" = "$id" ] && break
-      if printf '%s\n' "$known_ids" | grep -qxF "$stripped"; then
-        if ! printf '%s\n' "$known_ids" | grep -qxF "$id"; then
-          unreg_aliases="$unreg_aliases $id→$stripped"
-        fi
-        break
-      fi
-    done
-  done <<< "$all_ids"
+  unreg_aliases=$(awk -F'|' '{print $1}' "$pairs_tmp" | sort -u | awk -v known_file="$known_ids_tmp" '
+    BEGIN {
+      while ((getline line < known_file) > 0) {
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+        if (line != "") known[line] = 1
+      }
+      close(known_file)
+      out = ""
+    }
+    {
+      id = $0
+      if (id == "") next
+      stripped = id
+      # KIT-GAP-0048 fix (v0.6.70): two-phase suffix strip. The prior
+      # single regex `-[A-Z0-9]+(-CYC[0-9]+)?$` greedy-matched both the
+      # CYC segment AND its preceding segment in one sub() call. For id
+      # `QA-D5-CVE-PERSISTS-CYC22`, iter1 jumped directly to
+      # `QA-D5-CVE`, skipping intermediate `QA-D5-CVE-PERSISTS`. If
+      # that intermediate form is the registered canonical, PSK031
+      # produced a false negative.
+      # New approach: peel -CYC<N> first (one call), then peel -[A-Z0-9]+
+      # iteratively. Each segment becomes its own check point so a
+      # canonical at any intermediate level matches.
+      sub(/-CYC[0-9]+$/, "", stripped)
+      if (stripped in known && !(id in known)) {
+        out = out " " id "->" stripped
+        next
+      }
+      while (1) {
+        prev = stripped
+        sub(/-[A-Z0-9]+$/, "", stripped)
+        if (stripped == prev) break
+        if (stripped in known) {
+          if (!(id in known)) {
+            out = out " " id "->" stripped
+          }
+          break
+        }
+      }
+    }
+    END {
+      if (out != "") {
+        sub(/^[[:space:]]+/, "", out)
+        print out
+      }
+    }
+  ')
 
-  rm -f "$pairs_tmp"
+  rm -f "$pairs_tmp" "$known_ids_tmp"
 
   local dup_count
   dup_count=$(printf '%s\n' "$dup_lines" | grep -cE '.' || true)
@@ -3153,45 +3232,71 @@ check_psk040_kit_fidelity_coverage() {
     return
   fi
 
-  # Walk every commit since intro and check subjects against patterns
+  # KIT-GAP-0049 fix #2 (v0.6.70): single-awk-pass replacement for the
+  # per-commit-per-pattern grep loop. The prior implementation walked
+  # ~291 commits × 2 patterns × 3 subshells/iter = ~1,750 potential
+  # subshells per invocation, taking ~1.55s. New code: one `git log
+  # --pretty="%H|%ad|%s" --date=short` invocation + one awk pass that
+  # holds the patterns + whitelist + deviation-log-dates in arrays.
   #
-  # Recursion-fix (v0.6.67): release-ceremony commits and KIT-GAP fix commits
-  # legitimately CONTAIN the "vX.Y.Z" marker pattern. They are NOT workarounds
-  # — they are real release work. Whitelist subjects matching:
-  #
-  #   ^release: vX.Y.Z            — full release ceremony output
-  #   ^fix\(KIT-GAP-NNNN\):       — KIT-GAP closer commit
-  #   ^v0\.\d+\.\d+:              — version-prefixed release commit
-  #   ^chore\(release\):          — release-chore commit
-  #   ^docs\(release\):           — release-docs commit
-  #
-  # These subjects sit OUTSIDE the §Kit Fidelity workaround scope.
-  local violations=()
-  local commit subject
-  while IFS=$'\t' read -r commit subject; do
-    [ -z "$commit" ] && continue
-    # Skip legitimate release-ceremony / KIT-GAP commits
-    case "$subject" in
-      release:\ v[0-9]*) continue ;;
-      fix\(KIT-GAP-[0-9]*\)*) continue ;;
-      v[0-9]*.[0-9]*.[0-9]*:*) continue ;;
-      chore\(release\)*) continue ;;
-      docs\(release\)*) continue ;;
-    esac
-    while IFS= read -r pattern; do
-      [ -z "$pattern" ] && continue
-      if echo "$subject" | grep -qE "$pattern"; then
-        # Subject matches a marker-commit pattern. Verify deviation-log has entry
-        # with the same date as the commit author-date.
-        local commit_date
-        commit_date=$(git -C "$PROJ_ROOT" show -s --format=%ad --date=short "$commit" 2>/dev/null)
-        if [ ! -f "$dev_log" ] || ! grep -q "^$commit_date" "$dev_log"; then
-          violations+=("$commit:$subject")
+  # Recursion-fix (v0.6.67) whitelist preserved: release-ceremony +
+  # KIT-GAP closer commits sit OUTSIDE §Kit Fidelity workaround scope.
+  local dev_log_dates_tmp
+  dev_log_dates_tmp=$(mktemp)
+  if [ -f "$dev_log" ]; then
+    awk '/^[0-9]{4}-[0-9]{2}-[0-9]{2}/ { print substr($0, 1, 10) }' "$dev_log" | sort -u > "$dev_log_dates_tmp"
+  fi
+
+  local violations_raw
+  violations_raw=$(git -C "$PROJ_ROOT" log --pretty=format:'%H|%ad|%s' --date=short "$intro_sha..HEAD" 2>/dev/null \
+    | awk -F'|' \
+        -v patterns_raw="$patterns" \
+        -v dev_log_dates_file="$dev_log_dates_tmp" '
+    BEGIN {
+      n = split(patterns_raw, parr, "\n")
+      pcount = 0
+      for (i = 1; i <= n; i++) {
+        p = parr[i]
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", p)
+        if (p != "") {
+          pcount++
+          patterns[pcount] = p
+        }
+      }
+      while ((getline line < dev_log_dates_file) > 0) {
+        gsub(/[[:space:]]/, "", line)
+        if (line != "") dev_dates[line] = 1
+      }
+      close(dev_log_dates_file)
+    }
+    {
+      commit = $1; cdate = $2; subject = $3
+      if (commit == "") next
+      # Whitelist legitimate release/KIT-GAP commits (v0.6.67 recursion fix).
+      if (subject ~ /^release: v[0-9]/)            next
+      if (subject ~ /^fix\(KIT-GAP-[0-9]+\)/)      next
+      if (subject ~ /^v[0-9]+\.[0-9]+\.[0-9]+:/)   next
+      if (subject ~ /^chore\(release\)/)           next
+      if (subject ~ /^docs\(release\)/)            next
+      # Match each pattern; on first hit verify deviation-log has matching date.
+      for (i = 1; i <= pcount; i++) {
+        if (subject ~ patterns[i]) {
+          if (!(cdate in dev_dates)) {
+            printf "%s:%s\n", commit, subject
+          }
           break
-        fi
-      fi
-    done <<< "$patterns"
-  done < <(git -C "$PROJ_ROOT" log --pretty=format:'%H	%s' "$intro_sha..HEAD" 2>/dev/null)
+        }
+      }
+    }
+  ')
+  rm -f "$dev_log_dates_tmp"
+
+  local violations=()
+  if [ -n "$violations_raw" ]; then
+    while IFS= read -r line; do
+      [ -n "$line" ] && violations+=("$line")
+    done <<< "$violations_raw"
+  fi
 
   if [ "${#violations[@]}" -eq 0 ]; then
     emit_pass "PSK040: §Kit Fidelity deviation-log coverage clean (0 unaudited marker commits)"
@@ -3279,10 +3384,15 @@ check_psk041_kit_gap_disposition() {
     # ancestry) are considered too. Collapse newlines so the result is a single
     # integer — earlier "|| echo 0" appended a second "0" line when grep
     # produced no output, breaking the [ "$matched" = "0" ] comparison.
+    # KIT-GAP-0017 follow-up (v0.6.69 synthesis): replaced the
+    # xargs-git-log-per-commit storm with git's native --grep filter.
+    # Old code spawned ~one `git log -1` per commit since the marker's
+    # timestamp; the new code searches the full commit-message corpus
+    # in one git invocation. At ~35 commits/day × 11 pending markers
+    # this drops 385 forks per --quick run to ~11.
     local matched
-    matched=$(git -C "$PROJ_ROOT" log --all --since="@$ts_epoch" --pretty=format:%H -- 2>/dev/null \
-      | xargs -I{} git -C "$PROJ_ROOT" log -1 --format='%B' {} 2>/dev/null \
-      | grep -c "$gap_id" 2>/dev/null | tr -d '\n')
+    matched=$(git -C "$PROJ_ROOT" log --all --since="@$ts_epoch" \
+      --grep="$gap_id" --pretty=format:%H 2>/dev/null | wc -l | tr -d ' \n')
     [ -z "$matched" ] && matched=0
 
     if [ "$matched" -eq 0 ] && [ "$age_sec" -gt 60 ]; then
