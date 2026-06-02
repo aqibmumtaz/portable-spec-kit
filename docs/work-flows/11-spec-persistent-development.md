@@ -12,7 +12,7 @@
 | **Inputs** | `agent/SPECS.md`, `agent/PLANS.md`, `agent/TASKS.md`, `agent/AGENT_CONTEXT.md`, source code |
 | **Outputs** | Updated pipeline files, test stubs, marked `[x]` features with test refs, RELEASES.md entry |
 | **Script** | `bash agent/scripts/psk-validate.sh feature-complete` · `bash agent/scripts/psk-feature-complete.sh` |
-| **Gate** | Dual critic: `psk-sync-check.sh --full` (PSK001–PSK015) + sub-agent critic (`FEATURE_COMPLETE` template) |
+| **Gate** | Dual critic: `psk-sync-check.sh --full` (PSK001-PSK041) + sub-agent critic (`FEATURE_COMPLETE` template) |
 | **When blocked** | Stub has TODO/skip markers · feature has no test ref · SPECS.md stale vs TASKS.md · R→F→T gap detected |
 
 ---
@@ -161,7 +161,7 @@ The user doesn't HAVE to follow this flow sequentially:
 - **Stub completion gate is mandatory.** `check_stub_complete()` verifies no TODO/skip/placeholder markers remain in the test file. A feature with incomplete stubs cannot be marked done.
 - **R→F→T traceability is required end-to-end.** Every requirement (Rn) must trace to a feature (Fn), and every feature must trace to a test. Gaps block the release gate.
 - **Retroactive gap-filling is automatic.** If SPECS.md has fewer features than TASKS.md has `[x]` tasks, the agent fills SPECS.md from what has been built — SPECS must never be emptier than the implementation.
-- **Dual-gate validation before closing a feature.** Both the bash critic (PSK001–PSK015) and the sub-agent critic (`FEATURE_COMPLETE` template) must pass. Fabricated QUOTE lines are rejected by `grep -F` verification.
+- **Dual-gate validation before closing a feature.** Both the bash critic (PSK001-PSK041) and the sub-agent critic (`FEATURE_COMPLETE` template) must pass. Fabricated QUOTE lines are rejected by `grep -F` verification.
 
 ---
 
@@ -173,7 +173,7 @@ Before marking a feature `[x]` in SPECS.md and TASKS.md, the agent MUST run the 
 bash agent/scripts/psk-validate.sh feature-complete
 ```
 
-**Bash critic** — `psk-sync-check.sh --full` runs 23 deterministic checks (PSK001–PSK019 + infrastructure checks) including: R→F→T gate, SPECS staleness, AGENT.md Stack drift, ARD content freshness, README structural consistency (agent table row count, flow table row count, install list counts), and **secret scanning (PSK011)** that blocks commits of real-format credentials.
+**Bash critic** — `psk-sync-check.sh --full` runs 38 deterministic checks (PSK001-PSK041 + infrastructure checks) including: R→F→T gate, SPECS staleness, AGENT.md Stack drift, ARD content freshness, README structural consistency (agent table row count, flow table row count, install list counts), and **secret scanning (PSK011)** that blocks commits of real-format credentials.
 
 **Sub-agent critic** (`FEATURE_COMPLETE` template) — spawns fresh sub-agent that verifies the feature being closed has:
 - `[x]` in SPECS.md with Completed date + populated Tests column

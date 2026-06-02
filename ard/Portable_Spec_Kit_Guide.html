@@ -91,7 +91,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.66</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.67</div>
     <div><strong style="color:#dce4f0;">Date:</strong> May 2026</div>
   </div>
 </div>
@@ -316,6 +316,26 @@
   <li><strong>ARD user guide + CI generation:</strong> <code>psk-generate-user-guide.sh</code> (generates <code>ard/user-guide.html</code> from README + AGENT.md), <code>psk-generate-ci.sh</code> (auto-creates <code>.github/workflows/ci.yml</code> from stack detection). Both wired into <code>psk-release.sh</code> Steps 1 + 7 as non-fatal hooks.</li>
   <li><strong>Dim 25 mandate audit extensions:</strong> Three new checks in <code>mandate-audit.sh</code>: ARD user guide absent (ADVISORY), DB migration scaffold absent for Drizzle/Prisma projects (MINOR), shadcn/ui components empty (MINOR). Stack-specific fix patterns (drizzle migrations, shadcn/ui, REQS status sync, UI test quality) added to <code>dev-agent.md</code>.</li>
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
+</ul>
+
+<h3>v0.6.67 — Recursion Fixes: Legitimate-Exception Taxonomy</h3>
+<ul>
+  <li><strong>Second production validation of §Kit Fidelity friction-as-feedback loop:</strong> Cycle-22 reflex autoloop surfaced 4 recursive false-positives (PSK040, PSK041, Dim 27) + the KIT-GAP-0013 hook-installer mangling bug. v0.6.67 closes them via a shared <strong>legitimate-exception taxonomy</strong> so kit rules can distinguish operator-controlled non-pending states from real workaround anti-patterns.</li>
+  <li><strong>PSK041 disposition enum extended</strong> from <code>{pending, kit-fixed, escalated}</code> to <code>{pending, deferred, bypassed, outside-repo, escalated, kit-fixed}</code>. Operator-controlled non-pending states skip enforcement; only <code>pending</code> markers fire.</li>
+  <li><strong><code>psk-kit-cmd.sh --log-gap</code> new flags:</strong> <code>--defer &lt;target&gt;</code>, <code>--bypassed &lt;flag&gt;</code>, <code>--outside-repo &lt;path&gt;</code>. Each sets disposition + defer_target in the pending marker so PSK041 sees the operator's explicit intent.</li>
+  <li><strong>PSK040 commit-shape whitelist:</strong> Legitimate release-ceremony and KIT-GAP-closer commit subjects (<code>release: vX.Y.Z</code>, <code>fix(KIT-GAP-NNNN):</code>, <code>vN.M.P:</code>, <code>chore(release):</code>, <code>docs(release):</code>) skip marker-pattern detection.</li>
+  <li><strong>Dim 27 documented-fallback bypass:</strong> The <code>single_author_write_timestamp</code> signature skips when <code>qa-usage.yaml</code> declares <code>mode: single-author-fallback-documented</code>. The orchestrator's inline write is a documented operator-opted fallback, not a synthesis attack.</li>
+  <li><strong><code>psk-install-hooks.sh</code> hardening (closes KIT-GAP-0011 + KIT-GAP-0013):</strong> New <code>safe_install_hook()</code> helper with <code>bash -n</code> syntax check before atomic tmp→mv, restore from <code>.psk-backup</code> on failure, body validation before splicing. Prevents the dangling <code>for candidate in \</code> mangling that broke workspace pre-commit in cycle-22-pass-004.</li>
+  <li><strong>6 flow docs synced to v0.6.66 counts:</strong> 38 PSK rules (PSK001-PSK041), 13 mechanical gates, 28 reflex dimensions, 2720 framework tests, 85 features.</li>
+  <li><strong>Defers:</strong> KIT-GAP-0012 → v0.6.68 (PSK031 dedup-vs-alias gap — does not consult findings-registry canonical_id before flagging duplicate fingerprints).</li>
+  <li><strong>Tests:</strong> 2865 (2720 framework + 145 benchmarking), 0 failures.</li>
+</ul>
+
+<h3>v0.6.66 — Kit-Machinery Hardening (5 KIT-GAPs closed)</h3>
+<ul>
+  <li><strong>First production validation of §Kit Fidelity friction-as-feedback loop:</strong> v0.6.64 shipped the §Kit Fidelity layer; v0.6.65 exercised it across two release ceremonies + an autoloop debug session, surfacing 7 distinct kit-machinery bugs. v0.6.66 closes 5 of them at the kit-machinery level — no workarounds, all referenced by KIT-GAP-NNNN id.</li>
+  <li><strong>New helpers:</strong> <code>psk-version-bump.sh</code> (patch-bump with per-run idempotency marker — closes KIT-GAP-0002, KIT-GAP-0007), <code>--next-cycle</code> escape hatch in <code>reflex/run.sh</code> for autoloop recovery (closes KIT-GAP-0006), PSK041 sync-check rule auditing pending-disposition markers (closes KIT-GAP-0008).</li>
+  <li><strong>Tests:</strong> 2865 (2720 framework + 145 benchmarking), 0 failures.</li>
 </ul>
 
 <h3>v0.6.64 — Kit Fidelity (8th Reliability Layer)</h3>
@@ -960,7 +980,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.6.66 &bull; May 2026
+  Portable Spec Kit &bull; v0.6.67 &bull; May 2026
 </div>
 
 </div>
@@ -978,7 +998,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.66 &bull; May 2026</div>
+    <div class="badge">v0.6.67 &bull; May 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

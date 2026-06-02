@@ -12,7 +12,7 @@
 | **Inputs** | All `agent/` pipeline files, `tests/`, `ard/*.html`, `CHANGELOG.md`, `RELEASES.md` |
 | **Outputs** | Updated docs, bumped version (prepare only), regenerated PDFs, updated RELEASES.md + CHANGELOG.md |
 | **Script** | `bash agent/scripts/psk-release.sh prepare` → `psk-release.sh next` (repeat) |
-| **Gate** | Step 9: dual critic — `psk-sync-check.sh --full` (PSK001–PSK023, including PSK023 Template Quality Bar lint via `psk-template-quality.sh --all --strict` against `.portable-spec-kit/templates/`) + sub-agent critic (`STEP_9_VALIDATION` template) |
+| **Gate** | Step 9: dual critic — `psk-sync-check.sh --full` (PSK001-PSK041, including PSK023 Template Quality Bar lint via `psk-template-quality.sh --all --strict` against `.portable-spec-kit/templates/`) + sub-agent critic (`STEP_9_VALIDATION` template) |
 | **When blocked** | Any test suite failure · PSK check mismatch · sub-agent critic returns STALE · fabricated QUOTE line rejected |
 
 ---
@@ -68,8 +68,8 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  Step 5: CONSISTENCY SWEEP (automated + agent)              │
-│     psk-sync-check.sh --full — now 23 checks                │
-│     (PSK001–PSK019 + infra, was 15 in v0.5):                │
+│     psk-sync-check.sh --full — now 38 checks                │
+│     (PSK001-PSK041 + infra):                                │
 │       PSK001-004B counts/versions/SPECS-staleness           │
 │       PSK005 R→F→T gate (result cached for 60× speedup)     │
 │       PSK006-010 perms/dirs/CHANGELOG/ARD/Stack             │
@@ -108,8 +108,8 @@
 ┌──────────────────────▼──────────────────────────────────────┐
 │  Step 9: FINAL VALIDATION — DUAL GATE (THE GATE)            │
 │     Delegates to psk-validate.sh release:                   │
-│       Layer 2A: psk-sync-check.sh --full (23 checks,        │
-│                 PSK001–PSK019 incl. secrets + README)       │
+│       Layer 2A: psk-sync-check.sh --full (38 checks,        │
+│                 PSK001-PSK041 incl. secrets + README)       │
 │       Layer 2B: sub-agent critic via Task tool              │
 │                 (fresh context, STEP_9_VALIDATION prompt)   │
 │     Verbatim-quote gate (v0.5.15): every CURRENT verdict    │
@@ -171,7 +171,7 @@
 
 | Layer | When | What |
 |-------|------|------|
-| **Bash critic (sync-check)** | Steps 5, 9 + every commit + CI | 18 deterministic checks (PSK001–PSK017 incl. secrets + README drift + RFT cache + flow-doc content + critic-prompt meta-check) |
+| **Bash critic (sync-check)** | Steps 5, 9 + every commit + CI | 38 deterministic checks (PSK001-PSK041 incl. secrets + README drift + RFT cache + flow-doc content + critic-prompt meta-check) |
 | **Sub-agent critic** | Steps 4, 8, 9 | Semantic content verification via `psk-validate.sh` generic dual-gate helper; `verify_quotes()` rejects fabricated verdicts |
 | **PreCommit hook** | Every commit | Blocks if sync-check fails |
 | **PostToolUse hook** | Every edit | Warns on drift (silent if clean) |
@@ -200,7 +200,7 @@ Every release since v0.5.8 added a structural enforcement mechanism. This sectio
 - **Explicit signals only.** Never auto-run tests, bump versions, regenerate PDFs, or commit after every change. Wait for `"prepare release"`, `"refresh release"`, `"commit"`, or `"push"` — the user may have more changes coming.
 - **No commit. No push.** `prepare release` stops at Step 10 (summary). Changes sit staged for user review. Only `"prepare release and push"` or `"commit"` triggers commit; only `"push"` triggers push.
 - **All 3 test suites must pass.** Steps 1 and 9 run `test-spec-kit.sh`, `test-spd-benchmarking.sh`, and `test-release-check.sh`. Never stop on first failure — collect all results before reporting.
-- **Step 9 is the terminal gate.** Nothing ships until both Layer 2A (bash sync-check, 23 checks) and Layer 2B (sub-agent critic) pass. Fabricated QUOTE lines are rejected by `grep -F` verification.
+- **Step 9 is the terminal gate.** Nothing ships until both Layer 2A (bash sync-check, 38 checks) and Layer 2B (sub-agent critic) pass. Fabricated QUOTE lines are rejected by `grep -F` verification.
 - **Bootstrap gate runs first.** Step 0 (`psk-bootstrap-check.sh --quiet`) fires before `init_state` on every prepare/refresh. A project scaffolded without `install.sh` fails here — fix with the remediation command shown, then re-run.
 - **Refresh release skips the version bump.** Step 6 is skipped when the signal is `"refresh release"` — all other steps run identically to `"prepare release"`.
 - **Stale release state is rejected.** If the release RUN_ID is >24h old or the base version drifted since the release flow started, `psk-release.sh` refuses to resume — prevents a prior version's `done` markers from silently satisfying a new release.
@@ -244,7 +244,7 @@ bash agent/scripts/psk-validate.sh release
 ```
 
 The helper runs:
-1. **Layer 2A** — `psk-sync-check.sh --full` (23 deterministic checks, PSK001–PSK019 + infrastructure; includes PSK011 secrets scan + PSK012/013/014/015 README drift checks; RFT gate cached for 60× speedup on repeat runs)
+1. **Layer 2A** — `psk-sync-check.sh --full` (38 deterministic checks, PSK001-PSK041 + infrastructure; includes PSK011 secrets scan + PSK012/013/014/015 README drift checks; RFT gate cached for 60× speedup on repeat runs)
 2. **Layer 2B** — `psk-critic-spawn.sh write STEP_9_VALIDATION` → exits `AWAITING_CRITIC` (exit code 2). Agent spawns sub-agent, writes `critic-result.md`, re-runs.
 
 Both must pass before the release is marked ready. Bypass flags (emergency only): `PSK_SYNC_CHECK_DISABLED=1`, `PSK_CRITIC_DISABLED=1`.

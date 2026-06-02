@@ -8,7 +8,18 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.66 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.67 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.67 — Recursion Fixes: Legitimate-Exception Taxonomy (2026-06-02)
+- **Second production validation of §Kit Fidelity friction-as-feedback loop.** Cycle-22 reflex autoloop surfaced 4 recursive false-positives (PSK040, PSK041, Dim 27) + the KIT-GAP-0013 hook-installer mangling bug. v0.6.67 closes them via a shared **legitimate-exception taxonomy** so kit rules can distinguish operator-controlled non-pending states from real workaround anti-patterns.
+- **PSK041 disposition enum** extended from `{pending, kit-fixed, escalated}` to `{pending, deferred, bypassed, outside-repo, escalated, kit-fixed}`. Operator-controlled non-pending states skip enforcement; only `pending` markers fire.
+- **psk-kit-cmd.sh --log-gap** — new `--defer <target>`, `--bypassed <flag>`, `--outside-repo <path>` flags. Each sets disposition + defer_target in the pending marker.
+- **PSK040 commit-shape whitelist** — legitimate `release: vX.Y.Z`, `fix(KIT-GAP-NNNN):`, `vN.M.P:`, `chore(release):`, `docs(release):` subjects skip marker-pattern detection.
+- **Dim 27 documented-fallback bypass** — `single_author_write_timestamp` skips when `qa-usage.yaml` declares `mode: single-author-fallback-documented`. Closes the recursion that DENIED cycle-22-pass-004.
+- **psk-install-hooks.sh hardening (closes KIT-GAP-0011 + KIT-GAP-0013)** — new `safe_install_hook()` with `bash -n` syntax check before atomic tmp→mv, restore from `.psk-backup` on failure, body validation before splicing.
+- **6 flow docs synced to v0.6.66 counts** — 38 PSK rules (PSK001-PSK041), 13 mechanical gates, 28 reflex dimensions, 2720 framework tests, 85 features.
+- **Defers**: KIT-GAP-0012 → v0.6.68 (PSK031 dedup-vs-alias gap — does not consult findings-registry canonical_id before flagging duplicate fingerprints).
+- 2865 tests passing (2720 framework + 145 benchmarking) — baseline maintained.
 
 ### v0.6.66 — Kit-Machinery Hardening (5 KIT-GAPs closed) (2026-06-01)
 - **First production validation of §Kit Fidelity friction-as-feedback loop.** v0.6.64 shipped the §Kit Fidelity layer; v0.6.65 exercised it across two release ceremonies + an autoloop debug session, surfacing 7 distinct kit-machinery bugs (all filed as KIT-GAP-NNNN entries in `agent/.kit-gap-log`). v0.6.66 closes 5 of them at the kit-machinery level — no workarounds.

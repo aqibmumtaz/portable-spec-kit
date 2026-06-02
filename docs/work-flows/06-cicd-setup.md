@@ -183,7 +183,7 @@ The kit installs 4 stack-aware GitHub Actions templates at `.portable-spec-kit/t
 
 **Kit gates run in every template** (ensures server-side enforcement matches local PreCommit hook):
 - R→F→T gate (`bash tests/test-release-check.sh agent/SPECS.md`)
-- `psk-sync-check.sh --full` — 23 structural checks including PSK011 secret scanning (blocks commits of real credentials)
+- `psk-sync-check.sh --full` — 38 structural checks (PSK001-PSK041) including PSK011 secret scanning (blocks commits of real credentials)
 - Bypass-log detector — fails CI if `agent/.bypass-log` is present (any local `PSK_*_DISABLED=1` or `--no-verify` bypass would surface here)
 
 ## Installation — agent copies the right template

@@ -232,7 +232,7 @@ Iteration 1 found that `install.sh` missed `console-probe.ts` (new file, not in 
 
 ### 8.4 Phase 0 cost in self-test mode
 
-Kit-self-test reflex Phase 0 takes >30 min on cold cache because `test-release-check.sh + psk-sync-check.sh + mandate-audit.sh` each independently invoke `test-spec-kit.sh` (the kit has 2687 framework tests). Project-mode reflex doesn't share this cost (vitest is the project's runner, ~2 sec). Kit-self-test convergence is fundamentally costlier.
+Kit-self-test reflex Phase 0 takes >30 min on cold cache because `test-release-check.sh + psk-sync-check.sh + mandate-audit.sh` each independently invoke `test-spec-kit.sh` (the kit has 2720 framework tests). Project-mode reflex doesn't share this cost (vitest is the project's runner, ~2 sec). Kit-self-test convergence is fundamentally costlier.
 
 **Mitigation roadmap (v0.6.31+):** cache test-spec-kit results across Phase 0 helpers (compute once, share via temp file), or shard Phase 0 to skip already-computed inputs.
 
@@ -289,7 +289,7 @@ The Phase 0 cost is filed as `G-KIT-PHASE0-COST-01` for v0.6.32 with explicit ar
 
 ### 10.3 Project-mode > kit-self-test for primary validation
 
-Kit-self-test Phase 0 hit the cost wall in both Loop 2 and Loop 3. Project-mode Phase 0 (against searchsocialtruth) completes in <10 min because the project's test runner is vitest (~2sec), not test-spec-kit (1764 tests, ~3min per invocation × 70 features = 3.5 hours).
+Kit-self-test Phase 0 hit the cost wall in both Loop 2 and Loop 3. Project-mode Phase 0 (against searchsocialtruth) completes in <10 min because the project's test runner is vitest (~2sec), not test-spec-kit (2720 tests, ~3min per invocation × 85 features = 3.5 hours).
 
 **Permanent rule:** kit-self-test is a supplemental check, not the primary validation channel. Every kit version SHOULD pass project-mode reflex on at least one user project. Kit-self-test running to convergence is a v0.6.32+ goal contingent on G-KIT-PHASE0-COST-01 fix.
 
