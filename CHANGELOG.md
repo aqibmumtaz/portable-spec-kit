@@ -8,7 +8,17 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.67 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.68 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.68 — Kit-Machinery Sweep: 5 KIT-GAPs Closed (2026-06-02)
+- **Convergence-blocking machinery bugs surfaced during v0.6.67 reflex chase.** v0.6.68 closes 5 of the 6 KIT-GAPs filed during that session at the kit-machinery level.
+- **KIT-GAP-0016 fix — `reflex/run.sh --next-cycle` now pins `.active-cycle` to next cycle id** instead of deleting it. `compute_next_cycle_id()`'s Rule 4 (zero-unclosed + non-GRANTED → keep cycle) was honoring finding-state heuristics over the operator's explicit advance signal, so `single` reattached to the same cycle. The fix writes `cycle_NN+1` into `.active-cycle` so `find_next_pass_dir` honors the advance. Also clears `.spawn/*.dev.request` + `.qa.request` markers (root cause of "autoloop re-resumes advanced-past pass" loop).
+- **KIT-GAP-0015 fix — `psk-install-hooks.sh` adds MERGE_HEAD guard** to the installed pre-commit hook. Big merges (100+ files) caused sync-check's internal git operations to fan out into hundreds of parallel sub-processes; merge commits now skip the heavy check because the constituent commits already ran it.
+- **KIT-GAP-0014 fix — `psk-close-finding.sh` regex relaxed** to accept both quoted (`- id: "QA-FOO"`) and unquoted finding ids. Three regex sites updated (lookup, already-closed check, insertion). The kit's actual `findings.yaml` format uses double-quoted ids.
+- **KIT-GAP-0013 fix — `psk-generate-user-guide.sh`** now: (a) resolves `PROJ_ROOT` from script location (`../../`) instead of `git rev-parse --show-toplevel`, fixing the output-path drift when the kit lives inside a parent git repo; (b) reads version from `AGENT_CONTEXT.md` first then `AGENT.md` fallback; (c) interpolates `${version}` into the `<title>` template so titles match the shipped version.
+- **KIT-GAP-0012 partial fix — PSK031 now consults the findings-registry** alias map via an awk-readable temp file. Two ids that both resolve to the same canonical_id are no longer flagged as duplicates. (Underlying unreg-aliases loop fan-out is filed as KIT-GAP-0017 for v0.6.69.)
+- **Defers:** KIT-GAP-0017 → v0.6.69 (PSK031 unreg-aliases per-id sub-shell fan-out — needs single-awk-pass refactor).
+- Tests: 2865 passing baseline (2720 framework + 145 benchmarking).
 
 ### v0.6.67 — Recursion Fixes: Legitimate-Exception Taxonomy (2026-06-02)
 - **Second production validation of §Kit Fidelity friction-as-feedback loop.** Cycle-22 reflex autoloop surfaced 4 recursive false-positives (PSK040, PSK041, Dim 27) + the KIT-GAP-0013 hook-installer mangling bug. v0.6.67 closes them via a shared **legitimate-exception taxonomy** so kit rules can distinguish operator-controlled non-pending states from real workaround anti-patterns.

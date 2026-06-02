@@ -237,7 +237,18 @@ install_git_hook() {
 # Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git commit ...
 # Or: git commit --no-verify
 
-SCRIPT="\$(git rev-parse --show-toplevel)/agent/scripts/psk-sync-check.sh"
+# KIT-GAP-0015 fix (v0.6.68): skip sync-check during merge commits.
+# Big merges (100+ files) caused sync-check's internal git operations to
+# fan out into hundreds of parallel sub-processes that exhausted system
+# resources before completing. Merge commits don't introduce logical
+# drift on their own — the constituent commits already ran the check.
+REPO_ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "\$REPO_ROOT" ] && [ -f "\$REPO_ROOT/.git/MERGE_HEAD" ]; then
+  echo "PSK pre-commit: skipping sync-check during merge commit (KIT-GAP-0015)" >&2
+  exit 0
+fi
+
+SCRIPT="\$REPO_ROOT/agent/scripts/psk-sync-check.sh"
 if [ -x "\$SCRIPT" ]; then
   bash "\$SCRIPT" --full || exit 1
 fi
@@ -254,7 +265,18 @@ EOF
 # Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git commit ...
 # Or: git commit --no-verify
 
-SCRIPT="$(git rev-parse --show-toplevel)/agent/scripts/psk-sync-check.sh"
+# KIT-GAP-0015 fix (v0.6.68): skip sync-check during merge commits.
+# Big merges (100+ files) caused sync-check's internal git operations to
+# fan out into hundreds of parallel sub-processes that exhausted system
+# resources before completing. Merge commits don't introduce logical
+# drift on their own — the constituent commits already ran the check.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "$REPO_ROOT" ] && [ -f "$REPO_ROOT/.git/MERGE_HEAD" ]; then
+  echo "PSK pre-commit: skipping sync-check during merge commit (KIT-GAP-0015)" >&2
+  exit 0
+fi
+
+SCRIPT="$REPO_ROOT/agent/scripts/psk-sync-check.sh"
 if [ -x "$SCRIPT" ]; then
   bash "$SCRIPT" --full || exit 1
 fi

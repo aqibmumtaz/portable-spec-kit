@@ -2799,10 +2799,47 @@ check_psk031_duplicate_findings() {
   # Same-pass duplicates (within one cycle's findings.yaml) are legitimate
   # (two dim-agents independently filed overlap; registered as internal
   # aliases by file-bugs.sh integration) — don't flag those.
+  #
+  # KIT-GAP-0012 fix (v0.6.68): consult the findings-registry to skip pairs
+  # already linked as aliases of the same canonical. The alias-map lives in
+  # an awk-readable temp file (passing a multi-line shell var via `-v`
+  # caused parse-instability in earlier attempts).
+  local alias_map_tmp
+  alias_map_tmp=$(mktemp)
+  awk '
+    /^[[:space:]]*-[[:space:]]+canonical_id:/ {
+      cid=$0; sub(/^[[:space:]]*-[[:space:]]+canonical_id:[[:space:]]*/, "", cid); gsub(/[[:space:]"]+$/, "", cid); gsub(/^"|"$/, "", cid)
+      cur=cid; print cur"|"cid
+      in_aliases=0; next
+    }
+    /^[[:space:]]+aliases:[[:space:]]*$/ { in_aliases=1; next }
+    in_aliases && /^[[:space:]]+-[[:space:]]+/ {
+      a=$0; sub(/^[[:space:]]+-[[:space:]]+/, "", a); gsub(/[[:space:]"]+$/, "", a); gsub(/^"|"$/, "", a)
+      if (a != "" && cur != "") print a"|"cur
+      next
+    }
+    /^[a-zA-Z]/ { in_aliases=0 }
+  ' "$registry_yaml" 2>/dev/null > "$alias_map_tmp"
   local dup_lines
-  dup_lines=$(awk -F'|' '{print $2"\t"$1"\t"$3}' "$pairs_tmp" | sort | awk -F'\t' '
-    { if ($1 == prev_fp && $2 != prev_id && $3 != prev_pass) print prev_id"\t"$2"\t"$1"\t"prev_pass"→"$3; prev_fp=$1; prev_id=$2; prev_pass=$3 }
+  dup_lines=$(awk -F'|' '{print $2"\t"$1"\t"$3}' "$pairs_tmp" | sort | awk -F'\t' \
+    -v alias_file="$alias_map_tmp" '
+    BEGIN {
+      while ((getline line < alias_file) > 0) {
+        split(line, kv, "|")
+        if (kv[1] != "" && kv[2] != "") canon[kv[1]] = kv[2]
+      }
+      close(alias_file)
+    }
+    {
+      if ($1 == prev_fp && $2 != prev_id && $3 != prev_pass) {
+        c_prev = (prev_id in canon) ? canon[prev_id] : prev_id
+        c_cur  = ($2 in canon) ? canon[$2] : $2
+        if (c_prev != c_cur) print prev_id"\t"$2"\t"$1"\t"prev_pass"→"$3
+      }
+      prev_fp=$1; prev_id=$2; prev_pass=$3
+    }
   ')
+  rm -f "$alias_map_tmp"
 
   # Detect suffix-variant IDs not registered as aliases in the registry
   local unreg_aliases=""
