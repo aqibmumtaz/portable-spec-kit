@@ -8,7 +8,19 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.68 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.69 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.69 — Autoloop Convergence Root-Cause Fixes (2026-06-02)
+- **Closes the cycle-22-pass-004 reattachment chase that consumed v0.6.67/v0.6.68 sessions.** Ultracode adversarial workflow (7 agents — 3 verify, 3 scan, 1 synth) identified 6 root-cause bugs in the autoloop state machine. v0.6.69 fixes all six at the kit-machinery level.
+- **Fix #4 — `reflex/lib/loop.sh::write_state` corruption source.** Prior implementation walked `cycle-*/pass-*/` by mtime and overwrote whichever was newest, ignoring the `.active-cycle` pin. When `--next-cycle` had just pinned a new cycle with no pass dirs yet, it picked up the prior cycle's last pass and corrupted its `.iter-status.yml` from `COMPLETE-DENIED` → `RUNNING`, tripping Gates 1+3 on every subsequent reflex invocation. Now honors `.active-cycle` as the first resolution check + refuses to overwrite any `.iter-status.yml` with existing `status: COMPLETE-*` (immutability per L3 contract).
+- **Fix #5 — `next_cycle_id` + `compute_next_cycle_id` honor `.active-cycle` first.** Both functions previously walked `.cycle-meta` files and applied findings-first Rules 1-4 without checking `.active-cycle`. Operator's explicit advance signal was silently discarded by Rule 4 ("zero unclosed + non-GRANTED → keep cycle"). Now reads `.active-cycle` as the first check.
+- **Fix #6 — F1 EXIT-trap interaction.** v0.6.68's no-advance exits called `exit "$rc"` without setting `EXPECT_RESUME=1`. The `_l2_iter_trap` stamped `INTERRUPTED` on the active pass, blocking next reflex run via L1 abort-detection until operator ran `--recover-from-abort`. Fix sets `EXPECT_RESUME=1` before every no-advance exit.
+- **Fix #7 — rc-gate `self-test-verdict` phase + scope `latest_pass`.** Verdict phase was unprotected: a crashed `--resume-dev` could fall through with empty `verdict_line` and silently advance. Now exits early on rc=1 with `EXPECT_RESUME=1`. Also ports `.active-cycle` scoping into the `latest_pass` resolution.
+- **Fix #8 — `reflex/lib/loop.sh` iter-2+ exec adds `--resume`.** Iter-2+ re-exec without `--resume` hit start-of-script guard "state already exists" exit 1. Currently masked by convergence rarely reaching iter-2 cleanly.
+- **Fix #9 — `reflex/lib/preconditions.sh` Gate 2 widened HEAD pattern + intermediate walk-back.** Gate 2 refused `fix(reflex):`, `chore(reflex):`, `docs(release):`, `Merge branch` HEADs even when prep-release ancestor existed. Now adds permissive `INTERMEDIATE_RE` for chore/fix/docs/merge shapes, accepts `^release: vX.Y.Z`, raises walk-back depth to 10 (configurable via `REFLEX_HEAD_WALK_DEPTH`). Closes long-standing KIT-GAP-0010.
+- **One-shot heal of `reflex/history/cycle-22/pass-004/.iter-status.yml`** from `RUNNING` to `COMPLETE-DENIED`. The write_state immutability guard ensures it stays that way.
+- **Deferred to v0.6.70:** KIT-GAP-0044 (psk-spawn.sh cross-cycle stale .request cleanup), KIT-GAP-0045 (full --next-cycle cleanup: retry-queue + .release-state/state + spawn purge).
+- 2865 tests baseline maintained.
 
 ### v0.6.68 — Kit-Machinery Sweep: 5 KIT-GAPs Closed (2026-06-02)
 - **Convergence-blocking machinery bugs surfaced during v0.6.67 reflex chase.** v0.6.68 closes 5 of the 6 KIT-GAPs filed during that session at the kit-machinery level.
