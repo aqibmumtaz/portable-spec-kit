@@ -25,6 +25,15 @@ if [ ! -f "$SPECS" ]; then
   exit 1
 fi
 
+# KIT-GAP-0051 (v0.6.71): recursion guard. tests/sections/97-kit-fidelity.sh
+# (referenced from SPECS.md feature Tests column) invokes psk-sync-check.sh
+# --full to verify PSK040. psk-sync-check.sh's PSK005 check then invokes
+# THIS script again. Without this guard the cycle is infinite —
+# sync-check -> test-release-check -> 97-kit-fidelity -> sync-check ...
+# Observed to spawn 2.6K+ procs and hang gates.sh for 8+ hours.
+# Every descendant psk-sync-check.sh sees this sentinel and skips PSK005.
+export PSK_IN_TEST_RELEASE_CHECK=1
+
 # Closes QA-REL-NONDETERM-01 (v0.6.11): self-cleaning rft-cache invalidation.
 # Without this, sequential invocations could read a stale cache value written
 # by an earlier run and report different results on the same HEAD. gates.sh

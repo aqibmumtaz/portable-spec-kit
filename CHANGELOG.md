@@ -8,7 +8,18 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.70 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.72 · **Tests:** 2865 (2720 framework + 145 benchmarking)
+
+### v0.6.72 — QA-Orchestrator Multi-Author Dispatch (2026-06-03)
+- **Closes 6-pass MAJOR QA-ORCH-COVERAGE finding.** QA-Orchestrator's leaf-agent surface lacks the Task tool (Anthropic runtime gating) so orchestrator could not fan out parallel dim-agents itself. v0.6.67 documented bypass kept the contract working but lost ~4× wall-clock. v0.6.72 adds the structural fix per §Spawn Fidelity.
+- **KIT-GAP-0052 P1 — `agent/scripts/psk-spawn.sh`**: new `request-multi` + `complete-multi` commands. One phase, N parallel sub-agent spawns via YAML manifest. Per-spawn request files at `agent/.workflow-state/spawn/<wf>.<phase>.<id>.request`. State machine marks `AWAITING:MULTI_SUBAGENT_SPAWN`.
+- **KIT-GAP-0052 P2 — `reflex/prompts/qa-agent-orchestrator.md`**: three-path dispatch decision (multi-author > Task-inline > single-author). New Multi-author dispatch section documents protocol: write wave-manifest.yaml + dim-prompts/ + invoke request-multi + exit AWAITING_DIM_DISPATCH + re-invoke detection logic. Single-author fallback preserved verbatim.
+- **KIT-GAP-0052 P3 — `reflex/config.yml` + `reflex/lib/spawn-qa.sh`**: new `qa_agent.spawn_mode` config field (default `orchestrated-single-author`). spawn-qa.sh parses via awk + passes to qa-task.md qa_config block with workflow_name.
+- **KIT-GAP-0052 P4 — `tests/sections/03-reliability.sh` Section 94**: 20-test regression covering command surface, request-multi semantics, complete-multi happy + sad path, schema validation, config field, orchestrator prompt regression. 20/20 pass (739/0 in suite).
+- **Opt-in only**: default keeps current behavior. Flip to `orchestrated-multi-author` after cycle-26+ verification (deferred to v0.6.73).
+
+### v0.6.71 — PSK005 Recursion Guard (2026-06-03)
+- **KIT-GAP-0051 — PSK005 R→F→T recursion**: 3-way infinite loop between sync-check + test-release-check + 97-kit-fidelity. PSK005 fires test-release-check which iterates SPECS feature Tests refs including 97-kit-fidelity.sh which calls sync-check --full to verify PSK040. Observed: 2.6K+ procs, gates.sh hung 8+ hours. Fix: `test-release-check.sh` exports `PSK_IN_TEST_RELEASE_CHECK=1`; `check_rft_gate()` short-circuits with PASS when sentinel set. Verified: test-release-check.sh 8h hung → 24s clean, sync-check 38/38, autoloop unblocked.
 
 ### v0.6.70 — Sync-Check Perf Sweep + Gates Trap (2026-06-02)
 - **Sync-check wall-clock 60-90s with frequent 850-proc fan-outs → 23s clean.** Ultracode workflow (wf_9016b3e9-771) surfaced 8 MAJOR perf bugs + gates.sh EXIT-trap rc=2 variant; v0.6.70 closes 6 of these.

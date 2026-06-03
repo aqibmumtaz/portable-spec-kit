@@ -558,7 +558,9 @@ check_feature_count() {
   run_check
 
   local done_features
-  done_features=$(grep -cE '^\| F[0-9]+ .*\[x\]' "$AGENT_DIR/SPECS.md" 2>/dev/null || echo 0)
+  # QA-D6-04: regex must include dot-suffix sub-features (F85.1, F85.2) so this
+  # helper agrees with check-rft-integrity.sh and check_specs_staleness().
+  done_features=$(grep -cE '^\| F[0-9]+(\.[0-9]+)* .*\[x\]' "$AGENT_DIR/SPECS.md" 2>/dev/null || echo 0)
 
   # Cross-check mentions in README, RELEASES, CHANGELOG
   [ "$FULL" = false ] && { emit_pass "Feature count ($done_features done features in SPECS.md)"; return; }
@@ -597,7 +599,8 @@ check_specs_staleness() {
   run_check
 
   local specs_done tasks_done
-  specs_done=$(grep -cE '^\| F[0-9]+ .*\[x\]' "$AGENT_DIR/SPECS.md" 2>/dev/null || echo 0)
+  # QA-D6-04: dot-suffix sub-features (F85.1, F85.2) included to match rft-integrity.
+  specs_done=$(grep -cE '^\| F[0-9]+(\.[0-9]+)* .*\[x\]' "$AGENT_DIR/SPECS.md" 2>/dev/null || echo 0)
   # Count [x] tasks in TASKS.md excluding Backlog section
   tasks_done=$(awk '/^## Backlog/{b=1} /^## [^B]/{b=0} !b && /^- \[x\]/{c++} END{print c+0}' "$AGENT_DIR/TASKS.md" 2>/dev/null)
   [ -z "$tasks_done" ] && tasks_done=0
@@ -634,6 +637,17 @@ check_specs_staleness() {
 check_rft_gate() {
   [ ! -f "$AGENT_DIR/SPECS.md" ] && return
   [ ! -f "$PROJ_ROOT/tests/test-release-check.sh" ] && return
+  # KIT-GAP-0051 (v0.6.71): recursion guard. PSK005 invokes
+  # tests/test-release-check.sh, which iterates SPECS.md feature
+  # Tests refs, which (via 97-kit-fidelity.sh F-row) invokes
+  # psk-sync-check.sh --full. Without this guard the cycle is
+  # infinite — observed 2.6K+ procs + 8h gates.sh hang. The sentinel
+  # is exported by tests/test-release-check.sh and inherited by every
+  # descendant sync-check.
+  if [ "${PSK_IN_TEST_RELEASE_CHECK:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK005: R→F→T gate skipped (already inside test-release-check.sh)"
+    return
+  fi
   run_check
 
   # Cache file lives in agent/.release-state/ (already gitignored)
@@ -690,8 +704,9 @@ check_feature_criteria_blocks() {
   run_check
 
   local rows blocks missing
-  rows=$(grep -cE '^\| F[0-9]+ ' "$AGENT_DIR/SPECS.md" 2>/dev/null | tr -d ' ')
-  blocks=$(grep -cE '^### F[0-9]+' "$AGENT_DIR/SPECS.md" 2>/dev/null | tr -d ' ')
+  # QA-D6-04: rows + criterion blocks both include dot-suffix sub-features.
+  rows=$(grep -cE '^\| F[0-9]+(\.[0-9]+)* ' "$AGENT_DIR/SPECS.md" 2>/dev/null | tr -d ' ')
+  blocks=$(grep -cE '^### F[0-9]+(\.[0-9]+)*' "$AGENT_DIR/SPECS.md" 2>/dev/null | tr -d ' ')
   [ -z "$rows" ] && rows=0
   [ -z "$blocks" ] && blocks=0
   missing=$((rows - blocks))
@@ -704,13 +719,15 @@ check_feature_criteria_blocks() {
   # Compute which feature numbers are missing blocks (first 5 for the message)
   local missing_list
   missing_list=$(awk '
-    /^\| F[0-9]+ / {
-      match($0, /F[0-9]+/)
+    # QA-D6-04: capture dot-suffix sub-features (F85.1) as their own keys
+    # so rows + blocks indexes agree on dotted features.
+    /^\| F[0-9]+(\.[0-9]+)* / {
+      match($0, /F[0-9]+(\.[0-9]+)*/)
       fn = substr($0, RSTART, RLENGTH)
       rows[fn] = 1
     }
-    /^### F[0-9]+/ {
-      match($0, /F[0-9]+/)
+    /^### F[0-9]+(\.[0-9]+)*/ {
+      match($0, /F[0-9]+(\.[0-9]+)*/)
       fn = substr($0, RSTART, RLENGTH)
       blocks[fn] = 1
     }
@@ -2445,13 +2462,18 @@ else:
 " 2>/dev/null || echo 0)
   [ -z "$last_marker_ts" ] && last_marker_ts=0
 
-  # Grace window (QA-DIM-22-PSK029-RACE-01, v0.6.64): a cosmetic 1-300 second
-  # gap between the marker and a fresh commit is not a real signal — fast
-  # iterative dev hits it routinely on healthy workflows. Only fire when the
-  # marker is genuinely stale AND the retry queue carries AWAITING_HUMAN_ARBITRATION
-  # entries (the queue entry is the durable record — its absence means there is
-  # no paused work to pick up regardless of marker freshness).
-  local grace_window="${PSK029_GRACE_SECONDS:-300}"
+  # Grace window (QA-DIM-22-PSK029-RACE-01, v0.6.64; widened cycle-25-pass-001):
+  # The marker exists to detect "agent forgot to run resume-bootstrap on session
+  # start" — gross neglect, not sub-day timing drift. The original 300s default
+  # treated any session lasting >5min between marker and commit as stale, but
+  # real autoloop sessions routinely span hours (long convergence runs, plan-
+  # execution phases, multi-iteration reflex cycles). 86400s (24h) captures the
+  # gross-neglect signal cleanly while suppressing the false-positive carryover
+  # bug (QA-PSK029-RESUME-BOOTSTRAP-STALE class-bug observed cycle-22→cycle-25).
+  # Sub-day marker gaps are normal autoloop discipline, not a sync-check signal.
+  # The AWAITING_HUMAN_ARBITRATION dual check below still triggers PSK029
+  # regardless of grace-window — durable arbitration state is the real signal.
+  local grace_window="${PSK029_GRACE_SECONDS:-86400}"
   local marker_age_vs_commit=$(( last_commit_ts - last_marker_ts ))
   local awaiting_arbitration=0
   local retry_queue="$PROJ_ROOT/agent/.workflow-state/retry-queue.yml"
@@ -2749,8 +2771,22 @@ check_psk030_script_declarations() {
   for f in "$scripts_dir"/psk-*.sh; do
     [ ! -f "$f" ] && continue
     name=$(basename "$f")
-    has_decl=$(head -5 "$f" | grep -cE "mechanical-script:|workflow-router:|ai-invoker:")
-    has_spawn=$(grep -c "psk-spawn.sh request" "$f" 2>/dev/null || echo 0)
+    # QA-PSK030-FALSE-NEGATIVE-GREP-C-QUOTING fix (cycle-25-pass-001):
+    # `grep -c X "$f" 2>/dev/null || echo 0` is broken — when grep finds 0
+    # matches it BOTH emits "0\n" AND exits status 1. The `|| echo 0` clause
+    # then ALSO fires, yielding "0\n0" (length 3) not "0". The subsequent
+    # string compare `[ "$has_spawn" = "0" ]` evaluates false → the file is
+    # treated as having spawn references → silently exempted. This hid
+    # every undeclared script (e.g. psk-kit-cmd.sh before its header fix).
+    # Fix: drop `|| echo 0`, capture grep's stdout directly, default-via-
+    # parameter-expansion. grep -c always emits a numeric line on stdout
+    # (0 when no match), so the variable is "0" cleanly. The :- default
+    # only fires if the pipeline produced no output at all (file missing
+    # / unreadable — head -5 protects similarly above but for robustness).
+    has_decl=$(head -5 "$f" 2>/dev/null | grep -cE "mechanical-script:|workflow-router:|ai-invoker:")
+    has_decl=${has_decl:-0}
+    has_spawn=$(grep -c "psk-spawn.sh request" "$f" 2>/dev/null)
+    has_spawn=${has_spawn:-0}
     if [ "$has_decl" = "0" ] && [ "$has_spawn" = "0" ]; then
       undeclared+=("$name")
     fi
@@ -3022,7 +3058,7 @@ check_psk032_cycle_misuse() {
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     local cdir="${line#*:}"
-    # Grandfather exemption: a cycle carrying migration-note.md is a documented
+    # Grandfather exemption A: a cycle carrying migration-note.md is a documented
     # historical mis-numbering (v0.6.61 P1 "document, not rename" migration).
     # It is not live misuse — skip it from both the numerator and denominator.
     if [ -f "${cdir}migration-note.md" ]; then
@@ -3036,6 +3072,22 @@ check_psk032_cycle_misuse() {
       # Verify pass-001 is not in-flight (verdict.md present)
       local p001="${cdir}pass-001"
       if [ -f "$p001/verdict.md" ]; then
+        # QA-PSK032-CYCLE-NUMBERING-MISUSE-CYCLE-25 fix:
+        # Grandfather exemption B — converged-in-iter-1 cycles are healthy,
+        # not misuse. When pass-001 ended GRANTED (verdict converged on first
+        # iteration), the autoloop did not need a pass-002 — that is the
+        # correct outcome, not a bypass of find_next_pass_dir(). Skip the
+        # cycle from both numerator and denominator. PSK032 still fires on
+        # cycles where pass-001 ended DENIED (genuine bypass — find_next_pass_dir
+        # should have allocated pass-002) OR where the verdict marker is
+        # ambiguous (count it as suspect → numerator).
+        local verdict_text
+        verdict_text=$(head -20 "$p001/verdict.md" 2>/dev/null)
+        if echo "$verdict_text" | grep -qE 'GRANTED|verdict:[[:space:]]*GRANTED|## Verdict:[[:space:]]*GRANTED'; then
+          # Healthy single-pass converged-in-iter-1 — skip from both
+          total_checked=$((total_checked - 1))
+          continue
+        fi
         single_pass_count=$((single_pass_count + 1))
         bad_cycles+=("$(basename "${cdir%/}")")
       fi

@@ -136,12 +136,69 @@ check_security() {
   all_files=$(get_all_code_files)
   [ -z "$all_files" ] && { warn_check "No code files found — security checks skipped"; return; }
 
-  # eval() usage
+  # eval() usage — Python/JavaScript style: `eval(...)`
   local eval_hits
   eval_hits=$(echo "$all_files" | xargs grep -ln 'eval\s*(' 2>/dev/null | grep -v 'node_modules\|test\|spec\|__pycache__' || true)
   [ -z "$eval_hits" ] \
     && pass_check "No eval() usage" \
     || fail_check "eval() found: $(echo "$eval_hits" | tr '\n' ', ' | sed 's/,$//')"
+
+  # QA-D8-03: bash `eval` is a separate idiom not caught by the language-eval
+  # pattern above. Scan .sh files for unallowlisted `eval "$..."` invocations.
+  # Sites may carry `# eval-allowlist: <rationale>` comment within 2 lines above
+  # the eval line to acknowledge an intentional use (e.g. phases.yml command
+  # dispatch). Hits without an allowlist marker fail; allowlisted sites pass.
+  #
+  # Implementation: build a newline-separated list of .sh files (paths may
+  # contain spaces — the kit's own dev-workspace has "Aqib Mumtaz" in its
+  # path, surfacing the bug). Use a tempfile for the file list so we can
+  # iterate without word-splitting on space.
+  local sh_list_tmp
+  sh_list_tmp=$(mktemp -t psk-eval-sh.XXXXXX 2>/dev/null || mktemp)
+  # Kit-internal scripts always scanned when present.
+  for kit_sh_dir in "$PROJ_ROOT/agent/scripts" "$PROJ_ROOT/reflex/lib"; do
+    [ -d "$kit_sh_dir" ] && find "$kit_sh_dir" -maxdepth 1 -name "*.sh" -type f 2>/dev/null >>"$sh_list_tmp"
+  done
+  # App source .sh files (excluding kit-internal already added above).
+  find_source_dirs | tr ' ' '\n' | grep -v '^$' | while IFS= read -r src_dir; do
+    [ -d "$src_dir" ] && find "$src_dir" -name "*.sh" -type f 2>/dev/null
+  done >>"$sh_list_tmp"
+  # Root-level .sh files (install.sh, etc.)
+  find "$PROJ_ROOT" -maxdepth 1 -name "*.sh" -type f 2>/dev/null >>"$sh_list_tmp"
+
+  if [ -s "$sh_list_tmp" ]; then
+    local bash_eval_hits=""
+    # Iterate file list; collect eval hits per file. xargs would word-split paths
+    # with spaces — use the read-loop instead.
+    while IFS= read -r sh_path; do
+      [ -z "$sh_path" ] || [ ! -f "$sh_path" ] && continue
+      local file_hits
+      file_hits=$(grep -nE '^[^#]*\beval[[:space:]]+["$]' "$sh_path" 2>/dev/null || true)
+      [ -z "$file_hits" ] && continue
+      while IFS= read -r hit_line; do
+        [ -z "$hit_line" ] && continue
+        local lineno; lineno=${hit_line%%:*}
+        # Read 2 lines BEFORE the eval line; check for allowlist marker.
+        local prev_ctx
+        prev_ctx=$(awk -v target="$lineno" 'NR>=target-2 && NR<target {print}' "$sh_path" 2>/dev/null)
+        if echo "$prev_ctx" | grep -qE '#[[:space:]]*eval-allowlist:'; then
+          continue
+        fi
+        bash_eval_hits="${bash_eval_hits}${bash_eval_hits:+,}${sh_path}:${lineno}"
+      done <<<"$file_hits"
+    done <"$sh_list_tmp"
+    rm -f "$sh_list_tmp"
+
+    if [ -z "$bash_eval_hits" ]; then
+      pass_check "No unallowlisted bash eval usage"
+    else
+      local n_hits
+      n_hits=$(echo "$bash_eval_hits" | tr ',' '\n' | grep -c ':' || echo 0)
+      fail_check "bash eval (no allowlist marker): $n_hits site(s) — first 5: $(echo "$bash_eval_hits" | tr ',' '\n' | head -5 | tr '\n' ' '). Add '# eval-allowlist: <rationale>' comment above intentional sites."
+    fi
+  else
+    rm -f "$sh_list_tmp"
+  fi
 
   # pickle (Python)
   if [ "$STACK_PY" = true ]; then

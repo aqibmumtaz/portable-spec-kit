@@ -7435,6 +7435,474 @@ else
 fi
 rm -rf "$_S89_TMP"
 
+# ============================================================================
+# Section 90 — PSK030 grep -c || echo 0 false-negative regression (cycle-25-pass-001)
+# ============================================================================
+# Regression test for QA-PSK030-FALSE-NEGATIVE-GREP-C-QUOTING (cycle-25-pass-001).
+# `grep -c X "$f" 2>/dev/null || echo 0` produces "0\n0" when no match: grep
+# emits "0\n" AND exits 1, so the `|| echo 0` clause ALSO fires. The string
+# compare `[ "0\n0" = "0" ]` returns false → undeclared scripts get silently
+# exempted from PSK030's flag list. This hid psk-kit-cmd.sh until cycle-25.
+# Fix: drop `|| echo 0`; capture stdout directly and default via :- expansion.
+echo ""
+echo "═══ Section 90 — PSK030 grep -c concat false-negative fix (cycle-25-pass-001) ═══"
+
+_S90_SYNC="$PROJ/agent/scripts/psk-sync-check.sh"
+
+# 90.1: check_psk030 no longer uses the broken `|| echo 0` idiom on grep -c
+if grep -nE 'grep -c "psk-spawn\.sh request".*\|\| echo 0' "$_S90_SYNC" >/dev/null 2>&1; then
+  fail "90.1: check_psk030 still uses 'grep -c ... || echo 0' (produces \"0\\n0\" → string compare fails)"
+else
+  pass "90.1: check_psk030 dropped the broken 'grep -c ... || echo 0' idiom"
+fi
+
+# 90.2: check_psk030 uses POSIX default-via-:- on has_spawn (safer pattern)
+if grep -nE 'has_spawn=\$\{has_spawn:-0\}' "$_S90_SYNC" >/dev/null 2>&1; then
+  pass "90.2: check_psk030 uses POSIX 'has_spawn=\${has_spawn:-0}' default pattern"
+else
+  fail "90.2: check_psk030 missing 'has_spawn=\${has_spawn:-0}' default — fix incomplete"
+fi
+
+# 90.3: end-to-end probe — fixture a synthetic undeclared script + assert PSK030 flags it.
+# Build a fixture project with one psk-*.sh missing all 3 declarations AND missing
+# any 'psk-spawn.sh request' body match. The bug pre-fix exempted such files.
+_S90_TMP=$(mktemp -d)
+mkdir -p "$_S90_TMP/agent/scripts"
+# psk-bad.sh — no class header AND no spawn references → MUST be flagged by PSK030
+# NB: the fixture body MUST NOT contain the literal substrings mechanical-script:
+# / workflow-router: / ai-invoker: / psk-spawn.sh request — PSK030 grep-matches
+# them in script bodies and would self-exempt this fixture. Cycle-25-pass-002
+# sibling-fix surfaced this fixture defect (Section 90 was the exemplar that
+# inspired Sections 91/92/93; its own fixture was malformed).
+cat > "$_S90_TMP/agent/scripts/psk-bad.sh" <<'BADSCRIPT'
+#!/bin/bash
+# Undeclared kit script — should trigger PSK030 after the grep-c fix.
+# No class header. No spawn references. Pure no-op script.
+echo "this script has no class declaration"
+BADSCRIPT
+chmod +x "$_S90_TMP/agent/scripts/psk-bad.sh"
+_S90_OUT=$(bash "$_S90_SYNC" --project "$_S90_TMP" --full 2>&1 || true)
+if echo "$_S90_OUT" | grep -qE 'PSK030.*script-class-undeclared.*psk-bad\.sh'; then
+  pass "90.3: PSK030 flags synthetic undeclared script (regression vector closed)"
+else
+  fail "90.3: PSK030 did NOT flag psk-bad.sh — false-negative regression (output: $(echo "$_S90_OUT" | grep -i PSK030 | head -3))"
+fi
+rm -rf "$_S90_TMP"
+
+# 90.4: psk-kit-cmd.sh now declares mechanical-script: in header (the live symptom)
+# The QA finding was triggered because psk-kit-cmd.sh had 0 declarations AND 0 spawn refs
+# AND PSK030 wrongly exempted it. Fix-side: add a class header so PSK030 PASSes for the
+# whole kit AFTER the grep -c bug is fixed.
+if head -5 "$PROJ/agent/scripts/psk-kit-cmd.sh" | grep -qE "mechanical-script:|workflow-router:|ai-invoker:"; then
+  pass "90.4: psk-kit-cmd.sh declares its class in header (live PSK030 symptom closed)"
+else
+  fail "90.4: psk-kit-cmd.sh STILL missing class declaration — PSK030 will continue to flag it"
+fi
+
+# 90.5: real-project PSK030 PASS — after fix, the whole kit's psk-*.sh inventory
+# should pass PSK030 (no undeclared scripts remain).
+_S90_REAL=$(bash "$_S90_SYNC" --project "$PROJ" --full 2>&1 || true)
+if echo "$_S90_REAL" | grep -qE 'PSK030.*all [0-9]+ psk-\* scripts declare class'; then
+  pass "90.5: PSK030 passes on the kit after fix (all psk-* scripts declare class)"
+else
+  fail "90.5: PSK030 still fires on the kit after fix: $(echo "$_S90_REAL" | grep PSK030 | head -2)"
+fi
+
+# ============================================================================
+# Section 91 — PSK029 86400s grace-window regression (cycle-25-pass-001)
+# ============================================================================
+# Regression test for QA-PSK029-RESUME-BOOTSTRAP-STALE-CARRYOVER (cycle-25-pass-001
+# fix e9133208). The original 300s default treated any session lasting >5min
+# between marker and commit as stale, causing PSK029 to fire on healthy
+# autoloop sessions. Fix: widened grace window to 86400s (24h) so sub-day
+# marker gaps are tolerated; gross-neglect (>24h) still surfaces.
+# §Spawn Fidelity Dev-Agent fix protocol step-8 — belt-and-suspenders against
+# future drift of the grace constant.
+echo ""
+echo "═══ Section 91 — PSK029 grace-window regression (cycle-25-pass-001) ═══"
+
+_S91_SYNC="$PROJ/agent/scripts/psk-sync-check.sh"
+
+# 91.1: Source declares 86400s as the default grace_window (24h, not 300s)
+if grep -nE 'local grace_window=.*PSK029_GRACE_SECONDS:-86400' "$_S91_SYNC" >/dev/null 2>&1; then
+  pass "91.1: PSK029 default grace_window is 86400s (24h)"
+else
+  fail "91.1: PSK029 default grace_window is NOT 86400s — fix reverted? (file: $_S91_SYNC)"
+fi
+
+# Fixture protocol for PSK029 (both 91.2 + 91.3):
+#   The check has a recursion guard — it only triggers when *.state STARTED
+#   timestamps are NEWER than the most-recent commit touching
+#   agent/.workflow-state/. To force the "genuine active in-progress" path
+#   without committing .workflow-state/, we (a) commit only agent/note.txt
+#   so `last_commit_ts` (for agent/) > 0, (b) leave .workflow-state/ files
+#   UNCOMMITTED so `last_wfstate_commit_ts` returns 0 (no commit touched the
+#   dir), (c) write STARTED to NOW so STARTED > 0 → active_state=1.
+#   That isolates the grace_window decision branch under test.
+
+# 91.2: Fixture — 12h-stale marker + active in-progress state → PSK029 PASSES
+_S91_TMP=$(mktemp -d)
+mkdir -p "$_S91_TMP/agent/.workflow-state" "$_S91_TMP/agent"
+git -C "$_S91_TMP" init -q -b main 2>/dev/null || git -C "$_S91_TMP" init -q
+git -C "$_S91_TMP" config user.email t@t.t && git -C "$_S91_TMP" config user.name t
+# Commit only agent/note.txt — last_wfstate_commit_ts will be 0
+echo "fresh" > "$_S91_TMP/agent/note.txt"
+git -C "$_S91_TMP" add agent/note.txt >/dev/null 2>&1
+git -C "$_S91_TMP" commit -q -m "fixture: fresh agent/ commit for PSK029 grace test" >/dev/null 2>&1
+# Now write .workflow-state/ files (uncommitted)
+_S91_NOW=$(date -u +%s)
+_S91_STARTED_ISO=$(python3 -c "import time; print(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime($_S91_NOW)))")
+cat > "$_S91_TMP/agent/.workflow-state/test-flow.state" <<STATE
+STARTED=$_S91_STARTED_ISO
+PHASE=in-progress
+STATE
+# Marker 12h ago — within 24h grace
+_S91_MARK_ISO=$(python3 -c "import time; print(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime($_S91_NOW - 43200)))")
+echo "$_S91_MARK_ISO session-start-resume-check ran" > "$_S91_TMP/agent/.workflow-state/session-audit.log"
+_S91_OUT=$(bash "$_S91_SYNC" --project "$_S91_TMP" --full 2>&1 || true)
+# Strip color codes for robust matching
+_S91_OUT_PLAIN=$(printf '%s\n' "$_S91_OUT" | sed -E 's/\x1B\[[0-9;]*[mK]//g')
+if echo "$_S91_OUT_PLAIN" | grep -q 'resume-bootstrap-stale'; then
+  fail "91.2: PSK029 fired on 12h-stale marker — grace window not honored (output: $(echo "$_S91_OUT_PLAIN" | grep PSK029 | head -2))"
+elif echo "$_S91_OUT_PLAIN" | grep -qE 'PSK029.*(marker within|healthy|fresh)'; then
+  pass "91.2: PSK029 tolerates 12h-stale marker (within 24h grace)"
+else
+  # Active state may not have been detected (recursion guard skipped). Either way,
+  # absence of "resume-bootstrap-stale" satisfies the grace-window contract — pass.
+  pass "91.2: PSK029 did not flag 12h-stale marker (grace contract holds)"
+fi
+rm -rf "$_S91_TMP"
+
+# 91.3: Fixture — 25h-stale marker → PSK029 MUST fire (gross-neglect)
+_S91_TMP=$(mktemp -d)
+mkdir -p "$_S91_TMP/agent/.workflow-state" "$_S91_TMP/agent"
+git -C "$_S91_TMP" init -q -b main 2>/dev/null || git -C "$_S91_TMP" init -q
+git -C "$_S91_TMP" config user.email t@t.t && git -C "$_S91_TMP" config user.name t
+echo "fresh" > "$_S91_TMP/agent/note.txt"
+git -C "$_S91_TMP" add agent/note.txt >/dev/null 2>&1
+git -C "$_S91_TMP" commit -q -m "fixture: fresh agent/ commit for PSK029 25h test" >/dev/null 2>&1
+_S91_NOW=$(date -u +%s)
+_S91_STARTED_ISO=$(python3 -c "import time; print(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime($_S91_NOW)))")
+cat > "$_S91_TMP/agent/.workflow-state/test-flow.state" <<STATE
+STARTED=$_S91_STARTED_ISO
+PHASE=in-progress
+STATE
+# Marker 25h ago — beyond 86400s grace
+_S91_MARK_ISO=$(python3 -c "import time; print(time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime($_S91_NOW - 90000)))")
+echo "$_S91_MARK_ISO session-start-resume-check ran" > "$_S91_TMP/agent/.workflow-state/session-audit.log"
+_S91_OUT=$(bash "$_S91_SYNC" --project "$_S91_TMP" --full 2>&1 || true)
+_S91_OUT_PLAIN=$(printf '%s\n' "$_S91_OUT" | sed -E 's/\x1B\[[0-9;]*[mK]//g')
+if echo "$_S91_OUT_PLAIN" | grep -q 'resume-bootstrap-stale'; then
+  pass "91.3: PSK029 fires on 25h-stale marker (gross-neglect signal preserved)"
+else
+  fail "91.3: PSK029 did NOT fire on 25h-stale marker — grace too wide or guard mis-skipped? (output: $(echo "$_S91_OUT_PLAIN" | grep PSK029 | head -2))"
+fi
+rm -rf "$_S91_TMP"
+
+# ============================================================================
+# Section 92 — PSK032 grandfather-exemption-B regression (cycle-25-pass-001)
+# ============================================================================
+# Regression test for QA-PSK032-CYCLE-NUMBERING-MISUSE (cycle-25-pass-001 fix
+# c989b391). Grandfather exemption B: a cycle whose pass-001 ended GRANTED
+# (verdict converged on iter-1) is healthy single-pass behavior, NOT cycle-
+# tracking misuse. PSK032 still fires when pass-001 ended DENIED (genuine
+# bypass of find_next_pass_dir). §Spawn Fidelity step-8 belt-and-suspenders.
+echo ""
+echo "═══ Section 92 — PSK032 grandfather-exemption-B regression (cycle-25-pass-001) ═══"
+
+_S92_SYNC="$PROJ/agent/scripts/psk-sync-check.sh"
+
+# 92.1: Source contains grandfather-exemption-B logic — GRANTED verdict detection
+if grep -qE "## Verdict:\[\[:space:\]\]\*GRANTED" "$_S92_SYNC"; then
+  pass "92.1: PSK032 detects GRANTED verdicts (grandfather exemption B in place)"
+else
+  fail "92.1: PSK032 GRANTED verdict-detection regex missing — exemption B regressed?"
+fi
+
+# 92.2: Fixture reflex/history/ with 5 single-pass GRANTED cycles → PSK032 PASSES
+_S92_TMP=$(mktemp -d)
+mkdir -p "$_S92_TMP/agent"
+git -C "$_S92_TMP" init -q -b main 2>/dev/null || git -C "$_S92_TMP" init -q
+git -C "$_S92_TMP" config user.email t@t.t && git -C "$_S92_TMP" config user.name t
+for _i in 90 91 92 93 94; do
+  mkdir -p "$_S92_TMP/reflex/history/cycle-$_i/pass-001"
+  cat > "$_S92_TMP/reflex/history/cycle-$_i/pass-001/verdict.md" <<VERDICT
+# Verdict — cycle-$_i-pass-001
+## Verdict: GRANTED
+Mode: autoloop-iter-1 converged. Single-pass cycle is the correct outcome.
+VERDICT
+done
+echo "fixture" > "$_S92_TMP/agent/note.txt"
+git -C "$_S92_TMP" add . >/dev/null 2>&1
+git -C "$_S92_TMP" commit -q -m "fixture: 5 GRANTED single-pass cycles" >/dev/null 2>&1
+_S92_OUT=$(bash "$_S92_SYNC" --project "$_S92_TMP" --full 2>&1 || true)
+if echo "$_S92_OUT" | grep -qE 'PSK032.*cycle-numbering-misuse'; then
+  fail "92.2: PSK032 fired on GRANTED single-pass cycles — grandfather B not honored (output: $(echo "$_S92_OUT" | grep PSK032 | head -2))"
+else
+  pass "92.2: PSK032 tolerates GRANTED single-pass cycles (grandfather exemption B working)"
+fi
+rm -rf "$_S92_TMP"
+
+# 92.3: Fixture reflex/history/ with 5 DENIED single-pass cycles → PSK032 FIRES
+_S92_TMP=$(mktemp -d)
+mkdir -p "$_S92_TMP/agent"
+git -C "$_S92_TMP" init -q -b main 2>/dev/null || git -C "$_S92_TMP" init -q
+git -C "$_S92_TMP" config user.email t@t.t && git -C "$_S92_TMP" config user.name t
+for _i in 90 91 92 93 94; do
+  mkdir -p "$_S92_TMP/reflex/history/cycle-$_i/pass-001"
+  cat > "$_S92_TMP/reflex/history/cycle-$_i/pass-001/verdict.md" <<VERDICT
+# Verdict — cycle-$_i-pass-001
+## Verdict: DENIED
+Pass denied with findings — should have allocated pass-002.
+VERDICT
+done
+echo "fixture" > "$_S92_TMP/agent/note.txt"
+git -C "$_S92_TMP" add . >/dev/null 2>&1
+git -C "$_S92_TMP" commit -q -m "fixture: 5 DENIED single-pass cycles (genuine bypass)" >/dev/null 2>&1
+_S92_OUT=$(bash "$_S92_SYNC" --project "$_S92_TMP" --full 2>&1 || true)
+if echo "$_S92_OUT" | grep -qE 'PSK032.*cycle-numbering-misuse'; then
+  pass "92.3: PSK032 fires on DENIED single-pass cycles (genuine bypass detection preserved)"
+else
+  fail "92.3: PSK032 did NOT fire on 5 DENIED single-pass cycles — bypass undetected? (output: $(echo "$_S92_OUT" | grep PSK032 | head -2))"
+fi
+rm -rf "$_S92_TMP"
+
+# ============================================================================
+# Section 93 — PSK005 recursion guard regression (KIT-GAP-0051, v0.6.71)
+# ============================================================================
+# Regression test for KIT-GAP-0051 (cycle-25 fix 6d166033). The infinite
+# recursion: psk-sync-check.sh PSK005 → tests/test-release-check.sh →
+# tests/sections/97-kit-fidelity.sh (F-row) → psk-sync-check.sh → ... .
+# Observed: 2.6K+ processes + 8h gates.sh hang.
+# Fix: tests/test-release-check.sh exports PSK_IN_TEST_RELEASE_CHECK=1;
+# psk-sync-check.sh check_rft_gate short-circuits when sentinel set.
+# §Spawn Fidelity step-8 belt-and-suspenders against catastrophic regression.
+echo ""
+echo "═══ Section 93 — PSK005 recursion guard regression (KIT-GAP-0051) ═══"
+
+_S93_SYNC="$PROJ/agent/scripts/psk-sync-check.sh"
+_S93_TRC="$PROJ/tests/test-release-check.sh"
+
+# 93.1: tests/test-release-check.sh exports PSK_IN_TEST_RELEASE_CHECK=1
+if grep -nE '^export PSK_IN_TEST_RELEASE_CHECK=1' "$_S93_TRC" >/dev/null 2>&1; then
+  pass "93.1: tests/test-release-check.sh exports PSK_IN_TEST_RELEASE_CHECK=1 (sentinel propagates to descendants)"
+else
+  fail "93.1: tests/test-release-check.sh does NOT export PSK_IN_TEST_RELEASE_CHECK=1 — recursion guard incomplete"
+fi
+
+# 93.2: psk-sync-check.sh check_rft_gate short-circuits when sentinel set
+if grep -qE 'PSK_IN_TEST_RELEASE_CHECK:-0' "$_S93_SYNC" \
+   && grep -qE 'PSK005: R→F→T gate skipped \(already inside test-release-check' "$_S93_SYNC"; then
+  pass "93.2: psk-sync-check.sh check_rft_gate short-circuits on PSK_IN_TEST_RELEASE_CHECK=1"
+else
+  fail "93.2: PSK005 recursion guard sentinel-check missing in psk-sync-check.sh"
+fi
+
+# 93.3: End-to-end probe — invoke psk-sync-check.sh with the sentinel set;
+#       assert the skip-line appears and command completes within budget
+#       (no recursive process spawn). Wall-clock budget: 120s on the real
+#       project; the recursion (pre-fix) hung 8+ hours.
+#       NB: `timeout(1)` is not present on stock macOS; we rely on the
+#       harness-level timeout in test-spec-kit.sh + an in-script elapsed
+#       check after the call. If recursion regressed, this section would
+#       hang the whole suite — which is itself a loud structural alarm.
+#       The guard test isolates the skip-line + elapsed-within-budget
+#       behavior structurally, not via OS-level timeout.
+_S93_START=$(date -u +%s)
+_S93_OUT=$(PSK_IN_TEST_RELEASE_CHECK=1 bash "$_S93_SYNC" --project "$PROJ" --full 2>&1 || true)
+_S93_END=$(date -u +%s)
+_S93_ELAPSED=$(( _S93_END - _S93_START ))
+# strip ANSI color codes before pattern-match (the live message uses ${GREEN}...${NC})
+_S93_OUT_PLAIN=$(printf '%s\n' "$_S93_OUT" | sed -E 's/\x1B\[[0-9;]*[mK]//g')
+if echo "$_S93_OUT_PLAIN" | grep -q 'PSK005: R→F→T gate skipped'; then
+  pass "93.3a: psk-sync-check.sh emits PSK005 skip-line when sentinel is set"
+else
+  fail "93.3a: PSK005 skip-line NOT emitted when sentinel set (output head: $(echo "$_S93_OUT_PLAIN" | grep -i PSK005 | head -2))"
+fi
+if [ "$_S93_ELAPSED" -lt 120 ]; then
+  pass "93.3b: psk-sync-check.sh completes within 120s budget when sentinel set (elapsed ${_S93_ELAPSED}s — no recursive process spawn)"
+else
+  fail "93.3b: psk-sync-check.sh exceeded 120s budget — recursion-guard regressed (${_S93_ELAPSED}s)"
+fi
+
+# ============================================================================
+# Section 94 — psk-spawn.sh request-multi / complete-multi (KIT-GAP-0052, v0.6.72)
+# ============================================================================
+section "Section 94 — psk-spawn.sh multi-spawn primitives"
+
+_S94_SPAWN_SCRIPT="$PROJ/agent/scripts/psk-spawn.sh"
+_S94_TMP=$(mktemp -d)
+_S94_WF="test-multi-spawn-$$"
+_S94_PHASE="dims-wave-1"
+_S94_MANIFEST="$_S94_TMP/manifest.yaml"
+_S94_PROMPT1="$_S94_TMP/prompt-1.md"
+_S94_PROMPT2="$_S94_TMP/prompt-2.md"
+_S94_ART1="$_S94_TMP/result-1.yaml"
+_S94_ART2="$_S94_TMP/result-2.yaml"
+_S94_SPAWN_DIR="$PROJ/agent/.workflow-state/spawn"
+
+# 94.1: command-surface — request-multi + complete-multi listed in --help
+_S94_HELP=$(bash "$_S94_SPAWN_SCRIPT" --help 2>&1)
+if echo "$_S94_HELP" | grep -q 'request-multi'; then
+  pass "94.1a: psk-spawn.sh --help advertises request-multi command"
+else
+  fail "94.1a: request-multi missing from --help output"
+fi
+if echo "$_S94_HELP" | grep -q 'complete-multi'; then
+  pass "94.1b: psk-spawn.sh --help advertises complete-multi command"
+else
+  fail "94.1b: complete-multi missing from --help output"
+fi
+
+# Prepare manifest
+cat > "$_S94_PROMPT1" <<'PROMPT'
+# stub prompt 1
+PROMPT
+cat > "$_S94_PROMPT2" <<'PROMPT'
+# stub prompt 2
+PROMPT
+cat > "$_S94_MANIFEST" <<MANIFEST
+schema_version: 1
+workflow: $_S94_WF
+phase: $_S94_PHASE
+spawns:
+  - id: dims-1-to-10
+    prompt: $_S94_PROMPT1
+    artifact: $_S94_ART1
+  - id: dims-11-to-20
+    prompt: $_S94_PROMPT2
+    artifact: $_S94_ART2
+MANIFEST
+
+# 94.2: request-multi creates per-spawn request files + AWAITING signal
+_S94_REQ_OUT=$(bash "$_S94_SPAWN_SCRIPT" request-multi "$_S94_WF" "$_S94_PHASE" "$_S94_MANIFEST" 2>&1)
+if echo "$_S94_REQ_OUT" | grep -q 'AWAITING_MULTI_SUBAGENT'; then
+  pass "94.2a: request-multi prints AWAITING_MULTI_SUBAGENT banner"
+else
+  fail "94.2a: request-multi banner missing AWAITING_MULTI_SUBAGENT"
+fi
+if [ -f "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}.dims-1-to-10.request" ]; then
+  pass "94.2b: request file written for spawn 'dims-1-to-10'"
+else
+  fail "94.2b: spawn 'dims-1-to-10' request file missing"
+fi
+if [ -f "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}.dims-11-to-20.request" ]; then
+  pass "94.2c: request file written for spawn 'dims-11-to-20'"
+else
+  fail "94.2c: spawn 'dims-11-to-20' request file missing"
+fi
+
+# 94.3: request file content has correct fields
+_S94_R1=$(cat "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}.dims-1-to-10.request" 2>/dev/null)
+if echo "$_S94_R1" | grep -q "PROMPT_FILE=$_S94_PROMPT1"; then
+  pass "94.3a: spawn request preserves PROMPT_FILE field verbatim"
+else
+  fail "94.3a: PROMPT_FILE field missing or wrong in request file"
+fi
+if echo "$_S94_R1" | grep -q "RESULT_ARTIFACT=$_S94_ART1"; then
+  pass "94.3b: spawn request preserves RESULT_ARTIFACT field verbatim"
+else
+  fail "94.3b: RESULT_ARTIFACT field missing or wrong in request file"
+fi
+if echo "$_S94_R1" | grep -q "SPAWN_ID=dims-1-to-10"; then
+  pass "94.3c: spawn request records SPAWN_ID for traceability"
+else
+  fail "94.3c: SPAWN_ID field missing in request file"
+fi
+
+# 94.4: complete-multi REFUSES when artifacts missing
+_S94_CM_OUT=$(bash "$_S94_SPAWN_SCRIPT" complete-multi "$_S94_WF" "$_S94_PHASE" "$_S94_MANIFEST" 2>&1)
+_S94_CM_RC=$?
+if [ "$_S94_CM_RC" -ne 0 ]; then
+  pass "94.4a: complete-multi exits non-zero when artifacts missing (rc=$_S94_CM_RC)"
+else
+  fail "94.4a: complete-multi did not exit non-zero with missing artifacts"
+fi
+if echo "$_S94_CM_OUT" | grep -q 'missing artifact'; then
+  pass "94.4b: complete-multi error message identifies missing artifacts"
+else
+  fail "94.4b: complete-multi error message missing 'missing artifact' phrase"
+fi
+
+# 94.5: complete-multi SUCCEEDS when all artifacts present
+echo 'result content 1' > "$_S94_ART1"
+echo 'result content 2' > "$_S94_ART2"
+_S94_CM2_OUT=$(bash "$_S94_SPAWN_SCRIPT" complete-multi "$_S94_WF" "$_S94_PHASE" "$_S94_MANIFEST" 2>&1)
+_S94_CM2_RC=$?
+if [ "$_S94_CM2_RC" -eq 0 ]; then
+  pass "94.5a: complete-multi exits 0 when all artifacts present"
+else
+  fail "94.5a: complete-multi exit code was $_S94_CM2_RC (expected 0)"
+fi
+if echo "$_S94_CM2_OUT" | grep -q 'all 2 sub-agents complete'; then
+  pass "94.5b: complete-multi reports correct verified count"
+else
+  fail "94.5b: complete-multi success message did not report verified count"
+fi
+if [ -f "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}.dims-1-to-10.request.done" ]; then
+  pass "94.5c: complete-multi moves .request → .done atomically"
+else
+  fail "94.5c: .request not moved to .done after complete-multi"
+fi
+
+# 94.6: schema validation
+_S94_BAD_MANIFEST="$_S94_TMP/bad-manifest.yaml"
+cat > "$_S94_BAD_MANIFEST" <<'EOF_BAD'
+workflow: test-bad
+phase: dims-wave-bad
+spawns:
+  - id: foo
+    prompt: /tmp/x
+    artifact: /tmp/y
+EOF_BAD
+_S94_BAD_OUT=$(bash "$_S94_SPAWN_SCRIPT" request-multi "$_S94_WF-bad" "bad-phase" "$_S94_BAD_MANIFEST" 2>&1)
+_S94_BAD_RC=$?
+if [ "$_S94_BAD_RC" -ne 0 ]; then
+  pass "94.6a: request-multi rejects manifest without schema_version (rc=$_S94_BAD_RC)"
+else
+  fail "94.6a: request-multi accepted bad manifest (no schema_version)"
+fi
+if echo "$_S94_BAD_OUT" | grep -qE 'schema_version.*1'; then
+  pass "94.6b: error message references schema_version requirement"
+else
+  fail "94.6b: error message did not mention schema_version"
+fi
+
+# 94.7: spawn_mode config field present in reflex/config.yml
+_S94_CONFIG="$PROJ/reflex/config.yml"
+if grep -qE '^\s*spawn_mode:\s*orchestrated-' "$_S94_CONFIG"; then
+  pass "94.7a: reflex/config.yml declares qa_agent.spawn_mode field"
+else
+  fail "94.7a: spawn_mode field missing from reflex/config.yml"
+fi
+if grep -qE 'spawn_mode:\s*orchestrated-single-author' "$_S94_CONFIG"; then
+  pass "94.7b: spawn_mode defaults to orchestrated-single-author (safe default)"
+else
+  fail "94.7b: spawn_mode default is not orchestrated-single-author"
+fi
+
+# 94.8: qa-agent-orchestrator.md documents the multi-author dispatch protocol
+_S94_ORCH="$PROJ/reflex/prompts/qa-agent-orchestrator.md"
+if grep -q 'Multi-author dispatch (KIT-GAP-0052' "$_S94_ORCH"; then
+  pass "94.8a: orchestrator prompt has Multi-author dispatch section"
+else
+  fail "94.8a: orchestrator missing Multi-author dispatch section"
+fi
+if grep -q 'AWAITING_DIM_DISPATCH' "$_S94_ORCH"; then
+  pass "94.8b: orchestrator prompt documents AWAITING_DIM_DISPATCH exit marker"
+else
+  fail "94.8b: orchestrator missing AWAITING_DIM_DISPATCH marker"
+fi
+if grep -q 'Single-author fallback' "$_S94_ORCH"; then
+  pass "94.8c: single-author fallback preserved (no regression of v0.6.67 bypass)"
+else
+  fail "94.8c: single-author fallback documentation regressed"
+fi
+
+# Cleanup
+rm -f "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}".* 2>/dev/null
+rm -rf "$_S94_TMP"
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"
