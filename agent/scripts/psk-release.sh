@@ -125,6 +125,7 @@ case "${1:-}" in
     run_bootstrap_gate
     START_VERSION="$(git -C "$PROJ_ROOT" describe --tags --abbrev=0 2>/dev/null || echo "")"
     rm -f "$PROJ_ROOT/agent/.release-state/.validate-stamp"
+    rm -f "$PROJ_ROOT/agent/.release-state/.validation-passed.release"  # KIT-GAP-0068: stale idempotency marker
     bash "$SCRIPT_DIR/psk-dispatch.sh" release init
     exec bash "$SCRIPT_DIR/psk-dispatch.sh" release next
     ;;
@@ -132,6 +133,7 @@ case "${1:-}" in
     run_bootstrap_gate
     START_VERSION="$(git -C "$PROJ_ROOT" describe --tags --abbrev=0 2>/dev/null || echo "")"
     rm -f "$PROJ_ROOT/agent/.release-state/.validate-stamp"
+    rm -f "$PROJ_ROOT/agent/.release-state/.validation-passed.release"  # KIT-GAP-0068: stale idempotency marker
     bash "$SCRIPT_DIR/psk-dispatch.sh" release init --refresh
     exec bash "$SCRIPT_DIR/psk-dispatch.sh" release next
     ;;

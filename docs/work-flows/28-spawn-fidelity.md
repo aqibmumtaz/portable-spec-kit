@@ -160,6 +160,38 @@ Each bypass is for genuine emergencies only — each removes a structural guaran
 - **Synthesis detected in cycle-N findings.yaml** → cycle-(N+1) Dim 27 flags it as recursive guard. The cycle-N pass is annotated as suspect; its findings do not count toward convergence.
 - **Spawn-coverage regression** (a kit script does inline AI work without `psk-spawn.sh`) → Dim 28 grep-detects on next reflex pass; filed as `scope:kit` finding with `genericity_proof` routed through PKFL.
 
+## Multi-author dispatch (v0.6.72+ — KIT-GAP-0052)
+
+When a workflow needs N parallel sub-agents (e.g. QA-Orchestrator dispatching 4 dim-agents per wave), use the **multi-spawn primitives** added to `psk-spawn.sh` in v0.6.72:
+
+| Command | Purpose |
+|---|---|
+| `bash agent/scripts/psk-spawn.sh request-multi <wf> <phase> <manifest>` | Reads YAML manifest declaring N (id, prompt, artifact) tuples. Creates N per-spawn request files. Marks workflow state `AWAITING:MULTI_SUBAGENT_SPAWN`. Main session fans out N parallel Task subagents in one response. |
+| `bash agent/scripts/psk-spawn.sh complete-multi <wf> <phase> <manifest>` | Verifies all N artifacts exist; atomic — refuses with exit 1 if any artifact is missing. |
+
+**Manifest schema** (`schema_version: 1`):
+
+```yaml
+schema_version: 1
+workflow: reflex-pass-cycle-NN-pass-NNN
+phase: qa-dims-wave-1
+spawns:
+  - id: dims-1-to-10
+    prompt: <PASS_DIR>/dim-prompts/dims-1-to-10.md
+    artifact: <PASS_DIR>/partial-findings-dims-1-to-10.yaml
+  - id: dims-11-to-20
+    prompt: <PASS_DIR>/dim-prompts/dims-11-to-20.md
+    artifact: <PASS_DIR>/partial-findings-dims-11-to-20.yaml
+```
+
+**QA-Orchestrator three-path dispatch** (controlled by `qa_agent.spawn_mode` in `reflex/config.yml`):
+
+1. **Multi-author dispatch** (KIT-GAP-0052, opt-in via `spawn_mode: orchestrated-multi-author`) — orchestrator writes wave-manifest.yaml + dim-prompts + invokes `request-multi` + exits `AWAITING_DIM_DISPATCH`. Main session fans out N parallel Task subagents, calls `complete-multi`, re-spawns orchestrator for Phase 3 synthesis. ~4× wall-clock speedup vs sequential.
+2. **Task-inline spawn** — orchestrator invokes Task tool calls itself when Task is callable from leaf-agent surface.
+3. **Single-author fallback** (v0.6.67 documented bypass) — orchestrator runs all dims sequentially when Task tool is unavailable. Verdict DENIED by default per `single-author-fallback-verdict` rule.
+
+**Recursive prompt-validation gate** (v0.6.74+ — KIT-GAP-0055 §Sub-Agent Prompt Fidelity): `psk-spawn.sh request` and `request-multi` lint each prompt via `psk-prompt-lint.sh --strict` BEFORE marking AWAITING. Lint failure → spawn REFUSED (exit 4), no inline-fallback. Applies at every spawn depth.
+
 ## Related Flows
 
 - `portable-spec-kit.md` §Spawn Fidelity — the mandatory rule (6th reliability layer)
@@ -167,3 +199,4 @@ Each bypass is for genuine emergencies only — each removes a structural guaran
 - `.portable-spec-kit/skills/spawn-fidelity.md` — Standard Spawn Recipe (8-step Dev-Agent fix protocol for Dim 28 findings)
 - `docs/work-flows/25-workflow-fidelity.md` — Flow 25 (parent reliability layer)
 - `docs/work-flows/26-plan-execution-protocol.md` — Flow 26 (sibling reliability layer)
+- `docs/work-flows/31-sub-agent-prompt-fidelity.md` — Flow 31 (9th reliability layer — prompt-validation gate)

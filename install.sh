@@ -542,9 +542,9 @@ install_reflex() {
     # Curl fallback — static list (must be kept in sync manually for network installs)
     local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
       anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
-      check-abort-integrity.sh check-audit-completeness.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh \
+      check-abort-integrity.sh check-audit-completeness.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh check-test-vacuousness.sh \
       console-probe.ts cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
-      findings-registry.sh \
+      findings-registry.sh heal-iter-status.sh \
       identify-integration-probes.sh intake.sh kit-evolution.sh log-hardening.sh loop.sh mandate-audit.sh \
       orchestration-phase-6-5.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh scaffold-behavioral-tests.sh \
       server-lifecycle.sh smoke-test-examples.sh state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh \

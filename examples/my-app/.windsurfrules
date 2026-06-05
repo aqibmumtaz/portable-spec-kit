@@ -1,7 +1,7 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.72 -->
+<!-- Framework Version: v0.6.82 -->
 
-**Version:** v0.6.72 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**Version:** v0.6.82 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
 **GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2865 (2720 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
@@ -46,7 +46,7 @@ bash agent/scripts/psk-bootstrap-check.sh --remediate
 
 ## Reliability Architecture
 
-The kit uses eight enforcement layers to prevent agents from skipping steps, shipping inconsistent content, substituting synthesis for adversarial audit, or quietly substituting convenient command variants for canonical ones. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**; §Spawn Fidelity (6th layer) gates **sub-agent invocations**; §Workflow Declaration Schema (7th layer) gates **workflow shape**; §Kit Fidelity (8th layer) gates **kit-command invocation shape** and converts every operational friction into a tracked kit improvement.
+The kit uses eleven enforcement layers to prevent agents from skipping steps, shipping inconsistent content, substituting synthesis for adversarial audit, quietly substituting convenient command variants for canonical ones, constructing sub-agent prompts that deviate semantically from kit rules, claiming "verified-fixed" for findings whose fix cannot be mechanically replayed, or executing anything other than the user's exact instruction. The agent cannot bypass these — they are structural, not trust-based. Layers 2A / 2B / 3 (this section) gate **content**; §Workflow Fidelity (4th layer) gates **process**; §Plan Execution Protocol (5th layer) gates **plan-shaped work**; §Spawn Fidelity (6th layer) gates **sub-agent invocations**; §Workflow Declaration Schema (7th layer) gates **workflow shape**; §Kit Fidelity (8th layer) gates **kit-command invocation shape**; §Sub-Agent Prompt Fidelity (9th layer) gates **prompt content** at every spawn depth so no agent — at any level — can deviate semantically from kit rules; §Regression Replay Gate (10th layer) gates **fix-verification claims** so every "verified-fixed" finding actually has its regression replayed before any verdict can advance; §Instruction Fidelity (11th layer) gates **agent-vs-user instruction execution** so every agent at every spawn depth executes the user's instruction exactly — no expanded scope, no reduced scope, no changed form, no reordered defaults.
 
 **Reliability model — dual critic at the end of each workflow, not per step.** A workflow runs its steps normally; at the end it enters a single validation gate that pairs two critics. Both must pass. Either failure blocks the workflow from completing.
 
@@ -463,6 +463,95 @@ Operators extend by editing `.portable-spec-kit/kit-commands.yml` directly. PSK0
 **Emergency bypass.** `PSK_KIT_FIDELITY_DISABLED=1` skips wrapper enforcement on a given invocation. Logged to `agent/.bypass-log` per PSK027. For genuine emergencies only — each invocation is an explicit operator decision to remove a structural guarantee. Repeated bypassing surfaces as ERROR in sync-check.
 
 > **Skill: Kit Fidelity** — full wrapper protocol, deviation-log format, friction-as-feedback recipe, inventory-extension procedure, worked examples in `.portable-spec-kit/skills/kit-fidelity.md`. Loaded on any kit command invocation when the wrapper pauses with AWAITING_RATIONALE.
+
+---
+
+## Sub-Agent Prompt Fidelity (MANDATORY — every prompt at every spawn depth honors kit rules verbatim)
+
+**This is the 9th reliability layer — prompt-content shape, enforced structurally.** §Spawn Fidelity (6th) governs spawn invocation routing. §Kit Fidelity (8th) governs operator-command form. This layer governs *what's inside the prompt* a parent agent passes to its sub-agent — and recursively, every sub-sub-agent at any depth. Without it, agents can construct prompts that misinterpret kit rules and the sub-agent inherits the deviation verbatim. That is the failure mode that produced the GRANTED-without-gates incident on cycle-27/28 (the sub-agent declared GRANTED based on the parent's prompt misreading of the v0.6.67 documented-fallback bypass).
+
+**The principle.** Every prompt that calls itself a "kit rule" reference MUST cite the rule via `kit_rule_citations:` frontmatter listing rule ids by name. Each cited rule's text MUST appear verbatim in the prompt body. Sub-agents read the kit rule via `psk-rule.sh lookup <rule-id>` before any decision; if the prompt body contradicts the kit verbatim, the kit wins. Sub-agents declare evidence (findings, observations); kit scripts declare decisions (verdict, scope routing, severity, bucket, disposition).
+
+**Six structural-enforcement mechanisms (not trust-based).**
+
+1. **Rule manifest at `.portable-spec-kit/kit-rules.yml`.** Single source of truth — every actionable kit rule carries an `id`, `surface: file:line`, `applies_to: <decision-class>`, and verbatim `text`. The manifest is committed to git so every agent reads the same rules.
+
+2. **Lookup helper `bash agent/scripts/psk-rule.sh lookup <rule-id>`.** Programmatic verbatim access — sub-agent prompts use script output, not paraphrase. Also supports `list` / `applies-to <class>` / `validate <id> <text>` for byte-for-byte text validation.
+
+3. **Prompt lint `bash agent/scripts/psk-prompt-lint.sh` + PSK042 sync-check.** Discovers every sub-agent prompt under the kit (reflex/prompts/, .portable-spec-kit/workflows/*/phases/, agent/plans/*/prompts/). For each prompt, checks: (a) if it references decision classes (verdict / GRANTED / scope / severity / Bucket / disposition), it MUST have `kit_rule_citations:` frontmatter; (b) every cited rule's first-line text MUST appear verbatim in the prompt body. PSK042 fires advisory in `--quick`, ADVISORY-escalating-to-ERROR in `--full` (migration window through v0.6.75).
+
+4. **Mandatory preamble in every sub-agent prompt** (enforced by prompt-lint `--check-preamble`):
+   > *"Before any decision, run `psk-rule.sh lookup <rule-id>` and read the kit verbatim. If this prompt body contradicts kit verbatim, **kit wins**. You declare evidence; kit declares decisions."*
+
+5. **Sub-agent decision-write ban.** Sub-agents emit EVIDENCE (findings, observations, partial-findings YAML). Verdict/decision logic lives in kit scripts (`gates.sh`, `reflex/run.sh::write_verdict`, `file-bugs.sh`, etc.). Any `verdict:` field a sub-agent writes in `qa-result.md` is IGNORED — verdict computed from `findings.yaml` count + gate outcomes only. Structurally impossible for a sub-agent to fabricate GRANTED.
+
+6. **Recursive inheritance via psk-spawn.sh prompt-validation gate.** `psk-spawn.sh request` now lints the prompt via `psk-prompt-lint.sh --strict` BEFORE marking `AWAITING_SUBAGENT`. Lint failure → spawn REFUSED (exit 4) → no inline-fallback (same asymmetry as §Spawn Fidelity). The gate fires regardless of spawn depth — when a sub-agent calls `psk-spawn.sh request` to spawn a sub-sub-agent, the same prompt-validation gate fires on the new prompt. 100% coverage at every spawn depth.
+
+**What this closes (the 9+ deviation classes).** Verdict declaration · scope (kit/target/meta) · severity (CRITICAL/MAJOR/MINOR/NIT) · bucket (A/B/C/D) · disposition (fix/reject/defer/etc.) · citation format (verbatim vs paraphrase) · recursive sub-sub-agent inheritance · phase-done assertion · test coverage `[x]` claims (defense-in-depth with PSK005 R→F→T).
+
+**Covered surfaces.** Every prompt file under `reflex/prompts/`, `.portable-spec-kit/workflows/*/phases/`, `agent/plans/<slug>/prompts/`. Plus every new prompt file added after v0.6.74 — psk-spawn.sh refuses spawns whose prompts fail lint.
+
+**Emergency bypass.** `PSK_PROMPT_FIDELITY_DISABLED=1` allows spawn even when prompt fails lint. `PSK_PSK042_DISABLED=1` skips the sync-check rule. Both logged to `agent/.bypass-log` per PSK027 — repeated bypassing surfaces as ERROR in sync-check. For genuine emergencies only.
+
+> **Skill: Sub-Agent Prompt Fidelity** — full rule manifest schema, psk-rule.sh + psk-prompt-lint.sh + psk-spawn.sh gate semantics, decision-write ban implementation, preamble template, retrofit guide for legacy prompts in `docs/work-flows/31-sub-agent-prompt-fidelity.md` (v0.6.74 deliverable).
+
+---
+
+## Regression Replay Gate (MANDATORY — every "verified-fixed" finding's regression replays before any verdict advances)
+
+**This is the 10th reliability layer — fix-verification shape, enforced structurally.** §Sub-Agent Prompt Fidelity (9th) governs prompt content so sub-agents cite kit rules verbatim. This layer governs *fix-verification claims* — when a sub-agent declares a finding `status: verified-fixed`, the kit MUST mechanically replay the regression vector and verify the assertion before any pass can advance to GRANTED. Without this, a sub-agent can mark a finding fixed without running the test — same trust-based failure mode §Sub-Agent Prompt Fidelity closed for rule citations, repeated one level down at the verification surface.
+
+**The principle.** Every finding in `findings.yaml` that carries `status: verified-fixed` or `status: closed` MUST also carry a `regression_vector` block with `invocation_verbatim` (the bash command that originally reproduced the bug) and `expected_assertion` (the post-fix expected output or exit-code). At the end of every pass, the kit's 14th mechanical gate replays each `invocation_verbatim` and matches against `expected_assertion`. Mismatch → gate fails → pass cannot advance to GRANTED. Sub-agents emit verification *evidence* (the regression vector); the kit emits the verification *decision* (replay matches assertion).
+
+**Three structural-enforcement mechanisms (not trust-based).**
+
+1. **`agent/scripts/psk-regression-replay.sh` foundation script (v0.6.75 P1).** Parses `findings.yaml` for entries with `status: verified-fixed | closed` AND `regression_vector.invocation_verbatim` present. For each such entry: replays the command in a sandbox, captures stdout + stderr + exit code, compares against `expected_assertion`. Modes: `--strict` (exit non-zero on any mismatch; gate use), `--dry` (report what would replay without executing). Awk-based YAML parser — no jq dependency. Stack-agnostic — works for bash / python / node / curl / any command an invocation_verbatim can express.
+
+2. **14th mechanical gate `regression-replay` in `reflex/lib/gates.sh` (v0.6.76 P2).** Runs after the 13th gate `audit-completeness`. Invokes `psk-regression-replay.sh --strict` against the current PASS_DIR. Any "verified-fixed" claim whose replay does not match expected_assertion → gate FAILS → pass cannot advance to GRANTED. Bypass: `REGRESSION_REPLAY_GATE_DISABLED=1` (genuine emergencies only — logged to `agent/.bypass-log` per PSK027).
+
+3. **PSK043 sync-check rule + verdict-write immutability (v0.6.76 P3).** PSK043 (`check_psk043_regression_replay_integrity`) audits the last 5 `findings.yaml` files for entries with `status: verified-fixed | closed` that lack `regression_vector.invocation_verbatim` — such findings make unprovable claims because the fix cannot be mechanically replayed by gate 14. Severity: ADVISORY in `--quick`, ERROR in `--full`. Bypass: `PSK_PSK043_DISABLED=1`. Companion: `reflex/run.sh::write_verdict()` writes `gate_validated: true` when gates.sh actually validated the verdict, `gate_validated: false` for provisional verdicts. Before overwriting `verdict.md`, the function checks if the file already has `gate_validated: true` — if yes, REFUSES overwrite. Sub-agent post-write attempts (or stale autoloop resumes) are structurally blocked from clobbering a gate-validated GRANTED. Bypass: `PSK_VERDICT_IMMUTABILITY_DISABLED=1`.
+
+**What this closes (the verification-trust class).** A sub-agent claims `status: verified-fixed` for a finding without running the test → gate 14 replays the regression and catches the lie. A sub-agent claims a verdict overwrites a gate-validated GRANTED → write_verdict() refuses the overwrite. A pass authors findings without `regression_vector.invocation_verbatim` → PSK043 advisory in `--quick`, ERROR in `--full`. Together: no fix is "verified" without mechanical proof; no GRANTED is final without gate-validated provenance.
+
+**Covered surfaces.** Every `reflex/history/cycle-*/pass-*/findings.yaml`. Every `reflex/history/cycle-*/pass-*/verdict.md`. The 14th gate fires after every reflex Dev-Agent pass (Class B′ monolithic-by-design — see §Workflow Declaration Schema). New finding-emitting surfaces added after v0.6.76 — must populate `regression_vector` before claiming `verified-fixed` or be downgraded to `acknowledged` until they do.
+
+**Emergency bypass.** `REGRESSION_REPLAY_GATE_DISABLED=1` skips the 14th gate. `PSK_PSK043_DISABLED=1` skips the sync-check rule. `PSK_VERDICT_IMMUTABILITY_DISABLED=1` allows verdict overwrite. All three logged to `agent/.bypass-log` per PSK027 — repeated bypassing surfaces as ERROR in sync-check. For genuine emergencies only.
+
+> **Skill: Regression Replay Gate** — full `psk-regression-replay.sh` API (parse/replay/match), 14th gate semantics, PSK043 audit details, verdict-immutability protocol, regression-vector authoring guide in `docs/work-flows/17-reflex.md` §Mechanical Gates (extended in v0.6.76).
+
+---
+
+## Instruction Fidelity (MANDATORY — every agent at every depth executes the user's instruction exactly)
+
+**This is the 11th reliability layer — instruction-scope shape, enforced structurally and behaviorally.** Every other fidelity layer in the kit gates *agent-vs-kit* interactions. §Workflow Fidelity (4th) gates how the agent follows kit-defined workflows. §Spawn Fidelity (6th) gates how the agent routes sub-agent spawns. §Kit Fidelity (8th) gates how the agent chooses canonical kit-command forms. §Sub-Agent Prompt Fidelity (9th) gates how sub-agent prompts cite kit rules. None of those gates *agent-vs-user* — the deviation class where the agent reads a user instruction and then executes something different. Layer 11 closes that gap.
+
+**The principle.** Every agent in the kit (main agent, sub-agent, sub-sub-agent at any spawn depth) MUST execute the user's stated instruction exactly. The agent does NOT:
+
+- Expand scope the user did not authorize (no extra steps, no side-fixes, no "while I'm here" refactors).
+- Reduce scope the user did authorize (no skipped steps, no "good enough" partial delivery, no quietly-narrowed coverage).
+- Change form (a verb the user used is the verb the agent executes — `commit` is not `commit-and-push`, `edit` is not `rewrite`, `verify` is not `implement`, `plan` is not `plan-and-build`).
+- Reorder when sequence matters (kit canonical defaults like autoloop are the default; deviating from a canonical default requires the user's explicit authorization, never the agent's judgment).
+- Substitute its own preference when the user's instruction is clear (a different approach can be proposed, but only by asking — never by silently doing).
+
+When the user's instruction is ambiguous, the agent asks. When the agent believes a different approach is better, the agent proposes and waits. The agent's judgment applies to *how* to execute, never to *whether* to execute exactly what was asked. Bypass: only when the user explicitly authorizes scope expansion, form change, or default override — that authorization is the user's, not the agent's to infer.
+
+This is the same trust-based failure mode the prior fidelity layers close at the agent-vs-kit boundary, repeated at the agent-vs-user boundary. The principle is generic — it covers every interaction shape, not a specific command type, command list, or surface. Any deviation from the user's exact instruction is a Layer 11 violation regardless of how it was rationalized.
+
+**Three structural-enforcement mechanisms (hybrid mechanical + behavioral, like §Workflow Fidelity).**
+
+1. **Rule manifest entry — `instruction-fidelity-honor-exact-scope` in `.portable-spec-kit/kit-rules.yml`.** Single source of truth for the generic principle. Every sub-agent prompt that interprets user intent MUST cite this rule via `kit_rule_citations:` frontmatter with verbatim body text. Layer 9's PSK042 sync-check enforces verbatim citation. The behavioral expectation lives in the rule body; the mechanical enforcement is Layer 9 catching prompts that omit the citation.
+
+2. **Per-script pre-flight checks (mechanical sub-cases).** Where the user's instruction has a canonical default that a fresh invocation would silently override (e.g. autoloop runs to convergence in one cycle; fresh `--loop` would defeat the `.active-cycle` pin), the kit ships a pre-flight check at the script entry that refuses the deviating invocation with an actionable error. Bypass requires a documented env var, logged to `agent/.bypass-log` per PSK027. Initial coverage: `reflex/run.sh` autoloop. Additional pre-flights ship per the retrofit guide in flow doc 32 — each long-running canonical command earns its own pre-flight when its in-progress state pattern is identified.
+
+3. **Sync-check rules (post-facto pattern detection).** PSK044 audits known mechanical patterns (e.g. `reflex/history/cycle-*/` for fresh-invoke-instead-of-resume), advisory in `--quick`, configurable tolerance, bypass `PSK_PSK044_DISABLED=1`. Additional rules expand coverage as new mechanical patterns are identified. The sync-check layer surfaces deviations the pre-flight may have been bypassed for; combined with PSK027 bypass-abuse detection, repeated deviation escalates to ERROR.
+
+**What this closes.** Every form of agent-vs-user deviation, regardless of surface. The principle is generic; the implementations cover the mechanical cases that have been identified. The behavioral cases (where the deviation surfaces in conversation-level scope expansion rather than a script invocation) are closed by rule-citation discipline at the sub-agent boundary — any prompt that interprets user intent cites the verbatim rule, so the sub-agent reading the prompt has the contract in front of it before deciding.
+
+**Covered surfaces.** Behaviorally, every agent-user interaction. Mechanically, every script with a pre-flight check (initial: `reflex/run.sh`; expansion per flow doc 32 retrofit guide). New surfaces added when a new mechanical pattern is identified.
+
+**Emergency bypass.** Mechanical pre-flights: documented env var per surface (e.g. `REFLEX_FORCE_NEW_CYCLE=1`). Sync-check rules: `PSK_PSK044_DISABLED=1`, etc. Behavioral rule citation: `PSK_PROMPT_FIDELITY_DISABLED=1` (existing Layer 9 bypass). All logged to `agent/.bypass-log` per PSK027 — repeated bypassing surfaces as ERROR in sync-check.
+
+> **Skill: Instruction Fidelity** — generic principle reference, mechanical sub-case implementations, retrofit guide for adding new pre-flight surfaces, sub-agent prompt citation pattern in `docs/work-flows/32-instruction-fidelity.md`.
 
 ---
 

@@ -91,7 +91,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.72</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.82</div>
     <div><strong style="color:#dce4f0;">Date:</strong> May 2026</div>
   </div>
 </div>
@@ -318,6 +318,60 @@
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
 </ul>
 
+<h3>v0.6.74 — Sub-Agent Prompt Fidelity 9th Reliability Layer</h3>
+<ul>
+  <li>Closes KIT-GAP-0055 — sub-agent semantic-deviation class. The kit's 8 prior layers govern spawn routing, workflow ordering, plan schema, command form — but not what's inside a sub-agent's prompt. Layer 9 closes this structurally at every spawn depth.</li>
+  <li><strong>kit-rules.yml manifest:</strong> 19 actionable rules covering verdict authority, scope / severity / bucket / disposition classification, spawn / workflow rules, citation rules, convergence criteria.</li>
+  <li><strong>psk-rule.sh lookup helper:</strong> programmatic verbatim rule access. Sub-agent prompts use script output, not paraphrase.</li>
+  <li><strong>psk-prompt-lint.sh + PSK042 sync-check:</strong> validates <code>kit_rule_citations:</code> frontmatter + body verbatim quotes. Advisory in --quick, escalates in --full.</li>
+  <li><strong>Mandatory preamble + decision-write ban:</strong> "Before any decision, run psk-rule.sh lookup. If prompt body contradicts kit verbatim, kit wins. You declare evidence; kit declares decisions." Sub-agent verdict field ignored; verdict computed from gates + findings.</li>
+  <li><strong>psk-spawn.sh prompt-validation gate:</strong> lints prompt via psk-prompt-lint.sh --strict BEFORE marking AWAITING_SUBAGENT. Lint failure → spawn REFUSED (exit 4), no inline-fallback. Recursive at every spawn depth.</li>
+  <li><strong>Tests:</strong> 23/23 in Section 95. 97/97 prompts lint clean after migration retrofit.</li>
+</ul>
+
+<h3>v0.6.73 — Convergence-prep + citable_quote Mandate</h3>
+<ul>
+  <li>KIT-GAP-0054: dim-agent <code>citable_quote</code> MUST include <code>file:line</code> prefix. Without it gate-13 audit-completeness flags multi-author dispatch passes as synthesis-suspect (signature: <code>citable_quote_coverage &lt;70%</code>).</li>
+  <li>4 stale test fixture fixes: f83 AC2 SAMPLE_PASS auto-select most recent pass dir, 84.9 bootstrap threshold 50→30, 87.12 open-findings tolerance 0→≤10, G3 grep accepts both legacy and current relaxation-message wordings.</li>
+  <li>Tests: 2764/2764 passing.</li>
+</ul>
+
+<h3>v0.6.72 — QA-Orchestrator Multi-Author Dispatch</h3>
+<ul>
+  <li>Closes 6-pass MAJOR QA-ORCH-COVERAGE finding via §Spawn Fidelity Standard Spawn Recipe.</li>
+  <li>KIT-GAP-0052 P1: <code>psk-spawn.sh request-multi</code> + <code>complete-multi</code> primitives. One phase, N parallel sub-agent spawns via YAML manifest. State machine marks <code>AWAITING:MULTI_SUBAGENT_SPAWN</code>.</li>
+  <li>KIT-GAP-0052 P2-3: QA-Orchestrator three-path dispatch (multi-author &gt; Task-inline &gt; single-author). New <code>qa_agent.spawn_mode</code> config field. spawn-qa.sh awk parse + qa-task.md plumbing.</li>
+  <li>Tests: 20/20 in Section 94. Verified end-to-end on cycle-26-pass-002 (3 parallel dim-agents → GRANTED).</li>
+</ul>
+
+<h3>v0.6.71 — PSK005 Recursion Guard</h3>
+<ul>
+  <li>KIT-GAP-0051: 3-way infinite recursion between <code>psk-sync-check</code> ↔ <code>test-release-check</code> ↔ <code>97-kit-fidelity</code>. Observed 2.6K+ procs, 8h gates.sh hang.</li>
+  <li>Fix: <code>test-release-check.sh</code> exports <code>PSK_IN_TEST_RELEASE_CHECK=1</code> sentinel; <code>check_rft_gate()</code> short-circuits when sentinel set.</li>
+  <li>Verified: test-release-check 8h hung → 24s clean, sync-check 38/38, autoloop unblocked.</li>
+</ul>
+
+<h3>v0.6.70 — Sync-Check Perf Sweep + Gates Trap</h3>
+<ul>
+  <li>Sync-check wall-clock 60-90s → 23s clean. 6 KIT-GAPs closed.</li>
+  <li>KIT-GAP-0050: provisional <code>verdict.md</code> pre-write before gates.sh runs. L2 EXIT trap sees verdict + skips INTERRUPTED stamp.</li>
+  <li>KIT-GAP-0048: PSK031 CYC-suffix peel-order two-phase strip.</li>
+  <li>KIT-GAP-0049 #1-4: template-quality mtime cache, PSK040 awk single-pass, gate-3 dropped --with-tests, dev-self-verify timeout wrap.</li>
+</ul>
+
+<h3>v0.6.69 — Autoloop Convergence Root-Cause Fixes</h3>
+<ul>
+  <li>KIT-GAP-0017/0019: closes the cycle-22-pass-004 reattachment chase that consumed v0.6.67/v0.6.68 sessions. 6 root-cause bugs fixed in autoloop state machine.</li>
+  <li>PSK031 awk-single-pass refactor — eliminated ~2,250 cumulative subshells.</li>
+  <li>KIT-GAP-0010: widened preconditions HEAD-pattern walk-back accepting intermediate chore commits.</li>
+</ul>
+
+<h3>v0.6.68 — Kit-Machinery Sweep</h3>
+<ul>
+  <li>KIT-GAP-0012: PSK031 alias-map canonical_id lookup before flagging duplicate fingerprints.</li>
+  <li>5 KIT-GAPs closed (0009 through 0014).</li>
+</ul>
+
 <h3>v0.6.67 — Recursion Fixes: Legitimate-Exception Taxonomy</h3>
 <ul>
   <li><strong>Second production validation of §Kit Fidelity friction-as-feedback loop:</strong> Cycle-22 reflex autoloop surfaced 4 recursive false-positives (PSK040, PSK041, Dim 27) + the KIT-GAP-0013 hook-installer mangling bug. v0.6.67 closes them via a shared <strong>legitimate-exception taxonomy</strong> so kit rules can distinguish operator-controlled non-pending states from real workaround anti-patterns.</li>
@@ -388,7 +442,7 @@
   <li><strong>HF1 — Reflex spawn-qa/spawn-dev retrofit:</strong> <code>reflex/lib/spawn-qa.sh</code> and <code>reflex/lib/spawn-dev.sh</code> route through <code>psk-spawn.sh</code>, inheriting the no-inline-fallback contract automatically.</li>
   <li><strong>HF1b — Orchestrate --update per-phase split:</strong> <code>psk-orchestrate.sh --update</code> U3-U10 split from single batch into per-U-phase spawns. Closes the 15h-batch context-overflow risk surfaced in v5 Phase C.</li>
   <li><strong>HF2 — psk-critic-spawn retrofit:</strong> All 6 critic templates (STEP_9_VALIDATION, FEATURE_COMPLETE, INIT, REINIT, NEW_SETUP, EXISTING_SETUP) route through the spawn-fidelity wrapper.</li>
-  <li><strong>HF3 — Persistent retry queue:</strong> <code>agent/.workflow-state/retry-queue.yml</code> + <code>psk-retry-queue.sh</code> CLI. Exponential backoff (5min → 30min → 2h → 6h → AWAITING_HUMAN_ARBITRATION). Survives session ends.</li>
+  <li><strong>HF3 — Persistent retry queue:</strong> <code>agent/.workflow-state/retry-queue.yml</code> + <code>psk-retry-queue.sh</code> CLI. Exponential backoff (5min → 15min → 45min → 2h → 6h → AWAITING_HUMAN_ARBITRATION). Survives session ends.</li>
   <li><strong>HF4 — Resume-on-session-start MANDATORY rule:</strong> First agent action on every session entry runs <code>psk-resume-bootstrap.sh</code>. PSK029 sync-check detects sessions that started without bootstrap.</li>
   <li><strong>HF4b — Workflow watchdog + phase idempotency:</strong> <code>psk-workflow-watchdog.sh</code> (15min WARN / 1h HUNG / 24h STALE) + phase idempotency contract (gate-check + artifact-check + atomic writes + idempotent commits).</li>
   <li><strong>HF5/HF6 — Synthesis-detection probe + 13th gate:</strong> <code>reflex/lib/check-audit-completeness.sh</code> 6-signature analysis. Gate 13 <code>audit-completeness</code> blocks at synthesis-confirmed verdict. PSK026 sync-check mirrors for critic-result.md files.</li>
@@ -980,7 +1034,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.6.72 &bull; May 2026
+  Portable Spec Kit &bull; v0.6.82 &bull; May 2026
 </div>
 
 </div>
@@ -998,7 +1052,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.72 &bull; May 2026</div>
+    <div class="badge">v0.6.82 &bull; May 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

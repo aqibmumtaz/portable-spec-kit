@@ -44,6 +44,7 @@ agent/.release-state/adl-drafts.md
 # Prep-release + validate runtime artifacts (ephemeral, should not be committed)
 agent/.bypass-log
 agent/.release-state/.validate-stamp
+agent/.release-state/.validation-passed.*
 agent/.release-state/critic-task.md
 agent/.release-state/critic-result.md
 agent/.release-state/dev-task.md

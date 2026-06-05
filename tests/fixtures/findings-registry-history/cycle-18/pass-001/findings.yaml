@@ -1,0 +1,1027 @@
+# findings.yaml — aggregated by QA-Aggregator (Phase 3)
+# cycle-18/pass-001 — kit self-test mode (v0.6.60) — regression-verification + adversarial-fresh
+# Aggregates partial-findings-dims-{1-10, 11-20, 21-28}.yaml written by 3 parallel QA-Dim-Agents.
+
+schema_version: 1
+pass_id: cycle-18-pass-001
+pass_dir: /Users/AqibMumtaz/Aqib Mumtaz/SL/Documents/Projects/portable-spec-kit/reflex/history/cycle-18/pass-001
+self_test: true
+kit_version: v0.6.60
+mode: regression-verification + adversarial-fresh-investigation
+verifier_branch: reflex/dev-cycle-17-pass-001
+verified_at: 2026-05-18T07:00:00Z
+prior_pass: reflex/history/cycle-17/pass-001
+prior_verdict: DENIED
+prior_open_findings: 53
+
+verdict_summary:
+  verdict: DENIED
+  reason: |
+    1 REGRESSION detected (QA-D15-02 widened from gap=1 to gap=2 — summary.csv pass-completion wiring
+    not landed) + 1 CRITICAL finding (QA-D6-03 cycle-17 self-audit returns synthesis-confirmed, gate 13
+    self-blocks until probe-vs-qa-usage aggregation is reconciled) + 7 MAJOR open findings.
+    Cycle-17 closed 11 of 48 regression checks (23% fix-rate); exit-criteria adherence is 4 of 10
+    items (40%) — items #2 #5 #6 #8 #10 of cycle-17 signoff explicitly required for GRANT remain open.
+  stop_signal: REGRESSION
+
+# Aggregated counts across all 3 partial files
+counts:
+  regression_checks_total: 48      # 15 (1-10) + 18 (11-20) + 15 (21-28)
+  verified_fixed: 11               # 4 + 6 + 1
+  still_open: 27                   # 11 + 8 + 8
+  regressed: 1                     # QA-D15-02 widened (gap 1 → 2)
+  partial_or_contingent: 9         # 0 + 3 + 6
+  new_findings_total: 23           # 8 + 8 + 7
+  new_by_severity:
+    CRITICAL: 1                    # QA-D6-03
+    MAJOR: 7                       # QA-D1-02, QA-D2-03, QA-D4-03, QA-D7-03, QA-D15-02-WIDENED, QA-D22-02-RESIDUAL-AUTODETECT, QA-D28-PROBE4-PSK-SPAWN-UNDECLARED
+    MINOR: 12                      # 3 + 6 + 3
+    ADVISORY: 3                    # 0 + 1 + 2
+  total_open_after_cycle_18: 50    # 27 still-open + 23 new
+  delta_open_vs_cycle_17: -3       # 53 → 50 (improving by 3)
+  fix_rate_pct: 23                 # 11 / 48
+
+# ════════════════════════════════════════════════════════════════════
+# Regression checks — aggregated across 3 partial files (48 entries)
+# Format: prior_id, dimension, classification, verdict
+# ════════════════════════════════════════════════════════════════════
+regression_checks:
+
+  # ── Dims 1-10 (15 prior findings) ──
+  - prior_id: QA-D1-01
+    dimension: 1
+    classification: verified-fixed
+    closed_by: aa811cd
+    verdict: "mechanical-script declarations added to 4 HF3/HF4 scripts (3 of 4 declared — psk-spawn.sh missed, see QA-D28-PROBE4-PSK-SPAWN-UNDECLARED below)"
+  - prior_id: QA-D2-01
+    dimension: 2
+    classification: still-open
+    verdict: "Phase 0 installer-coverage snapshot regen not fixed — saved snapshot vs live re-run still disagree"
+  - prior_id: QA-D2-02
+    dimension: 2
+    classification: still-open
+    verdict: "claims.yaml garbage entries persist — extract-claims.sh regex not filtered"
+  - prior_id: QA-D3-01
+    dimension: 3
+    classification: still-open
+    verdict: "check-rft-integrity.sh aggregator still counts MINOR rows as total_blocking"
+  - prior_id: QA-D4-01
+    dimension: 4
+    classification: verified-fixed
+    closed_by: eaefa94
+    verdict: "PSK029 no longer flags after workflow state committed"
+  - prior_id: QA-D4-02
+    dimension: 4
+    classification: verified-fixed
+    verdict: "PSK027 bypass-tamper audit clean (0/24h, 0/7d) — bypass-log naturally aged out"
+  - prior_id: QA-D5-01
+    dimension: 5
+    classification: still-open
+    verdict: "external-research.md content still skeletal — line count passes but no RFC/OWASP/paper citations"
+  - prior_id: QA-D6-01
+    dimension: 6
+    classification: verified-fixed
+    verdict: "test-count drift cleared (canonical=2522, drift_rows=0)"
+  - prior_id: QA-D6-02
+    dimension: 6
+    classification: still-open
+    verdict: "README claims 40 reliability scripts vs actual 43 — closeout item #9 partially completed"
+  - prior_id: QA-D7-01
+    dimension: 7
+    classification: still-open
+    verdict: "Dev branch unpushed (no upstream); 9 commits local-only on reflex/dev-cycle-17-pass-001"
+  - prior_id: QA-D7-02
+    dimension: 7
+    classification: still-open
+    verdict: "cycle-16/pass-001 still synthesis-confirmed — retroactive re-run not performed"
+  - prior_id: QA-D8-01
+    dimension: 8
+    classification: still-open
+    verdict: "bash eval scan surfaces 4 occurrences (psk-evolution-gauntlet, psk-workflow-state, server-lifecycle, dev-self-verify) — psk-code-review false-negative persists"
+  - prior_id: QA-D9-01
+    dimension: 9
+    classification: still-open
+    verdict: "Phase 0 helper CLI-convention consistency (# Usage docs) not addressed"
+  - prior_id: QA-D10-01
+    dimension: 10
+    classification: still-open
+    verdict: "No TOC in portable-spec-kit.md (recommended-not-blocking — unfixed)"
+  - prior_id: QA-D10-02
+    dimension: 10
+    classification: still-open
+    verdict: "extract-claims.sh CLI broken; saved claims.yaml stale (28 dimensions claim not landed)"
+
+  # ── Dims 11-20 (18 prior findings) ──
+  - prior_id: QA-D11-01
+    dimension: 11
+    classification: partially-verified
+    closed_by: af93e42
+    verdict: "Skills count fixed (27); templates count plausible (24); flow-doc count still drifts (28 claimed vs 29 disk)"
+  - prior_id: QA-D11-02
+    dimension: 11
+    classification: still-open
+    verdict: "ARD docs still lag — no v0.6.58/.59/.60 entries; ARD release-freshness sync-check not added"
+  - prior_id: QA-D12-01
+    dimension: 12
+    classification: verified-fixed
+    closed_by: 81b4640+ff6610d+01b55d6
+    verdict: "All 12 vacuous F73-F84 delegate stubs removed — 'covered via section' pattern eliminated"
+  - prior_id: QA-D12-02
+    dimension: 12
+    classification: contingent-verified
+    closed_by: 01b55d6
+    verdict: "Fix by elimination (stubs removed); test-release-check.sh underlying rule not hardened — vulnerable to future stub"
+  - prior_id: QA-CRIT-FIDELITY-F83-01
+    dimension: 20
+    classification: verified-fixed
+    closed_by: 81b4640
+    verdict: "F83 stub rewrite substantive — 12 assert/check/verdict tokens, 76 lines"
+  - prior_id: QA-CRIT-FIDELITY-F80-01
+    dimension: 20
+    classification: verified-fixed
+    closed_by: ff6610d
+    verdict: "F80 retry-queue rewrite substantive — 16 matches, 61 lines"
+  - prior_id: QA-CRIT-FIDELITY-F73-F82-CLASS
+    dimension: 20
+    classification: verified-fixed
+    closed_by: 01b55d6
+    verdict: "10 sibling F73-F84 rewrites all ≥30 lines — substantive, not template-stamped"
+  - prior_id: QA-PORT-D19-01
+    dimension: 19
+    classification: verified-fixed
+    closed_by: 678b7aa
+    verdict: "Portability fix real with operator-visible stderr on degradation — surpasses recommendation"
+  - prior_id: QA-D14-01
+    dimension: 14
+    classification: verified-fixed
+    closed_by: aa2e9b2
+    verdict: "CHANGELOG v0.6.58 heading restored — sequence v0.6.57→58→59→60 intact"
+  - prior_id: QA-META-PHIL-D18-01
+    dimension: 18
+    classification: partially-verified
+    verdict: "F73-F84 symptom fixed; Dim 29 Test-Pattern Cohesion structural probe not created"
+  - prior_id: QA-D13-01
+    dimension: 13
+    classification: still-open
+    verdict: "PSK029/PSK027 still triggering (2 violations); tech-debt-tracker not added"
+  - prior_id: QA-D13-02
+    dimension: 13
+    classification: still-open
+    verdict: "32+ files in agent/.workflow-state/; no retention policy added"
+  - prior_id: QA-D14-02
+    dimension: 14
+    classification: still-open
+    verdict: "RELEASES.md v0.6.60 deferred-block not amended with HF11 disposition"
+  - prior_id: QA-D15-01
+    dimension: 15
+    classification: still-open
+    verdict: "REFLEX_EVAL_TRACE.md still pass-end only — IN-FLIGHT block not added"
+  - prior_id: QA-D15-02
+    dimension: 15
+    classification: regressed
+    verdict: "csv_rows=34 dirs=36 — gap WIDENED 1→2; score.sh not wired into pass-completion; cycle-17 + cycle-18 both absent from summary.csv (data-loss vector grows monotonically)"
+    severity: MAJOR
+  - prior_id: QA-D17-01
+    dimension: 17
+    classification: regressed-or-worse
+    verdict: "Cycle-17 wall_clock=19582s (5.4h, 92% rate-limit-backoff idle); cost still 3x+ typical-converged-pass"
+  - prior_id: QA-D17-02
+    dimension: 17
+    classification: still-open
+    verdict: "doc-code-diff cache-bypass not added"
+  - prior_id: QA-META-PHIL-D18-02
+    dimension: 18
+    classification: still-open
+    verdict: "Phase-0 freshness check (Dim 30 proposal) not implemented"
+  - prior_id: QA-PORT-D19-02
+    dimension: 19
+    classification: still-open
+    verdict: "Documentation silent on space-path support (empirical pass; no explicit claim added)"
+  - prior_id: QA-D21-01
+    dimension: 21
+    classification: still-open
+    verdict: "No faketime, no temporal section, no temporal helper — Dim 21 dynamic probe remains dormant"
+
+  # ── Dims 21-28 (15 prior findings — Dim 21 already listed above; 14 new) ──
+  - prior_id: QA-D22-01
+    dimension: 22
+    classification: still-open
+    verdict: "Mutation-fixture corpus + self-test-integrity.sh + reflex/fixtures/dim22 ALL still missing — 9 fix commits did not touch this MAJOR"
+  - prior_id: QA-D22-02
+    dimension: 22
+    classification: partially-verified
+    closed_by: 57383b6-partial
+    verdict: "fail-fast verdict path exists but ONLY fires when caller sets REFLEX_TASK_TOOL_PROBE_REQUIRED=1 — no auto-detection; residual MAJOR (QA-D22-02-RESIDUAL-AUTODETECT)"
+  - prior_id: QA-D23-03
+    dimension: 23
+    classification: still-open
+    verdict: "Terminology not canonicalized — portable-spec-kit.md still uses 'autoloop' 3× vs 'Reflex cycle' 1×"
+  - prior_id: QA-D23-02
+    dimension: 23
+    classification: still-open-as-duplicate
+    verdict: "Duplicate of QA-D15-02 — root still open (regressed this cycle)"
+  - prior_id: QA-D23-04
+    dimension: 23
+    classification: still-open-as-duplicate
+    verdict: "Duplicate of QA-D2-01 — claims-extractor maps free text not source-of-truth headers"
+  - prior_id: QA-D24-01
+    dimension: 24
+    classification: still-open
+    verdict: "Phase 0 mechanical helpers still re-checked at LLM cost — no auto-promotion path added"
+  - prior_id: QA-D24-02
+    dimension: 24
+    classification: still-open
+    verdict: "Kit ships no helpers for Dim 21/22 procedures (chained with QA-D21-01 + QA-D22-01)"
+  - prior_id: QA-MANDATE-DESIGN-MD-F73-F84
+    dimension: 25
+    classification: still-open
+    verdict: "12 MINOR findings persistent across cycle-15→18 — no agent/design/f{N}-*.md for F73-F84; no retroactive flag in SPECS.md"
+  - prior_id: QA-MECH-PSK029-01
+    dimension: 25
+    classification: out-of-range-or-still-open
+    verdict: "PSK029 rule exists in sync-check; deeper end-to-end verification deferred to Dim 25 dim-agent retry"
+  - prior_id: QA-RULE-CONFLICTS-01
+    dimension: 25
+    classification: still-open
+    verdict: "rule-conflicts.yaml stale ~17 days; llm_probe_deferred since v0.6.18 (42 patches without addressing deferred work)"
+  - prior_id: QA-MECH-BYPASS-LOG-01
+    dimension: 26
+    classification: still-open
+    verdict: "PSK027 rule wired but no end-to-end fire-on-bypass test; rule infrastructure present-but-unexercised"
+  - prior_id: QA-SYN-PREVIOUS-CONFIRMED-01
+    dimension: 27
+    classification: structurally-fixed-prospectively
+    verdict: "Gate 13 PREVENTS future passes from GRANTED while synthesis-confirmed; cycle-16 retroactive recovery not done"
+  - prior_id: QA-SYN-SELF-FINDINGS-NOTE
+    dimension: 27
+    classification: still-open
+    verdict: "Probe parser does not accept block-scalar style citable_quote — see new finding QA-D27-PROBE-PARSER-BLOCK-SCALAR"
+  - prior_id: QA-SPAWN-COV-PROBE2-01
+    dimension: 28
+    classification: verified-clean
+    verdict: "Probe 2 (agent-directive comments) — 0 hits, clean"
+  - prior_id: QA-D1-01-AND-QA-SPAWN-COV-PROBE4-COUNT
+    dimension: 28
+    classification: partially-verified-with-residual
+    closed_by: aa811cd
+    verdict: "3 of 4 HF3/HF4 scripts declared; psk-spawn.sh (THE central spawn router) omitted — residual MAJOR (QA-D28-PROBE4-PSK-SPAWN-UNDECLARED)"
+
+regression_summary:
+  total: 48
+  verified_fixed: 11
+  partially_verified: 5      # D11-01, D22-02, D1-01-PROBE4 (partial w/ residual), META-PHIL-D18-01, contingent-verified D12-02
+  still_open: 27
+  regressed: 1               # QA-D15-02 widened
+  structurally_fixed_prospectively: 1
+  verified_clean: 1          # QA-SPAWN-COV-PROBE2-01
+  acknowledged: 1
+  duplicate_open: 2          # D23-02, D23-04 (duplicates of D15-02, D2-01)
+  fix_rate_pct: 23           # 11 / 48
+  exit_criteria_adherence_pct: 40   # 4 of 10 items from cycle-17 signoff completed
+  trend: "PARTIAL CONVERGENCE — substantive structural fixes (test stubs, portability, CHANGELOG, fail-fast scaffold) BUT 5 of 10 exit-criteria items SKIPPED and 1 regression widened the data-loss vector"
+
+# ════════════════════════════════════════════════════════════════════
+# New findings — cycle-18 fresh adversarial investigation
+# Sorted by severity (CRITICAL → MAJOR → MINOR → ADVISORY) then dimension
+# Each finding carries: id, dimension, severity, priority, scope, confidence, title,
+# invocation_verbatim, citable_quote, evidence, standard, recommendation,
+# regression_vector, genericity_proof, blast_radius
+# ════════════════════════════════════════════════════════════════════
+findings:
+
+  # ────────────────────────────────────────────────────────────
+  # CRITICAL (1)
+  # ────────────────────────────────────────────────────────────
+
+  - id: QA-D6-03
+    dimension: 6
+    severity: CRITICAL
+    priority: CRITICAL
+    scope: kit
+    confidence: high
+    status: open
+    title: "Probe 27.1 on cycle-17/pass-001 returns verdict=synthesis-confirmed — citable_quote file:line coverage 0%, Read tool calls 1 vs 75 findings (1%) — gate 13 self-blocks"
+    invocation_verbatim: |
+      bash reflex/lib/check-audit-completeness.sh reflex/history/cycle-17/pass-001 --json
+    citable_quote: |
+      cycle-17/pass-001 self-audit: verdict=synthesis-confirmed
+      RED-FLAGs: citable_quote_coverage=0%, file_read_trace_coverage=1% (1 Read call vs 75 findings)
+    evidence: |
+      Two RED-FLAGs on cycle-17/pass-001 self-audit. Cycle-17 signoff disclosed citable_quote=0%
+      as a probe parser schema mismatch (block-scalar vs probe's expected `from:` key — see new
+      finding QA-D27-PROBE-PARSER-BLOCK-SCALAR for the parser fix). But file_read_trace=1%
+      (1 Read call vs 75 findings) is NOT a parser issue — it is qa-usage.yaml content directly.
+      Either (a) the probe heuristic is wrong for single-orchestrator multi-wave model OR
+      (b) cycle-17 genuinely had only 1 Read call across 75 findings (suggesting parallel waves'
+      Read counts were not aggregated). Either way: probe + cycle-17 disagree, gate 13 self-blocks
+      every multi-wave pass, kit cannot trust its own self-test.
+    standard: "portable-spec-kit.md §Spawn Fidelity → 13th mechanical gate (audit-completeness)"
+    recommendation: |
+      Three options (pick one):
+      (a) Fix qa-usage aggregation: orchestrator's post-merge step aggregates tool-usage across
+          all sub-agent waves (currently aggregating only orchestrator's own usage).
+      (b) Recalibrate Probe 27.1 heuristic: adjust file_read_trace_coverage signature to look for
+          per-sub-agent qa-usage-dims-N-to-M.yaml files and sum across them.
+      (c) Re-run cycle-17 with corrected qa-usage emission (per cycle-17 exit-criterion #2).
+    regression_vector:
+      invocation_verbatim: "bash reflex/lib/check-audit-completeness.sh reflex/history/cycle-17/pass-001 --json | jq -r .verdict"
+      expected_assertion: "real (when probe + qa-usage aggregation reconciled)"
+    blast_radius: security
+    genericity_proof: |
+      Gate 13 wiring is the kit's structural protection against synthesis. If the probe + orchestrator's
+      qa-usage schema disagree, EVERY kit user's autoloop will hit perpetual synthesis-confirmed flags
+      on multi-wave passes. Counter-check: check-audit-completeness.sh + spawn-qa.sh + qa-usage emission
+      ship with the kit.
+
+  # ────────────────────────────────────────────────────────────
+  # MAJOR (7)
+  # ────────────────────────────────────────────────────────────
+
+  - id: QA-D1-02
+    dimension: 1
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "Dev-Agent fix pass closed only 4 of 10 exit-criteria items from cycle-17 signoff — 40% adherence to GRANT contract"
+    invocation_verbatim: |
+      # Item 6: summary.csv contains cycle-17 row?
+      grep -c "^cycle-17,pass-001" reflex/history/summary.csv
+      # Item 2: cycle-16 audit-completeness verdict
+      bash reflex/lib/check-audit-completeness.sh reflex/history/cycle-16/pass-001 --json | jq -r .verdict
+    citable_quote: |
+      reflex/history/cycle-17/pass-001/signoff.md:115 — "Dev-Agent / next pass MUST close ALL of:"
+      vs git log --oneline main..HEAD = 9 commits (closing items 1, 3, 4, 7, 9-partial only)
+    evidence: |
+      Cycle-17 signoff listed 10 exit-criteria items MUST-CLOSE for GRANT. Mapping against the 9
+      Dev-Agent commits: items 1, 3, 4, 7 DONE; item 9 PARTIAL; items 2, 5, 6, 8, 10 SKIPPED.
+      4 DONE / 1 PARTIAL / 5 SKIPPED = 40% adherence. Items #2 #5 #6 #8 #10 were declared MUST-CLOSE.
+    standard: "portable-spec-kit.md §Convergence + cycle-17 signoff.md:115-126"
+    recommendation: |
+      Dev-Agent (or operator) MUST complete items #2, #5, #6, #8, #10 before cycle-18 can GRANT:
+      - #2: Re-run cycle-16/pass-001 with HF1 fail-fast wired
+      - #5: bash agent/scripts/psk-resume-bootstrap.sh to drain paused HF11/HF12 phases
+      - #6: bash reflex/lib/score.sh cycle-17/pass-001 >> reflex/history/summary.csv
+      - #8: Author ARD v0.6.58/59/60 sections, regen PDFs
+      - #10: Re-extract claims.yaml live + fix extract-claims.sh CLI contract
+    regression_vector:
+      invocation_verbatim: |
+        # Item 6: summary.csv contains cycle-17 row?
+        grep -c "^cycle-17,pass-001" reflex/history/summary.csv
+      expected_assertion: "Item 6: ≥1; Item 2: real (after re-run with HF1 wired)"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      Exit-criteria adherence applies to every kit user's autoloop — signoff promises ARE the convergence
+      contract. Fix is in reflex/lib/loop.sh (refuse GRANT until every signoff exit-criterion shows a
+      closed_by commit). Counter-check: reflex/run.sh + loop.sh ship with the kit.
+
+  - id: QA-D2-03
+    dimension: 2
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "summary.csv still missing cycle-17/pass-001 row — PSK002 sync-check fails, cycle-18 prerequisite broken"
+    invocation_verbatim: "bash agent/scripts/psk-sync-check.sh --full 2>&1 | grep PSK002"
+    citable_quote: |
+      ✗ PSK002: summary-csv-incomplete — missing rows for: cycle-17/pass-1
+      cycle-17 signoff.md:122 — "6. Backfill summary.csv row for cycle-17/pass-001 via score.sh + wire into run.sh pass-completion"
+    evidence: |
+      Exit-criterion #6 of cycle-17 signoff was: "Backfill summary.csv row for cycle-17/pass-001
+      via score.sh and wire into run.sh pass-completion. Closes QA-D15-02, QA-D23-02." None of the
+      9 Dev-Agent fix commits run `bash reflex/lib/score.sh` or append to summary.csv. The cycle-18
+      autoloop is unable to compute fix-rate trend across cycle-17 → cycle-18 without baseline row.
+    standard: "portable-spec-kit.md §Convergence + PSK002 sync-check rule"
+    recommendation: |
+      Run `bash reflex/lib/score.sh reflex/history/cycle-17/pass-001 >> reflex/history/summary.csv`
+      AND wire score.sh into run.sh's pass-completion hook so future passes auto-append.
+    regression_vector:
+      invocation_verbatim: "bash agent/scripts/psk-sync-check.sh --full 2>&1 | grep -E '✗ PSK002' || echo CLEAN"
+      expected_assertion: "CLEAN (PSK002 not flagged)"
+    blast_radius: data-loss
+    genericity_proof: |
+      Convergence trend analysis depends on summary.csv. Every kit user's autoloop is affected when
+      score.sh is not auto-invoked at pass-completion. Counter-check: score.sh + run.sh + PSK002
+      ship with the kit.
+
+  - id: QA-D4-03
+    dimension: 4
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "Workflow state for run-plan-spawn-fidelity-hardening still shows AWAITING:SUBAGENT_SPAWN for HF11 phase — 2-day-old paused phase after 9 fix commits"
+    invocation_verbatim: 'cat agent/.workflow-state/run-plan-spawn-fidelity-hardening.state | grep -E "AWAITING|pending"'
+    citable_quote: |
+      agent/.workflow-state/run-plan-spawn-fidelity-hardening.state:18 — PHASE_hf11-kit-reflex=AWAITING:SUBAGENT_SPAWN
+      STARTED=2026-05-16T16:00:08Z (>2 days old)
+    evidence: |
+      The 9 dev-fix commits closed individual cycle-17 findings but did NOT advance the
+      run-plan-spawn-fidelity-hardening workflow itself. Phase has been paused ≥2 days. Cycle-17
+      closeout item #5 said "Run psk-resume-bootstrap.sh" but no Dev-Agent commit invokes it.
+      The watchdog should auto-enqueue this into the retry queue at HUNG threshold (1h).
+    standard: "portable-spec-kit.md §Workflow Fidelity → Workflow watchdog"
+    recommendation: |
+      (a) Operator: run `bash agent/scripts/psk-resume-bootstrap.sh` to re-spawn HF11.
+          If abandoned, mark via `bash agent/scripts/psk-workflow-state.sh abandon …`.
+      (b) Kit: investigate why psk-workflow-watchdog.sh did not auto-enqueue this 2-day-old phase.
+    regression_vector:
+      invocation_verbatim: 'grep -c "AWAITING:" agent/.workflow-state/run-plan-spawn-fidelity-hardening.state'
+      expected_assertion: "0 (no AWAITING phases — plan converged or abandoned)"
+    blast_radius: data-loss
+    genericity_proof: |
+      Workflow-state staleness is the failure mode HF4 + HF4b exist to prevent. If a 2-day paused
+      phase still hasn't been auto-enqueued by the watchdog, the watchdog itself is broken for every
+      kit user. Counter-check: psk-workflow-watchdog.sh + psk-resume-bootstrap.sh ship with the kit.
+
+  - id: QA-D7-03
+    dimension: 7
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "9 Dev-Agent fix commits sit on reflex/dev-cycle-17-pass-001 branch — main not merged, main not pushed; single-point-of-failure"
+    invocation_verbatim: |
+      unpushed_main=$(git rev-list --count origin/main..main 2>/dev/null || echo "no-origin-tracking")
+      unmerged_dev=$(git log --oneline main..HEAD | wc -l)
+      echo "unpushed_main=$unpushed_main unmerged_dev=$unmerged_dev"
+    citable_quote: |
+      git log --oneline main..HEAD = 9 commits (cycle-17 Dev-Agent fix series)
+      git rev-parse @{u} = "fatal: no upstream configured"
+    evidence: |
+      Both main (with cycle-17 closeout) AND the dev branch sit only on the maintainer's laptop.
+      Per §Persistent Memory Architecture: "Durable — persists in git across time" — neither
+      branch satisfies this. After cycle-18 GRANT, run.sh fast-forward merges but fast-forward
+      target (main) has unpushed predecessor commits.
+    standard: "portable-spec-kit.md §Persistent Memory Architecture + §Push rules"
+    recommendation: |
+      Phase 1 (immediate): on cycle-18 verdict (GRANT/DENY), push as appropriate.
+      Phase 2 (kit): document in §Push rules that autoloop's post-GRANT hook MUST push main to
+      origin/main as a single transaction with the merge.
+    regression_vector:
+      invocation_verbatim: |
+        unpushed_main=$(git rev-list --count origin/main..main 2>/dev/null || echo "no-origin-tracking")
+        unmerged_dev=$(git log --oneline main..HEAD | wc -l)
+        echo "unpushed_main=$unpushed_main unmerged_dev=$unmerged_dev"
+      expected_assertion: "unpushed_main=0 AND unmerged_dev=0 (after GRANT merge)"
+    blast_radius: data-loss
+    genericity_proof: |
+      Single-point-of-failure on the maintainer laptop applies to every kit user's autoloop. The
+      autoloop promises durable convergence — durability fails if no remote sync.
+      Counter-check: reflex/run.sh + §Persistent Memory + §Push ship with the kit.
+
+  - id: QA-D15-02-WIDENED
+    dimension: 15
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    regressed: true
+    title: "summary.csv-vs-pass-dirs gap WIDENED from 1 to 2 — cycle-18/pass-001 also absent; score.sh still not wired to pass-completion"
+    invocation_verbatim: |
+      csv_rows=$(($(wc -l < reflex/history/summary.csv) - 1))
+      dir_count=$(ls -d reflex/history/cycle-*/pass-* | wc -l)
+      echo "csv=$csv_rows dirs=$dir_count gap=$((dir_count - csv_rows))"
+    citable_quote: |
+      reflex/history/summary.csv has 34 closed-rows; reflex/history/cycle-*/pass-* has 36 directories — gap monotonically increasing
+    evidence: |
+      Cycle-17 surfaced gap=1 (35 dirs vs 34 csv). Cycle-18 has gap=2 (36 vs 34). Dev-Agent fix for
+      QA-D15-02 was NOT applied; reflex/run.sh still does not invoke reflex/lib/score.sh on pass
+      completion. Every future pass widens the gap.
+    standard: "qa-agent.md §Dim 23.2 / §Dim 15 Probe 6"
+    recommendation: |
+      (1) Backfill: bash reflex/lib/score.sh --pass-dir cycle-17/pass-001 ; same for cycle-18/pass-001.
+      (2) Wire score.sh into reflex/run.sh pass-completion path.
+      (3) Add 14th mechanical gate `summary-csv-completeness` in reflex/lib/gates.sh.
+    regression_vector:
+      invocation_verbatim: |
+        csv_rows=$(($(wc -l < reflex/history/summary.csv) - 1))
+        dir_count=$(ls -d reflex/history/cycle-*/pass-* | wc -l)
+        [ "$csv_rows" -ge "$dir_count" ] || echo FAIL
+      expected_assertion: "csv_rows >= dir_count (no drift after every pass)"
+    blast_radius: data-loss
+    genericity_proof: |
+      Every kit user running reflex passes accumulates pass dirs; without score.sh wired into pass-
+      completion + a mechanical gate, every project's summary.csv silently desyncs. Fix is in
+      reflex/run.sh + reflex/lib/gates.sh — both kit-scope. Counter-check: no project-specific code.
+
+  - id: QA-D22-02-RESIDUAL-AUTODETECT
+    dimension: 22
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "spawn-qa.sh fail-fast precondition fires only on explicit caller flag — no auto-detection of Task-tool absence (partial fix of QA-D22-02)"
+    invocation_verbatim: |
+      grep -nE 'REFLEX_TASK_TOOL_PROBE_REQUIRED|REFLEX_SPAWN_SURFACE_PROBE_DISABLED' reflex/lib/spawn-qa.sh
+    citable_quote: |
+      reflex/lib/spawn-qa.sh:117 — "if [ ${REFLEX_SPAWN_SURFACE_PROBE_DISABLED:-0} != 1 ] && [ ${REFLEX_TASK_TOOL_PROBE_REQUIRED:-0} = 1 ]; then"
+      portable-spec-kit.md §Spawn Fidelity — "the contract is fail-fast at the surface, never silent-degrade"
+    evidence: |
+      Commit 57383b6 added SPAWN_SURFACE_ABSENT path correctly, but gate is opt-in: CALLER must set
+      REFLEX_TASK_TOOL_PROBE_REQUIRED=1. Prior pass's QA-D22-02 demanded an unconditional probe.
+      A future orchestrator/dispatcher that fails to set the flag will still silent-degrade via the
+      L2 EXIT trap into INTERRUPTED verdict. Gate 13 IS the safety net, but the explicit-precondition
+      layer the prior pass demanded is only half-built.
+    standard: "portable-spec-kit.md §Spawn Fidelity — 'the contract is fail-fast at the surface'"
+    recommendation: |
+      Add an unconditional Task-tool probe inside spawn-qa.sh that runs when assigned_dims includes
+      any value in 1-24. Options: (a) check ToolSearch select:Task availability via a marker file the
+      orchestrator writes; or (b) when REFLEX_TASK_TOOL_PROBE_REQUIRED unset AND assigned_dims ∩ 1-24
+      ≠ ∅, emit SPAWN_SURFACE_UNKNOWN advisory and require caller to confirm.
+    regression_vector:
+      invocation_verbatim: "unset REFLEX_TASK_TOOL_PROBE_REQUIRED; mkdir -p /tmp/p; PASS_DIR=/tmp/p bash reflex/lib/spawn-qa.sh --assigned-dims 1-10; grep -cE 'SPAWN_SURFACE_(ABSENT|UNKNOWN)' /tmp/p/verdict.md"
+      expected_assertion: "≥1 (today probably 0 — falls through to L2 trap)"
+    blast_radius: reliability-bypass
+    genericity_proof: |
+      ANY kit user invoking reflex from a context that lacks Task tool will hit the same silent-
+      degradation unless they happen to know to set the caller flag. Counter-check: targets reflex
+      orchestration machinery (spawn-qa.sh precondition gate), not project-specific code.
+
+  - id: QA-D28-PROBE4-PSK-SPAWN-UNDECLARED
+    dimension: 28
+    severity: MAJOR
+    priority: MAJOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "psk-spawn.sh — central §Spawn Fidelity router — lacks mechanical-script/workflow-router declaration; commit aa811cd missed the most load-bearing script"
+    invocation_verbatim: |
+      grep -E '^# +.*mechanical-script|^# +.*workflow-router' agent/scripts/psk-spawn.sh
+    citable_quote: |
+      agent/scripts/psk-spawn.sh:1-25 — top comment block describes Sub-agent spawn-fidelity protocol but ZERO 'mechanical-script' or 'workflow-router' tag
+      commit aa811cd — listed 4 HF3/HF4 scripts including psk-spawn.sh; verify: 3 of 4 declared, psk-spawn.sh missed
+    evidence: |
+      psk-spawn.sh IS the §Spawn Fidelity 6th-layer enforcement point — every kit spawn routes through
+      it. Per portable-spec-kit.md §Spawn Fidelity: "Every sub-agent invocation, anywhere in the kit,
+      MUST route through agent/scripts/psk-spawn.sh." The mechanical-script declaration is the
+      discovery surface Probe 4 was added to enforce. The most-central script in the most-critical
+      reliability layer is undeclared. Net: 43 total psk-* scripts, 23 declared, 20 undeclared.
+    standard: "portable-spec-kit.md §Spawn Fidelity — Standard Spawn Recipe"
+    recommendation: |
+      (a) Add a 'mechanical-script' tag to psk-spawn.sh header.
+      (b) Audit remaining 20 undeclared psk-* scripts.
+      (c) Add a sync-check rule (PSK030 or similar) that fails commit when a psk-* script missing
+          a class declaration lands.
+    regression_vector:
+      invocation_verbatim: "grep -E '^# +.*mechanical-script|^# +.*workflow-router' agent/scripts/psk-spawn.sh | wc -l"
+      expected_assertion: "≥1"
+    blast_radius: kit-wide
+    genericity_proof: |
+      ANY kit user inspecting the Spawn-Fidelity layer needs the central router declared so discovery
+      tooling (Probe 4) can audit it. Counter-check: targets a kit script header comment + a kit
+      sync-check rule, not project-specific code.
+
+  # ────────────────────────────────────────────────────────────
+  # MINOR (12)
+  # ────────────────────────────────────────────────────────────
+
+  - id: QA-D3-02
+    dimension: 3
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "9 Dev-Agent fix commits on reflex/dev-cycle-17-pass-001 branch but no SPECS.md / RELEASES.md / TASKS.md entries — R→F→T traceability broken at dev-branch boundary"
+    invocation_verbatim: |
+      for id in QA-D1-01 QA-D4-01 QA-D6-02 QA-PORT-D19-01 QA-D14-01 QA-D11-01; do
+        grep -q "$id" agent/TASKS.md || echo "missing TASKS row: $id"
+      done
+    citable_quote: |
+      Branch HEAD subject: "autoloop fix HF11 closeout: dev artifacts + findings.yaml status + v0.6.61 backlog"
+      vs grep -c "QA-D1-01\|QA-D4-01\|QA-D6-02" agent/TASKS.md = 0
+    evidence: |
+      Per §Spec & Planning Management: "Sync rule: When completing a feature, update all affected
+      pipeline + support files in the same session." Fix-cluster is durable project work (kit fixes)
+      but no TASKS.md row was promoted — violates §Session Stack → Promotion rule.
+    standard: "portable-spec-kit.md §Spec & Planning Management (MANDATORY) + §Session Stack Promotion rule"
+    recommendation: |
+      Reflex run.sh post-GRANT hook should automate: (a) update agent/TASKS.md with [x] rows;
+      (b) prepend v0.6.61 entry in agent/RELEASES.md; (c) update agent/SPECS.md if any F-feature
+      had its test fulfilled.
+    regression_vector:
+      invocation_verbatim: |
+        for id in QA-D1-01 QA-D4-01 QA-D6-02 QA-PORT-D19-01 QA-D14-01 QA-D11-01; do
+          grep -q "$id" agent/TASKS.md || echo "missing TASKS row: $id"
+        done
+      expected_assertion: "(no missing TASKS row lines after dev-branch merge)"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      The dev-branch → main merge protocol applies to every kit user's autoloop. Generic kit-
+      machinery hook is needed in run.sh post-GRANT. Counter-check: reflex/run.sh + Reflex Finding
+      Classification + Session Stack rules ship with the kit.
+
+  - id: QA-D8-02
+    dimension: 8
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: medium
+    status: open
+    title: "Bash eval scan surfaces 4 occurrences — psk-workflow-state.sh, server-lifecycle.sh, dev-self-verify.sh also eval $cmd; psk-code-review.sh false-negative"
+    invocation_verbatim: 'grep -E "^[^#]*\beval[[:space:]]+\"\\\$" agent/scripts/*.sh reflex/lib/*.sh'
+    citable_quote: |
+      reflex/lib/dev-self-verify.sh: out=$(cd "$cwd" 2>/dev/null && eval "$cmd" 2>&1)
+      where $cmd is read from finding's invocation_verbatim — partially user-influenced surface.
+    evidence: |
+      Cycle-17 QA-D8-01 cited only psk-evolution-gauntlet.sh:63. Broader scan reveals 3 additional
+      eval sites: psk-workflow-state.sh, server-lifecycle.sh, dev-self-verify.sh. The dev-self-verify
+      case is most concerning — if a malicious QA-Agent plants a finding with shell injection in
+      invocation_verbatim, dev-self-verify.sh would eval it.
+    standard: "portable-spec-kit.md §Security Rules → Code Security: 'No eval()'"
+    recommendation: |
+      For dev-self-verify.sh: refactor to `bash -c "$cmd"` inside heavily-sandboxed environment OR
+      refactor invocation_verbatim parsing to extract structured commands.
+      For psk-code-review.sh: add bash-eval scan to check_eval_usage().
+    regression_vector:
+      invocation_verbatim: 'grep -cE "^[^#]*\beval[[:space:]]+\"\\\$" agent/scripts/*.sh reflex/lib/*.sh'
+      expected_assertion: "≤1 (psk-evolution-gauntlet.sh allowlisted)"
+    blast_radius: security
+    genericity_proof: |
+      Bash eval scan is a generic shell-hygiene concern. Every kit user inherits these 4 scripts.
+      The dev-self-verify.sh user-influenced path is a generic supply-chain vector.
+      Counter-check: all 4 scripts + psk-code-review.sh ship with the kit.
+
+  - id: QA-D10-03
+    dimension: 10
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: medium
+    status: open
+    title: "9 Dev-Agent fix commits do NOT bump kit version — v0.6.60 still pinned despite material kit-machinery changes"
+    invocation_verbatim: 'grep -E "^# Version:" portable-spec-kit.md | head -1'
+    citable_quote: 'portable-spec-kit.md:1 "# Version: v0.6.60" (HEAD = eaefa94, 9 commits past the v0.6.60 release commit)'
+    evidence: |
+      Per §Versioning: "Version bump BEFORE push — always bump → commit → push in that order."
+      The 9 fix commits materially change kit-shipped scripts AND kit documentation. Per kit-vs-
+      project scope separation, these ARE kit-genericity improvements. Yet no version bump to
+      v0.6.61. The fix-cluster is, in §Versioning terms, an unpublished patch.
+    standard: "portable-spec-kit.md §Versioning → 'increment patch with each publish'"
+    recommendation: |
+      After cycle-18 GRANT + dev-branch merge to main:
+      - Run `bash agent/scripts/psk-version-cascade.sh 0.6.61`
+      - Update README badge, CHANGELOG.md v0.6.61, agent/RELEASES.md, agent/AGENT_CONTEXT.md Phase
+      - Commit + push.
+    regression_vector:
+      invocation_verbatim: 'grep -E "^# Version:" portable-spec-kit.md | head -1'
+      expected_assertion: "# Version: v0.6.61 (or later) after fix-cluster release"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      Version-cascade discipline applies to every kit user — without bumps, curl users get cycle-17
+      fixes silently. Counter-check: psk-version-cascade.sh + §Versioning ship with the kit.
+
+  - id: QA-D11-01-RESIDUAL
+    dimension: 11
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "README D11-01 fix is PARTIAL — flow-doc count still drifts (28 claimed vs 29 on disk)"
+    invocation_verbatim: |
+      fls=$(ls docs/work-flows/*.md | wc -l)
+      grep -oE "[0-9]+ flow documents" README.md
+    citable_quote: 'README.md:61 — "28 flow documents (docs/work-flows/)"; disk: 29 .md files'
+    evidence: |
+      Dev-Agent fixed skills 17→27 + templates 23→24 but missed flow-doc 28→29.
+      check_readme_inventory_consistency() rule the prior finding recommended was NOT added.
+    standard: "portable-spec-kit.md §How This File Works (skill table inventory)"
+    recommendation: |
+      (a) Update README.md:61 to '29 flow documents'.
+      (b) Decide canonical template count.
+      (c) Add psk-sync-check.sh check_readme_inventory_consistency() that greps counts against live filesystem.
+    regression_vector:
+      invocation_verbatim: |
+        fls=$(ls docs/work-flows/*.md | wc -l)
+        claimed=$(grep -oE "[0-9]+ flow documents" README.md | grep -oE "[0-9]+")
+        [ "$fls" = "$claimed" ] || echo DRIFT
+      expected_assertion: "(no DRIFT)"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      ANY project using the kit's README-inventory-sync rule is vulnerable to single-number drift
+      until psk-sync-check enforces it. Counter-check: targets a kit sync-check rule + public README template.
+
+  - id: QA-D11-04
+    dimension: 11
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "README narrative v0.6.55 paragraph still cites '2352 tests' as current; canonical is 2522"
+    invocation_verbatim: "grep -n '2352 tests\\|2207 framework' README.md"
+    citable_quote: 'README.md:75 — "2352 tests (2207 framework + 145 benchmarking)"; CLAUDE.md badge: 2522 tests'
+    evidence: |
+      README.md:75 is the v0.6.55 paragraph SHIPPED AS CURRENT-state narrative, not a frozen
+      historical entry. Drift is real on the public surface.
+    standard: "portable-spec-kit.md §Versioning — public-surface count discipline"
+    recommendation: |
+      Either mark v0.6.55 paragraph as historical-archive OR update count to 2522.
+      Add psk-sync-check.sh check_readme_narrative_test_count().
+    regression_vector:
+      invocation_verbatim: |
+        canonical=$(grep -oE "[0-9]+ tests" CLAUDE.md | head -1 | grep -oE "[0-9]+")
+        for n in $(grep -oE "[0-9]{4} tests" README.md | grep -oE "[0-9]+"); do
+          [ "$n" = "$canonical" ] || echo "narrative drift: $n vs canonical $canonical"
+        done
+      expected_assertion: "no narrative drift, or all drift in marked-historical paragraphs"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      Every kit user's README accumulates version-by-version paragraphs that quote test counts;
+      without a sync-check rule the counts go stale silently. Counter-check: targets agent/scripts/psk-sync-check.sh — kit-scope.
+
+  - id: QA-D12-02-RESIDUAL
+    dimension: 12
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "test-release-check.sh hardening NOT done — F73-F84 stubs rewrites prevent current overstate but underlying rule still vulnerable"
+    invocation_verbatim: "grep -E 'covered via|delegates to|see section|see test' tests/test-release-check.sh"
+    citable_quote: "QA-D12-02 cycle-17 closed_by 01b55d6 — closure was by-elimination of stubs, not by tightening test-release-check.sh detection"
+    evidence: |
+      Current pass: 0 stubs match. But test-release-check.sh still treats any non-failing test as
+      coverage. PSK016b rule NOT added. A future stub printing 'pass' for any reason still counts.
+    standard: "portable-spec-kit.md §F→T Traceability"
+    recommendation: |
+      Add tests/test-release-check.sh hardening + psk-sync-check.sh PSK016b: fail any feature-test
+      file ≤15 lines OR assertion count <3.
+    regression_vector:
+      invocation_verbatim: |
+        for f in tests/features/*.sh; do
+          lines=$(wc -l < "$f")
+          asserts=$(grep -cE 'assert|check|verdict|require' "$f")
+          [ "$lines" -lt 15 ] || [ "$asserts" -lt 3 ] && echo "$f: sub-floor"
+        done
+      expected_assertion: "no files below floor, OR PSK016b active"
+    blast_radius: kit-wide
+    genericity_proof: |
+      Any project using F→T traceability is vulnerable to the same vacuous-stub class-instance
+      regression until validator follows delegation pointers and enforces assertion-density floors.
+      Counter-check: targets kit-scope files only.
+
+  - id: QA-D14-NEW-01
+    dimension: 14
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: medium
+    status: open
+    title: "CHANGELOG v0.6.58 placeholder is content-thin — aa2e9b2 added heading but no Notable/Changes content"
+    invocation_verbatim: "sed -n '/^## v0\\.6\\.58/,/^## v0\\.6\\.5[79]/p' CHANGELOG.md | wc -l"
+    citable_quote: "Per cycle-17 QA-D14-01: 'Add placeholder CHANGELOG entry for v0.6.58'. Fix is literally a placeholder."
+    evidence: "Test passes (regex matches '## v0.6.58'), but a CHANGELOG entry's purpose is to document what changed."
+    standard: "portable-spec-kit.md §Versioning Rules"
+    recommendation: |
+      Back-fill v0.6.58 content from `git log v0.6.57..v0.6.59 --oneline`.
+      Add check_changelog_version_completeness() rule.
+    regression_vector:
+      invocation_verbatim: |
+        lines=$(sed -n '/^## v0\\.6\\.58/,/^## v0\\.6\\.5[79]/p' CHANGELOG.md | grep -cE '^- |^\\* ')
+        [ "$lines" -ge 3 ] || echo "v0.6.58 entry too thin"
+      expected_assertion: "every version heading has ≥3 bullets"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      Any project using version-sequence enforcement can land a placeholder heading that satisfies
+      the rule without conveying actual change content. Counter-check: kit-scope sync-check rule.
+
+  - id: QA-D17-NEW-01
+    dimension: 17
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "Cost meta-observation — cycle-17 wall_clock=19582s (5.4h) with 18000s rate-limit-backoff idle; total_active=26min only 8% of wall-clock"
+    invocation_verbatim: "awk '/wall_clock_seconds:/,/^[a-z]/' reflex/history/cycle-17/pass-001/qa-usage.yaml"
+    citable_quote: "qa-usage.yaml — retry_queue_backoff_idle: 18000; total_active: 1582 (8.1% of total)"
+    evidence: |
+      92% of wall-clock is rate-limit-backoff idle. HF3-HF4 designed to handle gracefully (it works).
+      But raises meta-question: cost vs throughput tradeoff under tight rate budget.
+    standard: "qa-agent.md §Dim 17"
+    recommendation: |
+      Add Dim 17 sub-probe `throughput_efficiency` = total_active / total. Surface in summary.csv
+      schema v6. < 20% = rate-limit-bound; > 50% = compute-bound.
+    regression_vector:
+      invocation_verbatim: |
+        eff=$(awk '/total_active:/ {a=$2} /^  total:/ {t=$2} END { if (t>0) printf "%.2f\\n", a/t * 100 }' reflex/history/cycle-17/pass-001/qa-usage.yaml)
+        echo "throughput_efficiency=${eff}%"
+      expected_assertion: "tracked in qa-usage.yaml schema; surface in summary.csv"
+    blast_radius: cost
+    genericity_proof: |
+      Every kit user running reflex on rate-limited tier faces the same wall-clock-vs-active ratio.
+      Counter-check: targets reflex/prompts/qa-agent.md + reflex/lib/score.sh — kit-scope.
+
+  - id: QA-D23-03-STILL-OPEN
+    dimension: 23
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: high
+    status: open
+    title: "Terminology drift not addressed: portable-spec-kit.md still uses 'autoloop' 3× while 'Reflex cycle' is canon"
+    invocation_verbatim: |
+      a=$(grep -c 'autoloop' portable-spec-kit.md)
+      b=$(grep -ci 'reflex cycle' portable-spec-kit.md)
+      echo "autoloop=$a reflex_cycle=$b"
+    citable_quote: |
+      portable-spec-kit.md — 'Autoloop — one command for kit + user projects' (3 occurrences)
+      reflex/history/REFLEX_EVAL_TRACE.md — '## Reflex cycle N' headers, never 'Autoloop'
+    evidence: "cycle-17 surfaced this as QA-D23-03 (status: open); cycle-17 Dev-Agent fix loop did not touch portable-spec-kit.md."
+    standard: "qa-agent.md §Dim 23.4"
+    recommendation: |
+      Canon: 'Reflex cycle'. Update portable-spec-kit.md §Autoloop heading + body. Retain --autoloop
+      flag aliases as legacy. Add psk-sync-check.sh rule check_terminology_canon().
+    regression_vector:
+      invocation_verbatim: 'a=$(grep -c "autoloop" portable-spec-kit.md); b=$(grep -ci "reflex cycle" portable-spec-kit.md); [ "$a" -le 3 ] && [ "$b" -ge 5 ] || echo DRIFT'
+      expected_assertion: "(no DRIFT)"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      Terminology drift between framework rules and operational output confuses any kit user.
+      Counter-check: targets kit doc surfaces + a generic sync-check rule.
+
+  - id: QA-D25-RULE-CONFLICTS-STALE
+    dimension: 25
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: medium
+    status: open
+    title: "rule-conflicts.yaml at project root is stale by ~17 days; llm_probe_deferred since v0.6.18 (42 patches without addressing)"
+    invocation_verbatim: "grep -E 'generated_at|candidate_count|llm_probe_deferred' rule-conflicts.yaml"
+    citable_quote: |
+      rule-conflicts.yaml:7 — "generated_at: 2026-05-01T01:08:30Z"
+      rule-conflicts.yaml:12 — "llm_probe_deferred: v0.6.18+ release iteration"
+    evidence: |
+      File mtime ~17 days old. The deferred-LLM-probe note has been in place since v0.6.18 and we
+      are now at v0.6.60. Phase 0 staleness signal.
+    standard: "qa-agent.md §Phase 0 freshness"
+    recommendation: |
+      Either (a) regenerate rule-conflicts.yaml per Reflex cycle, OR (b) ship the LLM-probe and
+      close the deferred-since-v0.6.18 debt.
+    regression_vector:
+      invocation_verbatim: 'age_d=$(( ( $(date +%s) - $(stat -f %m rule-conflicts.yaml) ) / 86400 )); [ "$age_d" -le 7 ] || echo STALE'
+      expected_assertion: "(no STALE)"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      Every kit user running reflex relies on Phase 0 helpers being current. Counter-check: fix
+      targets kit's Phase 0 regeneration discipline.
+
+  - id: QA-D27-PROBE-PARSER-BLOCK-SCALAR
+    dimension: 27
+    severity: MINOR
+    priority: MINOR
+    scope: kit
+    confidence: medium
+    status: open
+    title: "check-audit-completeness.sh citable_quote parser is regex-strict — block-scalar style YAML triggers false RED-FLAG"
+    invocation_verbatim: |
+      grep -nE 'citable_quote|file:line' reflex/lib/check-audit-completeness.sh | head -10
+    citable_quote: |
+      cycle-17 self-audit: verdict=synthesis-confirmed; citable_quote_coverage=0% despite many findings
+      having extensive citable_quote: | pipe-style YAML blocks with file:line refs
+    evidence: |
+      Probe's signature looks for inline 'file:line' refs but does not accept multi-line pipe-style
+      YAML. Many cycle-17 findings carry citable_quote as YAML literal-block-scalar. Probe scores
+      0% coverage — false RED-FLAG. This is the parser fix that would resolve part of QA-D6-03.
+    standard: "qa-agent.md §Probe 27.2"
+    recommendation: |
+      Extend check-audit-completeness.sh citable_quote parser: (a) detect YAML block-scalar style,
+      (b) scan all lines of body for file:line patterns, (c) score 'covered' if any line matches
+      /\\b[A-Za-z0-9_./-]+\\.\\w+:\\d+\\b/.
+    regression_vector:
+      invocation_verbatim: "bash reflex/lib/check-audit-completeness.sh reflex/history/cycle-17/pass-001 --json | jq -r '.scores.citable_quote_coverage_pct'"
+      expected_assertion: "≥70 after parser fix (today: 0)"
+    blast_radius: developer-ergonomics
+    genericity_proof: |
+      YAML block-scalar is a normal authoring style; ANY kit user whose findings use it will be
+      falsely flagged. Counter-check: fix targets a kit probe script's parser.
+
+  - id: QA-D18-NEW-01
+    dimension: 18
+    severity: MINOR
+    priority: MINOR
+    scope: meta
+    confidence: high
+    status: open
+    title: "Philosophy meta-finding — 11 INTERRUPTED verdicts across reflex/history/cycle-*/pass-*/verdict.md; convergence-audit gate is reactive not preventive"
+    invocation_verbatim: "grep -l 'INTERRUPTED' reflex/history/cycle-*/pass-*/verdict.md | wc -l"
+    citable_quote: "11 of 36 pass dirs have INTERRUPTED in verdict.md"
+    evidence: |
+      Gate 9 fails INTERRUPTED at the NEXT pass entry. 11 historical INTERRUPTED have accumulated.
+      Likely cause: rate-limit-induced retries + SDK stream-idle-timeouts.
+    standard: "qa-agent.md §Dim 18 + §Convergence"
+    recommendation: |
+      Surface 11 INTERRUPTED count in a kit-level meta-dashboard. Propose Dim 31 Convergence Health:
+      ratio of (GRANTED+DENIED) / total pass attempts. < 70% = kit reliability gap.
+    regression_vector:
+      invocation_verbatim: |
+        total=$(ls -d reflex/history/cycle-*/pass-* | wc -l)
+        interrupted=$(grep -l 'INTERRUPTED' reflex/history/cycle-*/pass-*/verdict.md 2>/dev/null | wc -l)
+        ratio=$(awk "BEGIN { printf \"%.2f\", (1 - $interrupted/$total) * 100 }")
+        echo "convergence_health=${ratio}%"
+      expected_assertion: "convergence_health > 70% over rolling-20-pass window"
+    blast_radius: meta-scope
+    genericity_proof: |
+      Every kit user running reflex faces SDK/rate-limit interrupts; a convergence-health
+      meta-indicator tells every project whether reflex usage is healthy. Counter-check: targets
+      reflex/lib + reflex/prompts/qa-agent.md — kit-scope.
+
+  # ────────────────────────────────────────────────────────────
+  # ADVISORY (3)
+  # ────────────────────────────────────────────────────────────
+
+  - id: QA-D19-NEW-01
+    dimension: 19
+    severity: ADVISORY
+    priority: ADVISORY
+    scope: kit
+    confidence: medium
+    status: open
+    title: "Other macOS portability sites already-portable — D19-01 fix is the model; 4 other stat-using scripts use Linux→BSD fallback pattern with silent degradation"
+    invocation_verbatim: "grep -rnE 'stat -c|stat -f' agent/scripts/ | head -10"
+    citable_quote: |
+      agent/scripts/psk-validate.sh:231 — stat -f "%m" ... || stat -c "%Y" ...
+      agent/scripts/psk-sync-check.sh:233 — same pattern
+      agent/scripts/psk-orchestrate.sh:266-267 — same pattern
+      agent/scripts/psk-release.sh:801 — same pattern
+    evidence: "4 other scripts use BSD-then-GNU fallback pattern, but ALL have silent 2>/dev/null swallow without stderr-note discipline D19-01 fix added."
+    standard: "portable-spec-kit.md §Host-environment portability (Dim 19)"
+    recommendation: |
+      Apply D19-01 stderr-note pattern to the 4 other sites. Add psk-sync-check.sh
+      check_silent_stat_fallback().
+    regression_vector:
+      invocation_verbatim: |
+        for site in agent/scripts/psk-validate.sh agent/scripts/psk-sync-check.sh agent/scripts/psk-orchestrate.sh agent/scripts/psk-release.sh; do
+          if grep -qE 'stat -f.*\\|\\| stat -c' "$site" && ! grep -qE 'echo.*>&2.*echo' "$site"; then
+            echo "$site: silent stat fallback (no stderr note)"
+          fi
+        done
+      expected_assertion: "all stat-fallback sites emit stderr note on degradation"
+    blast_radius: kit-wide
+    genericity_proof: |
+      Silent-degradation in date/stat fallbacks is a class-level portability defect any kit user
+      inherits. Counter-check: targets agent/scripts/*.sh — kit-scope.
+
+  - id: QA-D26-WFC-CLEAN
+    dimension: 26
+    severity: ADVISORY
+    priority: ADVISORY
+    scope: kit
+    confidence: high
+    status: open
+    title: "workflow-fidelity-audit.sh returns 0 findings — Dim 26 four-axis probe clean (recorded for traceability)"
+    invocation_verbatim: |
+      bash reflex/lib/workflow-fidelity-audit.sh --json /tmp/dim26-wfc.json --root "$(pwd)"
+      jq '.summary' /tmp/dim26-wfc.json
+    citable_quote: |
+      /tmp/dim26-wfc.json — summary={"total":0,"MAJOR":0,"MINOR":0,"ADVISORY":0}
+    evidence: "Clean Dim 26 result — no workflow-state ledger violations, no inline-fallback regression detected."
+    standard: "qa-agent.md §Dim 26"
+    recommendation: "No action — clean state."
+    regression_vector:
+      invocation_verbatim: "bash reflex/lib/workflow-fidelity-audit.sh --json /tmp/d26.json --root \"$(pwd)\" && jq -r '.summary.total' /tmp/d26.json"
+      expected_assertion: "0"
+    blast_radius: none
+    genericity_proof: |
+      Clean-state probe outputs serve as positive evidence for every kit user's audit history.
+      Counter-check: targets reflex/lib/workflow-fidelity-audit.sh — kit-scope.
+
+  - id: QA-D27-SELF-AUDIT-EXPECTED
+    dimension: 27
+    severity: ADVISORY
+    priority: ADVISORY
+    scope: kit
+    confidence: high
+    status: open
+    title: "Cycle-18 self-audit pre-completion verdict = synthesis-confirmed (expected — findings.yaml + qa-usage.yaml not yet aggregated at dim-agent time)"
+    invocation_verbatim: "bash reflex/lib/check-audit-completeness.sh reflex/history/cycle-18/pass-001 --json | jq -r .verdict"
+    citable_quote: |
+      cycle-18 self-audit RED-FLAGs (pre-aggregation):
+        - findings.yaml missing — cannot validate adversarial-audit invocation evidence
+        - qa-usage.yaml missing — no proof QA-Agent opened any file
+    evidence: |
+      Pre-aggregation self-audit verdict is expected and not a real signal. Gate 13 will re-run the
+      probe AFTER orchestrator assembles findings.yaml + qa-usage.yaml. THAT verdict determines
+      GRANT vs DENIED.
+    standard: "portable-spec-kit.md §Spawn Fidelity / 13th gate"
+    recommendation: |
+      No action — timing artifact. Gate 13 will re-run after orchestration completes. If gate 13's
+      verdict comes back synthesis-confirmed, THAT is the CRITICAL finding. If 'real', HF11's
+      structural enforcement is working end-to-end.
+    regression_vector:
+      invocation_verbatim: "bash reflex/lib/check-audit-completeness.sh reflex/history/cycle-18/pass-001 --json | jq -r .verdict"
+      expected_assertion: "real (post-aggregation, gate 13 phase)"
+    blast_radius: none
+    genericity_proof: |
+      Documenting pre-aggregation timing artifacts is generic guidance for every kit user.
+      Counter-check: targets reflex/lib/check-audit-completeness.sh + gate 13 wiring — kit-scope.

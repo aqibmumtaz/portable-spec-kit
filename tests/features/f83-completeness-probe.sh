@@ -28,8 +28,10 @@ else
 fi
 
 # AC2 — probe emits verdict on a real pass dir; assert one of the canonical values
-# Use cycle-17/pass-001 itself as the input (it's a real, committed pass dir).
-SAMPLE_PASS="$PROJ/reflex/history/cycle-17/pass-001"
+# Auto-select the most recent committed pass dir (history retention prunes
+# old pass-001 dirs over time, so a hardcoded path goes stale).
+SAMPLE_PASS=$(ls -dt "$PROJ"/reflex/history/cycle-*/pass-* 2>/dev/null | head -1)
+[ -z "$SAMPLE_PASS" ] && SAMPLE_PASS="$PROJ/reflex/history/cycle-26/pass-002"
 if [ -x "$PROBE" ] && [ -d "$SAMPLE_PASS" ]; then
   PROBE_OUT=$(bash "$PROBE" "$SAMPLE_PASS" --json 2>/dev/null || true)
   if echo "$PROBE_OUT" | grep -qE '"verdict":\s*"(real|suspect|synthesis-confirmed)"'; then

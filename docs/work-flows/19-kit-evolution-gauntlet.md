@@ -157,7 +157,9 @@ Proposed rule (in agent/tasks/proposed/<Pxx|Gxx>-name.md)
    the `.github/workflows/postmerge-gauntlet-soak.yml` cron runs daily
    at 09:00 UTC, scans main for `[proposal: ...]` commits in the
    9-to-2-day window, and re-runs `psk-evolution-gauntlet.sh` on each
-   via `agent/scripts/psk-soak-schedule.sh --quick`. Failures auto-file
+   via `agent/scripts/psk-soak-schedule.sh` (bare — the default
+   `--since=9days --until=2days` window scan; the gauntlet itself runs in
+   quick mode internally via `PSK_GAUNTLET_QUICK=1`). Failures auto-file
    `revert-<Pxx|Gxx>` tasks under TASKS.md backlog and open a labelled
    GitHub issue. Manual single-proposal soak:
    `gh workflow run postmerge-gauntlet-soak.yml -f proposal=Pxx-name`

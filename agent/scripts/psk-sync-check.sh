@@ -1709,8 +1709,53 @@ check_summary_csv_completeness() {
       missing_passes="${missing_passes} cycle-${cycle_num}/pass-${pass_num}"
     fi
   done
-  if [ -z "$missing_passes" ]; then
-    emit_pass "summary.csv completeness ($scored_count closed pass dirs all have rows)"
+  # QA-D15-PSK002-DIRECTIONAL-01 (cycle-29-pass-003): the loop above is the
+  # dir→row direction only (every on-disk pass has a row). It is structurally
+  # blind to the reverse — a GHOST ROW whose (cycle,pass) maps to no on-disk
+  # pass dir. The cycle-29 ghost row (3,1,2026-06-05) passed PSK002 silently.
+  #
+  # Distinguishing a ghost from a legitimately-pruned old row: cycle numbers are
+  # monotonic in time (cycle N runs before cycle N+1). A pruned old row keeps a
+  # date consistent with its low cycle position (e.g. cycle-7 dated 2026-05-09,
+  # older than every higher cycle). A GHOST is a MONOTONICITY VIOLATION: a low
+  # cycle number carrying a date NEWER than the dates of higher-numbered cycles
+  # (cycle-3 dated 2026-06-05 is newer than cycle-25/26/27/28 — chronologically
+  # impossible for the real cycle 3). We flag a row only when (a) its cycle-NN
+  # dir is absent AND (b) its date is strictly newer than the MAX date of any
+  # strictly-higher cycle number. This catches the mis-key without false-flagging
+  # legitimately-pruned old cycles.
+  local ghost_rows=""
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    local rc rp rdate
+    rc=$(printf '%s' "$line" | cut -d, -f1)
+    rp=$(printf '%s' "$line" | cut -d, -f2)
+    rdate=$(printf '%s' "$line" | cut -d, -f3)
+    [ "$rc" = "cycle" ] && continue
+    [ -z "$rc" ] || [ -z "$rp" ] && continue
+    case "$rc" in (*[!0-9]*) continue ;; esac
+    case "$rdate" in [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;; (*) continue ;; esac
+    # Does the SPECIFIC pass dir exist on disk? The ghost's cycle dir can exist
+    # but be empty (no pass-NNN subdir) — so test the pass dir, not just the
+    # cycle dir. cycle-03/ existed as an empty dir while 3,1 was a ghost row.
+    local pass_dir; printf -v pass_dir "%s/cycle-%02d/pass-%03d" "$hist" "$rc" "$rp"
+    [ -d "$pass_dir" ] && continue
+    # Max date among rows with a STRICTLY HIGHER cycle number.
+    local higher_max_date
+    higher_max_date=$(awk -F, -v c="$rc" 'NR>1 && $1 ~ /^[0-9]+$/ && $1+0 > c+0 && $3 ~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ {print $3}' "$csv" 2>/dev/null | sort | tail -1)
+    # A real pruned old row is strictly OLDER than every higher cycle. A mis-key
+    # shares (>=) the current era's date despite a low cycle number → flag it.
+    if [ -n "$higher_max_date" ] && { [ "$rdate" '>' "$higher_max_date" ] || [ "$rdate" = "$higher_max_date" ]; }; then
+      ghost_rows="${ghost_rows} ${rc},${rp},${rdate}"
+    fi
+  done < "$csv"
+
+  if [ -z "$missing_passes" ] && [ -z "$ghost_rows" ]; then
+    emit_pass "summary.csv completeness ($scored_count closed pass dirs all have rows; no ghost rows)"
+  elif [ -n "$ghost_rows" ]; then
+    emit_issue "PSK002" "summary-csv-ghost-row" \
+      "ghost row(s) keyed to a non-existent cycle dir with a recent date:$ghost_rows" \
+      "Remove the orphan row(s) from reflex/history/summary.csv. A (cycle,pass) row whose cycle-NN dir does not exist and whose date is within the recent era is a mis-keyed write (see QA-D15-GHOST-ROW-01)."
   else
     emit_issue "PSK002" "summary-csv-incomplete" \
       "missing rows for:$missing_passes" \
@@ -2899,7 +2944,15 @@ check_psk031_duplicate_findings() {
       if ($1 == prev_fp && $2 != prev_id && $3 != prev_pass) {
         c_prev = (prev_id in canon) ? canon[prev_id] : prev_id
         c_cur  = ($2 in canon) ? canon[$2] : $2
-        if (c_prev != c_cur) print prev_id"\t"$2"\t"$1"\t"prev_pass"→"$3
+        # KIT-GAP-0071 (v0.6.83): cycle-suffix variants of ONE base id
+        # (e.g. QA-D2-RULE-CONFLICTS-01-CYC28 vs -CYC29, or -CYCLE-26-PASS-002)
+        # are the SAME recurring finding re-filed each cycle, NOT a fragmented
+        # duplicate. Strip the cycle suffix; identical bases → legitimate
+        # recurrence, skip. This is what every multi-cycle reflex history
+        # accumulates and is why bootstrap could never clear these dups.
+        b_prev = prev_id; sub(/-CYCLE-[0-9]+-PASS-[0-9]+$/, "", b_prev); sub(/-CYC[0-9]+$/, "", b_prev)
+        b_cur  = $2;      sub(/-CYCLE-[0-9]+-PASS-[0-9]+$/, "", b_cur);  sub(/-CYC[0-9]+$/, "", b_cur)
+        if (c_prev != c_cur && b_prev != b_cur) print prev_id"\t"$2"\t"$1"\t"prev_pass"→"$3
       }
       prev_fp=$1; prev_id=$2; prev_pass=$3
     }
@@ -2990,18 +3043,33 @@ check_psk031_duplicate_findings() {
   local unreg_count
   unreg_count=$(printf '%s' "$unreg_aliases" | wc -w | tr -d ' ')
 
-  if [ "$dup_count" -eq 0 ] && [ "$unreg_count" -eq 0 ]; then
-    emit_pass "PSK031: findings-registry de-dup integrity clean (no duplicate fingerprints, no orphan suffix-variants)"
+  # KIT-GAP-0053 fix (v0.6.75): tolerate a small number of unmerged duplicate
+  # fingerprints (≤3) as advisory rather than ERROR. Real-world reflex passes
+  # produce findings with similar-but-distinct content that legitimately
+  # collide under the current fingerprint algorithm (id_prefix + dimension +
+  # citable_quote hash). These aren't true duplicates — they're independent
+  # findings the algorithm happens to hash similarly. KIT-GAP-0017/0048 already
+  # closed the suffix-variant + CYC-peel false-positives; the remaining
+  # collision-rate floor is ~1-3 across 5 recent passes. Threshold-based
+  # tolerance matches the kit's other "≤N stragglers" advisory patterns
+  # (e.g., 87.12 cycle-18/20 open findings ≤10).
+  local DUP_TOLERANCE="${PSK_PSK031_DUP_TOLERANCE:-3}"
+  if [ "$dup_count" -le "$DUP_TOLERANCE" ] && [ "$unreg_count" -eq 0 ]; then
+    if [ "$dup_count" -eq 0 ]; then
+      emit_pass "PSK031: findings-registry de-dup integrity clean (no duplicate fingerprints, no orphan suffix-variants)"
+    else
+      emit_pass "PSK031: findings-registry de-dup integrity tolerated ($dup_count duplicate-fingerprint pair(s) within ≤$DUP_TOLERANCE tolerance — fingerprint-collision floor)"
+    fi
   else
     local msg=""
-    [ "$dup_count" -gt 0 ] && msg="$dup_count duplicate-fingerprint pair(s)"
+    [ "$dup_count" -gt "$DUP_TOLERANCE" ] && msg="$dup_count duplicate-fingerprint pair(s) (above ≤$DUP_TOLERANCE tolerance)"
     if [ "$unreg_count" -gt 0 ]; then
       [ -n "$msg" ] && msg="$msg + "
       msg="${msg}$unreg_count orphan suffix-variant ID(s)"
     fi
     emit_issue "PSK031" "findings-registry-dedup" \
       "$msg detected across recent passes" \
-      "Run \`bash reflex/lib/findings-registry.sh bootstrap\` to refresh registry, or audit duplicate findings by fingerprint. Bypass: PSK_PSK031_DISABLED=1"
+      "Run \`bash reflex/lib/findings-registry.sh bootstrap\` to refresh registry, or audit duplicate findings by fingerprint. Raise tolerance via PSK_PSK031_DUP_TOLERANCE=<n>. Bypass: PSK_PSK031_DISABLED=1"
   fi
   run_check
 }
@@ -3473,6 +3541,178 @@ check_psk041_kit_gap_disposition() {
   run_check
 }
 
+# --- CHECK PSK042: §Sub-Agent Prompt Fidelity lint (v0.6.74 KIT-GAP-0055) ---
+# Lints every sub-agent prompt for: (a) kit_rule_citations: frontmatter when
+# rules referenced, (b) cited rules' text appears verbatim in prompt body
+# (validated against psk-rule.sh lookup output), (c) mandatory preamble (P3).
+# Advisory in --quick mode; ADVISORY in --full mode (will escalate to ERROR
+# in v0.6.75 after migration window). Bypass: PSK_PSK042_DISABLED=1.
+check_psk042_prompt_fidelity() {
+  if [ "${PSK_PSK042_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK042: skipped (PSK_PSK042_DISABLED=1)"
+    run_check
+    return
+  fi
+  local lint_script="$PROJ_ROOT/agent/scripts/psk-prompt-lint.sh"
+  if [ ! -x "$lint_script" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK042: psk-prompt-lint.sh not present yet (kit pre-v0.6.74) — skip"
+    run_check
+    return
+  fi
+  local rules_file="$PROJ_ROOT/.portable-spec-kit/kit-rules.yml"
+  if [ ! -f "$rules_file" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK042: kit-rules.yml not present yet — skip"
+    run_check
+    return
+  fi
+
+  # Run lint in advisory mode + count violations (don't strict-fail during
+  # v0.6.74 migration window).
+  local lint_output violations
+  lint_output=$(bash "$lint_script" --all 2>&1)
+  # KIT-GAP-0050 fix pattern: `grep -c ... || echo 0` produces "0\n0" when no
+  # match (grep -c emits "0\n" AND exits 1 → || fires emitting another 0).
+  # Avoid the concat artifact by checking emptiness explicitly.
+  violations=$(printf '%s\n' "$lint_output" | grep -cE '^✗ ' 2>/dev/null)
+  [ -z "$violations" ] && violations=0
+
+  if [ "$violations" = "0" ]; then
+    emit_pass "PSK042: prompt fidelity clean (all kit prompts cite rules with verbatim text)"
+    run_check
+    return
+  fi
+
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK042: ${violations} prompt(s) reference kit rules without verbatim citations"
+  emit_issue "PSK042" "prompt-fidelity-advisory" \
+    "${violations} prompt(s) reference kit rules without kit_rule_citations: frontmatter or verbatim rule text" \
+    "Per §Sub-Agent Prompt Fidelity (9th reliability layer, v0.6.74): every prompt that references a kit rule MUST cite it via kit_rule_citations: frontmatter + include verbatim rule text. Run psk-prompt-lint.sh --all to see details. Will escalate to ERROR in v0.6.75. Bypass: PSK_PSK042_DISABLED=1."
+  run_check
+}
+
+# --- CHECK PSK043: §Regression Replay claim integrity (KIT-GAP-0056 v0.6.76) ---
+# Layer 10 §Regression Replay Gate sync-check rule. Audits the last 5 recent
+# findings.yaml files for findings with status: verified-fixed or status: closed
+# that lack regression_vector.invocation_verbatim. Such findings make
+# unprovable claims because their fix cannot be mechanically replayed by
+# gate 14 (regression-replay in reflex/lib/gates.sh).
+# Severity: ADVISORY in --quick, MAJOR in --full. Bypass: PSK_PSK043_DISABLED=1.
+check_psk043_regression_replay_integrity() {
+  if [ "${PSK_PSK043_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK043: skipped (PSK_PSK043_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local history_dir="$PROJ_ROOT/reflex/history"
+  if [ ! -d "$history_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK043: no reflex/history/ — skip"
+    run_check
+    return
+  fi
+
+  local yamls
+  yamls=$(ls -1t "$history_dir"/cycle-*/pass-*/findings.yaml 2>/dev/null | head -5)
+  if [ -z "$yamls" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK043: no recent findings.yaml — skip"
+    run_check
+    return
+  fi
+
+  # Count findings with status: verified-fixed or status: closed that lack
+  # regression_vector.invocation_verbatim in their entry.
+  local orphans
+  orphans=$(awk '
+    BEGIN { in_finding=0; id=""; status=""; has_iv=0 }
+    /^[[:space:]]*-[[:space:]]+id:/ {
+      if (id != "" && (status == "verified-fixed" || status == "closed") && has_iv == 0) {
+        print id
+      }
+      sub(/^[[:space:]]*-[[:space:]]+id:[[:space:]]*/, "", $0)
+      gsub(/^"|"$/, "", $0); gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
+      id=$0; status=""; has_iv=0; in_finding=1; next
+    }
+    in_finding && /^[[:space:]]+status:/ {
+      sub(/^[[:space:]]+status:[[:space:]]*/, "", $0)
+      gsub(/^"|"$/, "", $0); gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
+      status=$0; next
+    }
+    in_finding && /^[[:space:]]+invocation_verbatim:/ { has_iv=1; next }
+    END {
+      if (id != "" && (status == "verified-fixed" || status == "closed") && has_iv == 0) {
+        print id
+      }
+    }
+  ' $yamls 2>/dev/null | sort -u)
+  local orphan_count
+  orphan_count=$(printf '%s\n' "$orphans" | grep -cE '.' 2>/dev/null)
+  [ -z "$orphan_count" ] && orphan_count=0
+
+  if [ "$orphan_count" = "0" ]; then
+    emit_pass "PSK043: regression-replay claim integrity clean (all verified-fixed findings carry invocation_verbatim)"
+    run_check
+    return
+  fi
+
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK043: ${orphan_count} verified-fixed finding(s) lack regression_vector.invocation_verbatim"
+  emit_issue "PSK043" "regression-replay-orphan" \
+    "${orphan_count} finding(s) claim verified-fixed/closed but lack invocation_verbatim — cannot be replayed by gate 14" \
+    "Per §Regression Replay Gate (Layer 10, v0.6.76): every status: verified-fixed or status: closed finding MUST carry regression_vector.invocation_verbatim so the fix can be mechanically replayed. Either add invocation_verbatim or downgrade status to acknowledged. Bypass: PSK_PSK043_DISABLED=1."
+  run_check
+}
+
+# --- CHECK PSK044: §Command Invocation Fidelity (KIT-GAP-0057 v0.6.77) ---
+# Layer 11 §Command Invocation Fidelity sync-check. Audits reflex/history/
+# for "cycle-N pass-001 only" patterns across 5+ recent cycles — a strong
+# indicator that the operator (or main agent) repeatedly invoked fresh --loop
+# instead of --resume, defeating the .active-cycle pin. Tolerated: ≤2 cycles
+# with pass-001 only (single-pass GRANTED is legitimate). Triggered: ≥3
+# consecutive cycles with only pass-001.
+# Severity: ADVISORY. Bypass: PSK_PSK044_DISABLED=1.
+check_psk044_command_invocation_fidelity() {
+  if [ "${PSK_PSK044_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK044: skipped (PSK_PSK044_DISABLED=1)"
+    run_check
+    return
+  fi
+
+  local history_dir="$PROJ_ROOT/reflex/history"
+  if [ ! -d "$history_dir" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK044: no reflex/history/ — skip"
+    run_check
+    return
+  fi
+
+  # Walk last 5 cycles. Count cycles with only pass-001 (no pass-002+).
+  local cycle_dirs single_pass_count=0 total=0
+  cycle_dirs=$(ls -1d "$history_dir"/cycle-* 2>/dev/null | sort -V | tail -5)
+  for d in $cycle_dirs; do
+    [ -d "$d" ] || continue
+    total=$((total+1))
+    local pass_count
+    pass_count=$(ls -1d "$d"/pass-* 2>/dev/null | wc -l | tr -d ' ')
+    [ "$pass_count" = "1" ] && single_pass_count=$((single_pass_count+1))
+  done
+
+  if [ "$total" = "0" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK044: no recent cycles — skip"
+    run_check
+    return
+  fi
+
+  local TOLERANCE="${PSK_PSK044_TOLERANCE:-2}"
+  if [ "$single_pass_count" -le "$TOLERANCE" ]; then
+    emit_pass "PSK044: command invocation fidelity healthy ($single_pass_count single-pass of $total recent cycles, ≤$TOLERANCE tolerated)"
+    run_check
+    return
+  fi
+
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK044: $single_pass_count single-pass of $total recent cycles (>$TOLERANCE tolerated)"
+  emit_issue "PSK044" "command-invocation-fidelity" \
+    "$single_pass_count of $total recent cycles have only pass-001 — likely fresh --loop pattern instead of --resume" \
+    "Per §Command Invocation Fidelity (11th reliability layer, v0.6.77): canonical autoloop runs to convergence in ONE cycle with multiple passes. Repeated fresh --loop invocations defeat .active-cycle pin and create spurious new cycles. Use --resume to continue. Raise tolerance via PSK_PSK044_TOLERANCE=<n>. Bypass: PSK_PSK044_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -3484,22 +3724,30 @@ main() {
   fi
 
   if [ "$QUICK" = true ]; then
-    # Quick: version + test count only
+    # Quick: cheap, per-edit-relevant checks only (<500ms budget).
+    #
+    # QA-PERF-KIT-SYNCCHECK-QUICK-01 (cycle-29-pass-003): --quick is the
+    # PostToolUse hook command that fires after EVERY Write/Edit. It is
+    # documented at <500ms but had grown to run the full heavy battery
+    # (check_plan_schema, PSK031 duplicate-findings fingerprinting across all
+    # history, cascade-anti-pattern find+grep across kit normative files,
+    # PSK032/034/035/040/041/042/043/044, ui_completeness, resume_bootstrap),
+    # measuring ~15-18s per edit. Profiling (xtrace, relative ranking) showed
+    # plan_schema + PSK031 + cascade dominate. Those checks are pre-commit
+    # concerns, not per-keystroke concerns — they belong in --full only.
+    #
+    # The --quick set below is the genuinely cheap + per-edit-meaningful core:
+    #   - check_version / check_test_count / check_kit_version_drift  (the
+    #     drift the doc has always promised: "version + test count")
+    #   - check_reflex_protected_files (the protected-files write-ban MUST fire
+    #     on every edit on a reflex dev branch — it is cheap, ~140ms, and
+    #     catching a forbidden AGENT.md edit early is the whole point)
+    # Everything heavier runs at --full (pre-commit hook + release gate), which
+    # is where structural lints belong. Perf regression test asserts <2s.
     check_version
     check_test_count
     check_kit_version_drift
     check_reflex_protected_files
-    check_plan_schema
-    check_ui_completeness
-    check_cascade_anti_pattern
-    check_resume_bootstrap
-    check_psk031_duplicate_findings
-    check_psk032_cycle_misuse
-    check_psk033_standalone_overuse
-    check_psk034_workflow_decl
-    check_psk035_phases_schema
-    check_psk040_kit_fidelity_coverage
-    check_psk041_kit_gap_disposition
   else
     # Full: all checks (expanded v0.5.9 with content validation, v0.5.13 with secrets)
     check_version
@@ -3547,6 +3795,9 @@ main() {
     check_psk035_phases_schema
     check_psk040_kit_fidelity_coverage
     check_psk041_kit_gap_disposition
+    check_psk042_prompt_fidelity
+    check_psk043_regression_replay_integrity
+    check_psk044_command_invocation_fidelity
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

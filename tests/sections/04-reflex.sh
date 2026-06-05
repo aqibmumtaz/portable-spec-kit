@@ -645,7 +645,10 @@ done
 grep -q "REFLEX_INSTALL_RE" "$PROJ/reflex/lib/preconditions.sh" \
   && pass "G3: preconditions.sh has REFLEX_INSTALL_RE pattern" \
   || fail "G3: preconditions.sh missing reflex-install pattern"
-grep -q "Gate 2 relaxed for reflex-install" "$PROJ/reflex/lib/preconditions.sh" \
+# KIT-GAP-0010 (v0.6.69) widened the walk-back path; the relaxation message
+# changed from "Gate 2 relaxed for reflex-install" to "Gate 2 relaxed for
+# intermediate commit". Accept either form so the test survives the rename.
+grep -qE "Gate 2 relaxed (for reflex-install|for intermediate commit)" "$PROJ/reflex/lib/preconditions.sh" \
   && pass "G3: preconditions logs relaxation message" \
   || fail "G3: preconditions missing relaxation log"
 for pat in "reflex install" "install reflex" "reflex setup" "install-into-project"; do
@@ -1572,6 +1575,38 @@ else
     pass "N56/no-ghost: empty-pass path invokes score.sh" || \
     fail "N56/no-ghost: empty-pass path misses score.sh → ghost pass dir bug"
 fi
+
+# QA-PSK002-SUMMARY-CSV-01-CYC29 — loop.sh's NON-GRANTED convergence terminator
+# (DENIED / exhausted / PLATEAU / FINDINGS_FLOOR / REGRESSION) must ALSO write a
+# summary.csv row, not just the GRANTED branch. Static: the score.sh call must
+# appear at least twice in loop.sh (once in the GRANTED branch, once in the else).
+LOOP_SCORE_CALLS=$(grep -c 'reflex/lib/score.sh' "$PROJ/reflex/lib/loop.sh" 2>/dev/null | head -1)
+[ "${LOOP_SCORE_CALLS:-0}" -ge 2 ] \
+  && pass "PSK002-CYC29: loop.sh calls score.sh in BOTH GRANTED and non-GRANTED convergence branches" \
+  || fail "PSK002-CYC29: loop.sh has only ${LOOP_SCORE_CALLS:-0} score.sh call(s) — DENIED-path pass dirs miss summary.csv rows"
+# The else-branch score.sh call must reference the finding so the intent is greppable
+grep -q "QA-PSK002-SUMMARY-CSV-01-CYC29" "$PROJ/reflex/lib/loop.sh" \
+  && pass "PSK002-CYC29: loop.sh else-branch score.sh call is annotated with the finding id" \
+  || fail "PSK002-CYC29: loop.sh missing the DENIED-path score.sh annotation"
+
+# Behavioral: run score.sh on a synthetic DENIED pass dir and assert it writes a
+# summary.csv row (proves the DENIED path is recoverable via the same score.sh
+# invocation the hardened else-branch now uses).
+PSK002_ROOT=$(mktemp -d)
+mkdir -p "$PSK002_ROOT/reflex/history/cycle-99/pass-001"
+mkdir -p "$PSK002_ROOT/reflex/lib"
+cp "$PROJ/reflex/lib/score.sh" "$PSK002_ROOT/reflex/lib/score.sh"
+touch "$PSK002_ROOT/reflex/history/cycle-99/pass-001/signoff.md"
+REFLEX_PASS_DIR="$PSK002_ROOT/reflex/history/cycle-99/pass-001" \
+  REFLEX_PROJ_ROOT="$PSK002_ROOT" \
+  REFLEX_GATES_STATUS="FAIL" \
+  bash "$PSK002_ROOT/reflex/lib/score.sh" >/dev/null 2>&1
+if grep -qE '^99,1,' "$PSK002_ROOT/reflex/history/summary.csv" 2>/dev/null; then
+  pass "PSK002-CYC29: score.sh writes a summary.csv row for a DENIED (gates=FAIL) pass"
+else
+  fail "PSK002-CYC29: score.sh did NOT write a row for the synthetic DENIED pass"
+fi
+rm -rf "$PSK002_ROOT"
 
 # --- Token optimization report ---
 [ -x "$PROJ/reflex/lib/token-report.sh" ] \
@@ -4906,6 +4941,70 @@ PRUNE_SP_REMAIN=$(find "$PRUNE_SP_DIR/reflex/history/standalone" -maxdepth 1 -ty
   && pass "N84/prune-spaces: prune-history.sh prunes correctly under spaced path (10 of 15 kept)" \
   || fail "N84/prune-spaces: spaced-path prune left $PRUNE_SP_REMAIN dirs (expected 10) — word-split regression"
 rm -rf "$PRUNE_SP_ROOT"
+
+# --- score.sh ghost-row guard (QA-D15-GHOST-ROW-01 regression, cycle-29-pass-003) ---
+# A cycle-29 housekeeping write keyed a summary.csv row as 3,1 (from a stray
+# REFLEX_PASS_DIR path containing cycle-03) even though the pass dir's .cycle-meta
+# said cycle=29 and no cycle-03 pass dir existed. Two guards:
+#   (1) .cycle-meta `cycle=` is authoritative over the dirname-regex.
+#   (2) score.sh refuses to write a row whose (cycle,pass) maps to no on-disk dir.
+GHOST_ROOT=$(mktemp -d)
+mkdir -p "$GHOST_ROOT/reflex/history/cycle-29/pass-007"
+mkdir -p "$GHOST_ROOT/reflex/lib"
+cp "$PROJ/reflex/lib/score.sh" "$GHOST_ROOT/reflex/lib/score.sh"
+# Real pass dir: cycle-29/pass-007 with .cycle-meta cycle=29
+printf 'cycle=29\niteration=1\nmode=full\n' > "$GHOST_ROOT/reflex/history/cycle-29/pass-007/.cycle-meta"
+echo "cycle,pass,date" > "$GHOST_ROOT/reflex/history/summary.csv"
+
+# Test 1: scoring the REAL cycle-29/pass-007 dir keys the row as cycle 29.
+REFLEX_PROJ_ROOT="$GHOST_ROOT" REFLEX_PASS_DIR="$GHOST_ROOT/reflex/history/cycle-29/pass-007" \
+  bash "$GHOST_ROOT/reflex/lib/score.sh" >/dev/null 2>&1 || true
+GHOST_REAL_KEY=$(awk -F, 'NR>1 && $2=="7"{print $1}' "$GHOST_ROOT/reflex/history/summary.csv" | head -1)
+[ "$GHOST_REAL_KEY" = "29" ] \
+  && pass "QA-D15-GHOST-ROW-01/real-key: score.sh keys cycle-29/pass-007 row as cycle 29" \
+  || fail "QA-D15-GHOST-ROW-01/real-key: expected cycle 29, got '$GHOST_REAL_KEY'"
+
+# Test 2: .cycle-meta is authoritative — a pass dir whose .cycle-meta says cycle=29
+# must never produce a cycle-3 (or any other) ghost key, regardless of dirname noise.
+mkdir -p "$GHOST_ROOT/reflex/history/cycle-29/pass-008"
+printf 'cycle=29\niteration=2\nmode=full\n' > "$GHOST_ROOT/reflex/history/cycle-29/pass-008/.cycle-meta"
+REFLEX_PROJ_ROOT="$GHOST_ROOT" REFLEX_PASS_DIR="$GHOST_ROOT/reflex/history/cycle-29/pass-008" \
+  bash "$GHOST_ROOT/reflex/lib/score.sh" >/dev/null 2>&1 || true
+GHOST_NO_3=$(awk -F, '$1=="3"{print "GHOST"}' "$GHOST_ROOT/reflex/history/summary.csv" | head -1)
+[ -z "$GHOST_NO_3" ] \
+  && pass "QA-D15-GHOST-ROW-01/no-ghost: no cycle-3 ghost row written for cycle-29 passes" \
+  || fail "QA-D15-GHOST-ROW-01/no-ghost: a cycle-3 ghost row leaked into summary.csv"
+
+# Test 3: committed summary.csv carries no ghost row dated 2026-06-05 under cycle 3.
+LIVE_GHOST=$(awk -F, '$1=="3" && $3=="2026-06-05"{print "PRESENT"}' "$PROJ/reflex/history/summary.csv" | head -1)
+[ -z "$LIVE_GHOST" ] \
+  && pass "QA-D15-GHOST-ROW-01/live: committed summary.csv has no 3,1,2026-06-05 ghost row" \
+  || fail "QA-D15-GHOST-ROW-01/live: ghost row 3,1,2026-06-05 still present in summary.csv"
+rm -rf "$GHOST_ROOT"
+
+# ── QA-D2-BASH32-MAPFILE-01 (cycle-29-pass-004) ─────────────────────────────
+# psk-soak-schedule.sh:95 used the bash-4 `mapfile` builtin for dedup, which is
+# absent on macOS /bin/bash 3.2 (the kit's bash-3.2-compat floor). Under 3.2 the
+# mapfile call failed with "mapfile: command not found", silently no-op'ing the
+# dedup. Fix replaced it with a portable while-read rebuild. These tests assert
+# the script source no longer references mapfile/readarray AND that an actual
+# /bin/bash run emits no mapfile error (the QA regression_vector).
+# Strip comment lines before grepping — only an executable mapfile/readarray
+# call is a bash-3.2 violation; the fix's explanatory comment may name them.
+if grep -vE '^[[:space:]]*#' "$PROJ/agent/scripts/psk-soak-schedule.sh" \
+   | grep -qE '(^|[^a-zA-Z_])(mapfile|readarray)([^a-zA-Z_]|$)'; then
+  fail "QA-D2-BASH32-MAPFILE-01/static: psk-soak-schedule.sh still calls bash-4 mapfile/readarray"
+else
+  pass "QA-D2-BASH32-MAPFILE-01/static: psk-soak-schedule.sh free of bash-4 mapfile/readarray calls"
+fi
+
+# Behavioral: replay the QA regression_vector under /bin/bash (3.2 on macOS).
+# expected_assertion: 0 mapfile errors on stderr.
+SOAK_MAPFILE_ERRS=$(/bin/bash "$PROJ/agent/scripts/psk-soak-schedule.sh" --proposal P01-mapfile-test 2>&1 \
+  | grep -c 'mapfile: command not found')
+[ "$SOAK_MAPFILE_ERRS" = "0" ] \
+  && pass "QA-D2-BASH32-MAPFILE-01/runtime: no 'mapfile: command not found' on bash-3.2 dedup path" \
+  || fail "QA-D2-BASH32-MAPFILE-01/runtime: $SOAK_MAPFILE_ERRS mapfile error(s) on bash-3.2 dedup path"
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""

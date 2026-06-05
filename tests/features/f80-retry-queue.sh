@@ -46,12 +46,47 @@ else
   fail "f80 AC3: at least one of list/add/drain/clear subcommands missing"
 fi
 
-# AC4 — exponential backoff schedule documented
-if grep -qE '5.?min' "$QUEUE_SCRIPT" && grep -qE 'AWAITING_HUMAN_ARBITRATION' "$QUEUE_SCRIPT"; then
-  pass "f80 AC4: exponential backoff schedule documented (5min, AWAITING_HUMAN_ARBITRATION)"
+# AC4 — exponential backoff schedule is CORRECTLY IMPLEMENTED.
+#
+# QA-CRIT-FIDELITY-F80-AC4 (cycle-29-pass-003): the prior assertion was a vacuous
+# five-minute substring grep that passed whether the schedule was right,
+# wrong, or absent. It never validated the numeric sequence. This rewrite is a
+# behavioral assertion against the implemented constant + the runtime transition:
+#   (a) the BACKOFF_MIN constant in the script equals EXACTLY [5, 15, 45, 120, 360];
+#   (b) driving the queue (add → fail×5) reaches AWAITING_HUMAN_ARBITRATION at
+#       retry_count ≥ 5, proving the MAX_RETRIES boundary behaves.
+# A wrong schedule (e.g. the doc-drift value 5/30/120/360) now fails AC4a.
+
+# AC4a — implemented backoff sequence is the canonical [5, 15, 45, 120, 360].
+F80_BACKOFF=$(grep -E '^BACKOFF_MIN[[:space:]]*=' "$QUEUE_SCRIPT" | head -1 | grep -oE '\[[0-9, ]+\]' | tr -d ' ')
+if [ "$F80_BACKOFF" = "[5,15,45,120,360]" ]; then
+  pass "f80 AC4a: implemented backoff schedule is exactly [5,15,45,120,360] (5min/15min/45min/2h/6h)"
 else
-  fail "f80 AC4: backoff schedule documentation incomplete"
+  fail "f80 AC4a: BACKOFF_MIN is '$F80_BACKOFF', expected [5,15,45,120,360] — schedule wrong or drifted"
 fi
+
+# AC4b — behavioral: driving add → fail repeatedly reaches AWAITING_HUMAN_ARBITRATION
+# at retry_count ≥ MAX_RETRIES (5). Uses an isolated temp queue so the real queue
+# is untouched. Catches a broken MAX_RETRIES boundary that AC4a alone cannot.
+F80_QTMP=$(mktemp -d)
+F80_QFILE="$F80_QTMP/retry-queue.yml"
+F80_ADD_OUT=$(PSK_RETRY_QUEUE_FILE="$F80_QFILE" bash "$QUEUE_SCRIPT" \
+  add "test-wf" "test-phase" "test-target" "/tmp/p.md" "/tmp/a.md" "init failure" 2>/dev/null)
+F80_EID=$(echo "$F80_ADD_OUT" | grep -oE 'added entry [^ ]+' | awk '{print $3}')
+if [ -n "$F80_EID" ]; then
+  # Fail it 5 more times (rc 1→5) to cross MAX_RETRIES.
+  for _i in 1 2 3 4 5; do
+    PSK_RETRY_QUEUE_FILE="$F80_QFILE" bash "$QUEUE_SCRIPT" fail "$F80_EID" "retry $_i" >/dev/null 2>&1 || true
+  done
+  if grep -qE 'AWAITING_HUMAN_ARBITRATION' "$F80_QFILE"; then
+    pass "f80 AC4b: queue entry reaches AWAITING_HUMAN_ARBITRATION after MAX_RETRIES failures"
+  else
+    fail "f80 AC4b: entry did not reach AWAITING_HUMAN_ARBITRATION after 5 failures — MAX_RETRIES boundary broken"
+  fi
+else
+  fail "f80 AC4b: could not add a test entry to drive the backoff schedule"
+fi
+rm -rf "$F80_QTMP"
 
 # AC5 — list subcommand reachable against current queue
 if bash "$QUEUE_SCRIPT" list >/dev/null 2>&1; then

@@ -144,6 +144,14 @@ NC='\033[0m'
 
 WORKFLOW="${1:-}"
 
+# KIT-GAP-0068: idempotency marker. Records the mtime of a critic-result.md
+# that already PASSED dual-gate validation, so a follow-up invocation (e.g.
+# psk-dispatch's verify-gate re-running this script as the step-9 gate) can
+# confirm the same clean result WITHOUT deleting it + re-demanding a critic.
+# Honors the framework Phase-Idempotency contract: re-running a passed gate
+# is a no-op that returns the same PASS, not a fresh AWAITING_CRITIC loop.
+PASSED_MARKER="$STATE_DIR/.validation-passed.${WORKFLOW}"
+
 # Map workflow name to critic-spawn template
 workflow_to_template() {
   case "$1" in
@@ -243,6 +251,28 @@ result_is_fresh() {
   fi
 }
 
+# KIT-GAP-0068 idempotency short-circuit: if a prior validate already PASSED
+# for this exact critic-result.md (same mtime) and the result is still clean,
+# confirm the pass without re-spawning. This is what lets psk-dispatch's
+# verify-gate re-run CONFIRM a pass the agent already satisfied directly — the
+# bash critic (Layer 2A) above already re-ran, so content drift is still caught.
+# Without this, the success path deletes INVOKE_STAMP and the next invocation
+# treats the result as stale, re-demanding a critic forever (the AWAITING_CRITIC
+# loop). The mtime-equality guard is self-correcting: a fresh `prepare` writes a
+# new critic-result (or deletes it), so a new workflow never false-passes here.
+if [ -f "$RESULT_FILE" ] && [ -f "$PASSED_MARKER" ]; then
+  _cur_mtime=$(stat -f "%m" "$RESULT_FILE" 2>/dev/null || stat -c "%Y" "$RESULT_FILE" 2>/dev/null)
+  _saved_mtime=$(cat "$PASSED_MARKER" 2>/dev/null)
+  if [ -n "$_cur_mtime" ] && [ "$_cur_mtime" = "$_saved_mtime" ] \
+     && ! grep -q "^STALE:" "$RESULT_FILE" 2>/dev/null \
+     && grep -q "^CURRENT:" "$RESULT_FILE" 2>/dev/null \
+     && verify_quotes "$RESULT_FILE" >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓ Sub-agent critic: prior pass confirmed (idempotent — result unchanged)${NC}"
+    echo -e "\n${GREEN}Validation PASSED — dual gate clean (bash + sub-agent critic)${NC}"
+    exit 0
+  fi
+fi
+
 if ! result_is_fresh; then
   # Write task file and exit AWAITING_CRITIC
   echo "$invoke_time" > "$INVOKE_STAMP"
@@ -298,6 +328,12 @@ echo -e "  ${GREEN}✓ Sub-agent critic: $current_count file(s) CURRENT, 0 STALE
 if [ -x "$CRITIC_SPAWN" ]; then
   bash "$CRITIC_SPAWN" complete "$TEMPLATE" >/dev/null 2>&1 || true
 fi
+
+# KIT-GAP-0068: record the passing critic-result's mtime so a follow-up
+# verify-gate re-run (psk-dispatch confirming the step-9 gate) short-circuits
+# above instead of re-demanding a critic. Self-correcting via mtime-equality.
+_pass_mtime=$(stat -f "%m" "$RESULT_FILE" 2>/dev/null || stat -c "%Y" "$RESULT_FILE" 2>/dev/null)
+[ -n "$_pass_mtime" ] && echo "$_pass_mtime" > "$PASSED_MARKER"
 
 # Clean up stamp so next invocation (next workflow) starts fresh
 rm -f "$INVOKE_STAMP"

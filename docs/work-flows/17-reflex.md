@@ -26,7 +26,7 @@
 | **Inputs** | Prep-release commit · `agent/SPECS.md` · `agent/REQS.md` · source code · `reflex/config.yml` · Phase 0 pre-computed artifacts (`claims.yaml`, `state-diff.yaml`) |
 | **Outputs** | `reflex/history/cycle-NN/pass-NNN/` (findings.yaml · signoff.md · verdict.md · dev-trace.md · gates-result.md) · fast-forward merge to main on GRANTED |
 | **Script** | `bash reflex/run.sh` — sole public entry point |
-| **Gate** | 13 mechanical gates per pass (protected-files · commit-convention · console-cleanliness · mandate-compliance · convergence-audit · playwright-suite · config-yml · dev-self-verify · kit-evolution G1/G2) |
+| **Gate** | 14 mechanical gates per pass (protected-files · commit-convention · console-cleanliness · mandate-compliance · convergence-audit · playwright-suite · config-yml · dev-self-verify · kit-evolution G1/G2 · workflow-fidelity-completeness · audit-completeness · regression-replay) |
 | **When blocked** | INTERRUPTED verdict from prior pass without `operator-recovered` annotation (L1 abort-detection) · precondition gate failures (clean tree, prep-release marker, bootstrap integrity) |
 
 ---
@@ -60,7 +60,7 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  PHASE 4: GATES + VERDICT + DECISION (automated)            │
-│     gates.sh runs 13 mechanical gates                       │
+│     gates.sh runs 14 mechanical gates                       │
 │     regression-diff.sh + score.sh + write_verdict           │
 │     ├─ GRANTED  → ff-merge dev branch → main; cycle done    │
 │     ├─ DENIED + iter < 3 → restart Phase 1 (same cycle)     │
@@ -71,6 +71,15 @@
 ---
 
 Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 28 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. In orchestrated mode (v0.6.37+) the QA orchestrator spawns parallel dim-agents in waves via `qa-agent-orchestrator.md` + `qa-agent-dim.md` — each dim-agent investigates its assigned slice independently, then the orchestrator aggregates findings. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, runs a Phase 1 analysis pass (root-cause grouping → `fix-plan.md`) then fixes atomically on an isolated dev branch with per-commit mechanical gates, cascade-checking after each commit for auto-closures. Convergence = QA hunted hard and cannot find a blocker.
+
+**QA-Orchestrator dispatch mode** (`reflex/config.yml → qa_agent.spawn_mode`, v0.6.72+ KIT-GAP-0052):
+
+| Mode | When to use | Behavior |
+|---|---|---|
+| `orchestrated-single-author` (default) | Task tool unavailable from orchestrator's leaf-agent surface (current Claude Code runtime). v0.6.67 documented-fallback bypass applies. | Orchestrator runs all dims sequentially in one author. Verdict DENIED by default per `single-author-fallback-verdict` rule unless gate-13 bypass annotation `mode: orchestrated-single-author` is set in qa-usage.yaml. |
+| `orchestrated-multi-author` (opt-in) | Multi-author dispatch path verified (cycle-26+). Anthropic runtime supports Task at leaf surface. | Orchestrator writes `wave-manifest.yaml` + dim-prompts/ + invokes `psk-spawn.sh request-multi` + exits `AWAITING_DIM_DISPATCH`. Main session fans out N parallel Task subagents per `max_parallel_agents` config dial, calls `complete-multi`, re-spawns orchestrator for synthesis. ~4× wall-clock speedup vs sequential. |
+
+`qa_agent.spawn_mode` default kept as `orchestrated-single-author` for safety; flip to `orchestrated-multi-author` after verifying via a cycle. See `docs/work-flows/28-spawn-fidelity.md §Multi-author dispatch` for the manifest schema + request-multi/complete-multi semantics.
 
 Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operational name: **reflex**. Primary entry: `reflex/run.sh` (see §Commands). Internal machinery: `reflex/lib/spawn-qa.sh`, `reflex/lib/spawn-dev.sh`, `reflex/lib/file-bugs.sh`, `reflex/lib/gates.sh`, `reflex/lib/regression-diff.sh`, `reflex/lib/score.sh`, `reflex/lib/preconditions.sh`, `reflex/lib/loop.sh`, `reflex/lib/update-eval-trace.sh`, `reflex/lib/prune-history.sh`.
 
@@ -99,7 +108,7 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 - **Dev cannot touch AGENT.md / AGENT_CONTEXT.md:** three enforcement layers (prompt mandate, `gates.sh` per-commit diff check, `psk-sync-check.sh` pre-commit hook on `reflex/dev-*` branches). Violations route to human-arbitration.
 - **No abort without a verdict:** EXIT/INT/TERM traps write a fallback `INTERRUPTED` verdict.md if the mainline doesn't reach the verdict-write block. Recovery requires `--recover-from-abort <pass-id>` before the next run.
 - **Sandbox is purged after QA:** `purge-current-sandbox.sh` removes the QA worktree unconditionally after findings are extracted. Dev physically cannot read QA's private workspace.
-- **Per-commit mechanical gates:** broken fixes never land. 13 gates per pass; max 3 retries per task; max 200 tool calls per cycle.
+- **Per-commit mechanical gates:** broken fixes never land. 14 gates per pass; max 3 retries per task; max 200 tool calls per cycle.
 - **GRANTED advances the cycle, not finding-count zero:** minor/non-blocking findings carry forward to the next cycle — no wasted re-verify pass.
 - **`reflex/` is out of QA scope:** avoids recursion; QA-Agent never tests reflex itself.
 
@@ -395,7 +404,7 @@ The HF4b workflow watchdog (`agent/scripts/psk-workflow-watchdog.sh`) detects hu
 1. **Dev-branch isolation.** Dev-Agent commits to `reflex/dev-cycle-NN-pass-NNN` (for autoloop) or `reflex/dev-standalone-pass-NNN` (single-pass), a dedicated branch off the current HEAD. Main branch stays clean during the pass. On GRANTED verdict, run.sh fast-forward merges into the parent branch (falls back to `--no-ff` if parent diverged) and deletes the dev branch. On DENIED / REGRESSION the branch is retained (last 3 unhappy branches kept; pruned beyond that).
 2. **Protected-files write-ban (3-layer).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Enforced at three layers: Dev-Agent prompt ("NEVER modify"), `gates.sh` per-commit diff check, and `psk-sync-check.sh` pre-commit hook (branch-gated to `reflex/dev-*`). If a finding's recommendation touches these files, Dev-Agent files it as Bucket D + routes a `QA-<ID>-ARB` task to human-arbitration.
 3. **Sandbox purge after QA:** `file-bugs.sh` removes the current pass's QA sandbox worktree the moment findings are extracted into the committed `reflex/history/<pass>/`. Dev physically cannot read QA's private workspace — structural enforcement, not trust-based.
-4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 13 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim), kit-evolution-file-scope (G1, PKFL), kit-genericity-proof (G2, PKFL — active on `REFLEX_KIT_EVOLUTION=1` passes), workflow-fidelity-completeness (12th), audit-completeness (13th).
+4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 14 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim), kit-evolution-file-scope (G1, PKFL), kit-genericity-proof (G2, PKFL — active on `REFLEX_KIT_EVOLUTION=1` passes), workflow-fidelity-completeness (12th), audit-completeness (13th), regression-replay (14th — Layer 10 §Regression Replay Gate, replays every verified-fixed finding's invocation_verbatim before any verdict advances).
 5. **Max 3 retries per task.** Gate fails after 3 attempts → task marked `[~]` (human review).
 6. **Max 200 tool calls per cycle.** Budget cap aborts runaway cycles.
 7. **Regression detection.** Next pass verifies previously-fixed tasks haven't reopened; `regression-diff.md` records closed / persisted / new / regressed per pass.

@@ -23,11 +23,13 @@ else
   fail "f85 AC1: §Kit Fidelity heading missing"
 fi
 
-# AC2 — framework declares 8th reliability layer
-if grep -q '8th reliability layer' "$FRAMEWORK" && grep -q 'eight enforcement layers' "$FRAMEWORK"; then
-  pass "f85 AC2: framework declares 8 reliability layers + identifies §Kit Fidelity as 8th"
+# AC2 — framework declares §Kit Fidelity as 8th reliability layer + a current overview count.
+# §Kit Fidelity stays the 8th layer; the overview total grows as new layers land
+# (v0.6.74 nine, v0.6.78 ten, v0.6.79 eleven).
+if grep -q '8th reliability layer' "$FRAMEWORK" && grep -qE '(eight|nine|ten|eleven|twelve) enforcement layers' "$FRAMEWORK"; then
+  pass "f85 AC2: framework identifies §Kit Fidelity as 8th + declares current layer count"
 else
-  fail "f85 AC2: framework missing 8th-layer claim or 'eight enforcement layers' overview update"
+  fail "f85 AC2: framework missing 8th-layer claim or enforcement-layers overview count"
 fi
 
 # AC3 — wrapper script present + executable

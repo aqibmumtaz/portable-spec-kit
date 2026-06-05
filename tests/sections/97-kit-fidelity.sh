@@ -127,11 +127,16 @@ grep -q 'check_psk040_kit_fidelity_coverage()' "$SYNC_CHECK" \
   && pass "97.7: PSK040 check function defined in psk-sync-check.sh" \
   || fail "97.7: PSK040 check function missing"
 
-# Should be registered in both quick and full mode (2 references — function def + 2 calls = 3 total)
+# Registered in the --full dispatch (def + full call = 2 references minimum).
+# QA-PERF-KIT-SYNCCHECK-QUICK-01 (cycle-29-pass-003): PSK040 does git-log
+# scanning and is too heavy for the per-edit --quick PostToolUse hook (<500ms
+# budget). It now runs in --full only (pre-commit hook + release gate), which
+# is where kit-fidelity coverage belongs. So the dispatch ref count is 2
+# (1 function def + 1 --full call), not 3.
 psk040_refs=$(grep -c 'check_psk040_kit_fidelity_coverage' "$SYNC_CHECK")
-[ "$psk040_refs" -ge "3" ] \
-  && pass "97.7: PSK040 registered in dispatch ($psk040_refs references)" \
-  || fail "97.7: PSK040 missing dispatch registration (only $psk040_refs refs, expected ≥3)"
+[ "$psk040_refs" -ge "2" ] \
+  && pass "97.7: PSK040 registered in --full dispatch ($psk040_refs references)" \
+  || fail "97.7: PSK040 missing dispatch registration (only $psk040_refs refs, expected ≥2: def + --full call)"
 
 # --- 97.8: PSK040 runs and reports clean OR skip on current tree ---
 psk040_out=$(bash "$SYNC_CHECK" --full 2>&1 | grep PSK040 | head -2)
@@ -154,8 +159,10 @@ grep -q '8th reliability layer' "$FRAMEWORK" \
   && pass "97.10: framework identifies §Kit Fidelity as 8th reliability layer" \
   || fail "97.10: framework missing 8th-reliability-layer claim"
 
-grep -q 'eight enforcement layers' "$FRAMEWORK" \
-  && pass "97.10: §Reliability Architecture overview updated to eight layers" \
+# Overview count grows as new layers land (v0.6.74 nine, v0.6.78 ten, v0.6.79 eleven).
+# §Kit Fidelity remains the 8th layer; the overview total is the current layer count.
+grep -qE '(eight|nine|ten|eleven|twelve) enforcement layers' "$FRAMEWORK" \
+  && pass "97.10: §Reliability Architecture overview declares current layer count (≥8)" \
   || fail "97.10: §Reliability Architecture overview not updated"
 
 # --- 97.11: flow doc 30 + skill file exist ---
