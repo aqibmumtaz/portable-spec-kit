@@ -3,7 +3,11 @@
 # PSK pre-commit hook template
 # Installed by psk-install-hooks.sh to .git/hooks/pre-commit
 #
-# Blocks commits if psk-sync-check.sh reports issues.
+# Blocks commits if psk-sync-check.sh --quick reports issues.
+# KIT-GAP-0075 (v0.6.83): pre-commit runs the FAST --quick gate (sub-second) so
+# commits stay fast and agents never reach for --no-verify. The deep --full gate
+# moves to the pre-push hook (catches issues before they reach the remote) and
+# still runs at prep-release + reflex gates + CI.
 #
 # Emergency bypass:
 #   PSK_SYNC_CHECK_DISABLED=1 git commit -m "..."
@@ -23,5 +27,5 @@ if [ ! -x "$SCRIPT" ]; then
   exit 0
 fi
 
-bash "$SCRIPT" --full
+bash "$SCRIPT" --quick
 exit $?

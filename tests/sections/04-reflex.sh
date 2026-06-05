@@ -5006,6 +5006,26 @@ SOAK_MAPFILE_ERRS=$(/bin/bash "$PROJ/agent/scripts/psk-soak-schedule.sh" --propo
   && pass "QA-D2-BASH32-MAPFILE-01/runtime: no 'mapfile: command not found' on bash-3.2 dedup path" \
   || fail "QA-D2-BASH32-MAPFILE-01/runtime: $SOAK_MAPFILE_ERRS mapfile error(s) on bash-3.2 dedup path"
 
+# --- Dim 22 self-test-mutation (KIT-GAP-0072/QA-D22-DEFER resolution, v0.6.83) ---
+section "Dim 22 — self-test-mutation (gate honesty)"
+_STM="$PROJ/reflex/lib/self-test-mutation.sh"
+[ -x "$_STM" ] \
+  && pass "D22.1: reflex/lib/self-test-mutation.sh exists and is executable" \
+  || fail "D22.1: self-test-mutation.sh missing or not executable"
+# Runs the corpus; every critical gate must be HONEST (0 lying) on the real repo.
+_STM_OUT=$(REFLEX_PROJ_ROOT="$PROJ" bash "$_STM" 2>&1)
+echo "$_STM_OUT" | grep -qE 'summary: [0-9]+ honest · 0 lying' \
+  && pass "D22.2: all critical gates honest (0 lying) under known-broken fixtures" \
+  || fail "D22.2: a gate lied (exited 0 on a broken fixture): $(echo "$_STM_OUT" | grep -i lying | head -1)"
+# --strict exits 0 when no gate lies.
+REFLEX_PROJ_ROOT="$PROJ" bash "$_STM" --strict >/dev/null 2>&1 \
+  && pass "D22.3: --strict exits 0 when all gates honest" \
+  || fail "D22.3: --strict exited non-zero with no lying gates"
+# --json emits a parseable object with the lying counter.
+REFLEX_PROJ_ROOT="$PROJ" bash "$_STM" --json 2>/dev/null | grep -qE '"lying": [0-9]+' \
+  && pass "D22.4: --json emits machine-readable verdict" \
+  || fail "D22.4: --json output malformed"
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"

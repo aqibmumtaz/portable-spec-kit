@@ -5,7 +5,8 @@
 #
 # Installs reliability architecture hooks:
 #   - .claude/settings.json (PostToolUse warning hook)
-#   - .git/hooks/pre-commit (blocking hook — runs psk-sync-check.sh --full)
+#   - .git/hooks/pre-commit (blocking hook — runs psk-sync-check.sh --quick; KIT-GAP-0075)
+#   - .git/hooks/pre-push   (blocking hook — runs psk-sync-check.sh --full)
 #   - .git/hooks/post-commit (refreshes PSK029 resume-bootstrap marker)
 #
 # Wraps existing hooks, never overwrites:
@@ -250,7 +251,10 @@ fi
 
 SCRIPT="\$REPO_ROOT/agent/scripts/psk-sync-check.sh"
 if [ -x "\$SCRIPT" ]; then
-  bash "\$SCRIPT" --full || exit 1
+  # KIT-GAP-0075 (v0.6.83): pre-commit runs the FAST --quick gate (sub-second)
+  # so commits stay fast and agents never reach for --no-verify. The deep
+  # --full sweep runs in the pre-push hook + prep-release + reflex gates + CI.
+  bash "\$SCRIPT" --quick || exit 1
 fi
 
 # --- Original pre-commit hook content (preserved) ---
@@ -278,7 +282,8 @@ fi
 
 SCRIPT="$REPO_ROOT/agent/scripts/psk-sync-check.sh"
 if [ -x "$SCRIPT" ]; then
-  bash "$SCRIPT" --full || exit 1
+  # KIT-GAP-0075 (v0.6.83): fast --quick gate on commit; --full at pre-push.
+  bash "$SCRIPT" --quick || exit 1
 fi
 exit 0
 EOF
@@ -286,6 +291,40 @@ EOF
 
   if safe_install_hook "$GIT_HOOK" "$tmp"; then
     echo -e "  ${GREEN}✓${NC} Created .git/hooks/pre-commit"
+  else
+    return 1
+  fi
+}
+
+# --- Install git pre-push hook (KIT-GAP-0075 — deep --full gate before remote) ---
+# pre-commit runs --quick (fast, every commit). The full PSK-rule sweep runs
+# here, before anything reaches the remote — so slow checks don't gate every
+# commit (which drove --no-verify usage) but bad commits are still caught
+# pre-push, in addition to prep-release + reflex gates + CI.
+install_git_pre_push_hook() {
+  echo -e "${CYAN}Installing git pre-push hook (--full deep gate)...${NC}"
+  local pp_hook="$GIT_ROOT/.git/hooks/pre-push"
+  if [ -f "$pp_hook" ] && grep -q "psk-sync-check" "$pp_hook" 2>/dev/null && [ "$FORCE" = false ]; then
+    echo -e "  ${YELLOW}⚠${NC} Already installed. Use --force to reinstall."
+    return 0
+  fi
+  local tmp
+  tmp=$(mktemp)
+  cat > "$tmp" <<'EOF'
+#!/bin/bash
+# PSK pre-push hook (installed by psk-install-hooks.sh) — KIT-GAP-0075.
+# Deep --full sync-check before anything reaches the remote.
+# Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git push  (or: git push --no-verify)
+if [ "${PSK_SYNC_CHECK_DISABLED:-0}" = "1" ]; then exit 0; fi
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+SCRIPT="$REPO_ROOT/agent/scripts/psk-sync-check.sh"
+if [ -x "$SCRIPT" ]; then
+  bash "$SCRIPT" --full || exit 1
+fi
+exit 0
+EOF
+  if safe_install_hook "$pp_hook" "$tmp"; then
+    echo -e "  ${GREEN}✓${NC} Created .git/hooks/pre-push"
   else
     return 1
   fi
@@ -435,6 +474,7 @@ main() {
 
   install_claude_hook
   install_git_hook
+  install_git_pre_push_hook
   install_git_post_commit_hook
   check_husky
   check_pre_commit_framework
