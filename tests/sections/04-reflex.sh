@@ -5183,6 +5183,38 @@ else
   pass "D33.1: freshness-drift-audit.sh absent — skip"; pass "D33.2: skip"; pass "D33.3: skip"
 fi
 
+section "Dim 34 — host-portability-audit probe (generic-qa-dimensions plan)"
+# Generic probe: flags bash-4-only / GNU-only shell constructs that break on
+# macOS (bash 3.2 + BSD) — declare -A, mapfile, timeout, grep -P, sed \b, etc.
+# Must itself be host-portable (no GNU-only awk).
+_HPA="$PROJ/reflex/lib/host-portability-audit.sh"
+if [ -x "$_HPA" ]; then
+  _hpa_t=$(mktemp -d); mkdir -p "$_hpa_t/s"
+  printf '#!/usr/bin/env bash\ndeclare -A map\ntimeout 5 sleep 1\ngrep -P x f\n' > "$_hpa_t/s/bad.sh"
+  printf '#!/usr/bin/env bash\ngtimeout 5 sleep 1\nsed -i.bak s/a/b/ f\n' > "$_hpa_t/s/good.sh"
+  _hpa_json=$(bash "$_HPA" --root "$_hpa_t" --json 2>/dev/null)
+  _hpa_n=$(echo "$_hpa_json" | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  # D34.1 — flags the 3 non-portable constructs in bad.sh
+  [ "$_hpa_n" = "3" ] \
+    && pass "D34.1: flags declare-A + timeout + grep-P (3 findings)" \
+    || fail "D34.1: expected 3 findings, got $_hpa_n"
+  # D34.2 — gtimeout (portable) is NOT flagged as timeout; good.sh clean
+  if ! echo "$_hpa_json" | grep -q "good.sh"; then
+    pass "D34.2: gtimeout + sed -i.bak (portable) not flagged"
+  else
+    fail "D34.2: false positive on portable good.sh"
+  fi
+  # D34.3 — the probe itself is host-portable (no GNU-only \\< awk boundary)
+  if ! grep -qE '\\<' "$_HPA"; then
+    pass "D34.3: probe uses portable awk boundaries (dogfoods Dim 34)"
+  else
+    fail "D34.3: probe contains GNU-only \\< awk boundary (non-portable)"
+  fi
+  rm -rf "$_hpa_t"
+else
+  pass "D34.1: host-portability-audit.sh absent — skip"; pass "D34.2: skip"; pass "D34.3: skip"
+fi
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"
