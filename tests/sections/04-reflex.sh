@@ -5215,6 +5215,33 @@ else
   pass "D34.1: host-portability-audit.sh absent — skip"; pass "D34.2: skip"; pass "D34.3: skip"
 fi
 
+section "Dim 35 — feature-traceability-audit probe (generic-qa-dimensions plan)"
+# Generic probe: flags F-ids cited in docs (CHANGELOG/RELEASES/README) with no
+# matching row in agent/SPECS.md (capability-without-F-row; ID-based, low-FP).
+_FTA="$PROJ/reflex/lib/feature-traceability-audit.sh"
+if [ -x "$_FTA" ]; then
+  _fta_t=$(mktemp -d); mkdir -p "$_fta_t/agent"
+  printf '# Features\n| F1 | Login | done |\n### F1 — Login\n- [x] works\n' > "$_fta_t/agent/SPECS.md"
+  printf '# Changelog\n## v0.2\n- Shipped F1 login and F99 dashboard\n' > "$_fta_t/CHANGELOG.md"
+  _fta_json=$(bash "$_FTA" --root "$_fta_t" --json 2>/dev/null)
+  _fta_n=$(echo "$_fta_json" | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  # D35.1 — flags dangling F99, spares F1 (has a SPECS row)
+  if [ "$_fta_n" = "1" ] && echo "$_fta_json" | grep -q "F99" && ! echo "$_fta_json" | grep -q "FREF-F1-"; then
+    pass "D35.1: flags dangling F99 doc-ref, spares F1 (has SPECS row)"
+  else
+    fail "D35.1: expected 1 finding (F99 only), got $_fta_n"
+  fi
+  # D35.2 — no SPECS → not_applicable note, 0 findings
+  _fta_t2=$(mktemp -d); printf '# CL\n- F5 thing\n' > "$_fta_t2/CHANGELOG.md"
+  _fta_na=$(bash "$_FTA" --root "$_fta_t2" --json 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['findings_total'], 'no agent/SPECS' in d['note'])" 2>/dev/null)
+  [ "$_fta_na" = "0 True" ] \
+    && pass "D35.2: no SPECS.md → not_applicable + 0 findings" \
+    || fail "D35.2: not_applicable not handled ($_fta_na)"
+  rm -rf "$_fta_t" "$_fta_t2"
+else
+  pass "D35.1: feature-traceability-audit.sh absent — skip"; pass "D35.2: skip"
+fi
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"
