@@ -1556,9 +1556,9 @@ grep -qF "Audit-trail integrity" "$PROJ/reflex/prompts/qa-agent.md" \
 grep -qF "MANDATORY self-inspection" "$PROJ/reflex/prompts/qa-agent.md" \
   && pass "N56/dim-15: dimension 15 is MANDATORY (not optional)" \
   || fail "N56/dim-15: MANDATORY marker missing"
-grep -qE "(1[5-9]|2[0-9]) dimensions of review|dimensions of review.*(1[5-9]|2[0-9])" "$PROJ/reflex/prompts/qa-agent.md" \
+grep -qE "(1[5-9]|[2-9][0-9]) dimensions of review|dimensions of review.*(1[5-9]|[2-9][0-9])" "$PROJ/reflex/prompts/qa-agent.md" \
   && pass "N56/dim-15: prompt heading updated to 15+ dimensions" \
-  || fail "N56/dim-15: still says 14 dimensions"
+  || fail "N56/dim-15: still says <15 dimensions"
 
 # Orphan-detection uses strict `- id:` extraction (not loose QA-* grep)
 grep -qF "^\s*-\s*id:\s*QA-" "$PROJ/reflex/lib/update-eval-trace.sh" \
@@ -5025,6 +5025,163 @@ REFLEX_PROJ_ROOT="$PROJ" bash "$_STM" --strict >/dev/null 2>&1 \
 REFLEX_PROJ_ROOT="$PROJ" bash "$_STM" --json 2>/dev/null | grep -qE '"lying": [0-9]+' \
   && pass "D22.4: --json emits machine-readable verdict" \
   || fail "D22.4: --json output malformed"
+
+section "Dim 31 — root-resolution-audit probe (generic-qa-dimensions plan)"
+# Generic probe: flags shell scripts that derive a repo root from an UNANCHORED
+# `git rev-parse --show-toplevel` (CWD-fragile), exempting -C/cd anchors, comment
+# lines, and heredoc-generated bodies. Must work on any project, not just the kit.
+_RRA="$PROJ/reflex/lib/root-resolution-audit.sh"
+if [ -x "$_RRA" ]; then
+  # D31.1 — clean on the kit itself (all live scripts anchor; hook heredocs skipped)
+  _rra_kit=$(bash "$_RRA" --root "$PROJ" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_rra_kit" = "0" ] \
+    && pass "D31.1: root-resolution clean on kit (0 findings — live scripts anchored)" \
+    || fail "D31.1: kit has $_rra_kit root-resolution finding(s) — expected 0"
+  # D31.2 — genericity: flags a live fragile script in a NON-kit fixture
+  _rra_t=$(mktemp -d); mkdir -p "$_rra_t/s"
+  printf '#!/usr/bin/env bash\nROOT=$(git rev-parse --show-toplevel)\ncat "$ROOT/x"\n' > "$_rra_t/s/fragile.sh"
+  printf '#!/usr/bin/env bash\nR=$(git -C "$D" rev-parse --show-toplevel)\n' > "$_rra_t/s/safe.sh"
+  _rra_fix=$(bash "$_RRA" --root "$_rra_t" --json 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['findings_total'])" 2>/dev/null)
+  [ "$_rra_fix" = "1" ] \
+    && pass "D31.2: genericity — flags live fragile script, exempts -C anchor (1 finding)" \
+    || fail "D31.2: non-kit fixture gave $_rra_fix findings — expected 1"
+  # D31.3 — heredoc-generated git-hook bodies are NOT flagged
+  cat > "$_rra_t/s/gen.sh" <<'GENEOF'
+#!/usr/bin/env bash
+cat > hook <<'HOOKEOF'
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+HOOKEOF
+GENEOF
+  rm -f "$_rra_t/s/fragile.sh" "$_rra_t/s/safe.sh"
+  _rra_gen=$(bash "$_RRA" --root "$_rra_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_rra_gen" = "0" ] \
+    && pass "D31.3: heredoc-generated hook body not flagged (0 findings)" \
+    || fail "D31.3: heredoc body wrongly flagged ($_rra_gen findings)"
+  rm -rf "$_rra_t"
+else
+  pass "D31.1: root-resolution-audit.sh absent — skip"; pass "D31.2: skip"; pass "D31.3: skip"
+fi
+
+section "Dim 30 — assertion-strength-audit probe (generic-qa-dimensions plan)"
+# Generic probe: per test file, flags when assertions are mostly STRUCTURAL
+# (grep/existence) vs BEHAVIORAL (invoke+check) above a threshold. Must work on
+# any project's tests, not just the kit.
+_ASA="$PROJ/reflex/lib/assertion-strength-audit.sh"
+if [ -x "$_ASA" ]; then
+  _asa_t=$(mktemp -d); mkdir -p "$_asa_t/tests"
+  { echo '#!/usr/bin/env bash'; for i in 1 2 3 4 5 6; do echo "grep -q 'X$i' doc.md && pass \"a$i\" || fail \"a$i\""; done; } > "$_asa_t/tests/shallow.sh"
+  { echo '#!/usr/bin/env bash'; for i in 1 2 3 4 5 6; do echo "out=\$(bash tool.sh $i); [ \"\$out\" = ok ] && pass \"b$i\" || fail \"b$i\""; done; } > "$_asa_t/tests/deep.sh"
+  _asa_json=$(bash "$_ASA" --root "$_asa_t" --json 2>/dev/null)
+  _asa_n=$(echo "$_asa_json" | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  # D30.1 — flags the structural-heavy file, not the behavioral one
+  if [ "$_asa_n" = "1" ] && echo "$_asa_json" | grep -q "shallow.sh" && ! echo "$_asa_json" | grep -q "deep.sh"; then
+    pass "D30.1: genericity — flags structural-heavy test, spares behavioral (1 finding)"
+  else
+    fail "D30.1: expected 1 finding (shallow.sh only), got $_asa_n"
+  fi
+  # D30.2 — valid JSON shape
+  echo "$_asa_json" | python3 -c "import sys,json;d=json.load(sys.stdin);assert d['dimension']==30 and 'findings' in d" 2>/dev/null \
+    && pass "D30.2: --json emits well-formed dimension-30 output" \
+    || fail "D30.2: --json malformed"
+  # D30.3 — threshold is tunable. shallow.sh is 100% structural, so a threshold of
+  # 100 exempts it (flag only when pct > threshold; 100 is not > 100).
+  _asa_hi=$(bash "$_ASA" --root "$_asa_t" --threshold 100 --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_asa_hi" = "0" ] \
+    && pass "D30.3: --threshold tunable (100% → no findings)" \
+    || fail "D30.3: threshold not honored ($_asa_hi findings at 100%)"
+  rm -rf "$_asa_t"
+else
+  pass "D30.1: assertion-strength-audit.sh absent — skip"; pass "D30.2: skip"; pass "D30.3: skip"
+fi
+
+section "Dim 29 — prose-constant-audit probe (generic-qa-dimensions plan)"
+# Generic probe: flags docs that cite a scalar code constant NAME (n) with a
+# number != the source value. Conservative (parenthetical only, denylists
+# counter/sentinel names). Must be fast + low-FP on any project.
+_PCA="$PROJ/reflex/lib/prose-constant-audit.sh"
+if [ -x "$_PCA" ]; then
+  _pca_t=$(mktemp -d); mkdir -p "$_pca_t/src"
+  printf 'MAX_RETRIES=5\nPASS=0\n' > "$_pca_t/src/config.sh"
+  printf '# Docs\nretries up to MAX_RETRIES (3 attempts). Tested (PASS) 9 cases.\n' > "$_pca_t/README.md"
+  _pca_json=$(bash "$_PCA" --root "$_pca_t" --json 2>/dev/null)
+  _pca_n=$(echo "$_pca_json" | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  # D29.1 — flags the drifted scalar citation, denylists the PASS counter
+  if [ "$_pca_n" = "1" ] && echo "$_pca_json" | grep -q "MAX_RETRIES" && ! echo "$_pca_json" | grep -q "PASS"; then
+    pass "D29.1: genericity — flags MAX_RETRIES(3)≠5, denylists PASS counter (1 finding)"
+  else
+    fail "D29.1: expected 1 finding (MAX_RETRIES only), got $_pca_n"
+  fi
+  # D29.2 — matching prose value → no finding
+  printf '# Docs\nretries up to MAX_RETRIES (5 attempts).\n' > "$_pca_t/README.md"
+  _pca_ok=$(bash "$_PCA" --root "$_pca_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_pca_ok" = "0" ] \
+    && pass "D29.2: matching prose value (5=5) → no finding" \
+    || fail "D29.2: false positive on matching value ($_pca_ok findings)"
+  rm -rf "$_pca_t"
+else
+  pass "D29.1: prose-constant-audit.sh absent — skip"; pass "D29.2: skip"
+fi
+
+section "Dim 32 — longitudinal-drift-audit probe (generic-qa-dimensions plan)"
+# Generic probe: reads reflex/history/summary.csv, flags metrics whose recent-half
+# mean worsens vs older-half mean beyond a tolerance; handles insufficient history.
+_LDA="$PROJ/reflex/lib/longitudinal-drift-audit.sh"
+if [ -x "$_LDA" ]; then
+  _lda_t=$(mktemp -d); mkdir -p "$_lda_t/reflex/history"
+  _hdr="cycle,pass,date,qa_findings,dev_fixes,escalated,features_tested,surprise_density,progress,gates_status,qa_tokens,dev_tokens,qa_tool_calls,dev_tool_calls,wall_clock_seconds,pass_score,probe_coverage_pct"
+  { echo "$_hdr"; for i in 1 2 3; do echo "$i,1,2026-05-0$i,1,1,0,0,0,0,pass,0,0,0,0,100,0,0"; done; for i in 4 5 6; do echo "$i,1,2026-05-0$i,9,1,0,0,0,0,pass,0,0,0,0,100,0,0"; done; } > "$_lda_t/reflex/history/summary.csv"
+  _lda_n=$(bash "$_LDA" --root "$_lda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  # D32.1 — flags a worsening metric (qa_findings 1→9)
+  [ "${_lda_n:-0}" -ge 1 ] \
+    && pass "D32.1: flags worsening qa_findings trend (recent>older)" \
+    || fail "D32.1: expected >=1 drift finding, got $_lda_n"
+  # D32.2 — insufficient history → note, no finding
+  { echo "$_hdr"; echo "1,1,2026-05-01,1,1,0,0,0,0,pass,0,0,0,0,100,0,0"; } > "$_lda_t/reflex/history/summary.csv"
+  _lda_ins=$(bash "$_LDA" --root "$_lda_t" --json 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['findings_total'], 'insufficient' in d['note'])" 2>/dev/null)
+  [ "$_lda_ins" = "0 True" ] \
+    && pass "D32.2: insufficient history → note + 0 findings" \
+    || fail "D32.2: insufficient-history not handled ($_lda_ins)"
+  # D32.3 — flat trend → no finding
+  { echo "$_hdr"; for i in 1 2 3 4 5 6; do echo "$i,1,2026-05-0$i,2,1,0,0,0,0,pass,0,0,0,0,100,0,0"; done; } > "$_lda_t/reflex/history/summary.csv"
+  _lda_flat=$(bash "$_LDA" --root "$_lda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_lda_flat" = "0" ] \
+    && pass "D32.3: flat trend → no finding" \
+    || fail "D32.3: false positive on flat trend ($_lda_flat)"
+  rm -rf "$_lda_t"
+else
+  pass "D32.1: longitudinal-drift-audit.sh absent — skip"; pass "D32.2: skip"; pass "D32.3: skip"
+fi
+
+section "Dim 33 — freshness-drift-audit probe (generic-qa-dimensions plan)"
+# Generic probe: current-state test-count agreement between README badge and
+# AGENT_CONTEXT narrative (leading total; historical narratives excluded).
+_FDA="$PROJ/reflex/lib/freshness-drift-audit.sh"
+if [ -x "$_FDA" ]; then
+  _fda_t=$(mktemp -d); mkdir -p "$_fda_t/agent"
+  printf '![tests](https://img/tests-2865%%20passing)\n' > "$_fda_t/README.md"
+  printf '**Phase:** building. 2700 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  _fda_drift=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  # D33.1 — flags badge≠narrative drift
+  [ "$_fda_drift" = "1" ] \
+    && pass "D33.1: flags current-state test-count drift (badge 2865 ≠ ctx 2700)" \
+    || fail "D33.1: expected 1 drift finding, got $_fda_drift"
+  # D33.2 — consistent counts → no finding
+  printf '**Phase:** building. 2865 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  _fda_ok=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_fda_ok" = "0" ] \
+    && pass "D33.2: consistent counts (2865=2865) → no finding" \
+    || fail "D33.2: false positive on consistent counts ($_fda_ok)"
+  # D33.3 — composite total: 'N (A + B)' contributes leading N, not sub-counts
+  printf '![tests](https://img/tests-2865%%20passing)\n' > "$_fda_t/README.md"
+  printf '**Phase:** building. 2865 tests (2720 framework + 145 bench) passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  _fda_comp=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_fda_comp" = "0" ] \
+    && pass "D33.3: composite 'N (A+B)' uses leading total — no false drift" \
+    || fail "D33.3: composite count mis-parsed ($_fda_comp findings)"
+  rm -rf "$_fda_t"
+else
+  pass "D33.1: freshness-drift-audit.sh absent — skip"; pass "D33.2: skip"; pass "D33.3: skip"
+fi
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""

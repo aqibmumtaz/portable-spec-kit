@@ -2733,9 +2733,12 @@ check_psk027_bypass_audit() {
     return
   fi
 
+  # QA-D7-PSK027-RATIONALE-GAP fix (v0.6.83): exclude self-test-tagged bypasses
+  # so test-infrastructure gate-skips don't inflate the abuse signal — only real
+  # operator-driven undocumented bypasses count toward the PSK027 threshold.
   local count_24h count_7d
-  count_24h=$(bash "$bypass_log_script" count --since-days 1 2>/dev/null || echo "0")
-  count_7d=$(bash "$bypass_log_script" count --since-days 7 2>/dev/null || echo "0")
+  count_24h=$(bash "$bypass_log_script" count --since-days 1 --exclude-selftest 2>/dev/null || echo "0")
+  count_7d=$(bash "$bypass_log_script" count --since-days 7 --exclude-selftest 2>/dev/null || echo "0")
   [ -z "$count_24h" ] && count_24h=0
   [ -z "$count_7d" ] && count_7d=0
 
@@ -3713,6 +3716,36 @@ check_psk044_command_invocation_fidelity() {
   run_check
 }
 
+# --- CHECK PSK045: Table-of-Contents drift (QA-D10-01 v0.6.83) ---
+# portable-spec-kit.md carries an auto-generated TOC block between
+# <!-- TOC-START --> / <!-- TOC-END -->. PSK045 verifies it still matches the
+# real `## ` section headers (fence-aware, so example-block headers are ignored)
+# so the TOC can't silently rot when sections are added/renamed/removed.
+# Generated + verified by agent/scripts/psk-toc.sh. Full-mode only.
+# Bypass: PSK_PSK045_DISABLED=1.
+check_psk045_toc_drift() {
+  if [ "${PSK_PSK045_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK045: skipped (PSK_PSK045_DISABLED=1)"
+    run_check
+    return
+  fi
+  local toc_script="$SCRIPT_DIR/psk-toc.sh"
+  if [ ! -x "$toc_script" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK045: psk-toc.sh absent — skip"
+    run_check
+    return
+  fi
+  if bash "$toc_script" --check >/dev/null 2>&1; then
+    emit_pass "PSK045: portable-spec-kit.md TOC current (sections match)"
+    run_check
+    return
+  fi
+  emit_issue "PSK045" "toc-drift" \
+    "portable-spec-kit.md Table of Contents is out of sync with its section headers" \
+    "Regenerate the TOC: replace the content between the TOC-START / TOC-END markers with the output of 'bash agent/scripts/psk-toc.sh --generate'. Bypass: PSK_PSK045_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -3798,6 +3831,7 @@ main() {
     check_psk042_prompt_fidelity
     check_psk043_regression_replay_integrity
     check_psk044_command_invocation_fidelity
+    check_psk045_toc_drift
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

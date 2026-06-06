@@ -13,6 +13,12 @@
 #
 # Idempotent: re-sourcing this file resets counters only if not already set.
 
+# QA-D7-PSK027-RATIONALE-GAP fix (v0.6.83): mark every bypass written during the
+# kit's own test suite as self-test context. psk-bypass-log.sh auto-tags such
+# entries `self-test:<env-var>` so PSK027's --exclude-selftest count never treats
+# test-infrastructure gate-skips as operator bypass-abuse.
+export PSK_BYPASS_SELFTEST=1
+
 # Counters (global, accumulated across sections when orchestrator sources them)
 PASS="${PASS:-0}"
 FAIL="${FAIL:-0}"

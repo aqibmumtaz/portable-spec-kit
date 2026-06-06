@@ -5895,7 +5895,11 @@ if grep -q '"justification":"rate-limit-2026-05-17"' "$_HF9_SANDBOX_LOG"; then
 else
   fail "81.5: PSK_BYPASS_REASON not picked up as default justification"
 fi
-PROJ_ROOT="$_HF9_SANDBOX" bash "$_HF9_LOG_SCRIPT" log --env-var "NO_REASON" --command "test" >/dev/null 2>&1
+# NB: unset PSK_BYPASS_SELFTEST here — tests/lib.sh exports it globally, but this
+# case verifies the PRODUCTION default ("not provided"). With the marker set, a
+# reasonless bypass is auto-tagged self-test:<env> (covered by Section 100).
+( unset PSK_BYPASS_SELFTEST PSK_BYPASS_REASON
+  PROJ_ROOT="$_HF9_SANDBOX" bash "$_HF9_LOG_SCRIPT" log --env-var "NO_REASON" --command "test" >/dev/null 2>&1 )
 if grep -q '"justification":"not provided"' "$_HF9_SANDBOX_LOG"; then
   pass "81.5b: --justification defaults to 'not provided' when no env var set"
 else
@@ -7964,6 +7968,145 @@ if echo "$_S98_QUICK_BLOCK" | grep -qE 'check_plan_schema|check_psk031_duplicate
   fail "98.2: --quick dispatch re-added a heavy lint (plan_schema/psk031/cascade) — perf regression risk"
 else
   pass "98.2: --quick dispatch excludes the heavy lint battery (plan_schema/psk031/cascade)"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+echo "═══ Section 99 — N69 age-escalation honors deferral (KIT-GAP-N69) ═══"
+# psk-optimize.sh emit_health() escalates health by scan-age (review >30d, stale
+# >60d). KIT-GAP-N69: when every candidate is explicitly deferred
+# (active=0 && deferred>0) the operator has handled the backlog, so age-escalation
+# must NOT fire. The 30-day branch carried the exception guard but the 60-day
+# branch did not, so a deferred-only project wrongly showed 🔴 stale past 60d.
+_n69=$(mktemp -d)
+mkdir -p "$_n69/agent/scripts" "$_n69/.portable-spec-kit"
+cp "$PROJ/agent/scripts/psk-optimize.sh" "$_n69/agent/scripts/" 2>/dev/null
+cat > "$_n69/.portable-spec-kit/optimize-deferred.yml" <<'EOF'
+deferred:
+  - id: c1
+  - id: c2
+  - id: c3
+  - id: c4
+  - id: c5
+EOF
+# 99.1 — deferred-only + aged (>60d) must stay optimized, never stale.
+cat > "$_n69/.portable-spec-kit/optimize-state.yml" <<'EOF'
+schema_version: 1
+last_scan: 2026-03-08T00:00:00Z
+candidates_total: 5
+EOF
+_n69_aged=$(bash "$_n69/agent/scripts/psk-optimize.sh" --health 2>&1)
+if echo "$_n69_aged" | grep -qi 'optimized' && ! echo "$_n69_aged" | grep -qi 'stale'; then
+  pass "99.1: deferred-only + aged(>60d) stays optimized (N69 60-day exception)"
+else
+  fail "99.1: deferred-only + aged(>60d) wrongly escalated — got: $_n69_aged"
+fi
+# 99.2 — control: active candidates + aged(>60d) MUST still escalate to stale.
+cat > "$_n69/.portable-spec-kit/optimize-state.yml" <<'EOF'
+schema_version: 1
+last_scan: 2026-03-08T00:00:00Z
+candidates_total: 15
+EOF
+_n69_active=$(bash "$_n69/agent/scripts/psk-optimize.sh" --health 2>&1)
+echo "$_n69_active" | grep -qi 'stale' \
+  && pass "99.2: active + aged(>60d) still escalates to stale (escalation intact)" \
+  || fail "99.2: active + aged(>60d) failed to escalate — got: $_n69_active"
+rm -rf "$_n69"
+
+# ─────────────────────────────────────────────────────────────────────────────
+echo "═══ Section 100 — PSK027 excludes self-test bypasses (QA-D7-RATIONALE-GAP) ═══"
+# PSK027 counts undocumented gate-bypasses in agent/.bypass-log. The kit's own
+# test suite legitimately skips gates (PSK_*_DISABLED=1), which used to inflate
+# the abuse signal. Fix: when PSK_BYPASS_SELFTEST=1 (exported by tests/lib.sh)
+# and no reason is given, the logger auto-tags `self-test:<env-var>`; PSK027's
+# `count --exclude-selftest` then ignores those, counting only real bypasses.
+_bl="$PROJ/agent/scripts/psk-bypass-log.sh"
+if [ -x "$_bl" ]; then
+  _blt=$(mktemp -d); mkdir -p "$_blt/agent/scripts"
+  cp "$_bl" "$_blt/agent/scripts/"
+  # one self-test bypass (auto-tagged) + one real undocumented bypass
+  PSK_BYPASS_SELFTEST=1 bash "$_blt/agent/scripts/psk-bypass-log.sh" log \
+    --env-var PSK_SYNC_CHECK_DISABLED --command "section-100 selftest" >/dev/null 2>&1
+  ( unset PSK_BYPASS_SELFTEST; bash "$_blt/agent/scripts/psk-bypass-log.sh" log \
+    --env-var PSK_KIT_FIDELITY_DISABLED --command "section-100 real" >/dev/null 2>&1 )
+  _bl_all=$(bash "$_blt/agent/scripts/psk-bypass-log.sh" count --since-days 1 2>/dev/null)
+  _bl_excl=$(bash "$_blt/agent/scripts/psk-bypass-log.sh" count --since-days 1 --exclude-selftest 2>/dev/null)
+  # 100.1 — self-test entry is auto-tagged self-test:<env-var>
+  if grep -q '"justification":"self-test:PSK_SYNC_CHECK_DISABLED"' "$_blt/agent/.bypass-log" 2>/dev/null; then
+    pass "100.1: PSK_BYPASS_SELFTEST auto-tags justification self-test:<env-var>"
+  else
+    fail "100.1: self-test bypass was not auto-tagged"
+  fi
+  # 100.2 — --exclude-selftest drops the self-test entry but keeps the real one
+  if [ "$_bl_all" = "2" ] && [ "$_bl_excl" = "1" ]; then
+    pass "100.2: count --exclude-selftest counts real bypasses only (all=2, excl=1)"
+  else
+    fail "100.2: exclusion miscounted — all=$_bl_all excl=$_bl_excl (want 2/1)"
+  fi
+  rm -rf "$_blt"
+else
+  pass "100.1: psk-bypass-log.sh absent — skip (n/a)"
+  pass "100.2: psk-bypass-log.sh absent — skip (n/a)"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+echo "═══ Section 101 — portable-spec-kit.md TOC generator + PSK045 drift-check (QA-D10-01) ═══"
+# psk-toc.sh builds the TOC from the REAL `## ` headers (fence-aware) with GitHub
+# anchors; PSK045 verifies it can't silently drift.
+_TOC_SH="$PROJ/agent/scripts/psk-toc.sh"
+if [ -x "$_TOC_SH" ]; then
+  _toc_gen=$(bash "$_TOC_SH" --generate 2>/dev/null)
+  # 101.1 — generate emits the marker block + heading
+  if echo "$_toc_gen" | grep -qF 'TOC-START' && echo "$_toc_gen" | grep -qF '## Table of Contents'; then
+    pass "101.1: psk-toc.sh --generate emits a marked TOC block"
+  else
+    fail "101.1: --generate missing markers/heading"
+  fi
+  # 101.2 — committed TOC matches (no drift on the real file)
+  bash "$_TOC_SH" --check >/dev/null 2>&1 \
+    && pass "101.2: PSK045 --check passes on committed portable-spec-kit.md" \
+    || fail "101.2: --check reports drift on committed file"
+  # 101.3 — fence-aware: example-block headers are NOT in the TOC
+  if echo "$_toc_gen" | grep -qE '\[v0\.2 — (Done|Title)\]|\[Feature Acceptance Criteria\]'; then
+    fail "101.3: TOC wrongly includes a code-example header"
+  else
+    pass "101.3: TOC excludes example-block headers (fence-aware)"
+  fi
+  # 101.4 — drift IS detected when a section is added
+  _toc_tmp=$(mktemp -d); cp "$PROJ/portable-spec-kit.md" "$_toc_tmp/x.md"
+  printf '\n## Brand New Section For Drift Test\n\nbody\n' >> "$_toc_tmp/x.md"
+  if bash "$_TOC_SH" --check --file "$_toc_tmp/x.md" >/dev/null 2>&1; then
+    fail "101.4: --check failed to detect an added section (drift missed)"
+  else
+    pass "101.4: PSK045 --check detects a newly-added section (drift caught)"
+  fi
+  rm -rf "$_toc_tmp"
+else
+  pass "101.1: psk-toc.sh absent — skip (n/a)"; pass "101.2: skip"; pass "101.3: skip"; pass "101.4: skip"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+echo "═══ Section 102 — extract-claims version-scopes test counts (QA-D2-04) ═══"
+# extract-claims.sh must NOT harvest a historical "NNNN tests passing" from an
+# older ## v block as a current-state claim.
+_EC_SH="$PROJ/reflex/lib/extract-claims.sh"
+if [ -x "$_EC_SH" ]; then
+  _ec_tmp=$(mktemp -d)
+  cat > "$_ec_tmp/CHANGELOG.md" <<'EOF'
+# Changelog
+## v0.6.82 — Current (intentionally no test-count line)
+- Added a feature
+## v0.6.50 — Old
+- 1756 tests passing
+EOF
+  _ec_out=$(bash "$_EC_SH" "$_ec_tmp" 2>/dev/null)
+  if echo "$_ec_out" | grep -E 'test-count' | grep -q '1756'; then
+    fail "102.1: extract-claims leaked historical 1756 as a current test-count claim"
+  else
+    pass "102.1: extract-claims scopes test-count to current ## v block (no stale 1756)"
+  fi
+  rm -rf "$_ec_tmp"
+else
+  pass "102.1: extract-claims.sh absent — skip (n/a)"
 fi
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
