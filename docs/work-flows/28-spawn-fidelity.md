@@ -122,7 +122,7 @@ The number of sub-agents per phase is determined by workload size, not a hardcod
 | Orchestrate Phase 6 (feature impl) | N spawns where N = number of `[ ]` features in SPECS.md | Some projects have 5 features, some have 80 |
 | Orchestrate `build` features phase | Same N spawns | Same |
 | Orchestrate `build` UI-completeness backfill | M spawns where M = number of PSK025 sub-code violations | Workload follows the audit, not a fixed batch |
-| Reflex QA orchestrator | `ceil(active_dims / max_dims_per_spawn)` waves of `max_parallel_agents` per wave | Scales from 26 dims today to 50+ tomorrow |
+| Reflex QA orchestrator | `ceil(active_dims / max_dims_per_spawn)` waves of `max_parallel_agents` per wave | Scales from 35 dims today to 50+ tomorrow |
 | Reflex Dev-Agent fix loop | K spawns where K = number of unique root-cause groups | Symptom findings auto-close when root is fixed |
 | psk-run-plan.sh per phase | Determined by plan's `phases:` array length | Plan author defines workload |
 

@@ -70,7 +70,7 @@
 
 ---
 
-Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 28 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. In orchestrated mode (v0.6.37+) the QA orchestrator spawns parallel dim-agents in waves via `qa-agent-orchestrator.md` + `qa-agent-dim.md` — each dim-agent investigates its assigned slice independently, then the orchestrator aggregates findings. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, runs a Phase 1 analysis pass (root-cause grouping → `fix-plan.md`) then fixes atomically on an isolated dev branch with per-commit mechanical gates, cascade-checking after each commit for auto-closures. Convergence = QA hunted hard and cannot find a blocker.
+Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 35 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. In orchestrated mode (v0.6.37+) the QA orchestrator spawns parallel dim-agents in waves via `qa-agent-orchestrator.md` + `qa-agent-dim.md` — each dim-agent investigates its assigned slice independently, then the orchestrator aggregates findings. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, runs a Phase 1 analysis pass (root-cause grouping → `fix-plan.md`) then fixes atomically on an isolated dev branch with per-commit mechanical gates, cascade-checking after each commit for auto-closures. Convergence = QA hunted hard and cannot find a blocker.
 
 **QA-Orchestrator dispatch mode** (`reflex/config.yml → qa_agent.spawn_mode`, v0.6.72+ KIT-GAP-0052):
 
@@ -91,7 +91,7 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 
 **Mode A claim probe-types (v0.6.25+, extract-claims extensions):** four new claim types alongside the original eight (version-match · test-count · feature-count · capability-exists · file-count · install-works · dimension-count · skill-count). The new four — `api-route` (express/fastify/router-style route registrations in src/lib/app/api/server), `perf-budget` (`<Nms p95` / `<Ns` patterns extracted from REQS/SPECS/PLANS/README), `error-message-text` (15-80 char user-facing strings in agent/REQS.md / SPECS.md / README.md / HANDOFF.md), `security-rule` (anti-pattern absence claims like "no eval", "no pickle", "no shell=True"). Each emitted with a `probe_target` QA must verify or falsify.
 
-**Symmetric self-evolution (v0.6.27+, P9 + ADR-040):** kit hunts for both gaps AND overlaps. `agent/scripts/psk-coverage-overlap-check.sh` extracts coverage signatures from 28 dimensions + Phase 0 helpers + sync-check fns + /optimize cats; reports overlap clusters. Wired into `/optimize` cat 14 + Phase 6 evolution-gauntlet Gate G. New QA `Dimension 24 — Coverage-overlap audit` (3 probes per pass) files `QA-OVERLAP-NN` findings. Phase 5 self-reflection now mandates ≥1 overlap observation. `OL-NNN` registry in `qa-blind-spots.md` tracks human-flagged overlaps. Bypass `PSK_OVERLAP_CHECK_DISABLED=1`.
+**Symmetric self-evolution (v0.6.27+, P9 + ADR-040):** kit hunts for both gaps AND overlaps. `agent/scripts/psk-coverage-overlap-check.sh` extracts coverage signatures from 35 dimensions + Phase 0 helpers + sync-check fns + /optimize cats; reports overlap clusters. Wired into `/optimize` cat 14 + Phase 6 evolution-gauntlet Gate G. New QA `Dimension 24 — Coverage-overlap audit` (3 probes per pass) files `QA-OVERLAP-NN` findings. Phase 5 self-reflection now mandates ≥1 overlap observation. `OL-NNN` registry in `qa-blind-spots.md` tracks human-flagged overlaps. Bypass `PSK_OVERLAP_CHECK_DISABLED=1`.
 
 **Tier 3 auto-probe-synthesis (v0.6.27+, ADR-038):** `agent/scripts/psk-blind-spot-synthesize.sh` reads BS-NNN `status: open` entries, classifies target, scaffolds PR-style proposals at `agent/tasks/proposed/Gxx-<slug>.md`. Closes Tier 3 of v0.6.7+ residual plan.
 
@@ -125,7 +125,7 @@ Reflex is **decoupled from prep-release cadence** but the end-to-end `autoloop` 
 
 ## How QA derives its probe set — 7-layer Senior-Engineer system (v0.6.7+)
 
-Reflex's QA-Agent used to hunt a closed 24-dimension checklist from the AVACR paper. As of v0.6.7 it is a **Senior / Principal-level QA system with 7 verification layers** — probes derive from the project's spec pipeline + kit toolkit + running system, never from a human-curated list. The 24-dimension checklist is preserved as a safety net, not the primary driver.
+Reflex's QA-Agent used to hunt a closed 35-dimension checklist from the AVACR paper. As of v0.6.7 it is a **Senior / Principal-level QA system with 7 verification layers** — probes derive from the project's spec pipeline + kit toolkit + running system, never from a human-curated list. The 35-dimension checklist is preserved as a safety net, not the primary driver.
 
 | # | Layer | Helper / Phase | Output artifact in pass dir |
 |---|---|---|---|
@@ -148,7 +148,7 @@ Plus the v0.6.6 Phase 0 inputs (still active): `claims.yaml` (Mode A) + `state-d
 - **Use the kit toolkit** — psk-* scripts as research instruments (Layer 6)
 - **External reality** — WebSearch CVEs / OWASP / deprecations (Layer 7)
 
-Layers 1, 2, 6 are **deterministic bash pre-compute** (<2s + <200 tokens combined). LLM budget redirects to semantic verification (Layers 3-5, 7) instead of re-deriving project structure. Layer 1 / 6 CRITICAL signals **short-circuit** the 24-dim sweep — fix structural breaks first, behaviors second.
+Layers 1, 2, 6 are **deterministic bash pre-compute** (<2s + <200 tokens combined). LLM budget redirects to semantic verification (Layers 3-5, 7) instead of re-deriving project structure. Layer 1 / 6 CRITICAL signals **short-circuit** the 35-dim sweep — fix structural breaks first, behaviors second.
 
 ## End-to-end flow — one autoloop invocation
 
@@ -254,7 +254,7 @@ Every pass directory is `reflex/history/cycle-NN/pass-NNN/` (autoloop) or `refle
 | **`claims.yaml`** (v0.6.6+) | `reflex/lib/extract-claims.sh` (pre-compute, LLM-free) | **Phase 0 Mode A** — every public claim extracted from README / portable-spec-kit.md / SPECS / CHANGELOG / RELEASES / AGENT_CONTEXT / qa-agent.md with `probe_type` + `probe_target`. QA verifies each; unverified or vague = finding. |
 | **`state-diff.yaml`** (v0.6.6+) | `reflex/lib/state-diff.sh` (pre-compute, LLM-free) | **Phase 0 Mode B** — actual project state vs `reflex/reference-state/speckit-project.yaml`. Every delta pre-classified by severity (CRITICAL / MAJOR / MINOR). CRITICAL deltas auto-promote to findings. |
 | **`assumptions.md`** (v0.6.6+) | QA sub-agent (Phase 1) | **Phase 0 Mode C** — QA lists every implicit assumption its probes operate under. Each MUST have a probe that verifies or falsifies it. Unverifiable assumption = MAJOR `QA-ASSUMPTION-NN` finding. |
-| `findings.yaml` | QA sub-agent | Structured findings (id · priority · scope · dimension · citable_quote · regression_vector · recommendation) — peer exchange to Dev-Agent. Now includes claim-derived + state-diff + assumption + 24-dim-derived findings. |
+| `findings.yaml` | QA sub-agent | Structured findings (id · priority · scope · dimension · citable_quote · regression_vector · recommendation) — peer exchange to Dev-Agent. Now includes claim-derived + state-diff + assumption + 35-dim-derived findings. |
 | `signoff.md` | `spawn-qa.sh` + QA sub-agent | Verdict (GRANTED / DENIED), blocking findings, deferred decisions, human-arbitration items |
 | `verdict.md` | `run.sh` write_verdict | Machine-parsed pass summary. Always includes structural `verdict: GRANTED` or `verdict: DENIED` field (v0.6.38+) so the convergence-audit gate (9th gate in `gates.sh`) passes via primary path. Also includes mode, findings, fixes, gates status, timestamp. |
 | `investigation-log.md` | QA sub-agent | QA's reasoning trail — why each finding was filed; Dev reads this for context + sibling-class hardening |
@@ -543,7 +543,7 @@ reflex/lib/external-research.sh (QA Layer 7): scans project manifests (package.j
 
 reflex/lib/auto-extract-adl.sh (Dev Layer 7): post-pass, scans Dev's commits for substantive bodies (≥200 chars) with rationale keywords. Drafts ADL entries to agent/.release-state/adl-drafts.md.
 
-The original 24-dimension checklist is preserved as a safety net — runs after the 7 layers, catches classes the layers might miss. Short-circuit on CRITICAL state-diff: if Phase 0 flags a CRITICAL delta (e.g. install.sh never ran), QA halts with that single finding instead of wasting budget on a 24-dim sweep of a structurally-broken project.
+The original 35-dimension checklist is preserved as a safety net — runs after the 7 layers, catches classes the layers might miss. Short-circuit on CRITICAL state-diff: if Phase 0 flags a CRITICAL delta (e.g. install.sh never ran), QA halts with that single finding instead of wasting budget on a 35-dim sweep of a structurally-broken project.
 
 ### Phase 0 pre-compute — deterministic bash, LLM-free (v0.6.6)
 
@@ -551,7 +551,7 @@ reflex/lib/extract-claims.sh (Mode A): walks README, portable-spec-kit.md, SPECS
 
 reflex/reference-state/speckit-project.yaml + reflex/lib/state-diff.sh (Mode B): static reference defining what a complete speckit project must contain (required files, pipeline files, dirs, git hooks, entry-point symlinks, exclusions). State-diff compares actual vs reference and emits state-diff.yaml with every delta pre-classified by severity. CRITICAL deltas auto-promote to CRITICAL findings. Kit-self auto-detected — skips user-project-only checks.
 
-QA Phase 0 wiring in reflex/lib/spawn-qa.sh: both helpers run BEFORE sandbox creation so claims.yaml + state-diff.yaml land in the pass directory. QA reads these in Phase 0 (no LLM cost to re-derive) and uses them to plan Phase 1. The 24-dim checklist is explicitly labeled "safety net" catching classes the three modes might miss.
+QA Phase 0 wiring in reflex/lib/spawn-qa.sh: both helpers run BEFORE sandbox creation so claims.yaml + state-diff.yaml land in the pass directory. QA reads these in Phase 0 (no LLM cost to re-derive) and uses them to plan Phase 1. The 35-dim checklist is explicitly labeled "safety net" catching classes the three modes might miss.
 
 Assumption surfacing (Mode C) in reflex/prompts/qa-agent.md: every pass writes assumptions.md listing every implicit assumption ("kit is installed," "test harness exits 0 on green," "every [x] feature implemented"). For each, QA MUST write a probe that verifies or falsifies it. Unverifiable assumption = MAJOR QA-ASSUMPTION-NN finding.
 
@@ -583,7 +583,7 @@ Dimension 17 — Cost & performance audit (mandatory): every pass measures both 
 
 ### Dimension 18 — QA + Dev philosophy self-audit (v0.6.11)
 
-Dimension 18 — QA + Dev philosophy self-audit (mandatory, meta-evolution): every pass QA writes philosophy-gaps.md listing AT MINIMUM (a) one scenario the 18 dimensions don't cover, (b) one implicit assumption in the probe set that could be wrong, (c) one class of bug that would evade all 18 current dimensions. Each named scenario emits QA-META-PHIL-NN finding (MEDIUM, advisory, never blocking). Dev mirror — operating principle 9: Dev writes dev-philosophy-gaps.md listing one fix-pattern the 9 principles don't address + one trade-off none of the rules disambiguate. Filed as QA-META-DEV-PHIL-NN findings. Maintainer reviews cross-pass; novel + reproducible scenarios land as Dim 19, 20, etc. The kit's audit philosophy becomes self-evolving — the dimension list grows from real audit-pass discoveries, not the maintainer's imagination. The user is no longer the QA-of-QA.
+Dimension 18 — QA + Dev philosophy self-audit (mandatory, meta-evolution): every pass QA writes philosophy-gaps.md listing AT MINIMUM (a) one scenario the 35 dimensions don't cover, (b) one implicit assumption in the probe set that could be wrong, (c) one class of bug that would evade all 18 current dimensions. Each named scenario emits QA-META-PHIL-NN finding (MEDIUM, advisory, never blocking). Dev mirror — operating principle 9: Dev writes dev-philosophy-gaps.md listing one fix-pattern the 9 principles don't address + one trade-off none of the rules disambiguate. Filed as QA-META-DEV-PHIL-NN findings. Maintainer reviews cross-pass; novel + reproducible scenarios land as Dim 19, 20, etc. The kit's audit philosophy becomes self-evolving — the dimension list grows from real audit-pass discoveries, not the maintainer's imagination. The user is no longer the QA-of-QA.
 
 ### Per-pass ROI scoring — pass_score (v0.6.11, Dim 17 ranking)
 

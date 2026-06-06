@@ -659,7 +659,7 @@ The solution splits monolithic QA into three layers:
 
 | Example | Dims | Per-spawn | Parallel | Waves |
 |---|---|---|---|---|
-| Default kit (25 dims) | 25 | 10 | 4 | 1 wave of 3 agents |
+| Default kit (35 dims) | 35 | 10 | 4 | 1 wave of 3 agents |
 | Future (48 dims) | 48 | 10 | 4 | 2 waves (4 + 1 agents) |
 
 Wall-clock grows in **wave steps**, not linearly per-dimension. A 4× growth in dim count from 25 → 48 adds exactly one extra wave (~25 min), not 4× the total time.

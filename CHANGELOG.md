@@ -8,7 +8,16 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.82 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+**Built over:** v0.6.0 — v0.6.83 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+
+### v0.6.83 — Generic QA dimensions 29-35 + backlog triage (2026-06-06)
+- **7 new generic QA dimensions (advisory).** Turned the QA-Agent's Dim-18 philosophy-gap proposals into real probes, each `reflex/lib/<dim>-audit.sh` taking `PROJ_ROOT` with no kit-specific assumptions: Dim 29 prose-constant-fidelity, Dim 30 assertion-strength, Dim 31 root-resolution-robustness, Dim 32 longitudinal-drift, Dim 33 freshness-drift, Dim 34 host-portability, Dim 35 feature-traceability. Registered in `reflex/prompts/qa-agent.md` (dim count 28→35) + `reflex/config.yml`. 3 of them caught real bugs while being built (31, 33, 34 — incl. Dim 34 finding its own non-portable awk).
+- **KIT-GAP-0076** — `psk-kit-cmd.sh` + `psk-behavior-parity.sh` route TSV bypass writers through the JSON logger so PSK027 counts them (was blind to half the bypass-log).
+- **KIT-GAP-0077** — `psk-bypass-log.sh` self-test tagging (`PSK_BYPASS_SELFTEST` via `tests/lib.sh`) + `count --exclude-selftest`; PSK027 no longer inflated by test-infra bypasses.
+- **KIT-GAP-N69** — `psk-optimize.sh emit_health` 60-day age-escalation honors the `active=0 && deferred>0` deferral exception (was only on the 30-day branch).
+- **QA-D2-04** — `reflex/lib/extract-claims.sh` version-scopes the test-count grep to the current `## v` block so historical counts stop leaking.
+- **QA-D10-01** — `portable-spec-kit.md` Table of Contents + `psk-toc.sh` generator + PSK045 drift-guard.
+- **Backlog triage** — 70 → 24 open (0 defects); ~45 closed/discarded/validated; KIT-GAPs 0076-0079 logged.
 
 ### v0.6.82 — Reflex cycle-30 prep + root-copy root-cause + consistency sweep (2026-06-05)
 - **KIT-GAP-0062** — Dev-Agent prompt retrofit. `reflex/lib/spawn-dev.sh` + `reflex/prompts/dev-agent.md` now carry `kit_rule_citations:` (bucket-taxonomy, protected-files-write-ban, instruction-fidelity-honor-exact-scope) so Layer 9's psk-spawn.sh prompt-validation gate stops refusing Dev-Agent spawns. Same retrofit class as KIT-GAP-0055 P3 (QA-Agent, v0.6.74) which missed Dev-Agent.
