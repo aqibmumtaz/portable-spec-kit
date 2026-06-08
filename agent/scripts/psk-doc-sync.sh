@@ -30,7 +30,9 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
+# Honor a caller-provided PROJ_ROOT (testability + explicit-root invocation); fall
+# back to the script-relative location otherwise. Anchored fallback — no CWD reliance.
+PROJ_ROOT="${PROJ_ROOT:-$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)}"
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -54,7 +56,10 @@ echo -e "${CYAN}═══ psk-doc-sync — CHANGELOG $minor → Full Documentati
 # Matches: internal error codes, release headers, trailing-colon headers, test/ARD meta,
 #         env vars, change-description phrases ("X removed", "Y → Z"), numeric-count
 #         sentences, and historical narrative lines.
-NOISE_RE='^(PSK[0-9]+|Closes the|Fast:|Framework rule updated|Framework MANDATORY rule|Masked output:|Framework Changes|New Files|Tests|Highlights|ARD content update rule|Output DISCIPLINE|Why grep|Minimum length|Exit code|Section [0-9]+|What.s New|Path exclusions|Placeholder-aware|PreCommit hook|PostToolUse hook|Compact critic|Reliability-script|Redundant|Paper v[0-9]+ Section|RFT cache|PSK_[A-Z_]+=|[0-9]+ (new |behavioral|critic|flow|high-signal|new)|Literature-grounded rename:|Pattern classification .literature review.:|Precondition strengthening:|Regression diff|Script header|Smoke tests .both phases|CRITICAL:|MAJOR:|MINOR:|`?[0-9a-f]{7}`?[[:space:]]*[—-]|`?[0-9a-f]{7}`?$|reflex/run\.sh:|examples/.+\.md$)'
+# QA-D25 fix: also drop internal trace/finding identifiers (KIT-GAP-*, QA-* finding
+# IDs, ADR-*, ADL-*) — these are bolded in CHANGELOG bullets as the change's anchor
+# but are infrastructure references, never user-facing "features" needing doc coverage.
+NOISE_RE='^(KIT-GAP-[0-9A-Za-z]+|QA-[A-Z0-9][A-Z0-9-]*|ADR-[0-9]+|ADL-|PSK[0-9]+|Closes the|Fast:|Framework rule updated|Framework MANDATORY rule|Masked output:|Framework Changes|New Files|Tests|Highlights|ARD content update rule|Output DISCIPLINE|Why grep|Minimum length|Exit code|Section [0-9]+|What.s New|Path exclusions|Placeholder-aware|PreCommit hook|PostToolUse hook|Compact critic|Reliability-script|Redundant|Paper v[0-9]+ Section|RFT cache|PSK_[A-Z_]+=|[0-9]+ (new |behavioral|critic|flow|high-signal|new)|Literature-grounded rename:|Pattern classification .literature review.:|Precondition strengthening:|Regression diff|Script header|Smoke tests .both phases|CRITICAL:|MAJOR:|MINOR:|`?[0-9a-f]{7}`?[[:space:]]*[—-]|`?[0-9a-f]{7}`?$|reflex/run\.sh:|examples/.+\.md$)'
 
 # Secondary filter — drop change-descriptions lacking feature identity
 CHANGE_NOISE_RE='( removed$| → |expanded from|expanded to match|unchanged at|updated$|Step [0-9]+ refactored|Step [0-9]+ replaced|"[^"]+")'

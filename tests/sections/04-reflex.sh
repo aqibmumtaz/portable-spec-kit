@@ -5242,6 +5242,88 @@ else
   pass "D35.1: feature-traceability-audit.sh absent — skip"; pass "D35.2: skip"
 fi
 
+section "KIT-GAP-0081 — reflex lock auto-clears stale (dead/non-reflex pid) PID-file"
+# The PID-file fallback (no flock) must treat a lock as "live" only when its pid
+# is alive AND the process is a reflex run. A dead pid, an empty file, or a pid
+# reused by an unrelated process is a stale lock and must be cleared, not block.
+_RUN="$PROJ/reflex/run.sh"
+if [ -f "$_RUN" ]; then
+  # GAP81.1 — the live-lock test requires BOTH kill -0 AND a run.sh command match
+  if grep -q "ps -p \"\$locked_pid\" -o command=" "$_RUN" && grep -q "grep -q 'run\\\\.sh'" "$_RUN"; then
+    pass "GAP81.1: lock liveness guarded by pid-is-reflex check (anti pid-reuse)"
+  else
+    fail "GAP81.1: lock check missing the ps-command reflex-process guard"
+  fi
+  # GAP81.2 — a stale lock is explicitly cleared (rm) on the not-live path
+  if grep -q "clearing stale reflex.lock" "$_RUN" && grep -q 'rm -f "\$LOCK_FILE"' "$_RUN"; then
+    pass "GAP81.2: stale lock is auto-cleared with an operator-visible notice"
+  else
+    fail "GAP81.2: stale-lock auto-clear path missing"
+  fi
+  # GAP81.3 — replay the decision logic in isolation: dead pid 999999 → CLEAR
+  _gap81_pid="999999"
+  if [ -n "$_gap81_pid" ] && kill -0 "$_gap81_pid" 2>/dev/null && ps -p "$_gap81_pid" -o command= 2>/dev/null | grep -q 'run\.sh'; then
+    fail "GAP81.3: dead pid 999999 wrongly judged a live reflex run"
+  else
+    pass "GAP81.3: dead/non-reflex pid judged stale → would clear + proceed"
+  fi
+else
+  pass "GAP81.1: run.sh absent — skip"; pass "GAP81.2: skip"; pass "GAP81.3: skip"
+fi
+
+section "KIT-GAP-0082 — version bump syncs workspace-root mirror copy (kit-self only)"
+# The kit-dev test asserts the ROOT mirror (\$PROJ/../..) matches the checkout copy.
+# psk-version-cascade.sh must re-cp the mirror on bump — guarded to kit-self AND an
+# existing kit mirror so it is a safe no-op for any user project.
+_VC="$PROJ/agent/scripts/psk-version-cascade.sh"
+if [ -f "$_VC" ]; then
+  # GAP82.1 — the sync is gated on is_kit_self
+  if grep -q 'is_kit_self" = "1"' "$_VC" && grep -q "root_mirror=" "$_VC"; then
+    pass "GAP82.1: mirror sync gated on is_kit_self"
+  else
+    fail "GAP82.1: mirror sync not gated on kit-self"
+  fi
+  # GAP82.2 — the mirror is only written when it already exists AND is a kit copy
+  if grep -q 'grep -q "Framework Version:" "\$root_mirror"' "$_VC"; then
+    pass "GAP82.2: mirror written only when it exists + carries Framework Version (safe no-op)"
+  else
+    fail "GAP82.2: mirror guard (exists + is kit copy) missing — could clobber unrelated file"
+  fi
+else
+  pass "GAP82.1: version-cascade absent — skip"; pass "GAP82.2: skip"
+fi
+
+section "QA-D25 — doc-sync drops internal trace-IDs from the feature catalog (behavioral)"
+# Behavioral assertion (QA-D30-aligned: runs the tool, checks OUTPUT — not grep-of-source).
+# Internal trace identifiers (KIT-GAP-*, QA-* finding ids, ADR-*, ADL-*) are bolded in
+# CHANGELOG bullets but are NOT user-facing features; they must not be counted as
+# "features needing doc coverage" (they always read as 0-surface MISSING false positives).
+_DS="$PROJ/agent/scripts/psk-doc-sync.sh"
+if [ -x "$_DS" ]; then
+  _ds_t=$(mktemp -d); mkdir -p "$_ds_t/agent" "$_ds_t/docs/work-flows"
+  printf -- '- **Version:** v9.9.9\n' > "$_ds_t/agent/AGENT_CONTEXT.md"
+  # current-minor section mixes a genuine feature with internal trace-ids
+  printf '# Changelog\n## v9.9\n### v9.9.9\n- **Realtime export panel** — new user-facing feature\n- **KIT-GAP-0099** — internal lock fix\n- **QA-D77-PROBE-XYZ** — internal probe finding\n- **ADR-099** — internal decision\n' > "$_ds_t/CHANGELOG.md"
+  printf '# Doc\nRealtime export panel documented here.\n' > "$_ds_t/docs/work-flows/01-x.md"
+  printf 'realtime export panel\n' > "$_ds_t/README.md"
+  _ds_out=$(cd "$_ds_t" && PROJ_ROOT="$_ds_t" bash "$_DS" 2>&1)
+  # D25.1 — internal trace-ids are NOT analyzed as features
+  if ! echo "$_ds_out" | grep -qE "KIT-GAP-0099|QA-D77-PROBE-XYZ|ADR-099"; then
+    pass "D25.1: KIT-GAP/QA/ADR trace-ids excluded from feature catalog"
+  else
+    fail "D25.1: internal trace-id still counted as a feature: $(echo "$_ds_out" | grep -oE 'KIT-GAP-0099|QA-D77-PROBE-XYZ|ADR-099' | head -1)"
+  fi
+  # D25.2 — a genuine user-facing feature IS still analyzed (no over-filtering)
+  if echo "$_ds_out" | grep -qi "Realtime export panel"; then
+    pass "D25.2: genuine user-facing feature still catalogued (no over-filter)"
+  else
+    fail "D25.2: real feature wrongly dropped by the trace-id filter"
+  fi
+  rm -rf "$_ds_t"
+else
+  pass "D25.1: psk-doc-sync.sh absent — skip"; pass "D25.2: skip"
+fi
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"

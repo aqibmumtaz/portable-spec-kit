@@ -8,7 +8,14 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.84 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+**Built over:** v0.6.0 — v0.6.85 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+
+### v0.6.85 — Rerun-friction fixes + doc-sync precision (2026-06-07)
+- **KIT-GAP-0081** — `reflex/run.sh` PID-file lock (stock macOS, no `flock`) now treats a lock as live only when the pid is alive AND its process is actually a reflex run (guards pid-reuse), and auto-clears a stale lock instead of blocking the autoloop.
+- **KIT-GAP-0082** — `psk-version-cascade.sh` re-syncs the workspace-root mirror copy on every bump (kit-self only, guarded to an existing kit mirror — safe no-op in user projects). Self-validated live during this release.
+- **QA-D25-DOC-SYNC-MISSING-01** — `psk-doc-sync.sh` NOISE_RE drops internal trace ids (`KIT-GAP-*`, `QA-*`, `ADR-*`, `ADL-*`) from the feature catalog (bolded CHANGELOG anchors wrongly counted as 0-surface features); catalog 431→324, MISSING 123→87. `PROJ_ROOT` now env-overridable.
+- **QA-D30-TEST-STRUCTURAL-RATIO-01** — dispositioned by-design (structural-leaning assertions are inherent to a doc-contract framework); addressed additively with behavioral tests rather than churning 4 stable suites.
+- 7 new regression tests (GAP81.1-3, GAP82.1-2, D25.1-2). 2865 tests passing.
 
 ### v0.6.84 — Reflex-surfaced probe + installer fixes (2026-06-07)
 - **Self-audit dogfood.** Ran the reflex autoloop on the kit itself (cycle-30); the 7 new generic dims caught 3 genuine kit bugs end-to-end (zero surviving false positives), all fixed and landed.

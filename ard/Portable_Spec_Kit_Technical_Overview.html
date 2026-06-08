@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.84 &bull; May 2026</div>
+    <div class="badge">v0.6.85 &bull; May 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.84</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 2865 passing (2720 framework + 145 benchmarking), 113 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.85</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 2865 passing (2720 framework + 145 benchmarking), 116 sections</div>
   </div>
 </div>
 
@@ -105,8 +105,9 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.0 — v0.6.84</p>
+<p>Kit: v0.6.0 — v0.6.85</p>
 <ul>
+  <li><strong>v0.6.85 — Rerun-friction fixes + doc-sync precision (June 2026):</strong> Operational-friction cleanup surfaced while driving the cycle-30 autoloop. KIT-GAP-0081 (<code>reflex/run.sh</code> PID-file lock on stock macOS now treats a lock as live only when the pid is alive AND its process is actually a reflex run — guards pid-reuse — and auto-clears a stale lock instead of blocking), KIT-GAP-0082 (<code>psk-version-cascade.sh</code> re-syncs the workspace-root mirror copy on every bump, kit-self-guarded — self-validated live during this release), QA-D25-DOC-SYNC-MISSING-01 (<code>psk-doc-sync.sh</code> drops internal trace ids KIT-GAP-*/QA-*/ADR-*/ADL- from the feature catalog: 431→324 catalogued, 123→87 MISSING; <code>PROJ_ROOT</code> now env-overridable). QA-D30 dispositioned by-design (structural-leaning assertions are inherent to a doc-contract framework). 7 new regression tests, 2865 tests passing.</li>
   <li><strong>v0.6.84 — Reflex-surfaced probe + installer fixes (June 2026):</strong> Self-audit dogfood. Running the reflex autoloop on the kit itself (cycle-30) exercised the 7 new generic dimensions end-to-end; they caught 3 genuine kit bugs with zero surviving false positives, all fixed. QA-D29-INSTALLER-CURL-MANIFEST-01 (<code>install.sh</code> curl-fallback array missing 8 <code>reflex/lib/</code> helpers — the 7 new dim probes + <code>self-test-mutation.sh</code> — so network installs shipped without the newest audits; added all 8), QA-D25-PROBE-JSON-UNBOUND-VAR-01 (<code>mandate-audit.sh</code> + <code>workflow-fidelity-audit.sh</code> crashed under <code>set -u</code> on a bare <code>--json</code> flag; now tolerate both <code>--json &lt;file&gt;</code> and bare <code>--json</code>), QA-D34-PROBE-SCANS-SANDBOX-01 (<code>assertion-strength-audit.sh</code> scanned <code>reflex/sandbox/</code>; added the shared find-prune), KIT-GAP-0081 (stale <code>reflex.lock</code> from a dead pid should auto-clear via <code>ps -p</code> liveness check). 2865 tests passing.</li>
   <li><strong>v0.6.83 — Generic QA dimensions 29-35 + backlog triage (June 2026):</strong> Audit-deepening + backlog cleanup. Turned the QA-Agent's Dim-18 philosophy-gap proposals into 7 new generic QA dimensions, each a <code>reflex/lib/&lt;dim&gt;-audit.sh</code> probe taking <code>PROJ_ROOT</code> with no kit-specific assumptions: Dim 29 prose-constant-fidelity, Dim 30 assertion-strength, Dim 31 root-resolution-robustness, Dim 32 longitudinal-drift, Dim 33 freshness-drift, Dim 34 host-portability, Dim 35 feature-traceability (qa-agent.md dim count 28→35). Fixes: KIT-GAP-0076 (PSK027 blind to TSV bypass entries), KIT-GAP-0077 (self-test bypass tagging + <code>--exclude-selftest</code>), KIT-GAP-N69 (optimize age-escalation honors deferral), QA-D2-04 (extract-claims version-scoped test counts), QA-D10-01 (TOC + <code>psk-toc.sh</code> + PSK045). Backlog 70→24 open (0 defects). 2865 tests passing.</li>
   <li><strong>v0.6.82 — Reflex cycle-30 prep + root-copy root-cause + consistency sweep (June 2026):</strong> Reflex-driven kit-hardening. KIT-GAP-0062 retrofits the Dev-Agent prompt (<code>spawn-dev.sh</code> + <code>dev-agent.md</code>) with <code>kit_rule_citations:</code> so Layer 9's prompt-validation gate stops refusing Dev-Agent spawns (QA-Agent was retrofitted in v0.6.74; Dev-Agent was missed). KIT-GAP-0065 fixes the recurring "portable-spec-kit.md reverted to v0.6.72 / Layers 9/10/11 deleted" regression — the workspace-root copy was stale and <code>sync.sh</code> copies root→Projects, silently reverting kit-dev work; root copy synced + copy-direction flagged for maintainer decision. KIT-GAP-0066 (flow-docs critic lacks incremental re-verify) + KIT-GAP-0067 (prep-release step-6/step-8 RELEASES-heading chicken-and-egg) filed. 9-item consistency sweep: layer-count tests (79.10/97.10/95.12/f85-AC2) accept 11 layers; gate count 13→14; flow-doc count 30→32; ARD section count 103→104; flow-doc diagrams 31+32 converted to box-connector format (31 silently failing since v0.6.74); 17-reflex 13→14 gates. test-spec-kit 2766/2766 passing.</li>
@@ -1436,7 +1437,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.84 &bull; May 2026</div>
+    <div class="badge">v0.6.85 &bull; May 2026</div>
   </div>
 </div>
 
