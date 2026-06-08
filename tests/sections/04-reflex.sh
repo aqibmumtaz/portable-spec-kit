@@ -5089,9 +5089,25 @@ if [ -x "$_ASA" ]; then
   [ "$_asa_hi" = "0" ] \
     && pass "D30.3: --threshold tunable (100% → no findings)" \
     || fail "D30.3: threshold not honored ($_asa_hi findings at 100%)"
-  rm -rf "$_asa_t"
+  # D30.4 — precision filter: a mock-server / fixture file is NOT scored (its
+  # grep/[ -f ] lines are control-flow, not assertions — category error to flag).
+  _asa_p=$(mktemp -d); mkdir -p "$_asa_p/tests"
+  { echo '#!/usr/bin/env bash'; for i in 1 2 3 4 5 6; do echo "grep -q 'X$i' f && echo s$i || echo n$i"; done; } > "$_asa_p/tests/mock-thing-server.sh"
+  _asa_pj=$(bash "$_ASA" --root "$_asa_p" --json 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['findings_total'], any('mock-thing-server' in f.get('citable_quote','') for f in d.get('findings',[])))" 2>/dev/null)
+  [ "$_asa_pj" = "0 False" ] \
+    && pass "D30.4: precision filter excludes mock/server fixture from scoring" \
+    || fail "D30.4: mock-server wrongly scored ($_asa_pj)"
+  # D30.5 — precision filter: a thin orchestrator (sources >=3 test files, <5 own
+  # asserts) is NOT scored — its section-existence checks aren't assertions.
+  _asa_o=$(mktemp -d); mkdir -p "$_asa_o/tests/sections"
+  { echo '#!/usr/bin/env bash'; for i in 1 2 3 4; do echo "[ -f tests/sections/s$i.sh ] && source tests/sections/s$i.sh"; done; } > "$_asa_o/tests/run-all.sh"
+  _asa_oj=$(bash "$_ASA" --root "$_asa_o" --json 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['findings_total'], any('run-all' in f.get('citable_quote','') for f in d.get('findings',[])))" 2>/dev/null)
+  [ "$_asa_oj" = "0 False" ] \
+    && pass "D30.5: precision filter excludes thin orchestrator from scoring" \
+    || fail "D30.5: orchestrator wrongly scored ($_asa_oj)"
+  rm -rf "$_asa_t" "$_asa_p" "$_asa_o"
 else
-  pass "D30.1: assertion-strength-audit.sh absent — skip"; pass "D30.2: skip"; pass "D30.3: skip"
+  pass "D30.1: assertion-strength-audit.sh absent — skip"; pass "D30.2: skip"; pass "D30.3: skip"; pass "D30.4: skip"; pass "D30.5: skip"
 fi
 
 section "Dim 29 — prose-constant-audit probe (generic-qa-dimensions plan)"

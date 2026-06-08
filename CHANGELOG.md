@@ -8,7 +8,13 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.85 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+**Built over:** v0.6.0 — v0.6.86 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+
+### v0.6.86 — Dim 30 test-quality polish (2026-06-08)
+- **Closed QA-D30 for real** (was dispositioned by-design in v0.6.85). Two-part fix to the QA-Agent's assertion-strength dimension so the kit passes its own quality bar.
+- **Probe precision** — `reflex/lib/assertion-strength-audit.sh` now skips files that aren't assertion-bearing suites: mock servers / fixtures (by basename) and thin orchestrators (source ≥3 test files with <5 own asserts). Scoring their control-flow `grep`/`[ -f ]` lines was a category error; removed 2 false positives.
+- **Genuine behavioral conversions** — `tests/test-spd-benchmarking.sh` (81%→<50% structural) + `tests/sections/01-infrastructure.sh` (57%→<50%): existence checks upgraded to content/state assertions (line-count thresholds, task-done counts, phase-advanced). No filler. Dim 30 now reports **0 findings**.
+- **Regression tests** D30.4/D30.5 lock in the precision filter. 2865 tests passing.
 
 ### v0.6.85 — Rerun-friction fixes + doc-sync precision (2026-06-07)
 - **KIT-GAP-0081** — `reflex/run.sh` PID-file lock (stock macOS, no `flock`) now treats a lock as live only when the pid is alive AND its process is actually a reflex run (guards pid-reuse), and auto-clears a stale lock instead of blocking the autoloop.

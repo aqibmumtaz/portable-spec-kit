@@ -101,16 +101,18 @@ section "6. Starter Example — Complete"
 # ═══════════════════════════════════════════════════════════════
 
 S="$PROJ/examples/starter"
-[ -f "$S/WORKSPACE_CONTEXT.md" ] && pass "starter: WORKSPACE_CONTEXT.md" || fail "starter: WORKSPACE_CONTEXT.md MISSING"
-[ -f "$S/README.md" ] && pass "starter: README.md" || fail "starter: README.md MISSING"
-[ -f "$S/.gitignore" ] && pass "starter: .gitignore" || fail "starter: .gitignore MISSING"
-[ -f "$S/.env.example" ] && pass "starter: .env.example" || fail "starter: .env.example MISSING"
-[ -f "$S/agent/AGENT.md" ] && pass "starter: agent/AGENT.md" || fail "starter: AGENT.md MISSING"
-[ -f "$S/agent/AGENT_CONTEXT.md" ] && pass "starter: agent/AGENT_CONTEXT.md" || fail "starter: AGENT_CONTEXT.md MISSING"
-[ -f "$S/agent/SPECS.md" ] && pass "starter: agent/SPECS.md" || fail "starter: SPECS.md MISSING"
-[ -f "$S/agent/PLANS.md" ] && pass "starter: agent/PLANS.md" || fail "starter: PLANS.md MISSING"
-[ -f "$S/agent/TASKS.md" ] && pass "starter: agent/TASKS.md" || fail "starter: TASKS.md MISSING"
-[ -f "$S/agent/RELEASES.md" ] && pass "starter: agent/RELEASES.md" || fail "starter: RELEASES.md MISSING"
+# Assert each starter file was scaffolded WITH content (line count > 0), not merely
+# that the path exists. An empty example file is a broken example.
+sl=$(wc -l < "$S/WORKSPACE_CONTEXT.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: WORKSPACE_CONTEXT.md has content ($sl lines)" || fail "starter: WORKSPACE_CONTEXT.md empty/MISSING"
+sl=$(wc -l < "$S/README.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: README.md has content ($sl lines)" || fail "starter: README.md empty/MISSING"
+sl=$(wc -l < "$S/.gitignore" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: .gitignore has content ($sl lines)" || fail "starter: .gitignore empty/MISSING"
+sl=$(wc -l < "$S/.env.example" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: .env.example has content ($sl lines)" || fail "starter: .env.example empty/MISSING"
+sl=$(wc -l < "$S/agent/AGENT.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: agent/AGENT.md has content ($sl lines)" || fail "starter: AGENT.md empty/MISSING"
+sl=$(wc -l < "$S/agent/AGENT_CONTEXT.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: agent/AGENT_CONTEXT.md has content ($sl lines)" || fail "starter: AGENT_CONTEXT.md empty/MISSING"
+sl=$(wc -l < "$S/agent/SPECS.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: agent/SPECS.md has content ($sl lines)" || fail "starter: SPECS.md empty/MISSING"
+sl=$(wc -l < "$S/agent/PLANS.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: agent/PLANS.md has content ($sl lines)" || fail "starter: PLANS.md empty/MISSING"
+sl=$(wc -l < "$S/agent/TASKS.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: agent/TASKS.md has content ($sl lines)" || fail "starter: TASKS.md empty/MISSING"
+sl=$(wc -l < "$S/agent/RELEASES.md" 2>/dev/null || echo 0); [ "$sl" -gt 0 ] && pass "starter: agent/RELEASES.md has content ($sl lines)" || fail "starter: RELEASES.md empty/MISSING"
 grep -q "portable-spec-kit.md" "$S/README.md" && pass "starter README references portable-spec-kit.md" || fail "starter README still says CLAUDE.md"
 grep -q "Portable Spec Kit" "$S/README.md" && pass "starter README mentions Portable Spec Kit" || fail "starter README missing kit reference"
 # Symlinks: all 5 agent config files must be symlinks (not regular files)
@@ -126,14 +128,15 @@ section "7. My-App Example — Complete + Realistic Data"
 # ═══════════════════════════════════════════════════════════════
 
 M="$PROJ/examples/my-app"
-[ -f "$M/WORKSPACE_CONTEXT.md" ] && pass "my-app: WORKSPACE_CONTEXT.md" || fail "my-app: WORKSPACE_CONTEXT.md MISSING"
-[ -f "$M/README.md" ] && pass "my-app: README.md" || fail "my-app: README.md MISSING"
-[ -f "$M/agent/AGENT.md" ] && pass "my-app: agent/AGENT.md" || fail "my-app: AGENT.md MISSING"
-[ -f "$M/agent/AGENT_CONTEXT.md" ] && pass "my-app: agent/AGENT_CONTEXT.md" || fail "my-app: AGENT_CONTEXT.md MISSING"
-[ -f "$M/agent/SPECS.md" ] && pass "my-app: agent/SPECS.md" || fail "my-app: SPECS.md MISSING"
-[ -f "$M/agent/PLANS.md" ] && pass "my-app: agent/PLANS.md" || fail "my-app: PLANS.md MISSING"
-[ -f "$M/agent/TASKS.md" ] && pass "my-app: agent/TASKS.md" || fail "my-app: TASKS.md MISSING"
-[ -f "$M/agent/RELEASES.md" ] && pass "my-app: agent/RELEASES.md" || fail "my-app: RELEASES.md MISSING"
+# my-app is the "realistic data" example — every file must carry content, not be a stub.
+ml=$(wc -l < "$M/WORKSPACE_CONTEXT.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: WORKSPACE_CONTEXT.md has content ($ml lines)" || fail "my-app: WORKSPACE_CONTEXT.md empty/MISSING"
+ml=$(wc -l < "$M/README.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: README.md has content ($ml lines)" || fail "my-app: README.md empty/MISSING"
+ml=$(wc -l < "$M/agent/AGENT.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: agent/AGENT.md has content ($ml lines)" || fail "my-app: AGENT.md empty/MISSING"
+ml=$(wc -l < "$M/agent/AGENT_CONTEXT.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: agent/AGENT_CONTEXT.md has content ($ml lines)" || fail "my-app: AGENT_CONTEXT.md empty/MISSING"
+ml=$(wc -l < "$M/agent/SPECS.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: agent/SPECS.md has content ($ml lines)" || fail "my-app: SPECS.md empty/MISSING"
+ml=$(wc -l < "$M/agent/PLANS.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: agent/PLANS.md has content ($ml lines)" || fail "my-app: PLANS.md empty/MISSING"
+ml=$(wc -l < "$M/agent/TASKS.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: agent/TASKS.md has content ($ml lines)" || fail "my-app: TASKS.md empty/MISSING"
+ml=$(wc -l < "$M/agent/RELEASES.md" 2>/dev/null || echo 0); [ "$ml" -gt 0 ] && pass "my-app: agent/RELEASES.md has content ($ml lines)" || fail "my-app: RELEASES.md empty/MISSING"
 grep -q "Next.js" "$M/agent/AGENT.md" && pass "my-app: has Next.js stack" || fail "my-app: no stack defined"
 grep -q "11/16\|11 of 16" "$M/agent/TASKS.md" 2>/dev/null || grep -q "\[x\]" "$M/agent/TASKS.md" && pass "my-app: has completed tasks" || fail "my-app: no tasks done"
 grep -q "v0.1" "$M/agent/RELEASES.md" && pass "my-app: has v0.1 changelog" || fail "my-app: no changelog"
@@ -444,11 +447,13 @@ EOF
 cp "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
    "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
 
-# Verify global created
-[ -f "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Setup: global profile created" || fail "Setup: global profile MISSING"
+# Verify global profile was written with content (a zero-line profile = setup failure)
+gp_lines=$(wc -l < "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" 2>/dev/null || echo 0)
+[ "$gp_lines" -gt 0 ] && pass "Setup: global profile created with content ($gp_lines lines)" || fail "Setup: global profile empty/MISSING"
 
-# Verify workspace created
-[ -f "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Setup: workspace profile created" || fail "Setup: workspace profile MISSING"
+# Verify workspace profile was written with content
+wp_lines=$(wc -l < "$SETUP_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" 2>/dev/null || echo 0)
+[ "$wp_lines" -gt 0 ] && pass "Setup: workspace profile created with content ($wp_lines lines)" || fail "Setup: workspace profile empty/MISSING"
 
 # Verify both have same content
 diff "$SETUP_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
@@ -498,7 +503,9 @@ mkdir -p "$NEWPROJ_TEMP/.portable-spec-kit/user-profile"
 cp "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
    "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
 
-[ -f "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "NewProj: workspace profile created on Keep" || fail "NewProj: workspace profile MISSING after Keep"
+# Keep must copy a non-empty profile, not an empty placeholder.
+np_keep_lines=$(wc -l < "$NEWPROJ_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" 2>/dev/null || echo 0)
+[ "$np_keep_lines" -gt 0 ] && pass "NewProj: workspace profile created on Keep with content ($np_keep_lines lines)" || fail "NewProj: workspace profile empty/MISSING after Keep"
 
 # Verify content matches global
 diff "$NEWPROJ_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" \
@@ -540,7 +547,9 @@ cat > "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" << 'E
 - AI delegation: 50/50
 EOF
 
-[ -f "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return A: workspace profile found → use directly" || fail "Return A: workspace profile not found"
+# Return A: the workspace profile must be readable WITH content to be "used directly".
+ret_a_lines=$(wc -l < "$RET_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" 2>/dev/null || echo 0)
+[ "$ret_a_lines" -gt 0 ] && pass "Return A: workspace profile found with content → use directly ($ret_a_lines lines)" || fail "Return A: workspace profile empty/not found"
 
 # --- Scenario B: Only global exists (no workspace) ---
 rm -rf "$RET_TEMP/.portable-spec-kit"
@@ -554,7 +563,8 @@ cat > "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" << 
 EOF
 
 ! [ -d "$RET_TEMP/.portable-spec-kit/user-profile" ] && pass "Return B: no workspace profile" || fail "Return B: workspace exists unexpectedly"
-[ -f "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Return B: global profile found → show to user, ask keep/customize" || fail "Return B: global not found"
+ret_b_lines=$(wc -l < "$RET_GLOBAL/.portable-spec-kit/user-profile/user-profile-testuser.md" 2>/dev/null || echo 0)
+[ "$ret_b_lines" -gt 0 ] && pass "Return B: global profile found with content → show to user, ask keep/customize ($ret_b_lines lines)" || fail "Return B: global empty/not found"
 
 # Simulate: user keeps → copy to workspace
 mkdir -p "$RET_TEMP/.portable-spec-kit/user-profile"
@@ -579,7 +589,10 @@ mkdir -p "$EDGE_TEMP/.portable-spec-kit/user-profile" && cd "$EDGE_TEMP"
 
 # --- Empty profile file → treat as missing ---
 touch "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md"
-[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" ] && pass "Edge: empty file exists" || fail "Edge: empty file not created"
+# The edge-case property is "zero bytes" — assert the byte size is exactly 0, which is
+# stronger than mere existence and is the actual condition the missing-detection relies on.
+empty_bytes=$(wc -c < "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md" 2>/dev/null | tr -d ' ')
+[ "${empty_bytes:-1}" -eq 0 ] && pass "Edge: profile file is exactly 0 bytes (empty)" || fail "Edge: profile file not empty ($empty_bytes bytes)"
 CONTENT=$(cat "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-testuser.md")
 [ -z "$CONTENT" ] && pass "Edge: empty file detected → treat as missing" || fail "Edge: empty file has content"
 
@@ -614,8 +627,11 @@ cat > "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" << 'EOF'
 - AI delegation: AI does 90%
 EOF
 
-[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" ] && pass "Edge: Alice's profile exists" || fail "Edge: Alice missing"
-[ -f "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" ] && pass "Edge: Bob's profile exists" || fail "Edge: Bob missing"
+# Team scenario: each user's profile must be written as a distinct non-empty file.
+alice_lines=$(wc -l < "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" 2>/dev/null || echo 0)
+[ "$alice_lines" -gt 0 ] && pass "Edge: Alice's profile written with content ($alice_lines lines)" || fail "Edge: Alice's profile empty/missing"
+bob_lines=$(wc -l < "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" 2>/dev/null || echo 0)
+[ "$bob_lines" -gt 0 ] && pass "Edge: Bob's profile written with content ($bob_lines lines)" || fail "Edge: Bob's profile empty/missing"
 grep -q "Alice" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-alice.md" && pass "Edge: Alice's profile has correct name" || fail "Edge: Alice wrong name"
 grep -q "Bob" "$EDGE_TEMP/.portable-spec-kit/user-profile/user-profile-bob.md" && pass "Edge: Bob's profile has correct name" || fail "Edge: Bob wrong name"
 

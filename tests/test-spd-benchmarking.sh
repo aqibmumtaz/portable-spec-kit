@@ -168,7 +168,7 @@ EOF
 # RELEASES.md — $PROJECT
 > **Purpose:** Version history.
 ## v0.1 — Current (In Progress)
-Kit: v0.6.85
+Kit: v0.6.86
 EOF
   cat > "$S_DIR/agent/AGENT.md" << EOF
 # AGENT.md — $PROJECT
@@ -204,15 +204,25 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "start" "context_saved" "$s_context" "AGENT_CONTEXT.md"
   csv "$PROJECT" "$STACK" "spd" "start" "install_effort" "$s_install" "1 curl command"
 
-  # Verify SPD files
-  [ -f "$S_DIR/agent/SPECS.md" ] && pass "P$((idx+1)) SPD: SPECS.md created" || fail "P$((idx+1)) SPD: SPECS.md missing"
-  [ -f "$S_DIR/agent/PLANS.md" ] && pass "P$((idx+1)) SPD: PLANS.md created" || fail "P$((idx+1)) SPD: PLANS.md missing"
-  [ -f "$S_DIR/agent/TASKS.md" ] && pass "P$((idx+1)) SPD: TASKS.md created" || fail "P$((idx+1)) SPD: TASKS.md missing"
-  [ -f "$S_DIR/agent/RELEASES.md" ] && pass "P$((idx+1)) SPD: RELEASES.md created" || fail "P$((idx+1)) SPD: RELEASES.md missing"
-  [ -f "$S_DIR/agent/AGENT_CONTEXT.md" ] && pass "P$((idx+1)) SPD: AGENT_CONTEXT.md created" || fail "P$((idx+1)) SPD: AGENT_CONTEXT.md missing"
-  [ -f "$S_DIR/agent/AGENT.md" ] && pass "P$((idx+1)) SPD: AGENT.md created" || fail "P$((idx+1)) SPD: AGENT.md missing"
-  [ ! -f "$W_DIR/agent/SPECS.md" ] && pass "P$((idx+1)) Waterfall: no agent files (baseline)" || fail "P$((idx+1)) unexpected agent files"
-  [ ! -f "$A_DIR/agent/SPECS.md" ] && pass "P$((idx+1)) Agile: no agent files (baseline)" || fail "P$((idx+1)) unexpected agent files"
+  # Verify SPD files — assert each was scaffolded WITH non-trivial content (line count),
+  # not merely that the path exists. An empty/zero-line file is a scaffold failure.
+  specs_lines=$(wc -l < "$S_DIR/agent/SPECS.md" 2>/dev/null || echo 0)
+  [ "$specs_lines" -ge 3 ] && pass "P$((idx+1)) SPD: SPECS.md scaffolded with content ($specs_lines lines)" || fail "P$((idx+1)) SPD: SPECS.md empty/missing ($specs_lines lines)"
+  plans_lines=$(wc -l < "$S_DIR/agent/PLANS.md" 2>/dev/null || echo 0)
+  [ "$plans_lines" -ge 3 ] && pass "P$((idx+1)) SPD: PLANS.md scaffolded with content ($plans_lines lines)" || fail "P$((idx+1)) SPD: PLANS.md empty/missing ($plans_lines lines)"
+  tasks_lines=$(wc -l < "$S_DIR/agent/TASKS.md" 2>/dev/null || echo 0)
+  [ "$tasks_lines" -ge 3 ] && pass "P$((idx+1)) SPD: TASKS.md scaffolded with content ($tasks_lines lines)" || fail "P$((idx+1)) SPD: TASKS.md empty/missing ($tasks_lines lines)"
+  releases_lines=$(wc -l < "$S_DIR/agent/RELEASES.md" 2>/dev/null || echo 0)
+  [ "$releases_lines" -ge 2 ] && pass "P$((idx+1)) SPD: RELEASES.md scaffolded with content ($releases_lines lines)" || fail "P$((idx+1)) SPD: RELEASES.md empty/missing ($releases_lines lines)"
+  ctx_lines=$(wc -l < "$S_DIR/agent/AGENT_CONTEXT.md" 2>/dev/null || echo 0)
+  [ "$ctx_lines" -ge 3 ] && pass "P$((idx+1)) SPD: AGENT_CONTEXT.md scaffolded with content ($ctx_lines lines)" || fail "P$((idx+1)) SPD: AGENT_CONTEXT.md empty/missing ($ctx_lines lines)"
+  agent_lines=$(wc -l < "$S_DIR/agent/AGENT.md" 2>/dev/null || echo 0)
+  [ "$agent_lines" -ge 3 ] && pass "P$((idx+1)) SPD: AGENT.md scaffolded with content ($agent_lines lines)" || fail "P$((idx+1)) SPD: AGENT.md empty/missing ($agent_lines lines)"
+  # Baseline methodologies scaffold ZERO agent files — count them, assert exactly 0.
+  w_agent_count=$(find "$W_DIR/agent" -type f 2>/dev/null | wc -l | tr -d ' ')
+  [ "$w_agent_count" -eq 0 ] && pass "P$((idx+1)) Waterfall: 0 agent files (baseline)" || fail "P$((idx+1)) Waterfall unexpectedly has $w_agent_count agent files"
+  a_agent_count=$(find "$A_DIR/agent" -type f 2>/dev/null | wc -l | tr -d ' ')
+  [ "$a_agent_count" -eq 0 ] && pass "P$((idx+1)) Agile: 0 agent files (baseline)" || fail "P$((idx+1)) Agile unexpectedly has $a_agent_count agent files"
 
   # ─── PHASE 2: BUILD 3 FEATURES ───
   phase "Phase 2: Build 3 Features"
@@ -261,10 +271,16 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "build" "architecture_doc" "$s_arch" "PLANS.md current"
   csv "$PROJECT" "$STACK" "spd" "build" "pipeline_sync" "$s_sync" "SPECS PLANS TASKS in sync"
 
-  # Verify
-  grep -q "\[x\] Build" "$S_DIR/agent/TASKS.md" && pass "P$((idx+1)) SPD: tasks marked done" || fail "P$((idx+1)) tasks not marked"
-  grep -q "Development" "$S_DIR/agent/AGENT_CONTEXT.md" && pass "P$((idx+1)) SPD: context updated" || fail "P$((idx+1)) context stale"
-  grep -q "$DONE_COUNT/$FEATURE_COUNT" "$S_DIR/agent/TASKS.md" && pass "P$((idx+1)) SPD: progress summary accurate" || fail "P$((idx+1)) progress wrong"
+  # Verify — assert the EXACT count of features that flipped to done, and that the
+  # progress-summary line carries the matching ratio. Counting (grep -c) is behavioral:
+  # it fails if too few OR too many tasks were marked, not just if the phrase appears.
+  built_n=$(echo $BUILT_FEATURES | wc -w | tr -d ' ')
+  marked_done=$(grep -c '\[x\] Build' "$S_DIR/agent/TASKS.md")
+  [ "$marked_done" -eq "$built_n" ] && pass "P$((idx+1)) SPD: exactly $built_n tasks marked done" || fail "P$((idx+1)) marked $marked_done, expected $built_n"
+  ctx_phase=$(grep -c 'Development' "$S_DIR/agent/AGENT_CONTEXT.md")
+  [ "$ctx_phase" -ge 1 ] && pass "P$((idx+1)) SPD: context phase advanced to Development" || fail "P$((idx+1)) context phase still stale"
+  prog_rows=$(grep -c "$DONE_COUNT/$FEATURE_COUNT" "$S_DIR/agent/TASKS.md")
+  [ "$prog_rows" -ge 1 ] && pass "P$((idx+1)) SPD: progress summary shows $DONE_COUNT/$FEATURE_COUNT" || fail "P$((idx+1)) progress ratio $DONE_COUNT/$FEATURE_COUNT absent"
 
   # ─── PHASE 3: SCOPE CHANGE ───
   phase "Phase 3: Scope Change (drop last feature, add 'analytics')"
@@ -304,9 +320,14 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "scope" "not_blocked" "$s_not_blocked" "no approval needed"
   csv "$PROJECT" "$STACK" "spd" "scope" "descoped_tracked" "$s_descoped" "moved to Backlog"
 
-  grep -q "DESCOPED" "$S_DIR/agent/TASKS.md" && pass "P$((idx+1)) SPD: descoped feature tracked" || fail "P$((idx+1)) descope not tracked"
-  grep -q "analytics" "$S_DIR/agent/TASKS.md" && pass "P$((idx+1)) SPD: new feature added" || fail "P$((idx+1)) new feature missing"
-  grep -q "Dropped $DROPPED" "$S_DIR/agent/PLANS.md" && pass "P$((idx+1)) SPD: decision recorded in PLANS" || fail "P$((idx+1)) decision not recorded"
+  # Assert the descoped feature line names the actual dropped feature (captured value),
+  # the added feature appears exactly once, and the PLANS decision row records the swap.
+  descope_line=$(grep 'DESCOPED' "$S_DIR/agent/TASKS.md" 2>/dev/null || true)
+  case "$descope_line" in *"$DROPPED"*) pass "P$((idx+1)) SPD: descope line names dropped feature '$DROPPED'" ;; *) fail "P$((idx+1)) descope line missing or omits '$DROPPED'" ;; esac
+  analytics_n=$(grep -c 'Build analytics' "$S_DIR/agent/TASKS.md")
+  [ "$analytics_n" -eq 1 ] && pass "P$((idx+1)) SPD: new feature 'analytics' added once" || fail "P$((idx+1)) analytics appears $analytics_n times (expected 1)"
+  plans_decision=$(grep -c "Dropped $DROPPED" "$S_DIR/agent/PLANS.md")
+  [ "$plans_decision" -ge 1 ] && pass "P$((idx+1)) SPD: PLANS records dropping '$DROPPED'" || fail "P$((idx+1)) PLANS decision for '$DROPPED' not recorded"
 
   # ─── PHASE 4: DEVELOPER BREAK (3 weeks) ───
   phase "Phase 4: Developer Break (3 weeks) — Context Preservation"
@@ -332,11 +353,12 @@ EOF
   # SPD: full context
   CTX="$S_DIR/agent/AGENT_CONTEXT.md"
   s_ctx=3; s_resume=3; s_decisions=3; s_blockers=3; s_next=3
-  grep -q "Version:" "$CTX" && true || s_ctx=0
-  grep -q "Phase:" "$CTX" && true || s_ctx=0
-  grep -q "What's Done" "$CTX" && true || s_resume=0
-  grep -q "What's Next" "$CTX" && true || s_next=0
-  grep -q "Key Decisions" "$CTX" && true || s_decisions=0
+  # Score each context field by how many times its marker appears (0 = field lost).
+  ver_hits=$(grep -c 'Version:' "$CTX"); [ "$ver_hits" -ge 1 ] || s_ctx=0
+  phase_hits=$(grep -c 'Phase:' "$CTX"); [ "$phase_hits" -ge 1 ] || s_ctx=0
+  done_hits=$(grep -c "What's Done" "$CTX"); [ "$done_hits" -ge 1 ] || s_resume=0
+  next_hits=$(grep -c "What's Next" "$CTX"); [ "$next_hits" -ge 1 ] || s_next=0
+  dec_hits=$(grep -c 'Key Decisions' "$CTX"); [ "$dec_hits" -ge 1 ] || s_decisions=0
   P4_S=$((s_ctx + s_resume + s_decisions + s_blockers + s_next))
   csv "$PROJECT" "$STACK" "spd" "break" "context_preserved" "$s_ctx" "AGENT_CONTEXT.md full"
   csv "$PROJECT" "$STACK" "spd" "break" "resume_speed" "$s_resume" "seconds — agent reads file"
@@ -344,13 +366,15 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "break" "blockers_known" "$s_blockers" "in AGENT_CONTEXT"
   csv "$PROJECT" "$STACK" "spd" "break" "next_task_known" "$s_next" "What's Next in AGENT_CONTEXT"
 
-  # Verify context fields
-  grep -q "Version:" "$CTX" && pass "P$((idx+1)) SPD: version preserved after break" || fail "P$((idx+1)) version lost"
-  grep -q "Phase:" "$CTX" && pass "P$((idx+1)) SPD: phase preserved" || fail "P$((idx+1)) phase lost"
-  grep -q "What's Done" "$CTX" && pass "P$((idx+1)) SPD: done list preserved" || fail "P$((idx+1)) done lost"
-  grep -q "What's Next" "$CTX" && pass "P$((idx+1)) SPD: next tasks preserved" || fail "P$((idx+1)) next lost"
-  grep -q "Key Decisions" "$CTX" && pass "P$((idx+1)) SPD: decisions preserved" || fail "P$((idx+1)) decisions lost"
-  grep -q "Last Updated" "$CTX" && pass "P$((idx+1)) SPD: timestamp preserved" || fail "P$((idx+1)) timestamp lost"
+  # Verify context fields survive the simulated 3-week break — assert each field's
+  # marker count is non-zero (a re-write that dropped a field would zero its count).
+  [ "$ver_hits" -ge 1 ] && pass "P$((idx+1)) SPD: version preserved after break ($ver_hits)" || fail "P$((idx+1)) version lost"
+  [ "$phase_hits" -ge 1 ] && pass "P$((idx+1)) SPD: phase preserved ($phase_hits)" || fail "P$((idx+1)) phase lost"
+  [ "$done_hits" -ge 1 ] && pass "P$((idx+1)) SPD: done list preserved ($done_hits)" || fail "P$((idx+1)) done lost"
+  [ "$next_hits" -ge 1 ] && pass "P$((idx+1)) SPD: next tasks preserved ($next_hits)" || fail "P$((idx+1)) next lost"
+  [ "$dec_hits" -ge 1 ] && pass "P$((idx+1)) SPD: decisions preserved ($dec_hits)" || fail "P$((idx+1)) decisions lost"
+  updated_hits=$(grep -c 'Last Updated' "$CTX")
+  [ "$updated_hits" -ge 1 ] && pass "P$((idx+1)) SPD: timestamp preserved ($updated_hits)" || fail "P$((idx+1)) timestamp lost"
 
   # ─── PHASE 5: AGENT SWITCH ───
   phase "Phase 5: Agent Switch (Claude → Cursor → Copilot)"
@@ -395,8 +419,12 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "switch" "multi_agent" "$s_multi" "5 agents supported"
 
   $ALL_MATCH && pass "P$((idx+1)) SPD: all 5 agent symlinks identical" || fail "P$((idx+1)) symlink mismatch"
-  [ -f "$S_DIR/agent/AGENT_CONTEXT.md" ] && pass "P$((idx+1)) SPD: context available to any agent" || fail "P$((idx+1)) context missing"
-  [ -f "$S_DIR/agent/TASKS.md" ] && pass "P$((idx+1)) SPD: tasks available to any agent" || fail "P$((idx+1)) tasks missing"
+  # A newly-switched agent reads these files — assert they carry content it can act on,
+  # not just that the path resolves. Empty handoff files defeat the cross-agent promise.
+  switch_ctx_lines=$(wc -l < "$S_DIR/agent/AGENT_CONTEXT.md" 2>/dev/null || echo 0)
+  [ "$switch_ctx_lines" -ge 3 ] && pass "P$((idx+1)) SPD: context readable by any agent ($switch_ctx_lines lines)" || fail "P$((idx+1)) context empty/missing ($switch_ctx_lines lines)"
+  switch_task_lines=$(wc -l < "$S_DIR/agent/TASKS.md" 2>/dev/null || echo 0)
+  [ "$switch_task_lines" -ge 3 ] && pass "P$((idx+1)) SPD: tasks readable by any agent ($switch_task_lines lines)" || fail "P$((idx+1)) tasks empty/missing ($switch_task_lines lines)"
 
   # ─── PHASE 6: NEW TEAM MEMBER ───
   phase "Phase 6: New Team Member Joins"
@@ -425,9 +453,14 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "onboard" "onboard_speed" "$s_onboard" "hours"
   csv "$PROJECT" "$STACK" "spd" "onboard" "personalized" "$s_personal" "user-profile.md"
 
-  [ -f "$S_DIR/agent/SPECS.md" ] && pass "P$((idx+1)) SPD: new member has SPECS" || fail "P$((idx+1)) no SPECS"
-  [ -f "$S_DIR/agent/PLANS.md" ] && pass "P$((idx+1)) SPD: new member has PLANS" || fail "P$((idx+1)) no PLANS"
-  grep -q "Dropped\|Scope change\|Decision\|Choice" "$S_DIR/agent/PLANS.md" && pass "P$((idx+1)) SPD: decisions accessible" || fail "P$((idx+1)) no decisions"
+  # A new member onboards from these files — assert each lists at least one feature
+  # (SPECS) / one stack row (PLANS), and PLANS carries at least one decision line.
+  specs_features=$(grep -c '^| ' "$S_DIR/agent/SPECS.md")
+  [ "$specs_features" -ge 1 ] && pass "P$((idx+1)) SPD: new member sees $specs_features feature rows in SPECS" || fail "P$((idx+1)) SPECS has no feature rows"
+  plans_rows=$(grep -c '^| ' "$S_DIR/agent/PLANS.md")
+  [ "$plans_rows" -ge 1 ] && pass "P$((idx+1)) SPD: new member sees $plans_rows table rows in PLANS" || fail "P$((idx+1)) PLANS has no table rows"
+  decision_lines=$(grep -cE 'Dropped|Scope change|Decision|Choice' "$S_DIR/agent/PLANS.md")
+  [ "$decision_lines" -ge 1 ] && pass "P$((idx+1)) SPD: $decision_lines decision line(s) accessible in PLANS" || fail "P$((idx+1)) no decisions recorded in PLANS"
 
   # ─── PHASE 7: RELEASE v0.1 ───
   phase "Phase 7: Release v0.1"
@@ -466,8 +499,13 @@ EOF
   csv "$PROJECT" "$STACK" "spd" "release" "version_tracking" "$s_version" "framework version range"
   csv "$PROJECT" "$STACK" "spd" "release" "next_version_ready" "$s_next_ready" "new heading in TASKS"
 
-  grep -q "Changes" "$S_DIR/agent/RELEASES.md" && pass "P$((idx+1)) SPD: changelog created" || fail "P$((idx+1)) no changelog"
-  grep -q "Tests" "$S_DIR/agent/RELEASES.md" && pass "P$((idx+1)) SPD: test results in release" || fail "P$((idx+1)) no test results"
+  # Assert the release entry actually appended its sections AND names the built features,
+  # not just that the words "Changes"/"Tests" exist somewhere in the file.
+  first_built=$(echo $BUILT_FEATURES | awk '{print $1}')
+  release_body=$(cat "$S_DIR/agent/RELEASES.md")
+  case "$release_body" in *"### Changes"*"$first_built"*) pass "P$((idx+1)) SPD: changelog lists built feature '$first_built'" ;; *) fail "P$((idx+1)) changelog missing or omits '$first_built'" ;; esac
+  tests_section=$(grep -c '### Tests' "$S_DIR/agent/RELEASES.md")
+  [ "$tests_section" -ge 1 ] && pass "P$((idx+1)) SPD: test-results section appended to release" || fail "P$((idx+1)) no test-results section"
 
   # ─── PHASE 8: PROJECT HANDOFF ───
   phase "Phase 8: Project Handoff (6 months later)"
@@ -491,7 +529,10 @@ EOF
   # SPD: everything in files
   FILES_EXIST=0
   for f in SPECS.md PLANS.md TASKS.md RELEASES.md AGENT_CONTEXT.md AGENT.md; do
-    [ -f "$S_DIR/agent/$f" ] && ((FILES_EXIST++))
+    # Count a handoff file only if it carries real content (≥1 line) — an empty file
+    # would still "exist" but preserves no knowledge for the 6-months-later handoff.
+    fl=$(wc -l < "$S_DIR/agent/$f" 2>/dev/null || echo 0)
+    [ "$fl" -ge 1 ] && ((FILES_EXIST++))
   done
 
   if [ "$FILES_EXIST" -eq 6 ]; then
