@@ -8,7 +8,14 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.83 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+**Built over:** v0.6.0 — v0.6.84 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+
+### v0.6.84 — Reflex-surfaced probe + installer fixes (2026-06-07)
+- **Self-audit dogfood.** Ran the reflex autoloop on the kit itself (cycle-30); the 7 new generic dims caught 3 genuine kit bugs end-to-end (zero surviving false positives), all fixed and landed.
+- **QA-D29-INSTALLER-CURL-MANIFEST-01** — `install.sh` curl-fallback `lib_files` array was missing 8 `reflex/lib/` helpers (the 7 new dim probes + `self-test-mutation.sh`); network installs silently shipped without the newest audits. Added all 8.
+- **QA-D25-PROBE-JSON-UNBOUND-VAR-01** — `mandate-audit.sh` + `workflow-fidelity-audit.sh` crashed under `set -u` on a bare `--json` flag; now tolerate both `--json <file>` and bare `--json` (stdout), matching the new probes' convention.
+- **QA-D34-PROBE-SCANS-SANDBOX-01** — `assertion-strength-audit.sh` scanned `reflex/sandbox/` + `reflex/history/`, producing duplicate findings; added the shared find-prune.
+- **KIT-GAP-0081** — logged: stale `reflex.lock` from a dead pid blocks the autoloop; should auto-clear via a `ps -p` liveness check before failing.
 
 ### v0.6.83 — Generic QA dimensions 29-35 + backlog triage (2026-06-06)
 - **7 new generic QA dimensions (advisory).** Turned the QA-Agent's Dim-18 philosophy-gap proposals into real probes, each `reflex/lib/<dim>-audit.sh` taking `PROJ_ROOT` with no kit-specific assumptions: Dim 29 prose-constant-fidelity, Dim 30 assertion-strength, Dim 31 root-resolution-robustness, Dim 32 longitudinal-drift, Dim 33 freshness-drift, Dim 34 host-portability, Dim 35 feature-traceability. Registered in `reflex/prompts/qa-agent.md` (dim count 28→35) + `reflex/config.yml`. 3 of them caught real bugs while being built (31, 33, 34 — incl. Dim 34 finding its own non-portable awk).
