@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.86 &bull; May 2026</div>
+    <div class="badge">v0.6.87 &bull; May 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.86</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 2865 passing (2720 framework + 145 benchmarking), 116 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.87</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 2865 passing (2720 framework + 145 benchmarking), 119 sections</div>
   </div>
 </div>
 
@@ -105,8 +105,9 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.0 — v0.6.86</p>
+<p>Kit: v0.6.0 — v0.6.87</p>
 <ul>
+  <li><strong>v0.6.87 — Reflex gate/purge true-clean-slate fixes (June 2026):</strong> Deep self-audit follow-through — investigating why reflex convergence passes kept falsely DENYing (0 genuine defects) surfaced six real kit bugs. B1: <code>check-audit-completeness.sh</code> gate-13 carry-forward exclusion was uppercase-only (<code>VERIFIED-FIXED</code>) but findings write lowercase, so carry-forwards counted → false synthesis-suspect (now <code>tolower()</code>). B2: <code>psk-regression-replay.sh</code> gate-14 now runs from <code>PROJ_ROOT</code> (relative paths resolve) + matches the leading literal segment so held fixes stop reading as regressions. B4: <code>prune-history.sh --purge-history --confirm</code> was a silent no-op (never set <code>APPLY=true</code>); B4b/B4c make it a true clean slate (also clears cycle shells, sandbox worktrees, stale workflow-state + retry-queue, keeping cross-cycle registers/logs); B6 guards an empty-array crash under <code>set -u</code>. B5: history-dependent tests made self-contained. Verdict is gates-based, so the gate fixes make GRANTED reachable in single-author mode. 2865 tests passing.</li>
   <li><strong>v0.6.86 — Dim 30 test-quality polish (June 2026):</strong> Closed QA-D30 for real (dispositioned by-design in v0.6.85). Two-part fix to the QA-Agent's assertion-strength dimension so the kit passes its own quality bar. Probe precision: <code>reflex/lib/assertion-strength-audit.sh</code> skips files that aren't assertion-bearing suites (mock servers / fixtures by basename; thin orchestrators that source ≥3 test files with &lt;5 own asserts) since scoring their control-flow <code>grep</code>/<code>[ -f ]</code> lines is a category error — removed 2 false positives. Genuine behavioral conversions: <code>tests/test-spd-benchmarking.sh</code> (81%→&lt;50% structural) + <code>tests/sections/01-infrastructure.sh</code> (57%→&lt;50%) upgraded existence checks to content/state assertions, no filler. Dim 30 now reports 0 findings. Regression tests D30.4/D30.5. 2865 tests passing.</li>
   <li><strong>v0.6.85 — Rerun-friction fixes + doc-sync precision (June 2026):</strong> Operational-friction cleanup surfaced while driving the cycle-30 autoloop. KIT-GAP-0081 (<code>reflex/run.sh</code> PID-file lock on stock macOS now treats a lock as live only when the pid is alive AND its process is actually a reflex run — guards pid-reuse — and auto-clears a stale lock instead of blocking), KIT-GAP-0082 (<code>psk-version-cascade.sh</code> re-syncs the workspace-root mirror copy on every bump, kit-self-guarded — self-validated live during this release), QA-D25-DOC-SYNC-MISSING-01 (<code>psk-doc-sync.sh</code> drops internal trace ids KIT-GAP-*/QA-*/ADR-*/ADL- from the feature catalog: 431→324 catalogued, 123→87 MISSING; <code>PROJ_ROOT</code> now env-overridable). QA-D30 dispositioned by-design (structural-leaning assertions are inherent to a doc-contract framework). 7 new regression tests, 2865 tests passing.</li>
   <li><strong>v0.6.84 — Reflex-surfaced probe + installer fixes (June 2026):</strong> Self-audit dogfood. Running the reflex autoloop on the kit itself (cycle-30) exercised the 7 new generic dimensions end-to-end; they caught 3 genuine kit bugs with zero surviving false positives, all fixed. QA-D29-INSTALLER-CURL-MANIFEST-01 (<code>install.sh</code> curl-fallback array missing 8 <code>reflex/lib/</code> helpers — the 7 new dim probes + <code>self-test-mutation.sh</code> — so network installs shipped without the newest audits; added all 8), QA-D25-PROBE-JSON-UNBOUND-VAR-01 (<code>mandate-audit.sh</code> + <code>workflow-fidelity-audit.sh</code> crashed under <code>set -u</code> on a bare <code>--json</code> flag; now tolerate both <code>--json &lt;file&gt;</code> and bare <code>--json</code>), QA-D34-PROBE-SCANS-SANDBOX-01 (<code>assertion-strength-audit.sh</code> scanned <code>reflex/sandbox/</code>; added the shared find-prune), KIT-GAP-0081 (stale <code>reflex.lock</code> from a dead pid should auto-clear via <code>ps -p</code> liveness check). 2865 tests passing.</li>
@@ -1438,7 +1439,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.86 &bull; May 2026</div>
+    <div class="badge">v0.6.87 &bull; May 2026</div>
   </div>
 </div>
 

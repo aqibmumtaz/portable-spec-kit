@@ -27,11 +27,18 @@ else
   fail "f83 AC1: check-audit-completeness.sh missing or non-executable"
 fi
 
-# AC2 — probe emits verdict on a real pass dir; assert one of the canonical values
-# Auto-select the most recent committed pass dir (history retention prunes
-# old pass-001 dirs over time, so a hardcoded path goes stale).
+# AC2 — probe emits verdict on a pass dir; assert one of the canonical values.
+# Self-contained fixture: a clean reflex reset (`--purge-history`) legitimately
+# wipes ALL pass dirs, so the test must NOT depend on real history existing.
+# Prefer a real committed pass dir when present (richer signal); otherwise build a
+# minimal synthetic pass dir so the assertion always runs.
 SAMPLE_PASS=$(ls -dt "$PROJ"/reflex/history/cycle-*/pass-* 2>/dev/null | head -1)
-[ -z "$SAMPLE_PASS" ] && SAMPLE_PASS="$PROJ/reflex/history/cycle-26/pass-002"
+if [ -z "$SAMPLE_PASS" ] || [ ! -d "$SAMPLE_PASS" ]; then
+  SAMPLE_PASS=$(mktemp -d)
+  printf 'findings:\n  - id: SYNTH-1\n    status: open\n    citable_quote: "reflex/lib/foo.sh:7 — synthetic fixture finding"\n' > "$SAMPLE_PASS/findings.yaml"
+  printf -- '- verdict: DENIED\n- qa_findings: 1\n' > "$SAMPLE_PASS/verdict.md"
+  printf 'qa_usage:\n  mode: orchestrated-single-author\n' > "$SAMPLE_PASS/qa-usage.yaml"
+fi
 if [ -x "$PROBE" ] && [ -d "$SAMPLE_PASS" ]; then
   PROBE_OUT=$(bash "$PROBE" "$SAMPLE_PASS" --json 2>/dev/null || true)
   if echo "$PROBE_OUT" | grep -qE '"verdict":\s*"(real|suspect|synthesis-confirmed)"'; then

@@ -8,7 +8,17 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.86 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+**Built over:** v0.6.0 — v0.6.87 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+
+### v0.6.87 — Reflex gate/purge true-clean-slate fixes (2026-06-09)
+- **Deep self-audit follow-through** — investigating why reflex convergence passes kept falsely DENYing (0 genuine defects) surfaced 6 real kit bugs. The verdict is gates-based, so the gate fixes make GRANTED reachable in single-author mode.
+- **B1** `check-audit-completeness.sh` (gate 13): carry-forward exclusion regex was uppercase `VERIFIED-FIXED`; findings write lowercase → carry-forwards counted → false synthesis-`suspect`. Now `tolower()`.
+- **B2** `psk-regression-replay.sh` (gate 14): replay now runs from `PROJ_ROOT` (relative paths resolve; was false `exit=2`) + matcher falls back to the leading literal segment so held fixes stop reading as regressions. + qa-agent-dim.md authoring convention.
+- **B4** `prune-history.sh`: `--purge-history --confirm` was a silent no-op (zeroed keep-counts but never set `APPLY=true`); now actually deletes.
+- **B4b/B4c** `prune-history.sh`: true clean slate — also clears empty cycle shells, sandbox worktrees, stale `reflex-pass-*` workflow-state + retry-queue, while keeping cross-cycle registers/logs.
+- **B6** `prune-history.sh`: empty `branches[@]` crash under `set -u` (bash 3.2) when no dev branches existed — guarded.
+- **B5** test isolation: history-dependent tests (f83 AC2, 82.16-82.18) made self-contained / skip-when-absent.
+- 2865 tests passing; new regression tests B1.1/B2.1-2/B4.1-2/B4b/B4c/B6.
 
 ### v0.6.86 — Dim 30 test-quality polish (2026-06-08)
 - **Closed QA-D30 for real** (was dispositioned by-design in v0.6.85). Two-part fix to the QA-Agent's assertion-strength dimension so the kit passes its own quality bar.

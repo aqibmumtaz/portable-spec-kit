@@ -5340,6 +5340,125 @@ else
   pass "D25.1: psk-doc-sync.sh absent — skip"; pass "D25.2: skip"
 fi
 
+section "B4 — prune-history.sh --purge-all --confirm actually deletes (not a dry-run no-op)"
+# Regression: --purge-all --confirm zeroed keep-counts but never set APPLY=true, so the
+# delete loop stayed in 'would prune' mode — a silent no-op reset that printed success.
+_PH="$PROJ/reflex/lib/prune-history.sh"
+if [ -x "$_PH" ]; then
+  _ph_t=$(mktemp -d)
+  mkdir -p "$_ph_t/reflex/history/cycle-99/pass-001" "$_ph_t/reflex/history/cycle-99/pass-002" "$_ph_t/reflex/sandbox"
+  printf 'history_retention:\n  pass_dirs_keep: 10\n' > "$_ph_t/reflex/config.yml"
+  _ph_before=$(find "$_ph_t/reflex/history" -type d -name 'pass-*' | wc -l | tr -d ' ')
+  REFLEX_PROJ_ROOT="$_ph_t" bash "$_PH" --purge-all --confirm >/dev/null 2>&1
+  _ph_after=$(find "$_ph_t/reflex/history" -type d -name 'pass-*' | wc -l | tr -d ' ')
+  [ "$_ph_before" = "2" ] && [ "$_ph_after" = "0" ] \
+    && pass "B4.1: --purge-all --confirm deletes all pass dirs (2 → 0)" \
+    || fail "B4.1: purge no-op — before=$_ph_before after=$_ph_after (expected 2 → 0)"
+  # B4.2 — APPLY is set in the PURGE_ALL block (guards regression)
+  awk '/PURGE_ALL.*=.*true.*then/{f=1} f{print} /^fi/{if(f)exit}' "$_PH" | grep -q "APPLY=true" \
+    && pass "B4.2: APPLY=true set inside PURGE_ALL+CONFIRM block" \
+    || fail "B4.2: PURGE_ALL block does not set APPLY=true"
+  rm -rf "$_ph_t"
+  # B4b/B6 — full clean slate in a REAL git repo with NO dev branches: must not
+  # crash on the empty branches[@] (B6, set -u); must remove per-cycle DIRS
+  # (cycle-*/, standalone/) but KEEP top-level cross-cycle FILES (B4b).
+  _cs_t=$(mktemp -d)
+  ( cd "$_cs_t" && git init -q 2>/dev/null )
+  mkdir -p "$_cs_t/reflex/history/cycle-98/pass-001" "$_cs_t/reflex/history/standalone/pass-001"
+  mkdir -p "$_cs_t/reflex/sandbox/cycle-98/pass-001" "$_cs_t/agent/.workflow-state/spawn"
+  printf 'history_retention:\n  pass_dirs_keep: 0\n' > "$_cs_t/reflex/config.yml"
+  for f in REFLEX_EVAL_TRACE.md summary.csv hardening-log.md qa-blind-spots.md findings-registry.yaml; do
+    : > "$_cs_t/reflex/history/$f"
+  done
+  : > "$_cs_t/reflex/history/.active-cycle"
+  : > "$_cs_t/agent/.workflow-state/reflex-pass-cycle-98-pass-001.state"
+  : > "$_cs_t/agent/.workflow-state/reflex-pass-cycle-98-pass-001.gates"
+  _cs_err=$(REFLEX_PROJ_ROOT="$_cs_t" bash "$_PH" --purge-all --confirm 2>&1)
+  if echo "$_cs_err" | grep -q "unbound variable"; then
+    fail "B6: prune crashed on empty dev-branches array under set -u"
+  else
+    pass "B6: no empty-array crash when zero reflex/dev-* branches exist"
+  fi
+  # history cycle dirs gone, all 5 cross-cycle files kept, active-cycle marker gone
+  _cs_dirs=$(find "$_cs_t/reflex/history" -mindepth 1 -maxdepth 1 -type d \( -name 'cycle-*' -o -name 'standalone' \) 2>/dev/null | wc -l | tr -d ' ')
+  _cs_files=$(ls "$_cs_t/reflex/history/" 2>/dev/null | grep -cE 'REFLEX_EVAL_TRACE.md|summary.csv|hardening-log.md|qa-blind-spots.md|findings-registry.yaml')
+  if [ "$_cs_dirs" = "0" ] && [ "$_cs_files" = "5" ] && [ ! -e "$_cs_t/reflex/history/.active-cycle" ]; then
+    pass "B4b: clean slate removes per-cycle history dirs, keeps cross-cycle registers/logs"
+  else
+    fail "B4b: clean slate wrong — cycle_dirs=$_cs_dirs kept_files=$_cs_files/5 active-cycle=$([ -e "$_cs_t/reflex/history/.active-cycle" ] && echo present || echo gone)"
+  fi
+  # B4c — sandbox worktree shells + stale reflex-pass workflow-state also cleared
+  _cs_sb=$(find "$_cs_t/reflex/sandbox" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+  _cs_ws=$(ls "$_cs_t/agent/.workflow-state/" 2>/dev/null | grep -c 'reflex-pass')
+  if [ "$_cs_sb" = "0" ] && [ "$_cs_ws" = "0" ]; then
+    pass "B4c: clean slate also clears sandbox worktrees + stale reflex workflow-state"
+  else
+    fail "B4c: leftover sandbox=$_cs_sb workflow-state=$_cs_ws (expected 0/0)"
+  fi
+  rm -rf "$_cs_t"
+else
+  pass "B4.1: prune-history.sh absent — skip"; pass "B4.2: skip"; pass "B6: skip"; pass "B4b: skip"
+fi
+
+section "B1 — gate 13 excludes lowercase verified-fixed carry-forwards (case-insensitive)"
+# Regression: exclusion regex was uppercase VERIFIED-FIXED; findings write lowercase →
+# carry-forwards (no fresh file:line) counted → false synthesis-suspect.
+_AC="$PROJ/reflex/lib/check-audit-completeness.sh"
+if [ -x "$_AC" ]; then
+  _ac_t=$(mktemp -d); mkdir -p "$_ac_t"
+  # 3 lowercase verified-fixed carry-forwards (no file:line) + 1 new finding WITH file:line
+  cat > "$_ac_t/findings.yaml" <<'YAML'
+findings:
+  - id: CF-1
+    status: verified-fixed
+    citable_quote: "prior fix holds — evidence in notes"
+  - id: CF-2
+    status: verified-fixed
+    citable_quote: "prior fix holds — evidence in notes"
+  - id: NEW-1
+    status: open
+    citable_quote: "reflex/lib/foo.sh:42 — the actual problem line"
+YAML
+  printf -- '- verdict: DENIED\n- qa_findings: 3\n' > "$_ac_t/verdict.md"
+  printf 'qa_usage:\n  mode: orchestrated-single-author\n' > "$_ac_t/qa-usage.yaml"
+  _ac_pct=$(bash "$_AC" "$_ac_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin).get('scores',{}).get('citable_quote_coverage_pct'))" 2>/dev/null)
+  # With exclusion working: only NEW-1 is evaluable, it has file:line → 100%.
+  [ "$_ac_pct" = "100" ] \
+    && pass "B1.1: lowercase verified-fixed carry-forwards excluded → coverage 100% (not deflated)" \
+    || fail "B1.1: carry-forward exclusion case bug — coverage=$_ac_pct (expected 100)"
+  rm -rf "$_ac_t"
+else
+  pass "B1.1: check-audit-completeness.sh absent — skip"
+fi
+
+section "B2 — regression-replay matches leading-literal + runs from PROJ_ROOT"
+# Regression: matcher did whole-prose grep -F (held fix read as regression when wording
+# differed); replay ran from gate CWD so relative paths broke.
+_RR="$PROJ/agent/scripts/psk-regression-replay.sh"
+if [ -x "$_RR" ]; then
+  _rr_t=$(mktemp -d)
+  # invocation prints a literal token "TOKENXYZ"; expected_assertion leads with it + prose.
+  cat > "$_rr_t/findings.yaml" <<'YAML'
+findings:
+  - id: RR-1
+    status: verified-fixed
+    regression_vector:
+      invocation_verbatim: "echo TOKENXYZ and some other differing words"
+      expected_assertion: "TOKENXYZ — the human explanation that does NOT appear in output"
+YAML
+  _rr_out=$(bash "$_RR" "$_rr_t/findings.yaml" 2>&1)
+  echo "$_rr_out" | grep -q "1/1 passed" \
+    && pass "B2.1: leading-literal match passes a held fix despite differing prose" \
+    || fail "B2.1: matcher still whole-prose — $(echo "$_rr_out" | grep -oE '[0-9]+/[0-9]+ passed')"
+  # B2.2 — the script runs replay from PROJ_ROOT (cd guard present)
+  grep -q 'cd "$PROJ_ROOT"' "$_RR" \
+    && pass "B2.2: replay runs from PROJ_ROOT (relative-path invocations resolve)" \
+    || fail "B2.2: replay does not cd to PROJ_ROOT"
+  rm -rf "$_rr_t"
+else
+  pass "B2.1: psk-regression-replay.sh absent — skip"; pass "B2.2: skip"
+fi
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"
