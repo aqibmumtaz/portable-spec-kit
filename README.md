@@ -4,9 +4,9 @@
 
 > Drop one file into any project. Your AI agent personalizes to you, maintains living specifications throughout development, learns and follows your engineering practices, and preserves context across sessions — specs always exist, always current, never block.
 
-[![Version](https://img.shields.io/badge/version-v0.6.87-blue.svg)](portable-spec-kit.md)
+[![Version](https://img.shields.io/badge/version-v0.6.92-blue.svg)](portable-spec-kit.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-2865%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-3068%20passing-brightgreen.svg)](tests/)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-lightgrey.svg)](CHANGELOG.md)
 <!-- CI badge — CI/CD disabled in .portable-spec-kit/config.md. Enable: say "enable ci"
 [![CI](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/aqibmumtaz/portable-spec-kit/actions/workflows/ci.yml)
@@ -22,7 +22,7 @@
 <tr>
 <td width="25%" align="center"><strong>🤖 Agent-Agnostic</strong><br><sub>Claude · Copilot · Cursor<br>Windsurf · Cline<br>One source, all agents sync</sub></td>
 <td width="25%" align="center"><strong>🧠 Context-Persistent</strong><br><sub>Remembers across sessions<br>Pick up after weeks<br>Never lose context</sub></td>
-<td width="25%" align="center"><strong>🛡️ Reliably Enforced</strong><br><sub>8-layer reliability architecture<br>Dual critic at every workflow<br>Agent physically can't skip steps</sub></td>
+<td width="25%" align="center"><strong>🛡️ Reliably Enforced</strong><br><sub>11-layer reliability architecture<br>Dual critic at every workflow<br>Agent physically can't skip steps</sub></td>
 <td width="25%" align="center"><strong>🔄 Non-Blocking</strong><br><sub>Code first, specs later<br>Agent tracks silently<br>Never blocks the developer</sub></td>
 </tr>
 <tr>
@@ -65,6 +65,12 @@ Open any AI agent after install — personalized profile, project scan, 4-step g
 ---
 
 ## Latest Release
+
+**v0.6.92 (Multi-author reflex enforcement — structural inline-prevention + detect-and-redispatch):** Reflex multi-author QA can no longer silently collapse to inline synthesis. **KIT-GAP-0098** — `reflex/run.sh`'s orchestrator may write only planning artifacts (`wave-manifest.yaml`, dim-prompts); `findings.yaml` is synthesized solely from `partial-findings-dims-*.yaml` emitted by real dim-agents, and the dim-agent count is now dynamic (`ceil(dims / max_dims_per_spawn)`) instead of a hardcoded loop. **Follow-up** — detect-and-redispatch reads the wave manifest's `artifact:` path to resolve qa-prefixed spawn ids to their un-prefixed partial filenames, fixing a false-missing bug that re-dispatched every dim-set (regression test added in `tests/sections/04-reflex.sh`). **ADR-091** records the decision. **Flow-doc currency** — `docs/work-flows/{06,11,13}` PSK rule range synced PSK001-PSK045 → PSK001-PSK046 (50 checks). First end-to-end multi-author reflex self-test (cycle-01/pass-001) drove orchestrator → 4 parallel dim-agents → synthesis → Dev → 14 gates; gate-13 confirmed a genuine adversarial audit. **3068 tests passing (2923 framework + 145 benchmarking).**
+
+**v0.6.91 (Cycle-01 clean-restart + kit-fidelity state-machine fixes):** Resuming reflex after a cycle-01 history purge surfaced release-state-machine gaps. **KIT-GAP-0093** — `psk-release.sh`'s staleness guard read the vestigial `agent/.release-state/state`; after the v0.6.62 dispatcher migration that file isn't refreshed by prepare, so a stale sentinel made `psk-release.sh next` falsely refuse with a version-drift-risk error on a fresh run — repointed at the canonical `agent/.workflow-state/release.state`. **Flow-doc currency** — `docs/work-flows/13-release-workflow.md` boxes read "38 checks" vs the table/prose "49"; aligned to 49. **KIT-GAP-0092/0094/0095** logged — the unimplemented `reset` verb plus the RELEASES.md + ARD release-notes seeding gaps in the version cascade. **2865 tests passing.**
+
+**v0.6.88 (ONE QA Dispatch — single+multi-author unified):** There is ONE release gate, not two. **B3** — `reflex/run.sh` gained the missing `--resume-dims` re-entry; the multi-author wave dispatch previously dead-ended at `AWAITING_DIM_DISPATCH`, silently collapsing every pass to single-author DENIED (closes KIT-GAP-0073). **B8** — one dispatch implementation parameterized by the single knob `qa_agent.max_parallel_agents` (`>1` parallel multi-author · `=1` sequential single-author; mode derived in `spawn-qa.sh`, `spawn_mode` advisory-only). Both modes run the same dim-agents over the same dimension set in the same sandbox — full coverage either way, so both can GRANT; the deterministic-probes-only fallback is retired and the `single-author-fallback-verdict` rule is coverage-based. Plus **B7** (`psk-kit-cmd.sh --check` no longer logs phantom PSK027 bypasses), **KIT-GAP-0084** (purge-all drops summary.csv ghost rows), **KIT-GAP-0085** (PSK041 `tformat` off-by-one), 13 flow-doc currency fixes. **2865 tests passing.**
 
 **v0.6.73 (Convergence-prep + citable_quote Mandate):** Closes 4 pre-existing kit-hygiene gaps that blocked reflex convergence on cycle-26-pass-002. **KIT-GAP-0054** — `reflex/prompts/qa-agent-dim.md` now requires file:line prefix on every `citable_quote` field; without it, audit-completeness gate-13 flags multi-author dispatch passes as synthesis-suspect. **4 test fixture fixes** — `tests/features/f83-completeness-probe.sh` AC2 auto-selects most recent pass dir (was hardcoded to cycle-17 which retention pruned); `tests/sections/03-reliability.sh` 84.9 threshold 50→30 + 87.12 tolerance 0→≤10; `tests/sections/04-reflex.sh` G3 grep accepts both legacy and current relaxation-message wordings. **2764/2764 tests passing** (was 2760).
 

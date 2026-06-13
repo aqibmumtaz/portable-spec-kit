@@ -143,7 +143,10 @@ install_claude_hook() {
     echo -e "  ${CYAN}ℹ${NC} Backed up existing .claude/settings.json"
   fi
 
-  # Write new settings (minimal, just our hook)
+  # Write new settings: PostToolUse drift-check + Stop session-monitor.
+  # The Stop hook (psk-session-monitor.sh) reads the live transcript and recommends
+  # /clear ONLY when context is genuinely high (stateful de-dup — one notice per band,
+  # never nags, re-arms after a clear). Fail-safe: silent on any error, never blocks.
   cat > "$CLAUDE_SETTINGS" <<'EOF'
 {
   "hooks": {
@@ -154,6 +157,16 @@ install_claude_hook() {
           {
             "type": "command",
             "command": "bash agent/scripts/psk-sync-check.sh --quick"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash agent/scripts/psk-session-monitor.sh"
           }
         ]
       }

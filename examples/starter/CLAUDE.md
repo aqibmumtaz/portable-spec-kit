@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.87 -->
+<!-- Framework Version: v0.6.92 -->
 
-**Version:** v0.6.87 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 2865 (2720 framework · 145 benchmarking)
+**Version:** v0.6.92 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 3068 (2923 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -1805,6 +1805,44 @@ At session start (cost: ~5ms — one file read + 3 awk parses) the agent reads `
 **Manual probe:** `bash agent/scripts/psk-optimize.sh --health` prints the same one-liner the agent renders in the breadcrumb. Use it in shell scripts, CI, or to verify the indicator state out-of-band.
 
 **Refresh discipline:** the state file is only as fresh as the last `--scan`. Prep-release Step 10 runs `--scan` automatically (advisory, non-blocking), so projects on a normal release cadence keep the state fresh without manual effort. Long-quiet projects show the age-escalation honestly (yellow at 30d, red at 60d) so the user knows to refresh.
+
+### Session Health Indicator (MANDATORY when transcript usage is available)
+
+The kit tracks **context-window health** — a 3-level drift indicator that counters the lost-in-the-middle effect (transformer attention is U-shaped: instruction-following degrades as the context fills, and a session's early rules — CLAUDE.md, prior decisions — dilute over a long session). `agent/scripts/psk-session-monitor.sh` measures the live context occupancy from the most recent assistant turn's `.message.usage` (`input_tokens + cache_creation_input_tokens + cache_read_input_tokens`) in the Claude Code transcript and maps it to a color.
+
+**Agent behavior — render a `ctx:` badge in the breadcrumb, next to `opt:`.** When a `SESSION_HEALTH:` line is present in context (injected each turn by the Stop hook via `additionalContext`) OR when `bash agent/scripts/psk-session-monitor.sh --badge` returns a value, the agent appends a one-token health badge to the breadcrumb header on every reply, immediately after the `opt:` badge:
+
+```
+↳ **N1** root › **Nz** current · opt: 🟢 optimized · ctx: 🟢 41%
+↳ **N1** root › **Nz** current · ctx: 🟡 64%
+↳ **N1** root › **Nz** current · ctx: 🔴 86%
+```
+
+**The 3 levels (when each appears):**
+
+| Badge | Context % | Meaning (lost-in-the-middle grounded) | Surfaces |
+|---|---|---|---|
+| 🟢 green | `< 50%` | Middle small, attention strong, rules hold | Badge only |
+| 🟡 yellow | `50–79%` | Middle large, instruction-following dilutes, drift detectable — finish the current task and `/clear` at the next boundary | **Badge only** — passive heads-up, no banner (no nagging) |
+| 🔴 red | `≥ 80%` | Heavy dilution + lossy auto-compact imminent — `/clear` now for a clean reload | Badge **+ one-time banner** (the Stop hook's de-duped `systemMessage`), escalating once at 92% |
+
+**The key distinction (passive vs active):** the **badge** is continuous and glanceable (renders every reply so you can watch health trend green→yellow→red). The **banner** (`/clear` recommendation) is reserved for the red zone and fires **once per band** (never every turn), re-arming only after a `/clear` or auto-compaction drops context. Yellow is badge-only on purpose — awareness without interruption.
+
+**Suppression:** if no transcript usage is available (no `SESSION_HEALTH:` line and `--badge` returns nothing — e.g. monitor not installed, or a non-Claude-Code agent) the agent suppresses the `ctx:` badge entirely rather than rendering a guessed value. The badge shows a *measured* percentage or nothing.
+
+**Manual probe:** `bash agent/scripts/psk-session-monitor.sh --check` prints the full reading (tokens / limit / % / color / banner state); `--badge` prints just the badge string. Thresholds + context limit are configurable via `PSK_SESSION_YELLOW_PCT` / `PSK_SESSION_WARN_PCT` / `PSK_SESSION_URGE_PCT` / `PSK_SESSION_CONTEXT_LIMIT`. Bypass the whole monitor with `PSK_SESSION_MONITOR_DISABLED=1`.
+
+**Wiring:** the monitor runs as a session-stop hook, installed by `psk-install-hooks.sh` (the same installer that wires the kit's other hooks). It is fail-safe — any error or missing data exits 0 silently, never blocking a turn.
+
+### No-Silent-Wait (MANDATORY — every long blocking op emits progress)
+
+A long blocking operation (full test suite, `sync-check --full`, `psk-doc-sync`, the reflex gate set, a multi-minute build) must NEVER run with zero feedback. A silent wait makes *running-slow* indistinguishable from *hung* — the operator (and the driving agent) cannot tell whether to wait or intervene.
+
+**The mechanism — `agent/scripts/psk-progress.sh`.** Any long op routes through the wrapper: `psk-progress.sh --label <name> [--metric '<grep-ere>'] [--total N] [--interval S] -- <command>`. It runs the command, captures stdout+stderr to a log, and emits a heartbeat to stderr every N seconds (elapsed · metric-count · %), then a final exit line. Contract: the wrapped command's **exit code and output are passed through verbatim** — the wrapper only adds the heartbeat, so it is safe to drop in front of any existing invocation. Bypass: `PSK_PROGRESS_DISABLED=1`; interval override: `PSK_PROGRESS_INTERVAL`.
+
+**Where it's wired (kit-internal silent waits):** `reflex/lib/gates.sh` (each configured gate — test-spec-kit / sync-check --full / doc-sync), `reflex/lib/spawn-qa.sh` (the 30-min cold-cache pre-warm suite). New long-running kit ops adopt the same wrapper — a blocking call that can exceed ~15s without output is a no-silent-wait violation.
+
+**Agent behavior.** When the agent itself runs a long op in the background and waits, it MUST surface progress the same way — either the Monitor tool (periodic heartbeat events) or a `psk-progress.sh`-wrapped invocation — never a silent poll loop. The operator always sees the work advancing.
 
 ### Reflex Finding Classification (MANDATORY)
 

@@ -59,13 +59,13 @@
     A comprehensive technical document covering the framework's architecture, user profile system, flow documentation, agent compatibility, security model, testing infrastructure, and deployment strategy.
   </div>
   <div style="margin-top: 30px;">
-    <div class="badge">v0.6.87 &bull; May 2026</div>
+    <div class="badge">v0.6.92 &bull; June 2026</div>
   </div>
   <div style="margin-top: 40px; font-size: 9pt; color: #8aaed4; line-height: 2;">
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Computer Science — Artificial Intelligence</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.87</div>
-    <div><strong style="color:#dce4f0;">Tests:</strong> 2865 passing (2720 framework + 145 benchmarking), 119 sections</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.92</div>
+    <div><strong style="color:#dce4f0;">Tests:</strong> 3068 passing (2923 framework + 145 benchmarking), 123 sections</div>
   </div>
 </div>
 
@@ -77,25 +77,25 @@
 <p><strong>Portable Spec Kit</strong> is a lightweight, zero-install, personalized spec-persistent development framework for AI-assisted engineering. It consists of a single markdown file (<code>portable-spec-kit.md</code>) that any AI coding agent reads to follow consistent engineering standards, manage specifications, track tasks, and maintain context across sessions.</p>
 
 <div class="highlight">
-  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 30 flow documents, 2865 automated tests (2720 framework + 145 benchmarking), 103 test sections.
+  <strong>Key numbers:</strong> 1 file, 5 AI agents supported, 10 core strengths, 8 source code templates, 30 flow documents, 3068 automated tests (2923 framework + 145 benchmarking), 103 test sections.
 </div>
 
 <h3>Key Highlights</h3>
 <table>
   <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>Current version</td><td>v0.6.73</td></tr>
-  <tr><td>Framework size</td><td>Single markdown file (approx. 980 lines)</td></tr>
-  <tr><td>Skill files</td><td>25 (loaded JIT at peak attention)</td></tr>
-  <tr><td>Reliability scripts</td><td>29 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker, orchestrate, version-cascade, generate-ci, generate-user-guide, and more)</td></tr>
-  <tr><td>Enforcement layers</td><td>3 (bash critic, sub-agent critic, git/Claude Code hooks)</td></tr>
+  <tr><td>Current version</td><td>v0.6.92</td></tr>
+  <tr><td>Framework size</td><td>Single markdown file (approx. 2,080 lines)</td></tr>
+  <tr><td>Skill files</td><td>29 (loaded JIT at peak attention)</td></tr>
+  <tr><td>Reliability scripts</td><td>57 (sync-check, critic-spawn, release, install-hooks, uninstall, code-review, scope-check, Jira, tracker, orchestrate, version-cascade, generate-ci, generate-user-guide, and more)</td></tr>
+  <tr><td>Enforcement layers</td><td>11 (content critics, hooks, workflow/plan/spawn/declaration/kit/prompt/replay/instruction fidelity)</td></tr>
   <tr><td>Dependencies</td><td>Zero</td></tr>
   <tr><td>Install time</td><td>Seconds (one curl command)</td></tr>
   <tr><td>AI agents supported</td><td>Claude, Copilot, Cursor, Windsurf, Cline</td></tr>
   <tr><td>Core strengths</td><td>16 (Lightweight, Portable, Personalized, Spec-Persistent, Agent-Agnostic, Context-Persistent, Secure, Non-Blocking, Self-Scaffolding, Self-Validating, Automated Test Generation, CI/CD Ready, Reliably Enforced, Sub-Agent Honesty Gate, Security Scanning, Bypass Audit Log)</td></tr>
   <tr><td>Source code templates</td><td>10 (Next.js Full-Stack colocated, Next.js Frontend-Only SPA, Next.js Monorepo, Python Backend, Full Stack separate services, Full Stack + Mobile, Mobile, Android, iOS, Document)</td></tr>
-  <tr><td>Automated tests</td><td>2351 (2206 framework + 145 benchmarking)</td></tr>
+  <tr><td>Automated tests</td><td>3068 (2923 framework + 145 benchmarking)</td></tr>
   <tr><td>Research</td><td>SPD concept paper (5,300 words), benchmarking report, agentic communication discovery</td></tr>
-  <tr><td>Flow documents</td><td>22 step-by-step work flows</td></tr>
+  <tr><td>Flow documents</td><td>32 step-by-step work flows</td></tr>
   <tr><td>Project scenarios</td><td>9 (new, existing, monorepo, partial, cloned, subdir, returning, multiple, kit in one dir)</td></tr>
   <tr><td>Profile setup</td><td>One-time, GitHub auto-detect, 3 preference questions, per-user workspace files</td></tr>
   <tr><td>Versioning</td><td>Two-level: framework v0.x.x (patches) + release v0.x (milestones)</td></tr>
@@ -105,8 +105,13 @@
 <h2>Version Changelog</h2>
 
 <h3>v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)</h3>
-<p>Kit: v0.6.0 — v0.6.87</p>
+<p>Kit: v0.6.0 — v0.6.92</p>
 <ul>
+  <li><strong>v0.6.92 — Multi-author reflex enforcement: structural inline-prevention + detect-and-redispatch (June 2026):</strong> KIT-GAP-0098: <code>reflex/run.sh</code> structural inline-prevention keystone — the orchestrator may write only planning artifacts (<code>wave-manifest.yaml</code>, dim-prompts); <code>findings.yaml</code> is synthesized solely from <code>partial-findings-dims-*.yaml</code> emitted by real dim-agents, so a multi-author QA pass can no longer silently collapse to inline synthesis. Dim-agent count is now dynamic — <code>ceil(dims / max_dims_per_spawn)</code> — replacing the hardcoded loop. KIT-GAP-0098 (follow-up): detect-and-redispatch reads the wave manifest's <code>artifact:</code> path to resolve qa-prefixed spawn ids to their un-prefixed partial filenames, fixing a false-missing bug that re-dispatched every dim-set; regression test added in <code>tests/sections/04-reflex.sh</code>. ADR-091 records the decision. First end-to-end multi-author reflex self-test (cycle-01/pass-001): orchestrator → 4 parallel dim-agents → synthesis → Dev → 14 gates; gate-13 confirmed a genuine adversarial audit. 3068 tests passing (2923 framework + 145 benchmarking), 0 failed.</li>
+  <li><strong>v0.6.91 — Cycle-01 clean-restart + kit-fidelity state-machine fixes (June 2026):</strong> KIT-GAP-0093: <code>psk-release.sh</code> staleness guard (<code>state_is_stale</code> / <code>run_next</code> / <code>show_status</code>) repointed from the vestigial <code>agent/.release-state/state</code> to the canonical <code>agent/.workflow-state/release.state</code> — the post-v0.6.62 dispatcher-migration legacy file isn't refreshed by <code>prepare</code>, so a stale sentinel RUN_ID made <code>psk-release.sh next</code> falsely refuse with "stale state — version drift risk" on a fresh run. Flow-doc currency: <code>docs/work-flows/13-release-workflow.md</code> Flow-Diagram + Step-9 boxes read "38 checks" vs the table/prose "49"; aligned all five references to 49 (step-4 flow-doc critic). KIT-GAP-0092 logged: <code>psk-release.sh</code> advertises a <code>reset</code> verb <code>psk-dispatch.sh</code> rejects ("Unknown verb: reset"). KIT-GAP-0094 / KIT-GAP-0095 logged: step-6 version bump doesn't seed the kit's own RELEASES.md per-patch heading or all ARD version anchors (Technical_Overview changelog range, user-guide title), so PSK001 + the step-8 critic flag them until manually written. 2865 tests passing.</li>
+  <li><strong>v0.6.90 — Session-health monitor: context-drift badge + /clear reminder (June 2026):</strong> KIT-GAP-0090: <code>psk-session-monitor.sh</code> Stop-hook measures live context occupancy from the Claude Code transcript usage (<code>input_tokens + cache_creation_input_tokens + cache_read_input_tokens</code>, jq-free + schema-verified) and maps it to a 3-level <code>ctx:</code> breadcrumb badge (🟢 &lt;50% · 🟡 50-79% · 🔴 ≥80%) rendered next to <code>opt:</code>, countering the lost-in-the-middle attention decay that dilutes a session's early rules. A de-duped <code>/clear</code> recommendation banner fires in the red zone only (yellow is badge-only — no nag; re-arms after a clear). §Session Health Indicator rule added to <code>portable-spec-kit.md</code>; wired as a session-stop hook by <code>psk-install-hooks.sh</code>; fail-safe (any error or missing data exits 0 silently, never blocking a turn). 2865 tests passing.</li>
+  <li><strong>v0.6.89 — Kit-wide model-policy: cost/perf model selection (June 2026):</strong> KIT-GAP-0089: <code>.portable-spec-kit/model-policy.yml</code> (role→model) + <code>psk-model-policy.sh</code> resolver (phase→role→model, with a built-in fallback) + <code>psk-spawn.sh</code> injecting and loudly surfacing <code>MODEL=</code> at every spawn (attention-decay-proof — re-printed at the unskippable spawn protocol, not memory-driven) + a PSK046 wiring-integrity gate + manifest registration. Roles: qa/critic → sonnet (high-fan-out, bounded), dev/qa_synthesis/implement → opus (correctness-critical), default/plan → inherit. 2865 tests passing.</li>
+  <li><strong>v0.6.88 — ONE QA dispatch: single+multi-author unified (June 2026):</strong> Design fix — there is ONE release gate, not two. B3: <code>reflex/run.sh</code> gained the missing <code>--resume-dims</code> re-entry; the multi-author wave dispatch (orchestrator → <code>AWAITING_DIM_DISPATCH</code> → main session fans out dim-agents → Phase 3 synthesis) previously dead-ended, silently collapsing every pass to single-author DENIED (closes KIT-GAP-0073). B8: one dispatch implementation parameterized by the single knob <code>qa_agent.max_parallel_agents</code> (&gt;1 parallel multi-author · =1 sequential single-author; mode label derived in <code>spawn-qa.sh</code>, config <code>spawn_mode</code> advisory-only) — both modes run the same dim-agents over the same dimension set with full coverage, so both can GRANT; the deterministic-probes-only single-author fallback branch is retired and the <code>single-author-fallback-verdict</code> rule is reframed coverage-based. B7: <code>psk-kit-cmd.sh --check</code> dry-runs no longer log phantom PSK027 bypasses. KIT-GAP-0084: purge-all drops summary.csv rows of purged cycles (PSK002 ghost-row). KIT-GAP-0085: PSK041 <code>tformat:%H</code> off-by-one fix. Flow-doc currency: PSK001-PSK045 / 49 checks, guidance-only dials, PSK045 TOC drift-guard documented. 2865 tests passing.</li>
   <li><strong>v0.6.87 — Reflex gate/purge true-clean-slate fixes (June 2026):</strong> Deep self-audit follow-through — investigating why reflex convergence passes kept falsely DENYing (0 genuine defects) surfaced six real kit bugs. B1: <code>check-audit-completeness.sh</code> gate-13 carry-forward exclusion was uppercase-only (<code>VERIFIED-FIXED</code>) but findings write lowercase, so carry-forwards counted → false synthesis-suspect (now <code>tolower()</code>). B2: <code>psk-regression-replay.sh</code> gate-14 now runs from <code>PROJ_ROOT</code> (relative paths resolve) + matches the leading literal segment so held fixes stop reading as regressions. B4: <code>prune-history.sh --purge-history --confirm</code> was a silent no-op (never set <code>APPLY=true</code>); B4b/B4c make it a true clean slate (also clears cycle shells, sandbox worktrees, stale workflow-state + retry-queue, keeping cross-cycle registers/logs); B6 guards an empty-array crash under <code>set -u</code>. B5: history-dependent tests made self-contained. Verdict is gates-based, so the gate fixes make GRANTED reachable in single-author mode. 2865 tests passing.</li>
   <li><strong>v0.6.86 — Dim 30 test-quality polish (June 2026):</strong> Closed QA-D30 for real (dispositioned by-design in v0.6.85). Two-part fix to the QA-Agent's assertion-strength dimension so the kit passes its own quality bar. Probe precision: <code>reflex/lib/assertion-strength-audit.sh</code> skips files that aren't assertion-bearing suites (mock servers / fixtures by basename; thin orchestrators that source ≥3 test files with &lt;5 own asserts) since scoring their control-flow <code>grep</code>/<code>[ -f ]</code> lines is a category error — removed 2 false positives. Genuine behavioral conversions: <code>tests/test-spd-benchmarking.sh</code> (81%→&lt;50% structural) + <code>tests/sections/01-infrastructure.sh</code> (57%→&lt;50%) upgraded existence checks to content/state assertions, no filler. Dim 30 now reports 0 findings. Regression tests D30.4/D30.5. 2865 tests passing.</li>
   <li><strong>v0.6.85 — Rerun-friction fixes + doc-sync precision (June 2026):</strong> Operational-friction cleanup surfaced while driving the cycle-30 autoloop. KIT-GAP-0081 (<code>reflex/run.sh</code> PID-file lock on stock macOS now treats a lock as live only when the pid is alive AND its process is actually a reflex run — guards pid-reuse — and auto-clears a stale lock instead of blocking), KIT-GAP-0082 (<code>psk-version-cascade.sh</code> re-syncs the workspace-root mirror copy on every bump, kit-self-guarded — self-validated live during this release), QA-D25-DOC-SYNC-MISSING-01 (<code>psk-doc-sync.sh</code> drops internal trace ids KIT-GAP-*/QA-*/ADR-*/ADL- from the feature catalog: 431→324 catalogued, 123→87 MISSING; <code>PROJ_ROOT</code> now env-overridable). QA-D30 dispositioned by-design (structural-leaning assertions are inherent to a doc-contract framework). 7 new regression tests, 2865 tests passing.</li>
@@ -1421,7 +1426,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
 </div>
 
 <div class="footer">
-  Portable Spec Kit — Technical Overview &bull; v0.6.73 &bull; June 2026
+  Portable Spec Kit — Technical Overview &bull; v0.6.92 &bull; June 2026
 </div>
 
 </div>
@@ -1439,7 +1444,7 @@ curl -sO https://raw.githubusercontent.com/aqibmumtaz/portable-spec-kit/main/por
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.87 &bull; May 2026</div>
+    <div class="badge">v0.6.92 &bull; June 2026</div>
   </div>
 </div>
 

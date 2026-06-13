@@ -39,7 +39,12 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-_RELEASE_STATE="$PROJ_ROOT/agent/.release-state/state"
+# KIT-GAP-0093: canonical run-state lives in .workflow-state/ after the v0.6.62
+# dispatcher migration. The legacy agent/.release-state/state is vestigial (only
+# this script read it) and is NOT refreshed by prepare, so a stale sentinel there
+# made the staleness guard misfire. Point it at the dispatcher's state file so
+# state_is_stale reflects the actual run.
+_RELEASE_STATE="$PROJ_ROOT/agent/.workflow-state/release.state"
 START_VERSION=
 
 if [ -t 2 ]; then

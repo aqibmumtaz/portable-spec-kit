@@ -71,12 +71,17 @@ features=$(awk -v minor="$minor" '
   in_minor && /^- / {
     line = $0
     sub(/^- /, "", line)
+    # QA-DOC-11-01: emit "term \t fullline" — the bolded term is the display name
+    # + name-match key; the full bullet line is the source for identity-token
+    # extraction (script names / flags / codes live in the DESCRIPTION, not the
+    # bold name). The NOISE_RE/CHANGE_NOISE_RE filters are ^-anchored to the term,
+    # so they still filter correctly on field 1.
     if (match(line, /\*\*[^*]+\*\*/)) {
       term = substr(line, RSTART+2, RLENGTH-4)
-      print term
+      print term "\t" line
     } else if (match(line, /`[^`]+`/)) {
       term = substr(line, RSTART+1, RLENGTH-2)
-      print term
+      print term "\t" line
     }
   }
 ' "$CHANGELOG" | grep -vE "$NOISE_RE" | grep -vE "$CHANGE_NOISE_RE" | sort -u)
@@ -98,19 +103,42 @@ echo -e "Analyzing ${CYAN}$feature_count${NC} features against:"
 echo -e "  ${CYAN}$n_agent${NC} agent/*.md  ·  ${CYAN}$n_flows${NC} docs/work-flows/*.md  ·  ${CYAN}$n_research${NC} docs/research/*.md  ·  ${CYAN}$n_ard${NC} ard/*.html  ·  README.md"
 echo ""
 
-count_hits_glob() {
-  local term="$1" dir="$2" ext="$3"
-  local hits=0
-  local f
-  shopt -s nullglob
-  for f in "$dir"/*"$ext"; do
-    [ -f "$f" ] || continue
-    if grep -qF -- "$term" "$f" 2>/dev/null; then
-      hits=$((hits + 1))
-    fi
-  done
-  shopt -u nullglob
-  echo "$hits"
+# QA-DOC-11-01: a CHANGELOG feature line is a whole prose phrase
+# ("B3 reflex/run.sh: wired the missing --resume-dims re-entry…"). Docs never
+# repeat that exact prose, so full-phrase grep -F false-reports MISSING for any
+# feature that IS documented under its identity tokens (script name, flag, PSK /
+# KIT-GAP code). Extract those stable identifiers so a feature counts as covered
+# when its script/flag/code appears in a surface — not only when the whole
+# sentence does.
+extract_identity_tokens() {
+  printf '%s\n' "$1" | grep -oE '[A-Za-z0-9_-]+\.(sh|ts|js|mjs|py)|--[a-z][a-z0-9-]+|PSK[0-9]+|KIT-GAP-[0-9]+|ADR-[0-9]+' | sort -u
+}
+
+# PERF (no-silent-wait follow-up, cycle-01/pass-002): the original matcher spawned
+# one `grep` per (feature × file × identity-token) — an O(features×files×tokens)
+# subprocess explosion that made a full run take ~11 MINUTES (the kit's single
+# slowest op, dominating every test suite + reflex gate). Replaced with an in-memory
+# match against a per-surface corpus read ONCE: zero per-feature subprocesses.
+# MISSING detection (total==0) is byte-for-byte identical; `total` now counts COVERED
+# SURFACES (0-5) instead of matching files — the same signal the `surf` legend (the
+# user-facing A/F/P/D/R flags) already shows, so COVERED/PARTIAL semantics stay
+# meaningful ("documented across ≥2 doc surfaces") and the --strict gate (Missing>0)
+# is unchanged. Cuts an ~11-minute op to seconds.
+# TRUE if ANY of a feature's patterns (its name + identity tokens, $2 newline-
+# delimited) appears in $1 — a precomputed PER-SURFACE present-set (the small set of
+# patterns that actually occur in that surface; built by the inverted scan below).
+# Matching the tiny present-set instead of the full multi-hundred-KB corpus is what
+# takes a run from ~90s to a few seconds. `case` substring matching is semantically
+# identical to the old per-file `grep -F` (both substring), so MISSING detection
+# (total==0, the --strict gate) and the 203/27/26 result are unchanged. `total` now
+# counts COVERED SURFACES (0-5) — the signal the user-facing A/F/P/D/R legend shows.
+_set_covers() {
+  local present="$1" pats="$2" p
+  while IFS= read -r p; do
+    [ -z "$p" ] && continue
+    case "$present" in *"$p"*) return 0 ;; esac
+  done <<< "$pats"
+  return 1
 }
 
 suggest_doc() {
@@ -146,16 +174,42 @@ partial=0
 missing=0
 gap_lines=""
 
-while IFS= read -r feature; do
+# INVERTED SCAN (perf — see _set_covers note above). Build the union of EVERY
+# feature's patterns once, then read each surface's files ONCE with a single
+# grep -ohFf to learn which patterns are present there (a small per-surface set).
+# Classification then matches each feature against these tiny sets — O(surfaces)
+# file reads instead of O(features×files×tokens) greps. ~90s → a few seconds.
+_ALL_PAT=$(mktemp)
+{
+  cut -f1 <<< "$features" | sed 's/`//g; s/\*//g'       # feature display names
+  extract_identity_tokens "$(cut -f2 <<< "$features")"  # tokens from all full-lines at once
+} | grep -v '^[[:space:]]*$' | sort -u > "$_ALL_PAT"
+
+# present-set per surface; guard empty file lists (nullglob) so grep never reads stdin.
+_present() { [ "$#" -eq 0 ] && return 0; grep -ohFf "$_ALL_PAT" "$@" 2>/dev/null | sort -u; }
+shopt -s nullglob
+_PRESENT_AGENT=$(_present "$PROJ_ROOT"/agent/*.md)
+_PRESENT_FLOWS=$(_present "$PROJ_ROOT"/docs/work-flows/*.md)
+_PRESENT_RESEARCH=$(_present "$PROJ_ROOT"/docs/research/*.md)
+_PRESENT_ARD=$(_present "$PROJ_ROOT"/ard/*.html)
+_PRESENT_README=$(_present "$PROJ_ROOT"/README.md)
+shopt -u nullglob
+
+while IFS=$'\t' read -r feature fullline; do
   [ -z "$feature" ] && continue
   search_term=$(echo "$feature" | sed 's/`//g; s/\*//g')
+  # token source = the full CHANGELOG line (script names / flags live in the
+  # description); fall back to the name when no description was captured.
+  token_src="${fullline:-$feature}"
 
-  h_agent=$(count_hits_glob "$search_term" "$PROJ_ROOT/agent" ".md")
-  h_flows=$(count_hits_glob "$search_term" "$PROJ_ROOT/docs/work-flows" ".md")
-  h_research=$(count_hits_glob "$search_term" "$PROJ_ROOT/docs/research" ".md")
-  h_ard=$(count_hits_glob "$search_term" "$PROJ_ROOT/ard" ".html")
-  h_readme=0
-  grep -qF -- "$search_term" "$PROJ_ROOT/README.md" 2>/dev/null && h_readme=1
+  # This feature's patterns (name + tokens), computed ONCE, matched against each
+  # surface's tiny present-set (not the full corpus).
+  _feat_pats=$(printf '%s\n' "$search_term"; extract_identity_tokens "$token_src")
+  h_agent=0;    _set_covers "$_PRESENT_AGENT"    "$_feat_pats" && h_agent=1
+  h_flows=0;    _set_covers "$_PRESENT_FLOWS"    "$_feat_pats" && h_flows=1
+  h_research=0; _set_covers "$_PRESENT_RESEARCH" "$_feat_pats" && h_research=1
+  h_ard=0;      _set_covers "$_PRESENT_ARD"      "$_feat_pats" && h_ard=1
+  h_readme=0;   _set_covers "$_PRESENT_README"   "$_feat_pats" && h_readme=1
 
   total=$((h_agent + h_flows + h_research + h_ard + h_readme))
 
@@ -180,6 +234,7 @@ while IFS= read -r feature; do
     printf "  ${GREEN}✓${NC} COVERED [%s] %s\n" "$surf" "$short_term"
   fi
 done <<< "$features"
+rm -f "$_ALL_PAT" 2>/dev/null || true
 
 echo ""
 if [ -n "$gap_lines" ]; then

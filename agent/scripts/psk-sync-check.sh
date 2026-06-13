@@ -3119,6 +3119,45 @@ check_psk032_cycle_misuse() {
     return
   fi
 
+  # QA-AUDIT-CYCLE-COLLISION-01 (cycle-01-pass-001): (cycle,pass) composite-key
+  # collision detection. summary.csv is kept forever; a --purge-history that
+  # reset the on-disk cycle counter below max(cycle) in summary.csv reuses a
+  # historical cycle id, so the same cycle id maps to two unrelated lineages.
+  # A genuine collision shows a LARGE time gap between the min and max date for
+  # one cycle id (months apart = separate lineages). A single lineage that
+  # merely crosses a calendar-month boundary (e.g. cycle ran 05-29..06-02) has a
+  # small gap and is NOT a collision — so gate on the day-gap, not month rollover.
+  local _scsv="$history_dir/summary.csv"
+  if [ -f "$_scsv" ]; then
+    local _collide
+    _collide=$(awk -F',' '
+      function d2e(s,  y,m,d) {
+        # Approximate epoch-day: year*365 + month*31 + day. Coarse but monotone
+        # enough to separate same-lineage (days apart) from collisions (months).
+        y=substr(s,1,4)+0; m=substr(s,6,2)+0; d=substr(s,9,2)+0
+        return y*365 + m*31 + d
+      }
+      NR==1 { for (i=1;i<=NF;i++) col[$i]=i; cc=(col["cycle"]?col["cycle"]:1); dc=(col["date"]?col["date"]:3); next }
+      {
+        c=$(cc); ds=$(dc)
+        if (c ~ /^[0-9]+$/ && ds ~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}/) {
+          e=d2e(ds)
+          if (!(c in mn)) { mn[c]=e; mx[c]=e }
+          if (e < mn[c]) mn[c]=e
+          if (e > mx[c]) mx[c]=e
+        }
+      }
+      END { for (k in mn) if (mx[k]-mn[k] > 20) print k }   # >20 day-units = separate lineages
+    ' "$_scsv" 2>/dev/null | sort -un | head -5)
+    if [ -n "$_collide" ]; then
+      local _clist
+      _clist=$(echo "$_collide" | tr '\n' ' ' | sed 's/ $//')
+      emit_issue "PSK032" "cycle-id-collision" \
+        "summary.csv cycle id(s) [$_clist] span >20 days between earliest and latest pass date — (cycle,pass) composite-key collision (a --purge-history reset the counter below max(cycle) in the forever-retained ledger)" \
+        "compute_next_cycle_id() must allocate from max(cycle) in summary.csv, not just on-disk pass dirs (reflex/run.sh). Re-key or archive colliding rows. Bypass: PSK_PSK032_DISABLED=1"
+    fi
+  fi
+
   # Sort numerically descending; keep top 5
   local sorted
   sorted=$(printf '%s\n' "${cycles[@]}" | sort -t: -k1,1 -n -r | head -5)
@@ -3513,9 +3552,12 @@ check_psk041_kit_gap_disposition() {
     # timestamp; the new code searches the full commit-message corpus
     # in one git invocation. At ~35 commits/day × 11 pending markers
     # this drops 385 forks per --quick run to ~11.
+    # KIT-GAP-0085: use tformat (trailing-newline variant) — plain format:%H
+    # emits no final newline, so a gap fixed by exactly ONE commit counted as
+    # 0 lines via wc -l and false-flagged forever.
     local matched
     matched=$(git -C "$PROJ_ROOT" log --all --since="@$ts_epoch" \
-      --grep="$gap_id" --pretty=format:%H 2>/dev/null | wc -l | tr -d ' \n')
+      --grep="$gap_id" --pretty=tformat:%H 2>/dev/null | wc -l | tr -d ' \n')
     [ -z "$matched" ] && matched=0
 
     if [ "$matched" -eq 0 ] && [ "$age_sec" -gt 60 ]; then
@@ -3746,6 +3788,68 @@ check_psk045_toc_drift() {
   run_check
 }
 
+# --- CHECK PSK046: model-policy injection wiring (KIT-GAP-0089 v0.6.89) ---
+# Kit-wide model selection (.portable-spec-kit/model-policy.yml) is enforced by
+# psk-spawn.sh injecting MODEL=<resolved> into every spawn request and surfacing
+# it in the protocol block. If that wiring is removed, every spawn silently
+# reverts to the session model — the cost/perf policy vanishes with no error.
+# This is the attention-decay-proof backstop: it fails when the MECHANISM that
+# makes model-selection mechanical is itself broken. PSK046 verifies the three
+# load-bearing pieces are present and connected. Full-mode only.
+# Severity: ADVISORY. Bypass: PSK_PSK046_DISABLED=1.
+check_psk046_model_policy_wiring() {
+  if [ "${PSK_PSK046_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK046: skipped (PSK_PSK046_DISABLED=1)"
+    run_check
+    return
+  fi
+  local policy="$PROJ_ROOT/.portable-spec-kit/model-policy.yml"
+  local resolver="$PROJ_ROOT/agent/scripts/psk-model-policy.sh"
+  local spawn="$PROJ_ROOT/agent/scripts/psk-spawn.sh"
+  # Skip on projects that predate the model-policy feature (no policy + no resolver).
+  if [ ! -f "$policy" ] && [ ! -f "$resolver" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK046: model-policy not installed — skip"
+    run_check
+    return
+  fi
+  local missing=""
+  [ -f "$policy" ]   || missing="$missing model-policy.yml"
+  [ -x "$resolver" ] || missing="$missing psk-model-policy.sh(+x)"
+  # The injection wiring: psk-spawn.sh must call the resolver AND write MODEL= into the request.
+  # KIT-GAP (cycle-01/pass-002): the original check only proved MODEL= appeared SOMEWHERE
+  # in psk-spawn.sh — cmd_request satisfied it while cmd_request_multi (the multi-author
+  # dim-agent fan-out) silently lacked it, so the highest-fan-out spawns reverted to the
+  # session model. Now require BOTH spawn surfaces: the single-spawn `request` AND the
+  # multi-spawn `request-multi` fan-out instruction must surface the resolved model.
+  if [ -f "$spawn" ]; then
+    grep -qF 'psk-model-policy.sh' "$spawn" 2>/dev/null || missing="$missing spawn:resolver-call"
+    grep -qF 'MODEL=$spawn_model' "$spawn" 2>/dev/null || missing="$missing spawn:MODEL-injection"
+    # request-multi parity — the fan-out protocol must pin every parallel spawn's model.
+    grep -qF 'all with model=$spawn_model' "$spawn" 2>/dev/null || missing="$missing spawn:MODEL-multi-injection"
+  else
+    missing="$missing psk-spawn.sh"
+  fi
+  # Dispatcher parity — psk-dispatch.sh drives workflow + plan phases via its OWN
+  # spawn-emit (generic _emit_spawn + parallel-batch), bypassing psk-spawn.sh. It must
+  # resolve + surface the model too, or driverless workflow-phase spawns silently
+  # inherit the session model (KIT-GAP / cycle-01/pass-002).
+  local dispatch="$PROJ_ROOT/agent/scripts/psk-dispatch.sh"
+  if [ -f "$dispatch" ]; then
+    grep -qF 'psk-model-policy.sh' "$dispatch" 2>/dev/null || missing="$missing dispatch:resolver-call"
+    grep -qF 'MODEL=$spawn_model' "$dispatch" 2>/dev/null || missing="$missing dispatch:MODEL-injection"
+  fi
+  if [ -z "$missing" ]; then
+    emit_pass "PSK046: model-policy injection wiring intact (policy + resolver + psk-spawn.sh MODEL injection)"
+    run_check
+    return
+  fi
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK046: model-policy wiring incomplete —$missing"
+  emit_issue "PSK046" "model-policy-wiring" \
+    "model-policy model selection is partially wired (missing:$missing) — spawns will silently fall back to the session model" \
+    "Restore the wiring so model choice stays mechanical (not memory-driven): (1) .portable-spec-kit/model-policy.yml present; (2) agent/scripts/psk-model-policy.sh present + executable; (3) psk-spawn.sh cmd_request resolves via psk-model-policy.sh and writes MODEL=\$spawn_model into the spawn request + protocol block. Bypass: PSK_PSK046_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -3832,6 +3936,7 @@ main() {
     check_psk043_regression_replay_integrity
     check_psk044_command_invocation_fidelity
     check_psk045_toc_drift
+    check_psk046_model_policy_wiring
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

@@ -52,6 +52,7 @@ MISSING_REFS=0
 MISSING_FILES=0
 TESTS_FAILED=0
 IRRELEVANT_TESTS=0  # v0.6.29 G21 — count of test files that don't mention their feature
+IRRELEVANT_LIST=""  # QA-TQ-12-01 — accumulates "Fn (feature) → test" lines for the actionable warning
 
 # Cache: each unique test file is run only once — result reused for all features referencing it.
 # Closes QA-PERF-PHASE0-01 (v0.6.11): persisted across invocations (was mktemp-per-call,
@@ -349,8 +350,13 @@ while IFS= read -r line; do
         fi
 
         # v0.6.29 G21 — relevance check: warn (not fail)
+        # QA-TQ-12-01 (cycle-01-pass-001): record WHICH feature + test file was
+        # flagged (not just a count) so the warning is actionable, and feed an
+        # opt-in strict mode.
         if ! check_test_relevance "$test_ref" "$fn" "$feature"; then
           IRRELEVANT_TESTS=$((IRRELEVANT_TESTS + 1))
+          IRRELEVANT_LIST="${IRRELEVANT_LIST}      ${fn} (${feature}) → ${test_ref}
+"
         fi
 
         run_test "$test_ref"
@@ -383,10 +389,22 @@ printf "  Missing test refs:       %d\n" "$MISSING_REFS"
 printf "  Missing test files:      %d\n" "$MISSING_FILES"
 if [ "$IRRELEVANT_TESTS" -gt 0 ]; then
   printf "  ⚠  Possibly-irrelevant:    %d (test file doesn't reference feature ID or keyword)\n" "$IRRELEVANT_TESTS"
+  # QA-TQ-12-01: list the specific feature ids + test paths so the warning is
+  # actionable rather than an opaque count.
+  printf "%s" "$IRRELEVANT_LIST"
 fi
 echo "────────────────────────────────────────────────────────────"
 
 ISSUES=$((MISSING_REFS + MISSING_FILES + TESTS_FAILED))
+# QA-TQ-12-01: opt-in strict relevance mode. By default the relevance check is
+# advisory (a feature can cite a green test that doesn't reference it). Setting
+# PSK_RFT_RELEVANCE_STRICT=1 promotes possibly-irrelevant citations to blocking
+# ISSUES so a project (and the kit's own prep-release) can enforce that every
+# feature's cited test actually probes that feature.
+if [ "${PSK_RFT_RELEVANCE_STRICT:-0}" = "1" ] && [ "$IRRELEVANT_TESTS" -gt 0 ]; then
+  printf "  ✗  STRICT relevance: %d possibly-irrelevant citation(s) treated as blocking (PSK_RFT_RELEVANCE_STRICT=1)\n" "$IRRELEVANT_TESTS"
+  ISSUES=$((ISSUES + IRRELEVANT_TESTS))
+fi
 
 if [ "$TOTAL_DONE" -eq 0 ]; then
   echo "  ⚠  No completed features found in SPECS.md"

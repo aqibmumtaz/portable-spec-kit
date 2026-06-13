@@ -775,8 +775,11 @@ grep -A3 "RELEASE PROGRESS" "$PROJ/agent/scripts/psk-release.sh" | grep -q "stat
   || fail "stale-state: show_status does not warn on stale"
 
 # Time-based stale refusal actually refuses (behavioral test)
-mkdir -p "$PROJ/agent/.release-state" 2>/dev/null
-_original_state="$PROJ/agent/.release-state/state"
+# KIT-GAP-0093: canonical run-state moved to agent/.workflow-state/release.state
+# (v0.6.62 dispatcher migration). The staleness guard (_RELEASE_STATE) reads that
+# path, so the behavioral fixture must write there, not the legacy .release-state/state.
+mkdir -p "$PROJ/agent/.workflow-state" 2>/dev/null
+_original_state="$PROJ/agent/.workflow-state/release.state"
 _backup="/tmp/psk-stale-test-$$"
 [ -f "$_original_state" ] && cp "$_original_state" "$_backup"
 cat > "$_original_state" <<EOF
@@ -798,7 +801,13 @@ EOF
 bash "$PROJ/agent/scripts/psk-release.sh" next 2>&1 | grep -q "Refusing to resume stale release state" \
   && pass "stale-state: behavioral — 24h-old RUN_ID blocks 'next'" \
   || fail "stale-state: behavioral — 'next' did not refuse stale state"
-[ -f "$_backup" ] && cp "$_backup" "$_original_state" && rm -f "$_backup"
+# Restore the original canonical state if one existed; otherwise remove the
+# stale fixture so it cannot make a real 'psk-release.sh next' refuse afterward.
+if [ -f "$_backup" ]; then
+  cp "$_backup" "$_original_state" && rm -f "$_backup"
+else
+  rm -f "$_original_state"
+fi
 
 section "60m. F70 Reflex — Adversarial Verbal Actor-Critic Refinement Loop (AVACR) v0.5.21–v0.5.23"
 
@@ -7818,6 +7827,24 @@ if [ -f "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}.dims-1-to-10.request" ]; then
 else
   fail "94.2b: spawn 'dims-1-to-10' request file missing"
 fi
+
+# 94.2c (KIT-GAP / cycle-01/pass-002) — request-multi surfaces the model-policy model
+# in the fan-out instruction so EVERY parallel spawn is pinned. Regression:
+# cmd_request_multi had no model resolution, so the multi-author dim-agents
+# (policy: qa→sonnet, the biggest cost lever) silently inherited the driver (opus)
+# model. cmd_request had MODEL injection; cmd_request_multi did not — and PSK046's
+# grep was satisfied by the cmd_request occurrence, so the gap passed undetected.
+if [ -f "$PROJ/.portable-spec-kit/model-policy.yml" ]; then
+  _S94_MODEL_OUT=$(bash "$_S94_SPAWN_SCRIPT" request-multi "${_S94_WF}-qa" qa "$_S94_MANIFEST" 2>&1)
+  if echo "$_S94_MODEL_OUT" | grep -qE "^MODEL=sonnet$" && echo "$_S94_MODEL_OUT" | grep -qF "all with model=sonnet"; then
+    pass "94.2c: request-multi pins MODEL=sonnet for a qa-phase fan-out (policy applied to all parallel spawns)"
+  else
+    fail "94.2c: request-multi did not pin the policy model for qa fan-out — $(echo "$_S94_MODEL_OUT" | grep -i 'MODEL=' | head -1)"
+  fi
+  rm -f "$_S94_SPAWN_DIR/${_S94_WF}-qa.qa."*.request 2>/dev/null
+else
+  pass "94.2c: model-policy.yml absent — skip model-surfacing assertion"
+fi
 if [ -f "$_S94_SPAWN_DIR/${_S94_WF}.${_S94_PHASE}.dims-11-to-20.request" ]; then
   pass "94.2c: request file written for spawn 'dims-11-to-20'"
 else
@@ -7900,39 +7927,69 @@ else
   fail "94.6b: error message did not mention schema_version"
 fi
 
-# 94.7: spawn_mode config field present in reflex/config.yml
+# 94.7: spawn_mode config field present in reflex/config.yml (advisory label, B8)
 _S94_CONFIG="$PROJ/reflex/config.yml"
 if grep -qE '^\s*spawn_mode:\s*orchestrated-' "$_S94_CONFIG"; then
   pass "94.7a: reflex/config.yml declares qa_agent.spawn_mode field"
 else
   fail "94.7a: spawn_mode field missing from reflex/config.yml"
 fi
-# KIT-GAP-0052/0071: spawn_mode is an operator choice between two valid
-# orchestrated modes. single-author is the headless-safe default; multi-author
-# is the proven parallel path (closes QA-ORCH-COVERAGE-01, required for kit
-# self-test convergence). The test accepts EITHER — it must not pin to one mode.
 if grep -qE 'spawn_mode:\s*orchestrated-(single|multi)-author' "$_S94_CONFIG"; then
   pass "94.7b: spawn_mode is a valid orchestrated mode (single- or multi-author)"
 else
   fail "94.7b: spawn_mode is not a valid orchestrated mode"
 fi
-
-# 94.8: qa-agent-orchestrator.md documents the multi-author dispatch protocol
-_S94_ORCH="$PROJ/reflex/prompts/qa-agent-orchestrator.md"
-if grep -q 'Multi-author dispatch (KIT-GAP-0052' "$_S94_ORCH"; then
-  pass "94.8a: orchestrator prompt has Multi-author dispatch section"
+# 94.7c (B8): single knob — spawn-qa.sh DERIVES the mode from max_parallel_agents,
+# not from a separate spawn_mode read. One source, no drift.
+_S94_SPAWNQA="$PROJ/reflex/lib/spawn-qa.sh"
+if grep -q 'qa_max_parallel_agents:-4.*-le 1' "$_S94_SPAWNQA" \
+   && grep -q 'orchestrated-single-author' "$_S94_SPAWNQA" \
+   && grep -q 'orchestrated-multi-author' "$_S94_SPAWNQA"; then
+  pass "94.7c: spawn-qa.sh derives mode from max_parallel_agents (single knob, B8)"
 else
-  fail "94.8a: orchestrator missing Multi-author dispatch section"
+  fail "94.7c: spawn-qa.sh does not derive mode from max_parallel_agents"
+fi
+# 94.7d (B8): spawn-qa no longer reads spawn_mode via awk as a behavioral source
+if grep -q "in_block && /^\[\[:space:\]\]\*spawn_mode:/" "$_S94_SPAWNQA"; then
+  fail "94.7d: spawn-qa.sh still reads spawn_mode as a code-path source (drift risk)"
+else
+  pass "94.7d: spawn-qa.sh no longer branches on a separate spawn_mode read (B8)"
+fi
+# 94.7e (B8): config documents max_parallel_agents as the SINGLE knob
+if grep -q 'SINGLE knob' "$_S94_CONFIG"; then
+  pass "94.7e: config.yml documents max_parallel_agents as the single knob"
+else
+  fail "94.7e: config.yml does not document the single-knob design"
+fi
+
+# 94.8: qa-agent-orchestrator.md documents the unified (single-implementation) dispatch
+_S94_ORCH="$PROJ/reflex/prompts/qa-agent-orchestrator.md"
+# 94.8a: ONE dispatch implementation, concurrency-parameterized (no separate branches)
+if grep -q 'ONE dispatch implementation' "$_S94_ORCH" \
+   && grep -q 'concurrency-parameterized' "$_S94_ORCH"; then
+  pass "94.8a: orchestrator prompt declares ONE concurrency-parameterized dispatch (B8)"
+else
+  fail "94.8a: orchestrator missing unified single-implementation dispatch"
 fi
 if grep -q 'AWAITING_DIM_DISPATCH' "$_S94_ORCH"; then
   pass "94.8b: orchestrator prompt documents AWAITING_DIM_DISPATCH exit marker"
 else
   fail "94.8b: orchestrator missing AWAITING_DIM_DISPATCH marker"
 fi
-if grep -q 'Single-author fallback' "$_S94_ORCH"; then
-  pass "94.8c: single-author fallback preserved (no regression of v0.6.67 bypass)"
+# 94.8c (B8): the separate deterministic-only single-author fallback BRANCH is retired —
+# single-author is now the same dispatch at concurrency 1, not a different code path.
+if grep -q 'single-author fallback contract' "$_S94_ORCH" \
+   || grep -q 'Run the deterministic kit probes' "$_S94_ORCH"; then
+  fail "94.8c: separate single-author deterministic-only branch still present (should be unified, B8)"
 else
-  fail "94.8c: single-author fallback documentation regressed"
+  pass "94.8c: separate single-author branch retired — unified into one dispatch (B8)"
+fi
+# 94.8d (B8): prompt states single-author = same dispatch at concurrency 1 (grant-capable)
+if grep -q 'orchestrated-single-author' "$_S94_ORCH" \
+   && grep -qi 'one-at-a-time\|sequential' "$_S94_ORCH"; then
+  pass "94.8d: orchestrator frames single-author as sequential same-dispatch (full coverage)"
+else
+  fail "94.8d: orchestrator does not frame single-author as same-dispatch sequential"
 fi
 
 # Cleanup
@@ -8102,6 +8159,217 @@ EOF
   rm -rf "$_ec_tmp"
 else
   pass "102.1: extract-claims.sh absent — skip (n/a)"
+fi
+
+section "103. Model-policy (cost/perf model selection — KIT-GAP-0089)"
+# ═══════════════════════════════════════════════════════════════
+# Kit-wide model selection: .portable-spec-kit/model-policy.yml resolved by
+# psk-model-policy.sh, injected into every spawn by psk-spawn.sh, gated by PSK046.
+_MP_SH="$PROJ/agent/scripts/psk-model-policy.sh"
+_MP_YML="$PROJ/.portable-spec-kit/model-policy.yml"
+
+# 103.1 — config + resolver present
+if [ -x "$_MP_SH" ] && [ -f "$_MP_YML" ]; then
+  pass "103.1: model-policy.yml + psk-model-policy.sh present"
+else
+  fail "103.1: model-policy config/resolver missing ($_MP_YML / $_MP_SH)"
+fi
+
+# 103.2 — role resolution: cost-optimized roles → sonnet, correctness roles → opus
+if [ -x "$_MP_SH" ]; then
+  _qa=$(bash "$_MP_SH" lookup qa 2>/dev/null)
+  _dev=$(bash "$_MP_SH" lookup dev 2>/dev/null)
+  _crit=$(bash "$_MP_SH" lookup critic 2>/dev/null)
+  _syn=$(bash "$_MP_SH" lookup qa-synthesis 2>/dev/null)
+  if [ "$_qa" = sonnet ] && [ "$_crit" = sonnet ] && [ "$_dev" = opus ] && [ "$_syn" = opus ]; then
+    pass "103.2: roles resolve correctly (qa/critic→sonnet, dev/synthesis→opus)"
+  else
+    fail "103.2: role resolution wrong (qa=$_qa critic=$_crit dev=$_dev synth=$_syn)"
+  fi
+else
+  fail "103.2: psk-model-policy.sh not executable"
+fi
+
+# 103.3 — qa-synthesis precedence: must NOT collapse to qa (sonnet) via substring
+if [ -x "$_MP_SH" ]; then
+  [ "$(bash "$_MP_SH" lookup qa-synthesis 2>/dev/null)" = opus ] \
+    && pass "103.3: qa-synthesis precedence holds (opus, not qa→sonnet)" \
+    || fail "103.3: qa-synthesis collapsed to qa (substring precedence bug)"
+fi
+
+# 103.4 — built-in fallback: resolver still optimizes when yml absent (older install)
+if [ -x "$_MP_SH" ]; then
+  _empty=$(mktemp -d)
+  _fb_qa=$(PSK_PROJ_ROOT="$_empty" bash "$_MP_SH" lookup qa 2>/dev/null)
+  _fb_dev=$(PSK_PROJ_ROOT="$_empty" bash "$_MP_SH" lookup dev 2>/dev/null)
+  rm -rf "$_empty"
+  if [ "$_fb_qa" = sonnet ] && [ "$_fb_dev" = opus ]; then
+    pass "103.4: built-in fallback optimizes without yml (qa→sonnet, dev→opus)"
+  else
+    fail "103.4: built-in fallback broken (qa=$_fb_qa dev=$_fb_dev)"
+  fi
+fi
+
+# 103.5 — unmapped phase → inherit (no spurious override)
+if [ -x "$_MP_SH" ]; then
+  [ "$(bash "$_MP_SH" lookup totally-unknown-phase 2>/dev/null)" = inherit ] \
+    && pass "103.5: unmapped phase resolves to inherit (no spurious override)" \
+    || fail "103.5: unmapped phase did not resolve to inherit"
+fi
+
+# 103.6 — psk-spawn.sh injects MODEL into the request + surfaces it (the mechanical core)
+_SPAWN_SH="$PROJ/agent/scripts/psk-spawn.sh"
+if [ -f "$_SPAWN_SH" ] \
+   && grep -qF 'psk-model-policy.sh' "$_SPAWN_SH" \
+   && grep -qF 'MODEL=$spawn_model' "$_SPAWN_SH"; then
+  pass "103.6: psk-spawn.sh wires model resolution + MODEL injection"
+else
+  fail "103.6: psk-spawn.sh missing model-policy injection wiring"
+fi
+
+# 103.7 — PSK046 gate present + registered in full dispatch
+_SC_SH="$PROJ/agent/scripts/psk-sync-check.sh"
+if grep -q 'check_psk046_model_policy_wiring' "$_SC_SH" \
+   && [ "$(grep -c 'check_psk046_model_policy_wiring' "$_SC_SH")" -ge 2 ]; then
+  pass "103.7: PSK046 wiring gate defined + registered in full dispatch"
+else
+  fail "103.7: PSK046 gate missing or not registered"
+fi
+
+# 103.8 — psk-model-policy.sh is in the installer manifest (ships to end-users)
+if grep -q 'psk-model-policy.sh' "$PROJ/agent/scripts/.manifest" 2>/dev/null; then
+  pass "103.8: psk-model-policy.sh enumerated in agent/scripts/.manifest"
+else
+  fail "103.8: psk-model-policy.sh absent from installer manifest"
+fi
+
+section "104. Session-monitor (context-drift /clear reminder — KIT-GAP-0090)"
+# ═══════════════════════════════════════════════════════════════
+# psk-session-monitor.sh — Stop-hook that reads the live transcript and recommends
+# /clear ONLY when context is genuinely high, ONCE per band (stateful de-dup, no nag).
+_SM="$PROJ/agent/scripts/psk-session-monitor.sh"
+
+# 104.1 — present + executable
+[ -x "$_SM" ] && pass "104.1: psk-session-monitor.sh present + executable" \
+              || fail "104.1: psk-session-monitor.sh missing/not executable"
+
+# 104.2 — self-test proves the anti-noise contract (warn-once, no-nag, re-arm)
+if [ -x "$_SM" ] && bash "$_SM" --self-test >/dev/null 2>&1; then
+  pass "104.2: self-test passes (de-dup warn-once + no-nag + re-arm after clear)"
+else
+  fail "104.2: session-monitor self-test failed (de-dup/re-arm logic broken)"
+fi
+
+# 104.3 — accurate trace: parses real-schema usage (.message.usage, 3 token fields) jq-free
+if [ -x "$_SM" ]; then
+  _smt=$(mktemp -d)
+  printf '{"type":"assistant","message":{"role":"assistant","content":[],"usage":{"input_tokens":1000,"cache_creation_input_tokens":2000,"cache_read_input_tokens":177000,"output_tokens":50}}}\n' > "$_smt/tx.jsonl"
+  _out=$(PSK_SESSION_CONTEXT_LIMIT=200000 bash "$_SM" --check "$_smt/tx.jsonl" 2>/dev/null)
+  # 1000+2000+177000 = 180000 / 200000 = 90% → red badge + WARN banner
+  if echo "$_out" | grep -q '180000 tokens' && echo "$_out" | grep -q '90%' && echo "$_out" | grep -q '🔴'; then
+    pass "104.3: accurate trace — sums input+cache_creation+cache_read = live context (90% → 🔴 red)"
+  else
+    fail "104.3: trace/threshold wrong — got: $(echo "$_out" | tr '\n' ' ')"
+  fi
+  rm -rf "$_smt"
+fi
+
+# 104.4 — 3-level badge via --badge: green <50, yellow 50-79, red ≥80
+if [ -x "$_SM" ]; then
+  _smt=$(mktemp -d); _b(){ printf '{"type":"assistant","message":{"role":"assistant","content":[],"usage":{"input_tokens":%s,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1}}}\n' "$1" > "$_smt/tx.jsonl"; PSK_SESSION_CONTEXT_LIMIT=200000 bash "$_SM" --badge "$_smt/tx.jsonl" 2>/dev/null; }
+  if [ "$(_b 80000)" = "🟢 40%" ] && [ "$(_b 130000)" = "🟡 65%" ] && [ "$(_b 170000)" = "🔴 85%" ]; then
+    pass "104.4: --badge 3 levels correct (40%→🟢 · 65%→🟡 · 85%→🔴)"
+  else
+    fail "104.4: badge levels wrong (40%=$(_b 80000) 65%=$(_b 130000) 85%=$(_b 170000))"
+  fi
+  rm -rf "$_smt"
+fi
+
+# 104.4b — yellow is BADGE-ONLY: no systemMessage banner in the yellow zone (anti-noise)
+if [ -x "$_SM" ]; then
+  _smt=$(mktemp -d); _sd=$(mktemp -d)
+  printf '{"type":"assistant","message":{"role":"assistant","content":[],"usage":{"input_tokens":130000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1}}}\n' > "$_smt/tx.jsonl"
+  _out=$(printf '{"session_id":"y1","transcript_path":"%s"}' "$_smt/tx.jsonl" | PSK_SESSION_STATE_DIR="$_sd" PSK_SESSION_CONTEXT_LIMIT=200000 bash "$_SM" 2>/dev/null)
+  if echo "$_out" | grep -q 'additionalContext' && ! echo "$_out" | grep -q 'systemMessage'; then
+    pass "104.4b: yellow (65%) → badge-only, no banner (no nag)"
+  else
+    fail "104.4b: yellow should be badge-only — got: $_out"
+  fi
+  rm -rf "$_smt" "$_sd"
+fi
+
+# 104.5 — fail-safe: missing transcript → exit 0, no output (never disrupts a session)
+if [ -x "$_SM" ]; then
+  _out=$(printf '{"session_id":"x","transcript_path":"/nonexistent/none.jsonl"}' | bash "$_SM" 2>/dev/null); _rc=$?
+  if [ "$_rc" -eq 0 ] && [ -z "$_out" ]; then
+    pass "104.5: fail-safe on missing transcript (exit 0, silent)"
+  else
+    fail "104.5: not fail-safe (rc=$_rc out='$_out')"
+  fi
+fi
+
+# 104.6 — manifest registration (ships to end-users)
+grep -q 'psk-session-monitor.sh' "$PROJ/agent/scripts/.manifest" 2>/dev/null \
+  && pass "104.6: psk-session-monitor.sh enumerated in agent/scripts/.manifest" \
+  || fail "104.6: psk-session-monitor.sh absent from installer manifest"
+
+# 104.7 — wired as a Stop hook in .claude/settings.json (valid JSON) + installer generator
+if grep -q 'psk-session-monitor.sh' "$PROJ/.claude/settings.json" 2>/dev/null \
+   && grep -q '"Stop"' "$PROJ/.claude/settings.json" 2>/dev/null \
+   && grep -q 'psk-session-monitor.sh' "$PROJ/agent/scripts/psk-install-hooks.sh" 2>/dev/null; then
+  pass "104.7: Stop hook wired in committed settings.json + installer generator"
+else
+  fail "104.7: Stop hook not wired in settings.json / installer"
+fi
+
+# ============================================================================
+# Section 105 — psk-progress.sh (no-silent-wait heartbeat wrapper)
+# ============================================================================
+section "105. psk-progress.sh (no-silent-wait heartbeat wrapper)"
+
+_PROG="$PROJ/agent/scripts/psk-progress.sh"
+if [ -x "$_PROG" ]; then
+  pass "105.1: psk-progress.sh exists and is executable"
+
+  # 105.2 — exit-code passthrough (success)
+  bash "$_PROG" --label t -- bash -c 'exit 0' >/dev/null 2>&1; _p105_rc=$?
+  [ "$_p105_rc" -eq 0 ] && pass "105.2: exit-code passthrough — success returns 0" || fail "105.2: success exit not preserved ($_p105_rc)"
+
+  # 105.3 — exit-code passthrough (failure verbatim, not masked)
+  bash "$_PROG" --label t -- bash -c 'exit 7' >/dev/null 2>&1; _p105_rc=$?
+  [ "$_p105_rc" -eq 7 ] && pass "105.3: exit-code passthrough — failure returns 7" || fail "105.3: failure exit not preserved ($_p105_rc)"
+
+  # 105.4 — emits heartbeat(s) + a final line for a slow op (no silent wait)
+  _p105_hb=$(bash "$_PROG" --label slow --interval 1 -- bash -c 'sleep 2.5' 2>&1 | grep -c '\[progress\]')
+  [ "$_p105_hb" -ge 2 ] && pass "105.4: emits heartbeats + final line for a slow op ($_p105_hb lines)" || fail "105.4: too few progress lines ($_p105_hb, expected ≥2)"
+
+  # 105.5 — heartbeat renders metric count/total (pct%)
+  _p105_m=$(mktemp)
+  if bash "$_PROG" --label m --metric 'X' --total 4 --interval 1 --log "$_p105_m" -- bash -c 'for i in 1 2 3 4; do echo X; sleep 0.7; done' 2>&1 | grep -qE '/4 \([0-9]+%\)'; then
+    pass "105.5: heartbeat renders metric count/total (pct%)"
+  else
+    fail "105.5: metric count/pct not rendered"
+  fi
+  rm -f "$_p105_m"
+
+  # 105.6 — PSK_PROGRESS_DISABLED bypass: no heartbeat, exit still preserved
+  if PSK_PROGRESS_DISABLED=1 bash "$_PROG" --label b --interval 1 -- bash -c 'sleep 2' 2>&1 | grep -q '\[progress\]'; then
+    fail "105.6: bypass still emitted a heartbeat"
+  else
+    pass "105.6: PSK_PROGRESS_DISABLED=1 suppresses the heartbeat"
+  fi
+else
+  pass "105.1: psk-progress.sh absent — skip"
+  for n in 2 3 4 5 6; do pass "105.$n: skip (wrapper absent)"; done
+fi
+
+# 105.7 — integration: every long-blocking-op site routes through the wrapper
+if grep -q 'psk-progress.sh' "$PROJ/reflex/lib/gates.sh" 2>/dev/null \
+   && grep -q 'psk-progress.sh' "$PROJ/reflex/lib/spawn-qa.sh" 2>/dev/null \
+   && grep -q 'psk-progress.sh' "$PROJ/reflex/lib/kit-evolution.sh" 2>/dev/null; then
+  pass "105.7: gates.sh + spawn-qa.sh + kit-evolution.sh route long blocking ops through psk-progress.sh"
+else
+  fail "105.7: a silent-wait site is not wired to psk-progress.sh"
 fi
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then

@@ -981,6 +981,31 @@ else
   echo "  (skipped — root workspace copy not found)"
 fi
 
+# KIT-GAP-0088: the cascade mirror-sync must anchor the kit checkout to THIS
+# script's location and the mirror to the git toplevel — NOT to a `$PROJ_ROOT`
+# that a caller (release dispatch) may export as the outer git toplevel. With the
+# old `$PROJ_ROOT/../..` arithmetic + is_kit_self keyed on `$PROJ_ROOT/reflex/lib`,
+# an outer-toplevel PROJ_ROOT made is_kit_self=0 and the mirror silently drifted.
+_VC="$PROJ/agent/scripts/psk-version-cascade.sh"
+if [ -f "$_VC" ]; then
+  if grep -qF 'dirname "${BASH_SOURCE[0]}")/../.." && pwd' "$_VC" \
+     && grep -qF 'git -C "$_kit_root" rev-parse --show-toplevel' "$_VC"; then
+    pass "cascade: mirror-sync anchors to script-location + git toplevel (KIT-GAP-0088, PROJ_ROOT-override safe)"
+  else
+    fail "cascade: mirror-sync still keyed on \$PROJ_ROOT/../.. — drifts when PROJ_ROOT is the outer toplevel (KIT-GAP-0088)"
+  fi
+  # TRUE root cause (KIT-GAP-0088): the sync only touched the working tree; the
+  # release commit's `git add -A .` from the kit subdir never staged the parent-dir
+  # mirror → it was never committed (stale since v0.6.57) → reverted on checkout.
+  # The cascade must `git add` the mirror after syncing so the surrounding commit
+  # persists it. Without this, a working-tree-only sync IS the workaround.
+  if grep -qF 'git -C "$_git_top" add -- "$root_mirror"' "$_VC"; then
+    pass "cascade: stages the synced mirror (git add) so the bump commit persists it — no checkout-revert drift"
+  else
+    fail "cascade: syncs mirror to working tree but does NOT git-add it → never committed → drifts back (KIT-GAP-0088 true cause)"
+  fi
+fi
+
 # ═══════════════════════════════════════════════════════════════
 section "50. Kit Framework Self-Validation"
 # ═══════════════════════════════════════════════════════════════

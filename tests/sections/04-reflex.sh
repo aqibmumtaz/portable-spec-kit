@@ -102,6 +102,43 @@ else
 fi
 rm -rf "$REG_TMP"
 
+# --- Archived-pass column-mapping regression (QA-AUDIT-REG-SHIFT-01) ---
+# summary.csv schema v5 leads with a `cycle` column. The archived-block
+# renderer must read fields by header name and key passes by the composite
+# (cycle,pass) identity — NOT treat column 1 as the pass number (which produced
+# `pass-030` from cycle=30, shifted the date into the Findings field, and
+# rendered a bare counter in the Date field).
+ARC_TMP="/tmp/psk-archived-test-$$"
+mkdir -p "$ARC_TMP/reflex/history" "$ARC_TMP/reflex/lib" "$ARC_TMP/agent"
+cp "$PROJ/reflex/lib/update-eval-trace.sh" "$ARC_TMP/reflex/lib/"
+cat > "$ARC_TMP/reflex/history/summary.csv" <<'EOF'
+cycle,pass,date,qa_findings,dev_fixes,escalated,features_tested,surprise_density,progress,gates_status,qa_tokens,dev_tokens,qa_tool_calls,dev_tool_calls,wall_clock_seconds,pass_score,probe_coverage_pct
+30,3,2026-06-08,7,0,0,0,0.000,n/a,FAIL,95000,,12,,540,0,0.0
+EOF
+touch "$ARC_TMP/agent/TASKS.md"
+if REFLEX_PROJECT_ROOT="$ARC_TMP" bash "$ARC_TMP/reflex/lib/update-eval-trace.sh" >/dev/null 2>&1; then
+  ARC_OUT="$ARC_TMP/reflex/history/REFLEX_EVAL_TRACE.md"
+  # Composite id rendered (not the bogus pass-030 from cycle column)
+  grep -qF 'cycle-30-pass-003' "$ARC_OUT" \
+    && pass "archived-shift: composite cycle-NN-pass-NNN id rendered" \
+    || fail "archived-shift: composite id missing (column shift regression)"
+  # Date field carries a real YYYY-MM-DD, never a bare counter
+  grep -qE '\*\*Date:\*\* 2026-06-08' "$ARC_OUT" \
+    && pass "archived-shift: Date field is the real date (not pass counter)" \
+    || fail "archived-shift: Date field wrong (column shift regression)"
+  bad_date=$(grep -A2 'archived — pass dir pruned' "$ARC_OUT" | grep -cE '\*\*Date:\*\* [0-9]{1,3}$' || true)
+  [ "$bad_date" = "0" ] \
+    && pass "archived-shift: no archived block renders a bare counter in Date" \
+    || fail "archived-shift: $bad_date archived block(s) render a bare counter Date"
+  # Findings field carries the count, not the date
+  grep -qE '\*\*Findings raised:\*\* 7' "$ARC_OUT" \
+    && pass "archived-shift: Findings field is the count (not the date)" \
+    || fail "archived-shift: Findings field wrong (column shift regression)"
+else
+  fail "archived-shift: generator exited non-zero on archived fixture"
+fi
+rm -rf "$ARC_TMP"
+
 # --- Intake parser test (YAML block in issue body) ---
 INTAKE_TMP="/tmp/psk-intake-test-$$.json"
 cat > "$INTAKE_TMP" <<'EOF'
@@ -348,6 +385,61 @@ findings_count=$(awk '
   END { print count+0 }
 ' "$G_TMP/qa-mixed.md")
 [ "$findings_count" = "2" ] && pass "G6: findings count scoped to ## Findings (not Tested PASS)" || fail "G6: findings over-counted ($findings_count, expected 2)"
+
+# G31 (KIT-GAP / cycle-01/pass-002) — score.sh counts findings from findings.yaml
+# when qa-result.md is in the orchestrated multi-author shape (a findings_count:
+# pointer, no "## Findings" section). Previously summary.csv logged qa_findings=0
+# for every multi-author pass despite real findings.
+if [ -x "$PROJ/reflex/lib/score.sh" ]; then
+  _SC=$(mktemp -d)
+  mkdir -p "$_SC/reflex/history" "$_SC/agent/.release-state" "$_SC/reflex/history/standalone/pass-001"
+  _SCPASS="$_SC/reflex/history/standalone/pass-001"
+  # multi-author qa-result.md: pointer shape, NO "## Findings" section
+  cat > "$_SC/agent/.release-state/qa-result.md" <<'QEOF'
+# qa-result.md
+verdict: DENIED
+findings_count: 3
+findings_file: findings.yaml
+QEOF
+  cat > "$_SCPASS/findings.yaml" <<'FEOF'
+findings:
+  - id: QA-A-01
+    severity: MAJOR
+  - id: QA-B-01
+    severity: MINOR
+  - id: QA-C-01
+    severity: MINOR
+FEOF
+  REFLEX_PROJ_ROOT="$_SC" REFLEX_PASS_DIR="$_SCPASS" bash "$PROJ/reflex/lib/score.sh" >/dev/null 2>&1
+  _qaf=$(tail -1 "$_SC/reflex/history/summary.csv" 2>/dev/null | awk -F',' '{print $4}')
+  [ "$_qaf" = "3" ] \
+    && pass "G31: score.sh counts multi-author findings via findings.yaml fallback (qa_findings=3, not 0)" \
+    || fail "G31: multi-author qa_findings miscounted ($_qaf, expected 3) — summary.csv under-reports"
+  rm -rf "$_SC"
+else
+  pass "G31: score.sh absent — skip"
+fi
+
+# G36 (KIT-GAP / cycle-01/pass-002) — file-bugs.sh accepts the orchestrated
+# multi-author qa-result.md shape (verdict: + findings_count: + findings_file:
+# pointer, no "## Findings" section) by synthesizing the markdown sections from
+# the pass's findings.yaml. Previously it REFUSED ("missing section '## Findings'")
+# and filed ZERO findings to TASKS.md even though multi-author is the default.
+if [ -f "$PROJ/reflex/lib/file-bugs.sh" ]; then
+  _FB=$(mktemp -d)
+  mkdir -p "$_FB/agent/.release-state" "$_FB/pass"
+  printf '# qa-result.md\nverdict: DENIED\nfindings_count: 2\nfindings_file: findings.yaml\n' > "$_FB/agent/.release-state/qa-result.md"
+  printf 'findings:\n  - id: QA-MA-01\n    severity: MAJOR\n    scope: target-project\n    title: example\n  - id: QA-MA-02\n    severity: MINOR\n    scope: target-project\n    title: example2\n' > "$_FB/pass/findings.yaml"
+  printf '## Tasks\n' > "$_FB/agent/TASKS.md"
+  _fb_out=$(REFLEX_PROJ_ROOT="$_FB" REFLEX_PASS_DIR="$_FB/pass" bash "$PROJ/reflex/lib/file-bugs.sh" 2>&1)
+  echo "$_fb_out" | grep -qiE "auto-synthesized .* multi-author|filed [0-9]+ .*finding" \
+    && grep -q '^## Findings$' "$_FB/agent/.release-state/qa-result.md" \
+    && pass "G36: file-bugs.sh accepts multi-author qa-result.md (synthesizes sections from findings.yaml)" \
+    || fail "G36: file-bugs.sh still refuses multi-author qa-result.md — $(echo "$_fb_out" | grep -iE 'schema|missing|refus' | head -1)"
+  rm -rf "$_FB"
+else
+  pass "G36: file-bugs.sh absent — skip"
+fi
 
 # G2 — regression-diff normalize_ids strips -R\d+ / -F\d+ suffixes
 # Directly re-test the sed pattern used in regression-diff.sh
@@ -4613,8 +4705,13 @@ bash "$PROJ/agent/scripts/psk-version-cascade.sh" --check-only >/dev/null 2>&1 \
 # Inject synthetic drift, verify cascade detects it
 CASC_TMP="/tmp/psk-cascade-test-$$"
 mkdir -p "$CASC_TMP/agent" "$CASC_TMP/examples/starter/agent"
+# KIT-GAP-0100 (cycle-01/pass-002): the kit's OWN AGENT_CONTEXT carries both a
+# **Version:** and a **Kit:** line (Kit==Version for kit-self). The cascade
+# previously bumped only Version, shipping a Version!=Kit drift. Fixture now
+# carries a stale Kit line so the apply test below proves kit-self Kit is bumped.
 cat > "$CASC_TMP/agent/AGENT_CONTEXT.md" <<EOF
 - **Version:** v0.9.99
+- **Kit:** v0.0.1
 EOF
 cat > "$CASC_TMP/examples/starter/agent/AGENT_CONTEXT.md" <<EOF
 - **Kit:** v0.0.1
@@ -4628,6 +4725,10 @@ PROJ_ROOT="$CASC_TMP" bash "$PROJ/agent/scripts/psk-version-cascade.sh" >/dev/nu
 grep -q "Kit:\*\* v0.9.99" "$CASC_TMP/examples/starter/agent/AGENT_CONTEXT.md" \
   && pass "Loop6/PhaseC-applies-fix: cascade bumps examples Kit field to TO_VER" \
   || fail "Loop6/PhaseC-applies-fix: cascade did not bump examples Kit field"
+# KIT-GAP-0100 regression: cascade must bump the KIT'S OWN AGENT_CONTEXT Kit field
+grep -q "Kit:\*\* v0.9.99" "$CASC_TMP/agent/AGENT_CONTEXT.md" \
+  && pass "Loop6/PhaseC-kitself-Kit (KIT-GAP-0100): cascade bumps kit-self AGENT_CONTEXT Kit field to TO_VER" \
+  || fail "Loop6/PhaseC-kitself-Kit (KIT-GAP-0100): kit-self Kit field left stale (Version!=Kit drift ships)"
 rm -rf "$CASC_TMP"
 
 # Release Step 6 invokes psk-version-cascade.sh.
@@ -4920,6 +5021,229 @@ grep -q 'cascade_check' "$PROJ/reflex/config.yml" \
   && pass "Loop7/Dev-config-cascade: dev_agent.cascade_check configured" \
   || fail "Loop7/Dev-config-cascade: cascade_check MISSING from config"
 
+# ════════════════════════════════════════════════════════════════════════
+# Multi-author-enforcement (KIT-GAP-0098) — three structural guarantees:
+#   (1) DYNAMIC dim-agent count   (2) INLINE-PREVENTION keystone
+#   (3) DETECT-AND-REDISPATCH fallback chain
+# All hermetic: temp pass dirs + stubbed manifests, no real sub-agent spawn.
+# ════════════════════════════════════════════════════════════════════════
+section "Multi-author-enforcement (KIT-GAP-0098)"
+
+# ---- (1) DYNAMIC COUNT: expected_dim_spawns = ceil(total_dims/max_dims_per_spawn) ----
+# spawn-qa.sh must compute the count with integer-ceil arithmetic from count-dims.sh
+# and write it to .qa-dispatch-meta — NEVER a hardcoded constant.
+grep -q '(QA_TOTAL_DIMS + qa_max_dims_per_spawn - 1) / qa_max_dims_per_spawn' "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "MAE/dynamic-count: spawn-qa.sh uses ceil(total_dims/max_dims_per_spawn) arithmetic" \
+  || fail "MAE/dynamic-count: integer-ceil spawn-count arithmetic MISSING from spawn-qa.sh"
+
+grep -q 'count-dims.sh' "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "MAE/dynamic-count: spawn-qa.sh sources total_dims from count-dims.sh" \
+  || fail "MAE/dynamic-count: count-dims.sh not referenced in spawn-qa.sh"
+
+grep -q 'expected_dim_spawns=' "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "MAE/dynamic-count: spawn-qa.sh persists expected_dim_spawns to .qa-dispatch-meta" \
+  || fail "MAE/dynamic-count: expected_dim_spawns NOT written to .qa-dispatch-meta"
+
+# No hardcoded spawn-loop count near the dispatch (e.g. for i in {1..4}).
+if grep -qE 'for .* in \{1\.\.[0-9]+\}' "$PROJ/reflex/lib/spawn-qa.sh"; then
+  fail "MAE/dynamic-count: hardcoded {1..N} spawn loop found in spawn-qa.sh"
+else
+  pass "MAE/dynamic-count: no hardcoded {1..N} spawn loop in spawn-qa.sh"
+fi
+
+# Verify the computed value matches the real count-dims.sh output for the kit's own dims.
+MAE_TOTAL=$(bash "$PROJ/reflex/lib/count-dims.sh" 2>/dev/null || echo 0)
+MAE_PER=$(grep -E '^\s*max_dims_per_spawn:' "$PROJ/reflex/config.yml" | grep -oE '[0-9]+' | head -1)
+MAE_PER="${MAE_PER:-10}"
+if [[ "$MAE_TOTAL" =~ ^[0-9]+$ ]] && [ "$MAE_TOTAL" -gt 0 ]; then
+  MAE_EXPECT=$(( (MAE_TOTAL + MAE_PER - 1) / MAE_PER ))
+  [ "$MAE_EXPECT" -ge 1 ] \
+    && pass "MAE/dynamic-count: ceil($MAE_TOTAL/$MAE_PER)=$MAE_EXPECT spawns (workload-driven)" \
+    || fail "MAE/dynamic-count: computed spawn count <1 (got $MAE_EXPECT)"
+else
+  fail "MAE/dynamic-count: count-dims.sh returned non-numeric/zero ($MAE_TOTAL)"
+fi
+
+# ---- (2) INLINE-PREVENTION keystone: orchestrated findings.yaml MUST be partials-backed ----
+# Replicate the run.sh resume-qa gate logic against a temp pass dir.
+mae_partials_count() {
+  find "$1" -maxdepth 1 -name 'partial-findings-dims-*.yaml' 2>/dev/null | wc -l | tr -d ' '
+}
+mae_keystone_gate() {  # mirrors run.sh resume-qa keystone; exit 2 = refuse, 0 = pass
+  local pd="$1"
+  local mode=""
+  [ -f "$pd/.qa-dispatch-meta" ] && mode=$(awk -F= '$1=="qa_mode"{print $2; exit}' "$pd/.qa-dispatch-meta" 2>/dev/null)
+  if [ "$mode" = "orchestrated" ] && [ "${PSK_SPAWN_FIDELITY_DISABLED:-0}" != "1" ]; then
+    local np; np=$(mae_partials_count "$pd")
+    [ "${np:-0}" -eq 0 ] && return 2
+  fi
+  return 0
+}
+
+MAE_PD=$(mktemp -d)
+printf 'qa_mode=orchestrated\ntotal_dims=35\nexpected_dim_spawns=4\n' > "$MAE_PD/.qa-dispatch-meta"
+echo "findings: []" > "$MAE_PD/findings.yaml"
+echo "# signoff" > "$MAE_PD/signoff.md"
+echo "# qa-result" > "$MAE_PD/qa-result.md"
+# Zero partials → gate must REFUSE (exit 2).
+if mae_keystone_gate "$MAE_PD"; then
+  fail "MAE/inline-prevention: gate ADVANCED an orchestrated pass with zero partials (should refuse)"
+else
+  [ "$?" -eq 2 ] \
+    && pass "MAE/inline-prevention: gate refuses orchestrated findings.yaml with zero partials (exit 2)" \
+    || fail "MAE/inline-prevention: gate exited non-2 on zero-partial orchestrated pass"
+fi
+# Add one real partial → gate must PASS.
+echo "findings: []" > "$MAE_PD/partial-findings-dims-1-to-10.yaml"
+if mae_keystone_gate "$MAE_PD"; then
+  pass "MAE/inline-prevention: gate advances once a real dim-agent partial backs findings.yaml"
+else
+  fail "MAE/inline-prevention: gate still refusing after a partial was added"
+fi
+# Bypass honored: PSK_SPAWN_FIDELITY_DISABLED=1 skips the gate even with zero partials.
+rm -f "$MAE_PD/partial-findings-dims-1-to-10.yaml"
+if PSK_SPAWN_FIDELITY_DISABLED=1 mae_keystone_gate "$MAE_PD"; then
+  pass "MAE/inline-prevention: PSK_SPAWN_FIDELITY_DISABLED=1 bypasses the keystone gate"
+else
+  fail "MAE/inline-prevention: bypass env var did NOT skip the gate"
+fi
+# Monolithic mode (no orchestrated marker) is unaffected.
+printf 'qa_mode=monolithic\n' > "$MAE_PD/.qa-dispatch-meta"
+if mae_keystone_gate "$MAE_PD"; then
+  pass "MAE/inline-prevention: monolithic pass unaffected by the keystone gate"
+else
+  fail "MAE/inline-prevention: monolithic pass wrongly blocked by the keystone gate"
+fi
+rm -rf "$MAE_PD"
+
+# The gate + the dispatch-meta read must actually be present in run.sh.
+grep -q 'ZERO dim-agent partials' "$PROJ/reflex/run.sh" \
+  && pass "MAE/inline-prevention: run.sh resume-qa carries the zero-partials keystone gate" \
+  || fail "MAE/inline-prevention: keystone gate text MISSING from run.sh"
+
+# The qa-task.md heredoc must gate the 'You write findings.yaml' authorship on QA_MODE.
+grep -q 'You are the ORCHESTRATOR — Phase-1 authorship contract' "$PROJ/reflex/lib/spawn-qa.sh" \
+  && pass "MAE/inline-prevention: orchestrated branch states partials-only authorship" \
+  || fail "MAE/inline-prevention: orchestrated partials-only authorship contract MISSING"
+# The unconditional 'You write the remaining outputs' list must now be inside a QA_MODE conditional.
+if grep -q '\[ "\$QA_MODE" = "orchestrated" \] && echo "  \*\*You are the ORCHESTRATOR' "$PROJ/reflex/lib/spawn-qa.sh"; then
+  pass "MAE/inline-prevention: findings.yaml authorship list is QA_MODE-conditional (monolithic only)"
+else
+  fail "MAE/inline-prevention: authorship list not gated on QA_MODE conditional"
+fi
+
+# ---- (3) DETECT-AND-REDISPATCH: compare present partials to manifest expected ids ----
+mae_expected_ids() {  # mirrors run.sh resume-dims manifest parse
+  awk '/^spawns:/{s=1;next} s&&/^[a-zA-Z_]+:/{s=0} s&&/^[[:space:]]*-[[:space:]]*id:/{v=$0;sub(/.*id:[[:space:]]*/,"",v);gsub(/"/,"",v);gsub(/[[:space:]]/,"",v);print v}' "$1"
+}
+
+MAE_RD=$(mktemp -d)
+cat > "$MAE_RD/wave-manifest.yaml" <<'MANIFEST_EOF'
+schema_version: 1
+workflow: reflex-pass-test
+phase: qa-dims-wave-1
+spawns:
+  - id: dims-1-to-10
+    prompt: dim-prompts/dims-1-to-10.md
+    artifact: partial-findings-dims-1-to-10.yaml
+  - id: dims-11-to-20
+    prompt: dim-prompts/dims-11-to-20.md
+    artifact: partial-findings-dims-11-to-20.yaml
+  - id: dims-21-to-35
+    prompt: dim-prompts/dims-21-to-35.md
+    artifact: partial-findings-dims-21-to-35.yaml
+MANIFEST_EOF
+
+# Manifest id parse must find exactly 3 spawn ids.
+MAE_IDS=$(mae_expected_ids "$MAE_RD/wave-manifest.yaml")
+MAE_NIDS=$(echo "$MAE_IDS" | grep -c .)
+[ "$MAE_NIDS" -eq 3 ] \
+  && pass "MAE/redispatch: manifest parse finds all 3 expected spawn ids" \
+  || fail "MAE/redispatch: manifest parse found $MAE_NIDS ids (expected 3)"
+
+# (3a) some-missing: 2 of 3 partials present → missing set = exactly dims-11-to-20.
+echo "findings: []" > "$MAE_RD/partial-findings-dims-1-to-10.yaml"
+echo "findings: []" > "$MAE_RD/partial-findings-dims-21-to-35.yaml"
+MAE_MISSING=""
+for _i in $MAE_IDS; do
+  [ -f "$MAE_RD/partial-findings-${_i}.yaml" ] || MAE_MISSING="$MAE_MISSING $_i"
+done
+MAE_MISSING=$(echo $MAE_MISSING)
+[ "$MAE_MISSING" = "dims-11-to-20" ] \
+  && pass "MAE/redispatch: missing-set computation identifies exactly the absent dim-set" \
+  || fail "MAE/redispatch: missing-set wrong (got '$MAE_MISSING', expected 'dims-11-to-20')"
+
+# Reduced redispatch manifest must contain ONLY the missing spawn.
+MAE_RDMAN="$MAE_RD/wave-manifest-redispatch.yaml"
+{
+  echo "schema_version: 1"
+  echo "workflow: reflex-pass-test"
+  echo "phase: qa-dims-redispatch"
+  echo "spawns:"
+  awk -v want="$(echo $MAE_MISSING | tr ' ' '|')" '
+    /^spawns:/{s=1;next} s&&/^[a-zA-Z_]+:/{s=0}
+    s&&/^[[:space:]]*-[[:space:]]*id:/{cid=$0;sub(/.*id:[[:space:]]*/,"",cid);gsub(/"|[[:space:]]/,"",cid);keep=(cid ~ ("^(" want ")$"))}
+    s&&keep{print}
+  ' "$MAE_RD/wave-manifest.yaml"
+} > "$MAE_RDMAN"
+MAE_RD_IDS=$(mae_expected_ids "$MAE_RDMAN")
+if [ "$(echo "$MAE_RD_IDS" | grep -c .)" -eq 1 ] && echo "$MAE_RD_IDS" | grep -qx "dims-11-to-20"; then
+  pass "MAE/redispatch: reduced manifest contains ONLY the missing dim-set (sequential re-dispatch)"
+else
+  fail "MAE/redispatch: reduced manifest wrong (ids='$MAE_RD_IDS')"
+fi
+# Reduced manifest must preserve the spawn's prompt+artifact lines (request-multi schema).
+grep -q 'partial-findings-dims-11-to-20.yaml' "$MAE_RDMAN" \
+  && pass "MAE/redispatch: reduced manifest preserves the missing spawn's artifact line" \
+  || fail "MAE/redispatch: reduced manifest dropped the spawn's prompt/artifact lines"
+
+# (3b) all-present: 3 of 3 → missing set empty → falls through to synthesis (no redispatch).
+echo "findings: []" > "$MAE_RD/partial-findings-dims-11-to-20.yaml"
+MAE_MISSING2=""
+for _i in $MAE_IDS; do
+  [ -f "$MAE_RD/partial-findings-${_i}.yaml" ] || MAE_MISSING2="$MAE_MISSING2 $_i"
+done
+[ -z "$(echo $MAE_MISSING2)" ] \
+  && pass "MAE/redispatch: all-present → empty missing-set → synthesis (no re-dispatch)" \
+  || fail "MAE/redispatch: all-present wrongly reported missing '$MAE_MISSING2'"
+rm -rf "$MAE_RD"
+
+# (3c) headless terminal: zero partials AND no manifest → exit 2 'headless', no verdict.
+MAE_HL=$(mktemp -d)
+MAE_HL_PRESENT=$(find "$MAE_HL" -maxdepth 1 -name 'partial-findings-dims-*.yaml' 2>/dev/null | wc -l | tr -d ' ')
+MAE_HL_IDS=""
+[ -f "$MAE_HL/wave-manifest.yaml" ] && MAE_HL_IDS=$(mae_expected_ids "$MAE_HL/wave-manifest.yaml")
+if [ "${MAE_HL_PRESENT:-0}" -eq 0 ] && [ -z "$MAE_HL_IDS" ]; then
+  pass "MAE/redispatch: zero-partials + no-manifest = terminal HEADLESS condition (AWAITING_DIM_DISPATCH)"
+else
+  fail "MAE/redispatch: headless condition mis-detected"
+fi
+[ ! -f "$MAE_HL/verdict.md" ] \
+  && pass "MAE/redispatch: headless path writes NO verdict.md (never inline)" \
+  || fail "MAE/redispatch: verdict.md unexpectedly present in headless temp dir"
+rm -rf "$MAE_HL"
+
+# run.sh must carry the redispatch chain markers + headless terminal.
+grep -q 'AWAITING_DIM_DISPATCH (headless)' "$PROJ/reflex/run.sh" \
+  && pass "MAE/redispatch: run.sh resume-dims has the headless terminal branch" \
+  || fail "MAE/redispatch: headless terminal branch MISSING from run.sh"
+grep -q 'wave-manifest-redispatch.yaml' "$PROJ/reflex/run.sh" \
+  && pass "MAE/redispatch: run.sh resume-dims builds the reduced redispatch manifest" \
+  || fail "MAE/redispatch: redispatch-manifest construction MISSING from run.sh"
+grep -q 'request-multi.*qa-dims-redispatch' "$PROJ/reflex/run.sh" \
+  && pass "MAE/redispatch: missing dim-sets routed through psk-spawn.sh request-multi" \
+  || fail "MAE/redispatch: re-dispatch not routed through request-multi"
+
+# Defense-in-depth: empty-pass GRANT shortcut guarded against zero-partial orchestrated pass.
+grep -q 'refusing empty-pass GRANT: orchestrated pass with 0 findings and ZERO partials' "$PROJ/reflex/run.sh" \
+  && pass "MAE/inline-prevention: empty-pass GRANT shortcut guarded for orchestrated zero-partial pass" \
+  || fail "MAE/inline-prevention: empty-pass GRANT defense-in-depth guard MISSING"
+
+# Gate-13 backstop preserved (the post-hoc synthesis-detection gate stays wired).
+grep -q 'audit-completeness' "$PROJ/reflex/lib/gates.sh" \
+  && pass "MAE/backstop: gate-13 audit-completeness still wired in gates.sh (post-hoc backstop)" \
+  || fail "MAE/backstop: gate-13 audit-completeness MISSING from gates.sh"
+
 # --- prune-history.sh handles checkout paths containing spaces (regression) ---
 # A checkout under e.g. "/Users/Jane Doe/..." must not break retention pruning.
 # Pre-fix, `local all=($(...))` word-split spaced paths into bogus array entries,
@@ -5005,6 +5329,59 @@ SOAK_MAPFILE_ERRS=$(/bin/bash "$PROJ/agent/scripts/psk-soak-schedule.sh" --propo
 [ "$SOAK_MAPFILE_ERRS" = "0" ] \
   && pass "QA-D2-BASH32-MAPFILE-01/runtime: no 'mapfile: command not found' on bash-3.2 dedup path" \
   || fail "QA-D2-BASH32-MAPFILE-01/runtime: $SOAK_MAPFILE_ERRS mapfile error(s) on bash-3.2 dedup path"
+
+# --- KIT-GAP-0098 follow-up: detect-and-redispatch artifact-path mapping ---
+# Regression for the false-"missing" bug: the orchestrator names spawn ids with
+# a "qa-" prefix (qa-dims-1-to-10) but the artifact is partial-findings-dims-1-to-10.yaml
+# (no "qa-"), so the old `partial-findings-<id>.yaml` constructed name flagged every
+# present partial as missing → spurious sequential re-dispatch. run.sh now detects
+# against the manifest's declared `artifact:` path. This test runs that exact awk
+# against a fixture manifest + present partials and asserts ZERO missing.
+RD_TMP=$(mktemp -d)
+mkdir -p "$RD_TMP/pass"
+cat > "$RD_TMP/pass/wave-manifest.yaml" <<'EOF'
+schema_version: 1
+phase: qa-dims-wave-1
+spawns:
+  - id: qa-dims-1-to-10
+    artifact: "reflex/history/cycle-NN/pass-NNN/partial-findings-dims-1-to-10.yaml"
+  - id: qa-dims-11-to-20
+    artifact: "reflex/history/cycle-NN/pass-NNN/partial-findings-dims-11-to-20.yaml"
+phase3_synthesis:
+  trigger: all_spawns_complete
+EOF
+# create both partials by their (un-prefixed) basenames
+: > "$RD_TMP/pass/partial-findings-dims-1-to-10.yaml"
+: > "$RD_TMP/pass/partial-findings-dims-11-to-20.yaml"
+_rd_missing=""
+while read -r _id _abase; do
+  [ -z "$_id" ] && continue
+  [ -f "$RD_TMP/pass/$_abase" ] || _rd_missing="$_rd_missing $_id"
+done < <(awk '
+  /^spawns:/{s=1;next} s&&/^[a-zA-Z_]+:/{s=0}
+  s&&/^[[:space:]]*-[[:space:]]*id:/{if(id!="")print id" "art; id=$0;sub(/.*id:[[:space:]]*/,"",id);gsub(/"|[[:space:]]/,"",id);art=""}
+  s&&/^[[:space:]]*artifact:/{art=$0;sub(/.*artifact:[[:space:]]*/,"",art);gsub(/"|[[:space:]]/,"",art);n=split(art,a,"/");art=a[n]}
+  END{if(id!="")print id" "art}
+' "$RD_TMP/pass/wave-manifest.yaml")
+[ -z "$_rd_missing" ] \
+  && pass "KIT-GAP-0098/redispatch: qa-prefixed ids resolve to un-prefixed artifacts — 0 false-missing" \
+  || fail "KIT-GAP-0098/redispatch: artifact-path detection flagged present partial(s) as missing:$_rd_missing"
+# negative control — a genuinely absent partial IS reported missing
+rm -f "$RD_TMP/pass/partial-findings-dims-11-to-20.yaml"
+_rd_missing2=""
+while read -r _id _abase; do
+  [ -z "$_id" ] && continue
+  [ -f "$RD_TMP/pass/$_abase" ] || _rd_missing2="$_rd_missing2 $_id"
+done < <(awk '
+  /^spawns:/{s=1;next} s&&/^[a-zA-Z_]+:/{s=0}
+  s&&/^[[:space:]]*-[[:space:]]*id:/{if(id!="")print id" "art; id=$0;sub(/.*id:[[:space:]]*/,"",id);gsub(/"|[[:space:]]/,"",id);art=""}
+  s&&/^[[:space:]]*artifact:/{art=$0;sub(/.*artifact:[[:space:]]*/,"",art);gsub(/"|[[:space:]]/,"",art);n=split(art,a,"/");art=a[n]}
+  END{if(id!="")print id" "art}
+' "$RD_TMP/pass/wave-manifest.yaml")
+echo "$_rd_missing2" | grep -q "qa-dims-11-to-20" \
+  && pass "KIT-GAP-0098/redispatch: a genuinely-absent partial IS detected missing (negative control)" \
+  || fail "KIT-GAP-0098/redispatch: absent partial not detected (negative control broken)"
+rm -rf "$RD_TMP"
 
 # --- Dim 22 self-test-mutation (KIT-GAP-0072/QA-D22-DEFER resolution, v0.6.83) ---
 section "Dim 22 — self-test-mutation (gate honesty)"
@@ -5175,21 +5552,31 @@ _FDA="$PROJ/reflex/lib/freshness-drift-audit.sh"
 if [ -x "$_FDA" ]; then
   _fda_t=$(mktemp -d); mkdir -p "$_fda_t/agent"
   printf '![tests](https://img/tests-2865%%20passing)\n' > "$_fda_t/README.md"
-  printf '**Phase:** building. 2700 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  # QA-D33-01: the audit reads the count from the `## Current Status` block only
+  # (append-only history is excluded). Fixtures follow the kit's own AGENT_CONTEXT
+  # convention — the current-state count lives under `## Current Status`.
+  printf '## Current Status\n**Phase:** building. 2700 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
   _fda_drift=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
-  # D33.1 — flags badge≠narrative drift
+  # D33.1 — flags badge≠narrative drift (within the current-state block)
   [ "$_fda_drift" = "1" ] \
     && pass "D33.1: flags current-state test-count drift (badge 2865 ≠ ctx 2700)" \
     || fail "D33.1: expected 1 drift finding, got $_fda_drift"
   # D33.2 — consistent counts → no finding
-  printf '**Phase:** building. 2865 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  printf '## Current Status\n**Phase:** building. 2865 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
   _fda_ok=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
   [ "$_fda_ok" = "0" ] \
     && pass "D33.2: consistent counts (2865=2865) → no finding" \
     || fail "D33.2: false positive on consistent counts ($_fda_ok)"
+  # D33.2b — historical count OUTSIDE the current-state block does NOT drift
+  # (this is the QA-D33-01 regression: append-only history must be ignored)
+  printf '## Current Status\n**Phase:** building. 2865 tests passing.\n\n## What'"'"'s Done\n- v0.1: 2700 tests passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  _fda_hist=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
+  [ "$_fda_hist" = "0" ] \
+    && pass "D33.2b: historical count under What's-Done heading ignored — no false drift (QA-D33-01)" \
+    || fail "D33.2b: append-only history still self-flags ($_fda_hist findings)"
   # D33.3 — composite total: 'N (A + B)' contributes leading N, not sub-counts
   printf '![tests](https://img/tests-2865%%20passing)\n' > "$_fda_t/README.md"
-  printf '**Phase:** building. 2865 tests (2720 framework + 145 bench) passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
+  printf '## Current Status\n**Phase:** building. 2865 tests (2720 framework + 145 bench) passing.\n' > "$_fda_t/agent/AGENT_CONTEXT.md"
   _fda_comp=$(bash "$_FDA" --root "$_fda_t" --json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['findings_total'])" 2>/dev/null)
   [ "$_fda_comp" = "0" ] \
     && pass "D33.3: composite 'N (A+B)' uses leading total — no false drift" \
@@ -5336,6 +5723,22 @@ if [ -x "$_DS" ]; then
     fail "D25.2: real feature wrongly dropped by the trace-id filter"
   fi
   rm -rf "$_ds_t"
+  # D25.3 (QA-DOC-11-01) — a feature documented ONLY by its identity token (script
+  # name / flag / PSK code), NOT the full CHANGELOG prose, must read as COVERED,
+  # not MISSING. The old full-phrase grep -F false-reported these.
+  _ds_t2=$(mktemp -d); mkdir -p "$_ds_t2/agent" "$_ds_t2/docs/work-flows"
+  printf -- '- **Version:** v9.9.9\n' > "$_ds_t2/agent/AGENT_CONTEXT.md"
+  printf '# Changelog\n## v9.9\n### v9.9.9\n- **Wave dispatch** — psk-spawn.sh request-multi fans out N dim-agents via the --resume-dims re-entry\n' > "$_ds_t2/CHANGELOG.md"
+  # docs mention the SCRIPT + FLAG (identity tokens) but never the CHANGELOG phrase
+  printf '# Flow\nThe orchestrator calls psk-spawn.sh to fan out, then runs --resume-dims.\n' > "$_ds_t2/docs/work-flows/01-x.md"
+  printf 'Multi-author dispatch via psk-spawn.sh and --resume-dims.\n' > "$_ds_t2/README.md"
+  _ds_out2=$(cd "$_ds_t2" && PROJ_ROOT="$_ds_t2" bash "$_DS" 2>&1)
+  if echo "$_ds_out2" | grep -qiE "COVERED.*Wave dispatch" || echo "$_ds_out2" | grep -qE "Missing \(0 surfaces\):  ?0"; then
+    pass "D25.3: feature matched by identity token (psk-spawn.sh/--resume-dims) reads COVERED, not MISSING (QA-DOC-11-01)"
+  else
+    fail "D25.3: identity-token-covered feature still false-reports MISSING — $(echo "$_ds_out2" | grep -iE 'MISSING|Missing \(' | head -1)"
+  fi
+  rm -rf "$_ds_t2"
 else
   pass "D25.1: psk-doc-sync.sh absent — skip"; pass "D25.2: skip"
 fi
@@ -5367,9 +5770,17 @@ if [ -x "$_PH" ]; then
   mkdir -p "$_cs_t/reflex/history/cycle-98/pass-001" "$_cs_t/reflex/history/standalone/pass-001"
   mkdir -p "$_cs_t/reflex/sandbox/cycle-98/pass-001" "$_cs_t/agent/.workflow-state/spawn"
   printf 'history_retention:\n  pass_dirs_keep: 0\n' > "$_cs_t/reflex/config.yml"
-  for f in REFLEX_EVAL_TRACE.md summary.csv hardening-log.md qa-blind-spots.md findings-registry.yaml; do
+  for f in REFLEX_EVAL_TRACE.md hardening-log.md qa-blind-spots.md findings-registry.yaml; do
     : > "$_cs_t/reflex/history/$f"
   done
+  # summary.csv with: header + historical row (cycle-07, dir long gone — kept-forever)
+  # + current-era row for cycle-98 (dir exists, being purged NOW → must be dropped,
+  # else PSK002 flags it as a ghost row on the next sync-check — KIT-GAP-0084)
+  cat > "$_cs_t/reflex/history/summary.csv" <<'CSV'
+cycle,pass,date,qa_findings,dev_fixes
+7,1,2026-05-09,0,0
+98,1,2026-06-09,0,0
+CSV
   : > "$_cs_t/reflex/history/.active-cycle"
   : > "$_cs_t/agent/.workflow-state/reflex-pass-cycle-98-pass-001.state"
   : > "$_cs_t/agent/.workflow-state/reflex-pass-cycle-98-pass-001.gates"
@@ -5394,6 +5805,17 @@ if [ -x "$_PH" ]; then
     pass "B4c: clean slate also clears sandbox worktrees + stale reflex workflow-state"
   else
     fail "B4c: leftover sandbox=$_cs_sb workflow-state=$_cs_ws (expected 0/0)"
+  fi
+  # B4d (KIT-GAP-0084) — summary.csv ghost-row prevention: the row for the cycle
+  # being purged NOW (98,1 — its dir existed at purge time) is dropped; the
+  # historical row (7,1 — dir long gone, kept-forever) and the header survive.
+  _csv="$_cs_t/reflex/history/summary.csv"
+  if grep -q '^cycle,pass,' "$_csv" 2>/dev/null \
+     && grep -q '^7,1,' "$_csv" 2>/dev/null \
+     && ! grep -q '^98,1,' "$_csv" 2>/dev/null; then
+    pass "B4d: purge-all drops summary rows of purged cycles, keeps header + historical rows (KIT-GAP-0084)"
+  else
+    fail "B4d: summary.csv after purge — header=$(grep -c '^cycle,pass,' "$_csv" 2>/dev/null) hist-row=$(grep -c '^7,1,' "$_csv" 2>/dev/null) ghost-row=$(grep -c '^98,1,' "$_csv" 2>/dev/null) (expected 1/1/0)"
   fi
   rm -rf "$_cs_t"
 else
@@ -5454,9 +5876,156 @@ YAML
   grep -q 'cd "$PROJ_ROOT"' "$_RR" \
     && pass "B2.2: replay runs from PROJ_ROOT (relative-path invocations resolve)" \
     || fail "B2.2: replay does not cd to PROJ_ROOT"
+  # B2.3 (KIT-GAP-0101) — absence-semantics: a "prints nothing" assertion PASSES
+  # when the command produces empty output (the fix held). Previously impossible:
+  # an empty output can never contain a non-empty assertion string → false-fail.
+  cat > "$_rr_t/absence.yaml" <<'YAML'
+findings:
+  - id: RR-ABSENCE
+    status: closed
+    regression_vector:
+      invocation_verbatim: "grep NEVER_PRESENT_TOKEN_XZ /dev/null || true"
+      expected_assertion: "should print nothing (stale token fully removed)"
+YAML
+  _rr_abs=$(bash "$_RR" "$_rr_t/absence.yaml" 2>&1)
+  echo "$_rr_abs" | grep -q "1/1 passed" \
+    && pass "B2.3: absence-semantics — 'prints nothing' assertion passes on empty output" \
+    || fail "B2.3: absence-semantics not honored — $(echo "$_rr_abs" | grep -oE '[0-9]+/[0-9]+ passed')"
+  # B2.4 (KIT-GAP-0101) — prose-prefix strip: "line contains <token>" passes when
+  # the output contains <token>, even though the literal "line contains " prefix
+  # is not in the output.
+  cat > "$_rr_t/prose.yaml" <<'YAML'
+findings:
+  - id: RR-PROSE
+    status: closed
+    regression_vector:
+      invocation_verbatim: "echo 'F10 — Automated tests (2908 framework + 145 benchmarking = 3053 total)'"
+      expected_assertion: "line contains 2908 framework + 145 benchmarking = 3053 total"
+YAML
+  _rr_pr=$(bash "$_RR" "$_rr_t/prose.yaml" 2>&1)
+  echo "$_rr_pr" | grep -q "1/1 passed" \
+    && pass "B2.4: prose-prefix 'line contains X' matches when output contains X" \
+    || fail "B2.4: prose-prefix not stripped — $(echo "$_rr_pr" | grep -oE '[0-9]+/[0-9]+ passed')"
+  # B2.5 (KIT-GAP-0101 negative control) — a genuine regression still FAILS: the
+  # token is absent from output and there is no absence-semantics escape hatch.
+  cat > "$_rr_t/neg.yaml" <<'YAML'
+findings:
+  - id: RR-NEG
+    status: closed
+    regression_vector:
+      invocation_verbatim: "echo actual output without the token"
+      expected_assertion: "line contains EXPECTED_TOKEN_THAT_IS_MISSING"
+YAML
+  _rr_neg=$(bash "$_RR" "$_rr_t/neg.yaml" --strict 2>&1)
+  echo "$_rr_neg" | grep -q "0/1 passed" \
+    && pass "B2.5: negative control — genuine regression still fails (matcher not blindly lenient)" \
+    || fail "B2.5: matcher too lenient — passed a real regression: $(echo "$_rr_neg" | grep -oE '[0-9]+/[0-9]+ passed')"
   rm -rf "$_rr_t"
 else
   pass "B2.1: psk-regression-replay.sh absent — skip"; pass "B2.2: skip"
+  pass "B2.3: skip"; pass "B2.4: skip"; pass "B2.5: skip"
+fi
+
+# --- B3: multi-author dispatch — --resume-dims Phase 3 synthesis re-entry ---
+# The collapse fix: the QA orchestrator's multi-author branch (writes wave-manifest
+# + dim-prompts, exits AWAITING_DIM_DISPATCH) dead-ended because run.sh had no
+# --resume-dims handler, forcing the practical single-author fallback (DENIED).
+# These assert the handoff is now wired end-to-end.
+_RUNSH="$PROJ/reflex/run.sh"
+if [ -f "$_RUNSH" ]; then
+  grep -q 'RESUME_DIMS_FLAG=true' "$_RUNSH" && grep -q 'MODE="resume-dims"' "$_RUNSH" \
+    && pass "B3.1: --resume-dims flag wired to resume-dims MODE" \
+    || fail "B3.1: --resume-dims flag/MODE not wired"
+
+  grep -q 'resume-dims)' "$_RUNSH" && grep -q 'qa-synthesis-task.md' "$_RUNSH" \
+    && pass "B3.2: resume-dims MODE block writes Phase 3 synthesis task" \
+    || fail "B3.2: resume-dims MODE block missing synthesis task"
+
+  _b3_out=$(REFLEX_PROJ_ROOT="$PROJ" bash "$_RUNSH" --resume-dims 2>&1 | head -3)
+  echo "$_b3_out" | grep -qi 'resume-dims' \
+    && pass "B3.3: --resume-dims executes its MODE block (recognized, not no-op)" \
+    || fail "B3.3: --resume-dims did not route to resume-dims MODE"
+
+  bash "$_RUNSH" --help 2>&1 | grep -qi 'resume-dims' \
+    && pass "B3.4: --help documents --resume-dims" \
+    || fail "B3.4: --help omits --resume-dims"
+
+  grep -q 'full coverage can GRANT regardless of concurrency' "$_RUNSH" \
+    && pass "B3.5: synthesis task lifts single-author cap (coverage-gated, any concurrency can GRANT)" \
+    || fail "B3.5: synthesis task does not lift the single-author cap"
+else
+  pass "B3.1: run.sh absent — skip"; pass "B3.2: skip"; pass "B3.3: skip"; pass "B3.4: skip"; pass "B3.5: skip"
+fi
+
+# --- B9 (KIT-GAP-0086): dynamic, deterministic dim count (no 21-vs-35 ambiguity) ---
+# The dimensions live in TWO representations in qa-agent.md (summary table for low
+# dims + ### Dimension N detail sections for high dims). A single grep under-counts
+# (21 vs the real 35). count-dims.sh unions both + asserts contiguity; the orchestrator
+# must use it, not a bare grep.
+_CD="$PROJ/reflex/lib/count-dims.sh"
+_QA="$PROJ/reflex/prompts/qa-agent.md"
+_ORCH="$PROJ/reflex/prompts/qa-agent-orchestrator.md"
+if [ -x "$_CD" ] && [ -f "$_QA" ]; then
+  # B9.1 — counter returns the highest dim number AND --verify passes (contiguous 1..N)
+  _total=$(bash "$_CD" --file "$_QA" 2>/dev/null)
+  _maxnum=$(grep -oE 'Dimension [0-9]+' "$_QA" | grep -oE '[0-9]+' | sort -n | tail -1)
+  if [ -n "$_total" ] && [ "$_total" = "$_maxnum" ] && bash "$_CD" --file "$_QA" --verify >/dev/null 2>&1; then
+    pass "B9.1: count-dims.sh returns the full contiguous dim count ($_total = max dim $_maxnum)"
+  else
+    fail "B9.1: count-dims total=$_total max=$_maxnum or --verify failed (KIT-GAP-0086)"
+  fi
+  # B9.2 — the union does NOT under-count: it must exceed a single-representation grep
+  _hdr=$(grep -cE '^### Dimension [0-9]+' "$_QA")
+  if [ -n "$_total" ] && [ "$_total" -gt "$_hdr" ]; then
+    pass "B9.2: union count ($_total) > bare ### Dimension grep ($_hdr) — no single-representation under-count"
+  else
+    fail "B9.2: count-dims did not beat the bare-grep under-count (total=$_total hdr=$_hdr)"
+  fi
+  # B9.3 — non-contiguous set is caught: inject a gap into a temp copy → --verify exits non-zero
+  _cdtmp=$(mktemp -d)
+  # 1..3 in table form + a ### Dimension 5 header (4 is missing → gap)
+  printf '| # | Dimension | What to hunt |\n|---|---|---|\n| 1 | a | x |\n| 2 | b | y |\n| 3 | c | z |\n\n### Dimension 5 — d\n' > "$_cdtmp/qa.md"
+  if bash "$_CD" --file "$_cdtmp/qa.md" --verify >/dev/null 2>&1; then
+    fail "B9.3: --verify passed on a non-contiguous set (gap at 4) — guard broken"
+  else
+    pass "B9.3: --verify catches a non-contiguous dim set (missing dim 4 → exit non-zero)"
+  fi
+  rm -rf "$_cdtmp"
+  # B9.4 — the orchestrator Phase 1 uses count-dims.sh, not a bare ### Dimension grep
+  if grep -q 'count-dims.sh' "$_ORCH"; then
+    pass "B9.4: orchestrator Phase 1 derives total_dims via count-dims.sh (deterministic)"
+  else
+    fail "B9.4: orchestrator still counts dims by bare grep (21-vs-35 ambiguity, KIT-GAP-0086)"
+  fi
+else
+  pass "B9.1: count-dims.sh absent — skip"; pass "B9.2: skip"; pass "B9.3: skip"; pass "B9.4: skip"
+fi
+
+# --- B10 (KIT-GAP-0087): track-tokens.sh numeric coercion (no FAIL-unbound crash) ---
+# Corrupt/historical summary+token rows carry non-numeric junk in numeric columns
+# (`FAIL`, `~165000`). The old `${v:-0}` guard only defaulted EMPTY → `$((FAIL+...))`
+# crashed the whole pass with "FAIL: unbound variable" under set -u. The fix strips
+# to digits before arithmetic.
+_TT="$PROJ/reflex/lib/track-tokens.sh"
+if [ -f "$_TT" ]; then
+  # B10.1 — the digit-coercion idiom is present (tr -cd '0-9' over the numeric vars)
+  if grep -q "tr -cd '0-9'" "$_TT"; then
+    pass "B10.1: track-tokens.sh coerces numeric fields to digits (FAIL/tilde-safe)"
+  else
+    fail "B10.1: track-tokens.sh still uses empty-only default — FAIL crashes the pass (KIT-GAP-0087)"
+  fi
+  # B10.2 — behavioral: the coercion idiom maps garbage → safe integers
+  _ok=1
+  for pair in "FAIL:0" "~165000:165000" ":0" "95000:95000"; do
+    _in="${pair%%:*}"; _exp="${pair##*:}"
+    _got=$(printf '%s' "$_in" | tr -cd '0-9'); [ -z "$_got" ] && _got=0
+    [ "$_got" = "$_exp" ] || _ok=0
+  done
+  [ "$_ok" = "1" ] \
+    && pass "B10.2: digit-coercion maps FAIL→0, ~165000→165000, ''→0, 95000→95000" \
+    || fail "B10.2: digit-coercion produced a wrong value"
+else
+  pass "B10.1: track-tokens.sh absent — skip"; pass "B10.2: skip"
 fi
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then

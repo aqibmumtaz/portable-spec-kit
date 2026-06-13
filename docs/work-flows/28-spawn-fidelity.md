@@ -184,11 +184,14 @@ spawns:
     artifact: <PASS_DIR>/partial-findings-dims-11-to-20.yaml
 ```
 
-**QA-Orchestrator three-path dispatch** (controlled by `qa_agent.spawn_mode` in `reflex/config.yml`):
+**QA-Orchestrator dispatch — ONE implementation, concurrency-parameterized** (B8, v0.6.88+; single knob `qa_agent.max_parallel_agents` in `reflex/config.yml`):
 
-1. **Multi-author dispatch** (KIT-GAP-0052, opt-in via `spawn_mode: orchestrated-multi-author`) — orchestrator writes wave-manifest.yaml + dim-prompts + invokes `request-multi` + exits `AWAITING_DIM_DISPATCH`. Main session fans out N parallel Task subagents, calls `complete-multi`, re-spawns orchestrator for Phase 3 synthesis. ~4× wall-clock speedup vs sequential.
-2. **Task-inline spawn** — orchestrator invokes Task tool calls itself when Task is callable from leaf-agent surface.
-3. **Single-author fallback** (v0.6.67 documented bypass) — orchestrator runs all dims sequentially when Task tool is unavailable. Verdict DENIED by default per `single-author-fallback-verdict` rule.
+The orchestrator ALWAYS writes `wave-manifest.yaml` + `dim-prompts/`, invokes `psk-spawn.sh request-multi`, and exits `AWAITING_DIM_DISPATCH`. The main session fans the dim-agents out and re-invokes the orchestrator for Phase 3 synthesis via `bash reflex/run.sh --resume-dims`. There is no separate single-author code path — concurrency is the only parameter:
+
+- **`max_parallel_agents > 1`** (default 4) → `orchestrated-multi-author`: N dim-agents per wave, in parallel (~N× wall-clock speedup).
+- **`max_parallel_agents = 1`** → `orchestrated-single-author`: the same dim-agents one-at-a-time, sequential, each in its own sandbox.
+
+Both are FULL coverage over all dims via spawned isolated sub-agents → both can GRANT (coverage-gated `single-author-fallback-verdict` rule). The retired model (separate deterministic-only single-author fallback that ran a probe subset inline and DENIED by default) is gone. The mode label is derived from `max_parallel_agents` in `spawn-qa.sh`. The only no-verdict state is genuinely **headless** (no agent to fan out the manifest): the run pauses at `AWAITING_DIM_DISPATCH` — never audits inline, because inline audit is synthesis substitution.
 
 **Recursive prompt-validation gate** (v0.6.74+ — KIT-GAP-0055 §Sub-Agent Prompt Fidelity): `psk-spawn.sh request` and `request-multi` lint each prompt via `psk-prompt-lint.sh --strict` BEFORE marking AWAITING. Lint failure → spawn REFUSED (exit 4), no inline-fallback. Applies at every spawn depth.
 

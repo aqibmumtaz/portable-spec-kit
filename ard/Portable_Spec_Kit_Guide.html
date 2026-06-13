@@ -91,8 +91,8 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.87</div>
-    <div><strong style="color:#dce4f0;">Date:</strong> May 2026</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.92</div>
+    <div><strong style="color:#dce4f0;">Date:</strong> June 2026</div>
   </div>
 </div>
 
@@ -316,6 +316,28 @@
   <li><strong>ARD user guide + CI generation:</strong> <code>psk-generate-user-guide.sh</code> (generates <code>ard/user-guide.html</code> from README + AGENT.md), <code>psk-generate-ci.sh</code> (auto-creates <code>.github/workflows/ci.yml</code> from stack detection). Both wired into <code>psk-release.sh</code> Steps 1 + 7 as non-fatal hooks.</li>
   <li><strong>Dim 25 mandate audit extensions:</strong> Three new checks in <code>mandate-audit.sh</code>: ARD user guide absent (ADVISORY), DB migration scaffold absent for Drizzle/Prisma projects (MINOR), shadcn/ui components empty (MINOR). Stack-specific fix patterns (drizzle migrations, shadcn/ui, REQS status sync, UI test quality) added to <code>dev-agent.md</code>.</li>
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
+</ul>
+
+<h3>v0.6.91 — Cycle-01 clean-restart + kit-fidelity state-machine fixes</h3>
+<ul>
+  <li><strong>KIT-GAP-0093 — psk-release.sh staleness guard repointed:</strong> <code>state_is_stale</code> / <code>run_next</code> / <code>show_status</code> were reading the vestigial <code>agent/.release-state/state</code> file; repointed to canonical <code>agent/.workflow-state/release.state</code>. The legacy file isn't refreshed by <code>prepare</code>, so a stale sentinel RUN_ID made <code>psk-release.sh next</code> falsely refuse with "stale state — version drift risk" on a fresh run.</li>
+  <li><strong>Flow-doc currency:</strong> <code>docs/work-flows/13-release-workflow.md</code> Flow-Diagram + Step-9 boxes read "38 checks" vs the table/prose "49"; aligned all five references to 49 (step-4 flow-doc critic).</li>
+  <li><strong>KIT-GAP-0092 logged:</strong> <code>psk-release.sh</code> advertises a <code>reset</code> verb that <code>psk-dispatch.sh</code> rejects ("Unknown verb: reset").</li>
+  <li><strong>KIT-GAP-0094 / KIT-GAP-0095 logged:</strong> step-6 version bump doesn't seed the kit's own RELEASES.md per-patch heading or all ARD version anchors (Technical_Overview changelog range, user-guide title), so PSK001 + the step-8 critic flag them until manually written.</li>
+  <li>(v0.6.75–v0.6.88 per-patch history: see <code>CHANGELOG.md</code>.)</li>
+</ul>
+
+<h3>v0.6.90 — Session-health monitor (context-drift badge + /clear reminder)</h3>
+<ul>
+  <li><strong>KIT-GAP-0090 — context-window health monitor:</strong> <code>psk-session-monitor.sh</code> Stop-hook measures live context occupancy from the Claude Code transcript usage (<code>input_tokens + cache_creation_input_tokens + cache_read_input_tokens</code>, jq-free + schema-verified) → 3-level <code>ctx:</code> breadcrumb badge (🟢 &lt;50% · 🟡 50-79% · 🔴 ≥80%) rendered next to <code>opt:</code>, countering the lost-in-the-middle attention decay that dilutes a session's early rules.</li>
+  <li><strong>Passive vs active:</strong> the badge renders continuously; a de-duped <code>/clear</code> recommendation banner fires in the red zone only (yellow is badge-only — no nag; re-arms after a clear).</li>
+  <li>§Session Health Indicator rule added to <code>portable-spec-kit.md</code>; wired as a session-stop hook by <code>psk-install-hooks.sh</code>; fail-safe (any error or missing data exits 0 silently, never blocking a turn).</li>
+</ul>
+
+<h3>v0.6.89 — Kit-wide model-policy (cost/perf model selection)</h3>
+<ul>
+  <li><strong>KIT-GAP-0089 — role→model policy:</strong> <code>.portable-spec-kit/model-policy.yml</code> maps each agent role to a model + <code>psk-model-policy.sh</code> resolver (phase→role→model, with a built-in fallback) + <code>psk-spawn.sh</code> injecting and loudly surfacing <code>MODEL=</code> at every spawn (attention-decay-proof — re-printed at the unskippable spawn protocol, not memory-driven) + a PSK046 wiring-integrity gate + manifest registration.</li>
+  <li><strong>Roles:</strong> qa/critic → sonnet (high-fan-out, bounded); dev/qa_synthesis/implement → opus (correctness-critical); default/plan → inherit.</li>
 </ul>
 
 <h3>v0.6.74 — Sub-Agent Prompt Fidelity 9th Reliability Layer</h3>
@@ -1034,7 +1056,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.6.87 &bull; May 2026
+  Portable Spec Kit &bull; v0.6.92 &bull; June 2026
 </div>
 
 </div>
@@ -1052,7 +1074,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.87 &bull; May 2026</div>
+    <div class="badge">v0.6.92 &bull; June 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

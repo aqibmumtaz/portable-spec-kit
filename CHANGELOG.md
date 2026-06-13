@@ -8,7 +8,37 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.87 · **Tests:** 2865 (2720 framework + 145 benchmarking; +25 standalone section 96 audit)
+**Built over:** v0.6.0 — v0.6.92 · **Tests:** 3068 (2923 framework + 145 benchmarking)
+
+### v0.6.92 — Multi-author reflex enforcement: structural inline-prevention + detect-and-redispatch (2026-06-13)
+- **KIT-GAP-0098** `reflex/run.sh`: structural inline-prevention keystone — the orchestrator may write only planning artifacts (`wave-manifest.yaml`, dim-prompts); `findings.yaml` is synthesized solely from `partial-findings-dims-*.yaml` emitted by real dim-agents, so a multi-author QA pass can no longer silently collapse to inline synthesis. Dim-agent count is now dynamic — `ceil(dims / max_dims_per_spawn)` — replacing the hardcoded loop.
+- **KIT-GAP-0098 (follow-up)** `reflex/run.sh`: detect-and-redispatch reads the wave manifest's `artifact:` path to resolve qa-prefixed spawn ids to their un-prefixed partial filenames, fixing a false-missing bug that re-dispatched every dim-set. Regression test added in `tests/sections/04-reflex.sh`.
+- **ADR-091** `agent/PLANS.md`: records the structural inline-prevention + detect-and-redispatch decision.
+- **Flow-doc currency** `docs/work-flows/{06,11,13}`: PSK rule range synced PSK001-PSK045 → PSK001-PSK046 (50 checks) after v0.6.89 added PSK046 model-policy injection. Surfaced by the step-4 flow-doc currency critic.
+- First end-to-end multi-author reflex self-test (cycle-01/pass-001): orchestrator → 4 parallel dim-agents → synthesis → Dev → 14 gates; gate-13 confirmed a genuine adversarial audit. 3068 tests passing (2923 framework + 145 benchmarking), 0 failed.
+
+### v0.6.91 — Cycle-01 clean-restart + kit-fidelity state-machine fixes (2026-06-11)
+- **KIT-GAP-0093** `psk-release.sh`: the staleness guard (`state_is_stale` / `run_next` / `show_status`) was reading the vestigial `agent/.release-state/state`. After the v0.6.62 dispatcher migration that file is no longer refreshed by `prepare`, so a stale sentinel `RUN_ID` there made `psk-release.sh next` falsely refuse with "stale state — version drift risk" on a fresh run. Repointed the guard at the canonical `agent/.workflow-state/release.state`.
+- **Flow-doc currency** `docs/work-flows/13-release-workflow.md`: the Flow Diagram + Step-9 boxes read "38 checks" while the Enforcement table + Reliability prose read "49"; aligned all five references to 49. Surfaced by the step-4 flow-doc currency critic.
+- **KIT-GAP-0092** logged: `psk-release.sh` (+ dispatch docs) advertise a `reset` verb that `psk-dispatch.sh` rejects ("Unknown verb: reset") — no working command clears divergent/stale release state.
+- **KIT-GAP-0094** logged: step-6 bumps the CHANGELOG patch-range + examples' RELEASES `Kit:` field but never seeds the kit's own RELEASES.md per-patch heading, so PSK001 blocks the step-6 gate until step-8 writes the entry.
+- Restart suite green: 2865 tests passing (2720 framework + 145 benchmarking), 0 failed. A regression test locking the staleness-guard state-file reference is queued for the cycle-01 reflex Dev pass.
+
+### v0.6.90 — Session-health monitor (context-drift badge + /clear reminder) (2026-06-10)
+- **KIT-GAP-0090** — `psk-session-monitor.sh` Stop-hook measures live context from the transcript usage (input+cache_creation+cache_read, jq-free) → 3-level `ctx:` breadcrumb badge (🟢<50% · 🟡 50-79% · 🔴≥80%) rendered next to `opt:`, plus a de-duped `/clear` banner (red-zone only; re-arms after a clear); §Session Health Indicator rule added to `portable-spec-kit.md`. Wired as a Stop hook in the installer generator. Fail-safe (silent on any error). Commit 1bd530d5.
+
+### v0.6.89 — Kit-wide model-policy (cost/perf model selection) (2026-06-10)
+- **KIT-GAP-0089** — `.portable-spec-kit/model-policy.yml` (role→model) + `psk-model-policy.sh` resolver (phase→role→model, built-in fallback) + `psk-spawn.sh` MODEL injection (surfaced at the unskippable spawn protocol) + PSK046 wiring-integrity gate + manifest registration. Roles: qa/critic→sonnet, dev/qa_synthesis/implement→opus, default/plan→inherit. Commit b9e2fdbc.
+
+### v0.6.88 — ONE QA dispatch: single+multi-author unified (2026-06-10)
+- **B3** `reflex/run.sh`: wired the missing `--resume-dims` re-entry — the multi-author wave dispatch (orchestrator → `AWAITING_DIM_DISPATCH` → main session fans out dim-agents → Phase 3 synthesis) previously dead-ended, silently collapsing every pass to single-author DENIED. Closes KIT-GAP-0073.
+- **B8** one dispatch implementation, concurrency-parameterized: `qa_agent.max_parallel_agents` is the single knob (`>1` parallel multi-author · `=1` sequential single-author). Mode label DERIVED in `spawn-qa.sh` (config `spawn_mode` now advisory-only). Both modes run the same dim-agents over the same dims in the same sandbox → identical full coverage → both can GRANT.
+- **B8 verdict rule** `single-author-fallback-verdict` reframed coverage-based: full dimensional coverage via spawned isolated sub-agents can GRANT at any concurrency; DENIED-by-default applies only to the headless liveness stub (no sub-agent spawnable at all). The deterministic-probes-only single-author fallback branch is retired from `qa-agent-orchestrator.md`.
+- **KIT-GAP-0084** `prune-history.sh`: purge-all now drops the summary.csv rows of the cycles being purged (matched on the cycle shell before deletion) — they otherwise trip PSK002's ghost-row monotonicity probe and block the next prep-release. Historical kept-forever rows + header survive.
+- **KIT-GAP-0085** `psk-sync-check.sh` PSK041 off-by-one: `--pretty=format:%H | wc -l` counts 1 referencing commit as 0 (no trailing newline) → single-commit gap fixes false-flagged forever. Now `tformat:%H`.
+- **B7** `agent/scripts/psk-kit-cmd.sh`: a `--check` dry-run no longer logs a PSK027 bypass — classification executes nothing, and the phantom log entries inflated bypass-abuse counts until reflex tripped its own sync-check gate every pass. The warning still prints; a REAL bypassed command still logs via the canonical logger.
+- **Flow-doc currency** (step-4 critic, 13 items): PSK rule range PSK001-PSK045 + 49 checks (06/11/13), v0.6.35 guidance-only dials replace removed budget hard-caps (17), PSK045 TOC drift-guard + `psk-toc.sh` documented (10).
+- New regression tests: B3.1-5, B4d, 94.7c-e, 94.8a-d, 97.7b, 97.9b/c.
 
 ### v0.6.87 — Reflex gate/purge true-clean-slate fixes (2026-06-09)
 - **Deep self-audit follow-through** — investigating why reflex convergence passes kept falsely DENYing (0 genuine defects) surfaced 6 real kit bugs. The verdict is gates-based, so the gate fixes make GRANTED reachable in single-author mode.

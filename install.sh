@@ -543,7 +543,7 @@ install_reflex() {
     local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
       anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
       check-abort-integrity.sh check-audit-completeness.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh check-test-vacuousness.sh \
-      console-probe.ts cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
+      console-probe.ts count-dims.sh cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
       assertion-strength-audit.sh feature-traceability-audit.sh findings-registry.sh freshness-drift-audit.sh heal-iter-status.sh host-portability-audit.sh \
       identify-integration-probes.sh intake.sh kit-evolution.sh log-hardening.sh longitudinal-drift-audit.sh loop.sh mandate-audit.sh \
       orchestration-phase-6-5.sh prose-constant-audit.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh root-resolution-audit.sh scaffold-behavioral-tests.sh \

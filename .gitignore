@@ -51,6 +51,7 @@ agent/.release-state/dev-task.md
 agent/.release-state/.dev-invoke-stamp
 agent/.release-state/state
 agent/.release-state/qa-task.md
+agent/.release-state/qa-synthesis-task.md
 agent/.release-state/qa-result.md
 agent/.release-state/.qa-invoke-stamp
 agent/.release-state/dev-result.md

@@ -72,14 +72,18 @@
 
 Post-prep-release automated adversarial QA + auto-fix loop with asymmetric goals. A fresh-context sandboxed **QA-Agent** (Critic, goal = FAIL the release) adversarially hunts the project across 35 dimensions + 4 personas with research backing, and files peer-exchange `findings.yaml`. In orchestrated mode (v0.6.37+) the QA orchestrator spawns parallel dim-agents in waves via `qa-agent-orchestrator.md` + `qa-agent-dim.md` — each dim-agent investigates its assigned slice independently, then the orchestrator aggregates findings. A fresh-context **Dev-Agent** (Actor, goal = FOOLPROOF the release against QA's hunt) reads findings, runs a Phase 1 analysis pass (root-cause grouping → `fix-plan.md`) then fixes atomically on an isolated dev branch with per-commit mechanical gates, cascade-checking after each commit for auto-closures. Convergence = QA hunted hard and cannot find a blocker.
 
-**QA-Orchestrator dispatch mode** (`reflex/config.yml → qa_agent.spawn_mode`, v0.6.72+ KIT-GAP-0052):
+**QA-Orchestrator dispatch — ONE implementation, concurrency-parameterized (B8, v0.6.88+).**
 
-| Mode | When to use | Behavior |
-|---|---|---|
-| `orchestrated-single-author` (default) | Task tool unavailable from orchestrator's leaf-agent surface (current Claude Code runtime). v0.6.67 documented-fallback bypass applies. | Orchestrator runs all dims sequentially in one author. Verdict DENIED by default per `single-author-fallback-verdict` rule unless gate-13 bypass annotation `mode: orchestrated-single-author` is set in qa-usage.yaml. |
-| `orchestrated-multi-author` (opt-in) | Multi-author dispatch path verified (cycle-26+). Anthropic runtime supports Task at leaf surface. | Orchestrator writes `wave-manifest.yaml` + dim-prompts/ + invokes `psk-spawn.sh request-multi` + exits `AWAITING_DIM_DISPATCH`. Main session fans out N parallel Task subagents per `max_parallel_agents` config dial, calls `complete-multi`, re-spawns orchestrator for synthesis. ~4× wall-clock speedup vs sequential. |
+There is a single dispatch implementation. The orchestrator always writes `wave-manifest.yaml` + `dim-prompts/`, invokes `psk-spawn.sh request-multi`, and exits `AWAITING_DIM_DISPATCH`; the main session fans the dim-agents out and re-invokes the orchestrator for synthesis via `bash reflex/run.sh --resume-dims`. Single-author and multi-author are **not** separate code paths — they are this same dispatch at different concurrency, selected by the **single knob** `reflex/config.yml → qa_agent.max_parallel_agents`:
 
-`qa_agent.spawn_mode` default kept as `orchestrated-single-author` for safety; flip to `orchestrated-multi-author` after verifying via a cycle. See `docs/work-flows/28-spawn-fidelity.md §Multi-author dispatch` for the manifest schema + request-multi/complete-multi semantics.
+| `max_parallel_agents` | Mode label (derived) | Fan-out | Coverage | Verdict capability |
+|---|---|---|---|---|
+| `> 1` (default 4) | `orchestrated-multi-author` | N dim-agents per wave, in parallel (~N× wall-clock speedup) | full — all dims | can GRANT |
+| `= 1` | `orchestrated-single-author` | dim-agents one-at-a-time, sequential, each in its own sandbox | full — all dims | can GRANT |
+
+Both run the SAME dim-agents over the SAME dims in the SAME sandbox via the SAME manifest. Coverage, output schema, and grant-capability are identical; only wall-clock and author-diversity differ. The verdict follows the **coverage-gated** `single-author-fallback-verdict` rule — full coverage can GRANT at any concurrency. The mode label is DERIVED from `max_parallel_agents` in `spawn-qa.sh` (the single source of truth); `qa_agent.spawn_mode` in config is an advisory label only and must agree with the derivation. gate-13 / Dim 27 relax their author-diversity threshold when the `mode: orchestrated-single-author` annotation is present, so legitimate sequential mode is not flagged as synthesis.
+
+The retired model (separate `orchestrated-single-author` deterministic-only fallback that ran a probe subset inline and DENIED by default) is gone — single-author no longer drops coverage. The only state that yields no verdict is genuinely **headless** (no agent in the loop to fan out the manifest): the run pauses at `AWAITING_DIM_DISPATCH` rather than auditing inline (inline audit = synthesis substitution, forbidden by §Spawn Fidelity). See `docs/work-flows/28-spawn-fidelity.md §Multi-author dispatch` for the manifest schema + request-multi/complete-multi semantics.
 
 Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operational name: **reflex**. Primary entry: `reflex/run.sh` (see §Commands). Internal machinery: `reflex/lib/spawn-qa.sh`, `reflex/lib/spawn-dev.sh`, `reflex/lib/file-bugs.sh`, `reflex/lib/gates.sh`, `reflex/lib/regression-diff.sh`, `reflex/lib/score.sh`, `reflex/lib/preconditions.sh`, `reflex/lib/loop.sh`, `reflex/lib/update-eval-trace.sh`, `reflex/lib/prune-history.sh`.
 
@@ -108,7 +112,7 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 - **Dev cannot touch AGENT.md / AGENT_CONTEXT.md:** three enforcement layers (prompt mandate, `gates.sh` per-commit diff check, `psk-sync-check.sh` pre-commit hook on `reflex/dev-*` branches). Violations route to human-arbitration.
 - **No abort without a verdict:** EXIT/INT/TERM traps write a fallback `INTERRUPTED` verdict.md if the mainline doesn't reach the verdict-write block. Recovery requires `--recover-from-abort <pass-id>` before the next run.
 - **Sandbox is purged after QA:** `purge-current-sandbox.sh` removes the QA worktree unconditionally after findings are extracted. Dev physically cannot read QA's private workspace.
-- **Per-commit mechanical gates:** broken fixes never land. 14 gates per pass; max 3 retries per task; max 200 tool calls per cycle.
+- **Per-commit mechanical gates:** broken fixes never land. 14 gates per pass. Effort dials are guidance-only since v0.6.35 (`guidance:` in reflex/config.yml — `recommended_tool_calls_per_pass: 1000`, `recommended_retries_per_task: 10`); they are never STOP signals.
 - **GRANTED advances the cycle, not finding-count zero:** minor/non-blocking findings carry forward to the next cycle — no wasted re-verify pass.
 - **`reflex/` is out of QA scope:** avoids recursion; QA-Agent never tests reflex itself.
 
@@ -154,7 +158,7 @@ Layers 1, 2, 6 are **deterministic bash pre-compute** (<2s + <200 tokens combine
 
 Entry: `bash reflex/run.sh` (default mode = autoloop · alternatively `bash reflex/run.sh single` for one pass only).
 
-Autoloop cycle state lives in `agent/.release-state/loop-state.yml` (records cycle id + current iteration). Every iteration runs the four phases below. Max 3 iterations before MANUAL_REVIEW_NEEDED.
+Reflex cycle state lives in `agent/.release-state/loop-state.yml` (records cycle id + current iteration). Every iteration runs the four phases below. Max 3 iterations before MANUAL_REVIEW_NEEDED.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -468,9 +472,9 @@ bash reflex/update.sh --source ~/portable-spec-kit/reflex   # or copy from a loc
 ```yaml
 mode: kit                    # kit | project (auto-detected via kit-identity check)
 trigger: manual              # manual | cron | on-push
-budget:
-  max_tool_calls_per_cycle: 200
-  max_retries_per_task: 3
+guidance:                    # v0.6.35 — recommended targets only, NEVER hard caps / STOP signals
+  recommended_tool_calls_per_pass: 1000
+  recommended_retries_per_task: 10
 coverage:
   critical_always: true
   major_always: true
