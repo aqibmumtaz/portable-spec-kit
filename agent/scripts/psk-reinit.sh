@@ -18,7 +18,10 @@
 # adds no behavior of its own; it only forwards.
 # =============================================================
 
-set -uo pipefail
+# QA-D5-P8 (cycle-01-pass-008): full errexit. This is a pure echo+exec alias
+# with no intentional non-zero returns used as control flow, so adding -e is
+# safe and brings it onto the kit's strictest-shell convention.
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'

@@ -8,14 +8,14 @@ All notable changes to the Portable Spec Kit are documented here.
 ---
 
 ## v0.6 — AVACR Adversarial Framing + Sandbox Worktree + Peer-Exchange (April 2026)
-**Built over:** v0.6.0 — v0.6.93 · **Tests:** 3139 (2994 framework + 145 benchmarking)
+**Built over:** v0.6.0 — v0.6.93 · **Tests:** 3165 (3020 framework + 145 benchmarking)
 
 ### v0.6.93 — Session-health indicator: structural statusLine + UserPromptSubmit loop fix + authoritative ctx limit (2026-06-14)
 - **KIT-GAP-0097** `psk-session-monitor.sh`: migrated the hook event `Stop → UserPromptSubmit`. A Stop hook that returns `additionalContext` re-invokes the agent every turn (infinite loop), so the `ctx:` badge looped instead of rendering. UserPromptSubmit fires once per real user turn and injects `SESSION_HEALTH` as `additionalContext`.
 - **KIT-GAP-0097** `psk-session-monitor.sh`: new `--statusline` mode prints `ctx: <badge>  ·  opt: <badge>` to stdout for the Claude Code status bar — the structural always-on surface that renders every turn independent of the agent ("ctx always through script").
 - **KIT-GAP-0097** `psk-session-monitor.sh`: `resolve_limit` now derives the context window authoritatively from a `compact_boundary`'s `compactMetadata.preTokens` (a 200k window cannot hold a larger pre-compact size → proves a ≥1M window) plus the current total, mapped to a tier ladder — dropping the `>220k` guess that caused a badge inversion and post-compact mis-tiering.
 - **KIT-GAP-0097** `psk-install-hooks.sh`: wires the monitor as a `UserPromptSubmit` hook + a `statusLine` in both the project settings and the nested-workspace mirror; migrate-and-add strips any legacy `.hooks.Stop` wiring and never clobbers an operator's existing `statusLine`.
-- Tests: 104.7 hardened (UserPromptSubmit-not-Stop via jq), 104.8 (statusline output), 104.9 (statusLine wired) + monitor self-test guards (hook event, statusline output, preTokens→1M tiering, no 220k cliff). 3139 tests passing (2994 framework + 145 benchmarking), 0 failed.
+- Tests: 104.7 hardened (UserPromptSubmit-not-Stop via jq), 104.8 (statusline output), 104.9 (statusLine wired) + monitor self-test guards (hook event, statusline output, preTokens→1M tiering, no 220k cliff). Cycle-01 follow-up (post-GRANT): 25-test `tests/sections/06-cycle01-followup.sh` covering QA-META-PHIL-03 spawn-race lock, QA-D6 eval removal, QA-D17 usage-column extraction, and QA-D31-001 deterministic hook-root anchoring (reclassified REJECTED→FIXED per operator). 3165 tests passing (3020 framework + 145 benchmarking), 0 failed.
 
 ### v0.6.92 — Multi-author reflex enforcement: structural inline-prevention + detect-and-redispatch (2026-06-13)
 - **KIT-GAP-0098** `reflex/run.sh`: structural inline-prevention keystone — the orchestrator may write only planning artifacts (`wave-manifest.yaml`, dim-prompts); `findings.yaml` is synthesized solely from `partial-findings-dims-*.yaml` emitted by real dim-agents, so a multi-author QA pass can no longer silently collapse to inline synthesis. Dim-agent count is now dynamic — `ceil(dims / max_dims_per_spawn)` — replacing the hardcoded loop.

@@ -18,7 +18,11 @@
 # Pause-and-resume, never reduce-scope.
 # =============================================================
 
-set -uo pipefail
+# QA-D5-P8 (cycle-01-pass-008): full errexit. Branches are echo + exit/exec
+# only; the non-zero exits (preflight missing-kit) are deliberate hard fails,
+# and there is no tolerable-non-zero command used as control flow, so -e is
+# safe here and aligns with the kit's strictest-shell convention.
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)"
@@ -28,11 +32,14 @@ case "${1:-}" in
   preflight)
     echo -e "${CYAN}═══ New Project Setup — Preflight ═══${NC}"
     # Preflight 1: directory should be mostly empty (or kit-only)
-    non_kit=$(find "$PROJ_ROOT" -maxdepth 1 -mindepth 1 \
+    # QA-D5-P8: under `set -euo pipefail`, a non-zero `find` (e.g. a perms
+    # error) would otherwise abort via pipefail — the `|| true` keeps the
+    # count-or-zero contract intact.
+    non_kit=$( { find "$PROJ_ROOT" -maxdepth 1 -mindepth 1 \
       ! -name ".git" ! -name "portable-spec-kit.md" ! -name "CLAUDE.md" \
       ! -name ".cursorrules" ! -name ".windsurfrules" ! -name ".clinerules" \
       ! -name ".github" ! -name ".portable-spec-kit" ! -name "agent" \
-      2>/dev/null | wc -l | tr -d ' ')
+      2>/dev/null || true; } | wc -l | tr -d ' ')
     if [ "$non_kit" -gt 3 ]; then
       echo -e "  ${YELLOW}⚠${NC} $non_kit non-kit entries in project root — consider existing-setup instead of new-setup"
     else

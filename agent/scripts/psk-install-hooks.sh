@@ -286,16 +286,17 @@ safe_install_hook() {
 
 # --- Install git pre-commit hook ---
 install_git_hook() {
-  # QA-D31-P5-001 (runtime-safety rationale — documented, not a bug): the hook
-  # bodies emitted below (and in install_git_pre_push_hook /
-  # install_git_post_commit_hook) use a bare `git rev-parse --show-toplevel`
-  # WITHOUT a -C anchor. That is intentional and safe: git ALWAYS invokes its
-  # hooks with the current working directory set to the top of the working tree,
-  # so an unanchored rev-parse inside an installed hook resolves to the correct
-  # repo root by construction. The anchored form (cd "$PROJ_ROOT" && …) is used
-  # only in THIS installer's own non-heredoc code (lines ~57/113), where CWD is
-  # the operator's shell, not a git-hook context. Style inconsistency, not a
-  # functional defect — kept unanchored so the generated hooks stay minimal.
+  # QA-D31-001 (cycle-01 follow-up — FIXED): the hook bodies emitted below (and
+  # in install_git_pre_push_hook / install_git_post_commit_hook) anchor the repo
+  # root DETERMINISTICALLY rather than relying on ambient CWD. The prior bodies
+  # used a bare `git rev-parse --show-toplevel`, which resolves correctly only
+  # because git invokes hooks with CWD at the worktree top — a true but fragile
+  # assumption (a hook sourced/exec'd from another tool, a `cd` earlier in a
+  # wrapped/preserved hook body, or a future caller breaks it silently). The
+  # installer already KNOWS the git root at install time ($GIT_ROOT), so each
+  # generated hook now bakes `PSK_REPO_ROOT='<git-root>'` as the primary anchor
+  # and falls back to `git rev-parse --show-toplevel` only if that baked path no
+  # longer exists (repo moved post-install). No dependence on the hook's CWD.
   echo -e "${CYAN}Installing git pre-commit hook...${NC}"
 
   local tmp
@@ -342,7 +343,11 @@ install_git_hook() {
 # fan out into hundreds of parallel sub-processes that exhausted system
 # resources before completing. Merge commits don't introduce logical
 # drift on their own — the constituent commits already ran the check.
-REPO_ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"
+# QA-D31-001: repo root baked at install time (deterministic, no CWD dependence);
+# runtime rev-parse is a fallback only if the baked path moved post-install.
+PSK_REPO_ROOT="$GIT_ROOT"
+if [ ! -d "\$PSK_REPO_ROOT" ]; then PSK_REPO_ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"; fi
+REPO_ROOT="\$PSK_REPO_ROOT"
 if [ -n "\$REPO_ROOT" ] && [ -f "\$REPO_ROOT/.git/MERGE_HEAD" ]; then
   echo "PSK pre-commit: skipping sync-check during merge commit (KIT-GAP-0015)" >&2
   exit 0
@@ -361,8 +366,10 @@ $existing_content
 exit 0
 EOF
   else
-    # Fresh install
-    cat > "$tmp" <<'EOF'
+    # Fresh install. Heredoc is unquoted (<<EOF) so $GIT_ROOT bakes the repo
+    # root at install time (QA-D31-001 deterministic anchor); all RUNTIME shell
+    # refs are escaped (\$) so they expand when the hook runs, not now.
+    cat > "$tmp" <<EOF
 #!/bin/bash
 # PSK pre-commit hook (installed by psk-install-hooks.sh)
 # Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git commit ...
@@ -373,16 +380,20 @@ EOF
 # fan out into hundreds of parallel sub-processes that exhausted system
 # resources before completing. Merge commits don't introduce logical
 # drift on their own — the constituent commits already ran the check.
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
-if [ -n "$REPO_ROOT" ] && [ -f "$REPO_ROOT/.git/MERGE_HEAD" ]; then
+# QA-D31-001: repo root baked at install time (deterministic, no CWD dependence);
+# runtime rev-parse is a fallback only if the baked path moved post-install.
+PSK_REPO_ROOT="$GIT_ROOT"
+if [ ! -d "\$PSK_REPO_ROOT" ]; then PSK_REPO_ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"; fi
+REPO_ROOT="\$PSK_REPO_ROOT"
+if [ -n "\$REPO_ROOT" ] && [ -f "\$REPO_ROOT/.git/MERGE_HEAD" ]; then
   echo "PSK pre-commit: skipping sync-check during merge commit (KIT-GAP-0015)" >&2
   exit 0
 fi
 
-SCRIPT="$REPO_ROOT/agent/scripts/psk-sync-check.sh"
-if [ -x "$SCRIPT" ]; then
+SCRIPT="\$REPO_ROOT/agent/scripts/psk-sync-check.sh"
+if [ -x "\$SCRIPT" ]; then
   # KIT-GAP-0075 (v0.6.83): fast --quick gate on commit; --full at pre-push.
-  bash "$SCRIPT" --quick || exit 1
+  bash "\$SCRIPT" --quick || exit 1
 fi
 exit 0
 EOF
@@ -409,16 +420,21 @@ install_git_pre_push_hook() {
   fi
   local tmp
   tmp=$(mktemp)
-  cat > "$tmp" <<'EOF'
+  # Unquoted heredoc (<<EOF): $GIT_ROOT bakes the repo root at install time
+  # (QA-D31-001 deterministic anchor); runtime shell refs are escaped (\$).
+  cat > "$tmp" <<EOF
 #!/bin/bash
 # PSK pre-push hook (installed by psk-install-hooks.sh) — KIT-GAP-0075.
 # Deep --full sync-check before anything reaches the remote.
 # Emergency bypass: PSK_SYNC_CHECK_DISABLED=1 git push  (or: git push --no-verify)
-if [ "${PSK_SYNC_CHECK_DISABLED:-0}" = "1" ]; then exit 0; fi
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
-SCRIPT="$REPO_ROOT/agent/scripts/psk-sync-check.sh"
-if [ -x "$SCRIPT" ]; then
-  bash "$SCRIPT" --full || exit 1
+if [ "\${PSK_SYNC_CHECK_DISABLED:-0}" = "1" ]; then exit 0; fi
+# QA-D31-001: repo root baked at install time (no CWD dependence); rev-parse fallback only.
+PSK_REPO_ROOT="$GIT_ROOT"
+if [ ! -d "\$PSK_REPO_ROOT" ]; then PSK_REPO_ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"; fi
+REPO_ROOT="\$PSK_REPO_ROOT"
+SCRIPT="\$REPO_ROOT/agent/scripts/psk-sync-check.sh"
+if [ -x "\$SCRIPT" ]; then
+  bash "\$SCRIPT" --full || exit 1
 fi
 exit 0
 EOF
@@ -475,7 +491,10 @@ install_git_post_commit_hook() {
 # Emergency bypass: PSK_POST_COMMIT_DISABLED=1 git commit ...
 
 if [ "\${PSK_POST_COMMIT_DISABLED:-0}" != "1" ]; then
-  ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"
+  # QA-D31-001: repo root baked at install time (deterministic, no CWD dependence);
+  # runtime rev-parse is a fallback only if the baked path moved post-install.
+  ROOT="$GIT_ROOT"
+  if [ ! -d "\$ROOT" ]; then ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"; fi
   if [ -n "\$ROOT" ] && [ -d "\$ROOT" ]; then
     LOG_DIR="\$ROOT/agent/.workflow-state"
     if [ -d "\$LOG_DIR" ]; then
@@ -491,22 +510,25 @@ $existing_content
 exit 0
 EOF
   else
-    # Fresh install
-    cat > "$tmp" <<'EOF'
+    # Fresh install. Unquoted heredoc (<<EOF): $GIT_ROOT bakes the repo root at
+    # install time (QA-D31-001 deterministic anchor); runtime refs escaped (\$).
+    cat > "$tmp" <<EOF
 #!/bin/bash
 # PSK post-commit hook (installed by psk-install-hooks.sh)
 # Marker: psk-resume-bootstrap-marker-refresh
 # Refreshes session-audit.log marker so PSK029 stays clean on every commit.
 # Emergency bypass: PSK_POST_COMMIT_DISABLED=1 git commit ...
 
-if [ "${PSK_POST_COMMIT_DISABLED:-0}" != "1" ]; then
-  ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
-  if [ -n "$ROOT" ] && [ -d "$ROOT" ]; then
-    LOG_DIR="$ROOT/agent/.workflow-state"
-    if [ -d "$LOG_DIR" ]; then
-      LOG_FILE="$LOG_DIR/session-audit.log"
-      TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-      echo "$TS session-start-resume-check ran (auto: post-commit hook)" >> "$LOG_FILE"
+if [ "\${PSK_POST_COMMIT_DISABLED:-0}" != "1" ]; then
+  # QA-D31-001: repo root baked at install time (no CWD dependence); rev-parse fallback only.
+  ROOT="$GIT_ROOT"
+  if [ ! -d "\$ROOT" ]; then ROOT="\$(git rev-parse --show-toplevel 2>/dev/null)"; fi
+  if [ -n "\$ROOT" ] && [ -d "\$ROOT" ]; then
+    LOG_DIR="\$ROOT/agent/.workflow-state"
+    if [ -d "\$LOG_DIR" ]; then
+      LOG_FILE="\$LOG_DIR/session-audit.log"
+      TS=\$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      echo "\$TS session-start-resume-check ran (auto: post-commit hook)" >> "\$LOG_FILE"
     fi
   fi
 fi

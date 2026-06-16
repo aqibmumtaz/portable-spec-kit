@@ -2,7 +2,7 @@
 <!-- Framework Version: v0.6.93 -->
 
 **Version:** v0.6.93 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 3139 (2994 framework · 145 benchmarking)
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 3161 (3016 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
