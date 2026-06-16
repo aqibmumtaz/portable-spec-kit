@@ -4513,6 +4513,44 @@ grep -q "purge-current-sandbox\|sandbox.*always.*purge\|sandbox.*decoupled" "$PR
   && pass "N83/framework-doc: portable-spec-kit.md describes unconditional sandbox purge" \
   || pass "N83/framework-doc: portable-spec-kit.md ref pending (advisory)"
 
+section "N103. KIT-GAP-0103 — cycle-mislabel: verdict from verdict.md, not negated signoff prose"
+
+# Regression: a NEEDS_QA_VERIFY pass whose signoff.md explains the GRANT bar in
+# prose ("does NOT support GRANTED") was mislabeled into a fresh cycle because both
+# cycle-id helpers did a loose `grep -oE 'GRANTED|DENIED' signoff.md` that matched
+# the negated word and tripped the Rule-1 GRANTED->advance branch. Fix: read the
+# authoritative `- verdict:` field from verdict.md (verdict-source-of-truth).
+N103_TMP=$(mktemp -d)
+mkdir -p "$N103_TMP/pass-foo"
+cat > "$N103_TMP/pass-foo/verdict.md" <<'EOF'
+# reflex pass verdict
+- verdict: DENIED
+- mechanical_gates: NEEDS_QA_VERIFY
+EOF
+cat > "$N103_TMP/pass-foo/signoff.md" <<'EOF'
+The evidence does NOT support GRANTED.
+Condition for GRANTED: 0 genuine defects.
+**Evidence-supported verdict:** DENIED
+EOF
+# Detection logic mirrors both loop.sh::next_cycle_id and run.sh::compute_next_cycle_id.
+_n103_v=$(awk -F':[[:space:]]*' '/^[[:space:]]*-?[[:space:]]*verdict:/ {v=$2; gsub(/[[:space:]]/,"",v); print toupper(v); exit}' "$N103_TMP/pass-foo/verdict.md")
+[ "$_n103_v" = "DENIED" ] \
+  && pass "N103/verdict-md-authoritative: reads DENIED from verdict.md (not GRANTED from negated signoff prose)" \
+  || fail "N103/verdict-md-authoritative: got '$_n103_v' (expected DENIED)"
+# Old buggy grep would have matched the negated 'GRANTED' first — assert the fixture reproduces the bug.
+_n103_old=$(grep -m1 -oE 'GRANTED|DENIED|REVOKED|NEEDS_FIX|INCOMPLETE' "$N103_TMP/pass-foo/signoff.md" | head -1)
+[ "$_n103_old" = "GRANTED" ] \
+  && pass "N103/regression-proof: old loose signoff grep DID return GRANTED on this fixture (bug reproduced)" \
+  || pass "N103/regression-proof: fixture advisory ('$_n103_old')"
+# Structural: both cycle-id helpers must read verdict.md for the cycle decision.
+awk '/^next_cycle_id\(\)/{f=1} f{print} /^}$/&&f{exit}' "$PROJ/reflex/lib/loop.sh" | grep -q 'verdict.md' \
+  && pass "N103/loop-reads-verdict-md: loop.sh next_cycle_id reads verdict.md" \
+  || fail "N103/loop-reads-verdict-md: loop.sh next_cycle_id missing verdict.md read"
+awk '/^compute_next_cycle_id\(\)/{f=1} f{print} /^}$/&&f{exit}' "$PROJ/reflex/run.sh" | grep -q 'verdict.md' \
+  && pass "N103/run-reads-verdict-md: run.sh compute_next_cycle_id reads verdict.md" \
+  || fail "N103/run-reads-verdict-md: run.sh compute_next_cycle_id missing verdict.md read"
+rm -rf "$N103_TMP"
+
 section "N84. v0.6.29 kit-finding fixes — G19/G20/G21/G22/G23"
 
 # --- G23: self-test detection uses kit-only directory discriminator ---

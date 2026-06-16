@@ -21,19 +21,16 @@
 #   - PSK044 tolerates ≤2 single-pass cycles, PSK_PSK044_TOLERANCE adjustable
 #   - PSK_PSK044_DISABLED env var bypasses sync-check
 
-set -u
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJ_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PASS=0; FAIL=0
+# Use the shared lib.sh counters/helpers (PASS/FAIL/TOTAL + pass()/fail()/section())
+# so this section accumulates into the orchestrator's totals when sourced — and does
+# NOT reset them. Standalone (PROJ unset) sources lib.sh fresh. (QA-D12-P7-001 fix:
+# the prior local PASS=0;FAIL=0 + own pass()/fail() reset the orchestrator counters
+# to zero when sourced, and never reached the aggregated TOTAL.)
+[ -z "${PROJ:-}" ] && source "$SCRIPT_DIR/../lib.sh"
+PROJ_ROOT="${PROJ:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 
-pass() { PASS=$((PASS+1)); printf "  \033[0;32m✓\033[0m %s\n" "$1"; }
-fail() { FAIL=$((FAIL+1)); printf "  \033[0;31m✗\033[0m %s\n" "$1"; }
-
-echo "═══════════════════════════════════════════════════════════"
-echo "  Section 96 — §Instruction Fidelity (Layer 11, generic)"
-echo "  KIT-GAP-0061 v0.6.81 (generalized from KIT-GAP-0059 v0.6.79)"
-echo "═══════════════════════════════════════════════════════════"
+section "Section 96 — §Instruction Fidelity (Layer 11, generic) — KIT-GAP-0061 v0.6.81"
 
 # ═══════════════════════════════════════════════════════════
 # GENERIC PRINCIPLE TESTS (Layer 11 v0.6.81+)
@@ -208,7 +205,6 @@ fi
 # reflex/run.sh here (too heavyweight); we just simulate the precondition
 # pattern. The pre-flight logic is grep-verified above.
 TMPDIR_F="$(mktemp -d -t psk-layer11-XXXXXX)"
-trap 'rm -rf "$TMPDIR_F"' EXIT
 mkdir -p "$TMPDIR_F/agent/.workflow-state"
 echo "cycle-99" > "$TMPDIR_F/agent/.workflow-state/.active-cycle"
 if [ -f "$TMPDIR_F/agent/.workflow-state/.active-cycle" ]; then
@@ -216,6 +212,8 @@ if [ -f "$TMPDIR_F/agent/.workflow-state/.active-cycle" ]; then
 else
   fail "96.18: .active-cycle fixture not detected"
 fi
+# Inline cleanup (no trap — avoids stacking an EXIT trap onto the orchestrator when sourced).
+rm -rf "$TMPDIR_F"
 
 # ─── Test 96.19: behavioral — REFLEX_FORCE_NEW_CYCLE=1 conceptually bypasses ───
 # Verify the env-var check is reachable in pre-flight. Grep-based since we
@@ -231,9 +229,10 @@ fi
 # (no state mutation, no side effects, safe to re-run).
 pass "96.20: section 96 is idempotent (no state mutation, safe to re-run)"
 
-echo ""
-echo "═══════════════════════════════════════════════════════════"
-echo "  Section 96 results: $PASS passed, $FAIL failed"
-echo "═══════════════════════════════════════════════════════════"
-
-[ "$FAIL" = "0" ]
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  echo ""
+  echo "═══════════════════════════════════════════"
+  echo "  RESULTS (96-instruction-fidelity): $PASS passed, $FAIL failed, $TOTAL total"
+  echo "═══════════════════════════════════════════"
+  [ "$FAIL" -eq 0 ] && exit 0 || exit 1
+fi

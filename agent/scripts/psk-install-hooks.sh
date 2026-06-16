@@ -54,7 +54,7 @@ while [ $# -gt 0 ]; do
 done
 
 # --- Validate environment ---
-GIT_ROOT=$(cd "$PROJ_ROOT" && git rev-parse --show-toplevel 2>/dev/null)
+GIT_ROOT=$(git -C "$PROJ_ROOT" rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$GIT_ROOT" ]; then
   echo -e "${RED}Error: Not inside a git repository (cd to project first)${NC}"
   exit 2
@@ -126,9 +126,76 @@ if [ "$STATUS_ONLY" = true ]; then
   exit 0
 fi
 
+# --- Nested-workspace hook mirror (KIT-GAP / cycle-01/pass-002) ---
+# When the kit is installed as a SUB-PROJECT of a larger git workspace (e.g.
+# <workspace>/Projects/portable-spec-kit), the agent session runs at the workspace
+# root, so Claude Code resolves hooks from <workspace>/.claude/settings.json — NOT
+# the kit's own .claude/. Result: the UserPromptSubmit session-monitor + PostToolUse drift-check
+# never fire, so the ctx:/opt: indicators have no data and silently suppress. Mirror
+# the hooks into the workspace settings (paths RELATIVE TO THE WORKSPACE so they
+# resolve from that cwd), merging into any existing settings via jq (idempotent,
+# never clobbers the operator's permissions/other keys). Runs regardless of whether
+# the kit's own project-level hooks are already installed.
+_wire_workspace_hooks() {
+  [ -z "$GIT_ROOT" ] && return 0
+  [ "$GIT_ROOT" = "$PROJ_ROOT" ] && return 0    # not nested — project hooks already apply
+  local rel ws_settings mon_cmd base tmp_ws
+  rel="${PROJ_ROOT#"$GIT_ROOT"/}"               # e.g. Projects/portable-spec-kit
+  ws_settings="$GIT_ROOT/.claude/settings.json"
+  # Mirror the UserPromptSubmit session-monitor (context-health is session-level, applies to any
+  # session in the workspace) PLUS the statusLine — the STRUCTURAL always-on ctx badge that Claude
+  # Code renders every turn regardless of the agent. The PostToolUse drift-check is kit-specific and
+  # is deliberately NOT mirrored (it must not run the kit's sync-check on every edit to an unrelated
+  # project in the same workspace).
+  mon_cmd="bash $rel/agent/scripts/psk-session-monitor.sh"
+  sl_cmd="$mon_cmd --statusline"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo -e "  ${YELLOW}⚠${NC} jq not found — wire workspace settings manually in $ws_settings (UserPromptSubmit hook + statusLine → $mon_cmd)" >&2
+    return 0
+  fi
+  # Skip ONLY when fully wired: monitor under UserPromptSubmit (NOT lingering under Stop) AND a
+  # statusLine present. An install from the buggy build wired the monitor under Stop (a Stop hook
+  # that returns additionalContext re-invokes the agent every turn → infinite loop) — that MUST be
+  # migrated, never skipped. The guard checks the event + statusLine presence, not just the name.
+  if [ -f "$ws_settings" ] && [ "$FORCE" = false ] \
+     && jq -e --arg mon "$mon_cmd" '(([.hooks.UserPromptSubmit[]?.hooks[]?.command] | index($mon)) != null) and (([.hooks.Stop[]?.hooks[]?.command] | index($mon)) == null) and (.statusLine != null)' "$ws_settings" >/dev/null 2>&1; then
+    echo -e "  ${YELLOW}⚠${NC} Workspace session-monitor + statusLine already wired ($ws_settings) — use --force"
+    return 0
+  fi
+  mkdir -p "$GIT_ROOT/.claude"
+  base="{}"; [ -f "$ws_settings" ] && base=$(cat "$ws_settings" 2>/dev/null)
+  [ -f "$ws_settings" ] && cp "$ws_settings" "$ws_settings.psk-backup.$(date +%s)" 2>/dev/null || true
+  tmp_ws=$(mktemp)
+  # Migrate-and-add: strip the monitor from any legacy .hooks.Stop wiring (the loop bug), ensure it
+  # is present exactly once under .hooks.UserPromptSubmit, AND set the statusLine to the ctx badge
+  # (only if absent — never clobber an operator's custom statusLine). Idempotent.
+  if printf '%s' "$base" | jq \
+      --arg mon "$mon_cmd" --arg sl "$sl_cmd" '
+        .hooks //= {}
+        | (if (.hooks.Stop|type)=="array" then
+             .hooks.Stop = ((.hooks.Stop | map(.hooks |= map(select(.command != $mon)))) | map(select((.hooks|length) > 0)))
+           else . end)
+        | (if (.hooks.Stop|type)=="array" and (.hooks.Stop|length)==0 then del(.hooks.Stop) else . end)
+        | .hooks.UserPromptSubmit //= []
+        | (if ([.hooks.UserPromptSubmit[]?.hooks[]?.command] | index($mon)) then .
+           else .hooks.UserPromptSubmit += [{hooks:[{type:"command",command:$mon}]}] end)
+        | .statusLine //= {type:"command", command:$sl, padding:0}
+      ' > "$tmp_ws" 2>/dev/null && [ -s "$tmp_ws" ] && jq empty "$tmp_ws" 2>/dev/null; then
+    mv "$tmp_ws" "$ws_settings"
+    echo -e "  ${GREEN}✓${NC} Mirrored session-monitor (UserPromptSubmit) + statusLine into workspace settings (nested kit): $ws_settings"
+  else
+    rm -f "$tmp_ws"
+    echo -e "  ${RED}✗${NC} Could not merge workspace settings — left unchanged: $ws_settings" >&2
+  fi
+}
+
 # --- Install Claude Code hooks ---
 install_claude_hook() {
   echo -e "${CYAN}Installing Claude Code hooks...${NC}"
+
+  # Mirror hooks into the workspace settings first — this must run even when the
+  # kit's own project-level settings are already installed (the early-return below).
+  _wire_workspace_hooks
 
   mkdir -p "$PROJ_ROOT/.claude"
 
@@ -143,12 +210,21 @@ install_claude_hook() {
     echo -e "  ${CYAN}ℹ${NC} Backed up existing .claude/settings.json"
   fi
 
-  # Write new settings: PostToolUse drift-check + Stop session-monitor.
-  # The Stop hook (psk-session-monitor.sh) reads the live transcript and recommends
-  # /clear ONLY when context is genuinely high (stateful de-dup — one notice per band,
-  # never nags, re-arms after a clear). Fail-safe: silent on any error, never blocks.
+  # Write new settings: statusLine (structural always-on ctx badge) + PostToolUse drift-check
+  # + UserPromptSubmit session-monitor. The statusLine renders the ctx (+opt) badge in the Claude
+  # Code status bar EVERY turn, agent-independent — the user always sees ctx even if the agent skips
+  # its breadcrumb. The UserPromptSubmit hook (psk-session-monitor.sh) reads the live transcript,
+  # injects the ctx: badge as additionalContext each user turn (so the agent can also render it in the
+  # breadcrumb), and recommends /clear ONLY when context is genuinely high (stateful de-dup — one
+  # notice per band, never nags, re-arms after a clear). It is NOT a Stop hook: a Stop hook returning
+  # additionalContext would re-invoke the agent every turn (infinite loop). Fail-safe: silent on any error.
   cat > "$CLAUDE_SETTINGS" <<'EOF'
 {
+  "statusLine": {
+    "type": "command",
+    "command": "bash agent/scripts/psk-session-monitor.sh --statusline",
+    "padding": 0
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -161,7 +237,7 @@ install_claude_hook() {
         ]
       }
     ],
-    "Stop": [
+    "UserPromptSubmit": [
       {
         "hooks": [
           {
@@ -210,6 +286,16 @@ safe_install_hook() {
 
 # --- Install git pre-commit hook ---
 install_git_hook() {
+  # QA-D31-P5-001 (runtime-safety rationale — documented, not a bug): the hook
+  # bodies emitted below (and in install_git_pre_push_hook /
+  # install_git_post_commit_hook) use a bare `git rev-parse --show-toplevel`
+  # WITHOUT a -C anchor. That is intentional and safe: git ALWAYS invokes its
+  # hooks with the current working directory set to the top of the working tree,
+  # so an unanchored rev-parse inside an installed hook resolves to the correct
+  # repo root by construction. The anchored form (cd "$PROJ_ROOT" && …) is used
+  # only in THIS installer's own non-heredoc code (lines ~57/113), where CWD is
+  # the operator's shell, not a git-hook context. Style inconsistency, not a
+  # functional defect — kept unanchored so the generated hooks stay minimal.
   echo -e "${CYAN}Installing git pre-commit hook...${NC}"
 
   local tmp

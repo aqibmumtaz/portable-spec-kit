@@ -1,8 +1,8 @@
 # Portable Spec Kit — Spec-Persistent Development for AI-Assisted Engineering
-<!-- Framework Version: v0.6.92 -->
+<!-- Framework Version: v0.6.93 -->
 
-**Version:** v0.6.92 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
-**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 3068 (2923 framework · 145 benchmarking)
+**Version:** v0.6.93 · **License:** MIT · **Author:** Dr. Aqib Mumtaz
+**GitHub:** https://github.com/aqibmumtaz/portable-spec-kit · **Tests:** 3139 (2994 framework · 145 benchmarking)
 
 > A lightweight, zero-install, personalized framework for AI-assisted engineering. Drop one file into any project — your AI agent personalizes to you, maintains living specifications, and preserves context across sessions. Specs always exist. Always current. Never block.
 >
@@ -602,6 +602,7 @@ This file is the **core brain** — behavioral rules loaded every session. Proce
 | Release / generating docs | `.portable-spec-kit/skills/document-generation.md` |
 | New project (test script) | `.portable-spec-kit/skills/test-release-check-template.md` |
 | Reliability / hooks / critics | `.portable-spec-kit/skills/hooks-and-critics.md` |
+| `ctx:` badge / Session Health / psk-session-monitor / context-window | `.portable-spec-kit/skills/hooks-and-critics.md` |
 | Progress / dashboard / burndown | `.portable-spec-kit/skills/dashboard.md` |
 | My tasks / assign / delegate | `.portable-spec-kit/skills/multi-agent.md` |
 | Jira / time tracking | `.portable-spec-kit/skills/jira-integration.md` |
@@ -1810,7 +1811,9 @@ At session start (cost: ~5ms — one file read + 3 awk parses) the agent reads `
 
 The kit tracks **context-window health** — a 3-level drift indicator that counters the lost-in-the-middle effect (transformer attention is U-shaped: instruction-following degrades as the context fills, and a session's early rules — CLAUDE.md, prior decisions — dilute over a long session). `agent/scripts/psk-session-monitor.sh` measures the live context occupancy from the most recent assistant turn's `.message.usage` (`input_tokens + cache_creation_input_tokens + cache_read_input_tokens`) in the Claude Code transcript and maps it to a color.
 
-**Agent behavior — render a `ctx:` badge in the breadcrumb, next to `opt:`.** When a `SESSION_HEALTH:` line is present in context (injected each turn by the Stop hook via `additionalContext`) OR when `bash agent/scripts/psk-session-monitor.sh --badge` returns a value, the agent appends a one-token health badge to the breadcrumb header on every reply, immediately after the `opt:` badge:
+**Two surfaces — structural first, agent-rendered second.** The badge appears **structurally** via a Claude Code `statusLine`: `psk-session-monitor.sh --statusline` prints `ctx: <badge>  ·  opt: <badge>` to the status bar, which Claude Code renders **every turn, agent-independent** — so `ctx` shows even when the agent's attention dilutes (exactly when it matters most). The agent **also** mirrors the badge in its breadcrumb header (below) as a convenience. The statusLine is the guarantee; the breadcrumb is the complement. Both are wired by `psk-install-hooks.sh`.
+
+**Agent behavior — render a `ctx:` badge in the breadcrumb, next to `opt:`.** When a `SESSION_HEALTH:` line is present in context (injected each turn by the UserPromptSubmit hook via `additionalContext`) OR when `bash agent/scripts/psk-session-monitor.sh --badge` returns a value, the agent appends a one-token health badge to the breadcrumb header on every reply, immediately after the `opt:` badge:
 
 ```
 ↳ **N1** root › **Nz** current · opt: 🟢 optimized · ctx: 🟢 41%
@@ -1824,15 +1827,15 @@ The kit tracks **context-window health** — a 3-level drift indicator that coun
 |---|---|---|---|
 | 🟢 green | `< 50%` | Middle small, attention strong, rules hold | Badge only |
 | 🟡 yellow | `50–79%` | Middle large, instruction-following dilutes, drift detectable — finish the current task and `/clear` at the next boundary | **Badge only** — passive heads-up, no banner (no nagging) |
-| 🔴 red | `≥ 80%` | Heavy dilution + lossy auto-compact imminent — `/clear` now for a clean reload | Badge **+ one-time banner** (the Stop hook's de-duped `systemMessage`), escalating once at 92% |
+| 🔴 red | `≥ 80%` | Heavy dilution + lossy auto-compact imminent — `/clear` now for a clean reload | Badge **+ one-time banner** (the UserPromptSubmit hook's de-duped `systemMessage`), escalating once at 92% |
 
 **The key distinction (passive vs active):** the **badge** is continuous and glanceable (renders every reply so you can watch health trend green→yellow→red). The **banner** (`/clear` recommendation) is reserved for the red zone and fires **once per band** (never every turn), re-arming only after a `/clear` or auto-compaction drops context. Yellow is badge-only on purpose — awareness without interruption.
 
 **Suppression:** if no transcript usage is available (no `SESSION_HEALTH:` line and `--badge` returns nothing — e.g. monitor not installed, or a non-Claude-Code agent) the agent suppresses the `ctx:` badge entirely rather than rendering a guessed value. The badge shows a *measured* percentage or nothing.
 
-**Manual probe:** `bash agent/scripts/psk-session-monitor.sh --check` prints the full reading (tokens / limit / % / color / banner state); `--badge` prints just the badge string. Thresholds + context limit are configurable via `PSK_SESSION_YELLOW_PCT` / `PSK_SESSION_WARN_PCT` / `PSK_SESSION_URGE_PCT` / `PSK_SESSION_CONTEXT_LIMIT`. Bypass the whole monitor with `PSK_SESSION_MONITOR_DISABLED=1`.
+**Manual probe:** `bash agent/scripts/psk-session-monitor.sh --check` prints the full reading (tokens / limit / % / color / banner state); `--badge` prints just the badge string. Thresholds + context limit are configurable via `PSK_SESSION_YELLOW_PCT` / `PSK_SESSION_WARN_PCT` / `PSK_SESSION_URGE_PCT` / `PSK_SESSION_CONTEXT_LIMIT`. When `PSK_SESSION_CONTEXT_LIMIT` is unset the limit is derived **authoritatively, not guessed**: a `compact_boundary`'s `compactMetadata.preTokens` proves the true window (a 200k window cannot hold a larger pre-compact size, so it establishes a ≥1M window), otherwise the standard tier ladder (200k → 1M → round up). This keeps a 1M session that compacted back down from being mis-tiered as 200k, and removes the fixed-threshold inversion. Bypass the whole monitor with `PSK_SESSION_MONITOR_DISABLED=1`.
 
-**Wiring:** the monitor runs as a session-stop hook, installed by `psk-install-hooks.sh` (the same installer that wires the kit's other hooks). It is fail-safe — any error or missing data exits 0 silently, never blocking a turn.
+**Wiring — two surfaces, both installed by `psk-install-hooks.sh`:** (1) a **`statusLine`** command (`psk-session-monitor.sh --statusline`) — the structural always-on surface, rendered by Claude Code in the status bar every turn, independent of the agent; (2) a **`UserPromptSubmit`** hook (fires once per real user turn — NOT a `Stop` hook, which would re-invoke the agent every turn and loop) that injects the `SESSION_HEALTH:` line as `additionalContext` (so the agent mirrors the badge in its breadcrumb) plus the de-duped red-zone `/clear` banner. On a nested-kit install (kit under a parent workspace) the installer mirrors both into the parent workspace's Claude Code settings file with workspace-relative paths, and never clobbers an operator's existing `statusLine`. Both surfaces are fail-safe — any error or missing data exits 0 silently, never blocking a turn.
 
 ### No-Silent-Wait (MANDATORY — every long blocking op emits progress)
 
@@ -1933,7 +1936,7 @@ Cross-references: the L1-L5 enforcement is implemented in `reflex/lib/preconditi
 2. **Dev-Agent runs on an isolated branch** `reflex/dev-cycle-NN-pass-NNN` off the current HEAD. Fix commits land there; the user's main branch is untouched during the pass. On GRANTED verdict, run.sh fast-forward merges to main (falls back to no-ff merge on divergence) and deletes the dev branch. On DENIED / REGRESSION the branch is retained for review (last-3 pattern, prune-history.sh enforces).
 3. **Protected-files write-ban: reflex never modifies AGENT.md / AGENT_CONTEXT.md (3-layer enforcement).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Layer 1: `reflex/prompts/dev-agent.md` mandates the constraint. Layer 2: `reflex/lib/gates.sh` fails any commit on a `reflex/dev-*` branch that touches them. Layer 3: `psk-sync-check.sh check_reflex_protected_files` blocks the commit at the pre-commit hook when on a reflex branch. If a finding's recommendation would touch these files, Dev-Agent files it as Bucket D (QA scope violation) + routes the underlying concern to human-arbitration via a `QA-<ID>-ARB` task in `agent/TASKS.md`.
 
-**Autoloop — one command for kit + user projects:** `bash reflex/run.sh` (default mode = autoloop; `--autoloop` / `--loop` / `--kit-loop` flag aliases retained for backward compat) chains prep-release → reflex pass → iterate **until convergence** (GRANTED / REGRESSION / findings-floor / plateau / fix-rate drop). The `convergence.max_iterations_safety` ceiling (default 20) is an escape hatch, not the primary stop. Use `bash reflex/run.sh single` for single-pass mode. Works identically on the kit itself, new projects, existing projects, and any user project — kit-identity auto-detection routes `scope: kit | meta` findings to `agent/tasks/Gxx-*.md` when the target is the kit; otherwise findings append to the target's `agent/TASKS.md`.
+**Autoloop — one command for kit + user projects:** `bash reflex/run.sh` (default mode = autoloop; `--autoloop` / `--loop` / `--kit-loop` flag aliases retained for backward compat) chains prep-release → reflex pass → iterate **until convergence** (GRANTED / REGRESSION / findings-floor / plateau / fix-rate drop). The `convergence.infinite_loop_protection` ceiling (default 100) is an escape hatch, not the primary stop. Use `bash reflex/run.sh single` for single-pass mode. Works identically on the kit itself, new projects, existing projects, and any user project — kit-identity auto-detection routes `scope: kit | meta` findings to `agent/tasks/Gxx-*.md` when the target is the kit; otherwise findings append to the target's `agent/TASKS.md`.
 
 **History retention (bounded disk use):** `reflex/history/REFLEX_EVAL_TRACE.md` (register) and `summary.csv` are kept forever. Per-pass directories are capped at `history_retention.pass_dirs_keep` (default 10) in `reflex/config.yml`. Dev branches are capped at `dev_branches_keep` (default 3, unhappy paths only). QA sandbox worktrees at `qa_sandbox_keep` (**default 0 since v0.6.28, ADR-043** — current pass purges immediately after QA; set >0 only if you want prior sandboxes for manual cross-pass debug). Pruning runs automatically at the start of every pass. Pruned passes remain in the register with an `_(archived)_` marker — status still resolvable via `agent/TASKS.md` lookup, drill-down links removed. Manual clean slate: `bash reflex/run.sh --purge-history --confirm`.
 

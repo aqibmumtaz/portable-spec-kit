@@ -883,6 +883,34 @@ grep -q "## v0\.3" "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 entry pr
 grep -q "Kit: v0\.3\." "$PROJ/agent/RELEASES.md" && pass "RELEASES.md: v0.3 has kit version range (v0.3.x)" || fail "RELEASES.md: v0.3 missing kit range"
 
 # ═══════════════════════════════════════════════════════════════
+section "27. Orchestrator Section Coverage (no orphaned section files)"
+# ═══════════════════════════════════════════════════════════════
+# QA-D12-P7-001 (cycle-01-pass-007): every tests/sections/NN-*.sh file MUST be
+# listed in the SECTIONS array of tests/test-spec-kit.sh. Without this guard, a
+# section file can exist on disk but never be sourced — its tests silently never
+# run (the failure mode that orphaned 95-prompt-fidelity.sh + 96-instruction-
+# fidelity.sh for several releases). This meta-test makes orphaned sections a
+# hard FAIL so the omission cannot recur.
+_S01_ORCH="$PROJ/tests/test-spec-kit.sh"
+_S01_ORPHANS=""
+if [ -f "$_S01_ORCH" ] && [ -d "$PROJ/tests/sections" ]; then
+  for _sf in "$PROJ"/tests/sections/[0-9]*.sh; do
+    [ -e "$_sf" ] || continue
+    _base="$(basename "$_sf")"
+    # A section file is "covered" if its basename appears in the orchestrator's
+    # SECTIONS array (matched by the literal sections/<name> path).
+    grep -q "sections/$_base" "$_S01_ORCH" || _S01_ORPHANS="$_S01_ORPHANS $_base"
+  done
+  if [ -z "$_S01_ORPHANS" ]; then
+    pass "Section-coverage: every tests/sections/*.sh is listed in test-spec-kit.sh SECTIONS"
+  else
+    fail "Section-coverage: orphaned section file(s) NOT in SECTIONS array:$_S01_ORPHANS"
+  fi
+else
+  fail "Section-coverage: cannot locate test-spec-kit.sh or tests/sections/ for orphan check"
+fi
+
+# ═══════════════════════════════════════════════════════════════
 
 # When run directly (not sourced), emit summary
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then

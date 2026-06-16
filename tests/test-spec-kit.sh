@@ -42,6 +42,9 @@ SECTIONS=(
   "$SCRIPT_DIR/sections/03-reliability.sh"
   "$SCRIPT_DIR/sections/04-reflex.sh"
   "$SCRIPT_DIR/sections/05-mandate-compliance.sh"
+  "$SCRIPT_DIR/sections/77-psk-session-monitor.sh"
+  "$SCRIPT_DIR/sections/95-prompt-fidelity.sh"
+  "$SCRIPT_DIR/sections/96-instruction-fidelity.sh"
   "$SCRIPT_DIR/sections/97-kit-fidelity.sh"
 )
 

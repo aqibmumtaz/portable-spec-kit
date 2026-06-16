@@ -7,7 +7,7 @@
 - New cycle starts when `.active-cycle` is absent (fresh autoloop invocation)
 - Each pass within the cycle increments `pass-NNN` (`pass-001`, `pass-002`, ...)
 - Cycle ends on GRANTED verdict → `.active-cycle` cleared
-- Cycle ends on safety cap (`max_iterations_safety` in `reflex/config.yml`)
+- Cycle ends on safety cap (`convergence.infinite_loop_protection` in `reflex/config.yml`)
 - A new top-level `cycle-NN` dir is created ONLY when (a) the prior cycle was GRANTED + `.active-cycle` cleared, OR (b) `--purge-history` is used, OR (c) safety cap was hit (escalation)
 
 **Naming:** `cycle-NN/pass-NNN` where `NN` is monotonic across all autoloop runs ever performed; `NNN` resets to `001` within each cycle.
@@ -429,7 +429,7 @@ The HF4b workflow watchdog (`agent/scripts/psk-workflow-watchdog.sh`) detects hu
 
 | Command | What it does |
 |---------|--------------|
-| `bash reflex/run.sh` | **Default: autoloop.** Chains prep-release + reflex pass + iterate until convergence (GRANTED / REGRESSION / plateau). Safety cap escape hatch at `convergence.max_iterations_safety` (default 20). Works identically for kit self-test (auto-detected), new projects, existing projects. |
+| `bash reflex/run.sh` | **Default: autoloop.** Chains prep-release + reflex pass + iterate until convergence (GRANTED / REGRESSION / plateau). Safety cap escape hatch at `convergence.infinite_loop_protection` (default 100). Works identically for kit self-test (auto-detected), new projects, existing projects. |
 | `bash reflex/run.sh single` | Single pass only (no iteration). Requires HEAD to be a prep-release commit. For debugging; `--qa-only` implies `single`. |
 | `bash reflex/run.sh --qa-only` | Single QA-only pass, skip Dev-Agent (Phase 1 debugging). |
 | `bash reflex/run.sh --target <path>` | Run against a different project directory (playground or other project). |

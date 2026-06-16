@@ -3796,11 +3796,16 @@ p = [int(x) for x in m.groups()] if m else [0]*6
 print(calendar.timegm((p[0],p[1],p[2],p[3],p[4],p[5],0,0,0)) if m else 0)
 ")
 _HF3_DELTA4=$(( _HF3_NXT4_EPOCH - _HF3_NOW ))
-# Expected 360 min = 21600 s; tolerance ±60 s
-if [ "$_HF3_DELTA4" -ge 21540 ] && [ "$_HF3_DELTA4" -le 21660 ]; then
+# Expected 360 min = 21600 s. next_attempt_at is stamped at add-time but `now` is
+# sampled after all 3 sequential `add` invocations (each spawns python3 + writes
+# YAML), so accumulated subprocess latency makes the measured delta drift a few
+# seconds to a couple minutes below 21600 under concurrent CI load. A ±300s
+# (5-min) band absorbs that drift while still proving this is the 6h tier — the
+# next-lower tier is 120min=7200s, so 21300-21900 cannot be confused with it.
+if [ "$_HF3_DELTA4" -ge 21300 ] && [ "$_HF3_DELTA4" -le 21900 ]; then
   pass "72.6c: retry_count=4 backoff ~6h (delta=${_HF3_DELTA4}s)"
 else
-  fail "72.6c: retry_count=4 backoff wrong (delta=${_HF3_DELTA4}s, expected 21540-21660)"
+  fail "72.6c: retry_count=4 backoff wrong (delta=${_HF3_DELTA4}s, expected 21300-21900)"
 fi
 
 # 72.7: drain with no-due entries emits "no entries due"
@@ -8245,8 +8250,8 @@ fi
 
 section "104. Session-monitor (context-drift /clear reminder — KIT-GAP-0090)"
 # ═══════════════════════════════════════════════════════════════
-# psk-session-monitor.sh — Stop-hook that reads the live transcript and recommends
-# /clear ONLY when context is genuinely high, ONCE per band (stateful de-dup, no nag).
+# psk-session-monitor.sh — UserPromptSubmit-hook that reads the live transcript, injects the
+# ctx: badge each user turn, and recommends /clear ONCE per red band (stateful de-dup, no nag).
 _SM="$PROJ/agent/scripts/psk-session-monitor.sh"
 
 # 104.1 — present + executable
@@ -8313,13 +8318,48 @@ grep -q 'psk-session-monitor.sh' "$PROJ/agent/scripts/.manifest" 2>/dev/null \
   && pass "104.6: psk-session-monitor.sh enumerated in agent/scripts/.manifest" \
   || fail "104.6: psk-session-monitor.sh absent from installer manifest"
 
-# 104.7 — wired as a Stop hook in .claude/settings.json (valid JSON) + installer generator
-if grep -q 'psk-session-monitor.sh' "$PROJ/.claude/settings.json" 2>/dev/null \
-   && grep -q '"Stop"' "$PROJ/.claude/settings.json" 2>/dev/null \
-   && grep -q 'psk-session-monitor.sh' "$PROJ/agent/scripts/psk-install-hooks.sh" 2>/dev/null; then
-  pass "104.7: Stop hook wired in committed settings.json + installer generator"
+# 104.7 — wired as a UserPromptSubmit hook (NEVER Stop) in settings.json + installer generator.
+# A Stop hook that returns additionalContext re-invokes the agent every turn → infinite loop.
+# The monitor MUST be a UserPromptSubmit hook (injects the ctx: badge once per real user turn).
+_st="$PROJ/.claude/settings.json"
+_ih="$PROJ/agent/scripts/psk-install-hooks.sh"
+if command -v jq >/dev/null 2>&1; then
+  _ok=$(jq -e '([.hooks.UserPromptSubmit[]?.hooks[]?.command] | any(test("psk-session-monitor"))) and (([.hooks.Stop[]?.hooks[]?.command // empty] | any(test("psk-session-monitor"))) | not)' "$_st" >/dev/null 2>&1 && echo y || echo n)
 else
-  fail "104.7: Stop hook not wired in settings.json / installer"
+  _ok=$([ "$(grep -c 'psk-session-monitor.sh' "$_st" 2>/dev/null)" -ge 1 ] && grep -q '"UserPromptSubmit"' "$_st" 2>/dev/null && echo y || echo n)
+fi
+if [ "$_ok" = y ] && grep -q '"UserPromptSubmit": \[' "$_ih" 2>/dev/null; then
+  pass "104.7: session-monitor wired under UserPromptSubmit (never Stop) in settings.json + installer"
+else
+  fail "104.7: session-monitor must be a UserPromptSubmit hook, never Stop (Stop+additionalContext loops the agent)"
+fi
+
+# 104.8 — --statusline mode prints the STRUCTURAL ctx badge to stdout (the always-on surface
+# Claude Code renders every turn, agent-independent). Pin the limit so the tier is deterministic.
+if [ -x "$_SM" ]; then
+  _sltx="$(mktemp)"
+  printf '{"type":"assistant","message":{"usage":{"input_tokens":80000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1}}}\n' > "$_sltx"
+  _slout="$(printf '{"transcript_path":"%s"}' "$_sltx" | PSK_SESSION_CONTEXT_LIMIT=200000 bash "$_SM" --statusline 2>/dev/null)"
+  if echo "$_slout" | grep -q 'ctx: 🟢 40%'; then
+    pass "104.8: --statusline prints structural ctx badge ('$_slout')"
+  else
+    fail "104.8: --statusline should print 'ctx: 🟢 40%' (got '$_slout')"
+  fi
+  rm -f "$_sltx"
+fi
+
+# 104.9 — statusLine (the STRUCTURAL surface) wired to --statusline in committed settings.json
+# + installer generator, so ctx appears every turn regardless of whether the agent renders it.
+_st9="$PROJ/.claude/settings.json"; _ih9="$PROJ/agent/scripts/psk-install-hooks.sh"
+if command -v jq >/dev/null 2>&1; then
+  _ok9=$(jq -e '(.statusLine.command // "") | test("psk-session-monitor.sh --statusline")' "$_st9" >/dev/null 2>&1 && echo y || echo n)
+else
+  _ok9=$(grep -q 'psk-session-monitor.sh --statusline' "$_st9" 2>/dev/null && echo y || echo n)
+fi
+if [ "$_ok9" = y ] && grep -q 'psk-session-monitor.sh --statusline' "$_ih9" 2>/dev/null; then
+  pass "104.9: statusLine wired to --statusline in committed settings.json + installer"
+else
+  fail "104.9: statusLine (structural ctx badge) not wired in settings.json / installer"
 fi
 
 # ============================================================================

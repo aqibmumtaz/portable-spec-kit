@@ -220,7 +220,7 @@ Iteration 1 was bug-driven — reflex's existing dimensions (security, fidelity,
 
 Iteration 1's tight-scope retry told a Dev-Agent to "defer MINOR/ADVISORY findings to v0.6.30" — an agent-budget judgment that violated convergence-as-structural-stop. The user explicitly flagged it: *"kit need to make sure to run as per rules."*
 
-**Fix landed in iteration 2:** sub-agent prompts forbid "defer X" instructions for fixable findings. `max_iterations_safety: 10` (was 3) gives convergence room without imposing premature stops. Cap-hit treated as a kit-meta finding, not a success.
+**Fix landed in iteration 2:** sub-agent prompts forbid "defer X" instructions for fixable findings. The convergence safety cap (`convergence.infinite_loop_protection` in `reflex/config.yml`, default 100) gives convergence room without imposing premature stops. Cap-hit treated as a kit-meta finding, not a success.
 
 **Honest failure mode:** iteration 2's kit reflex (Phase I) hit a NEW structural blocker — `tests/test-release-check.sh` exits non-zero in subshell context for 69/70 kit features (env-var propagation gap from H1 fix). Rather than running 10 passes of infrastructure noise, autoloop aborted at iteration 1 pass-002 and the regression was filed as `G-KIT-RELEASE-CHECK-SUBSHELL-01` for v0.6.31. **This is convergence-discipline working correctly:** the agent files the finding rather than negotiating around it.
 

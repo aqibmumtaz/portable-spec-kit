@@ -267,13 +267,23 @@ EOF
   exit 0
 fi
 
+# --- Temp-file cleanup safety net (QA-D7-P7-001) ---
+# mktemp files below get rm -f at point-of-use, but an interrupt (kill mid-run on a
+# long --full pass) would leak them in /tmp. Register an EXIT/INT/TERM trap so every
+# temp file is reaped even on abnormal exit. Each mktemp site appends to _TMPFILES.
+_TMPFILES=()
+_psk_cleanup_tmpfiles() { [ "${#_TMPFILES[@]}" -gt 0 ] && rm -f "${_TMPFILES[@]}" 2>/dev/null; return 0; }
+trap _psk_cleanup_tmpfiles EXIT INT TERM
+
 # --- Sensitive data exclusion ---
-SENSITIVE_PATTERNS=".env .env.* *.pem *.key credentials.* secrets.* .aws .ssh"
+# QA-D19-P7-001: declared as an array so each glob token survives intact even if a
+# future pattern contains a space (the prior space-separated string word-split each).
+SENSITIVE_PATTERNS=(.env ".env.*" "*.pem" "*.key" "credentials.*" "secrets.*" .aws .ssh)
 is_sensitive() {
   local file="$1"
   local base
   base=$(basename "$file")
-  for pat in $SENSITIVE_PATTERNS; do
+  for pat in "${SENSITIVE_PATTERNS[@]}"; do
     case "$base" in $pat) return 0 ;; esac
   done
   case "$file" in
@@ -2896,7 +2906,7 @@ check_psk031_duplicate_findings() {
 
   # Build "id|fingerprint" pairs across recent yamls
   local pairs_tmp
-  pairs_tmp=$(mktemp)
+  pairs_tmp=$(mktemp); _TMPFILES+=("$pairs_tmp")
   local y id fp
   while IFS= read -r y; do
     [ -z "$y" ] && continue
@@ -2918,7 +2928,7 @@ check_psk031_duplicate_findings() {
   # an awk-readable temp file (passing a multi-line shell var via `-v`
   # caused parse-instability in earlier attempts).
   local alias_map_tmp
-  alias_map_tmp=$(mktemp)
+  alias_map_tmp=$(mktemp); _TMPFILES+=("$alias_map_tmp")
   awk '
     /^[[:space:]]*-[[:space:]]+canonical_id:/ {
       cid=$0; sub(/^[[:space:]]*-[[:space:]]+canonical_id:[[:space:]]*/, "", cid); gsub(/[[:space:]"]+$/, "", cid); gsub(/^"|"$/, "", cid)
@@ -2976,7 +2986,7 @@ check_psk031_duplicate_findings() {
   # PSK031 completes in <100ms even on registries with 1000+ ids.
   local unreg_aliases=""
   local known_ids_tmp
-  known_ids_tmp=$(mktemp)
+  known_ids_tmp=$(mktemp); _TMPFILES+=("$known_ids_tmp")
   {
     grep -E '^[[:space:]]*-[[:space:]]+canonical_id:' "$registry_yaml" \
       | sed -E 's/^[[:space:]]*-[[:space:]]+canonical_id:[[:space:]]*//; s/[[:space:]"]+$//; s/^"|"$//'
@@ -3404,7 +3414,7 @@ check_psk040_kit_fidelity_coverage() {
   # Recursion-fix (v0.6.67) whitelist preserved: release-ceremony +
   # KIT-GAP closer commits sit OUTSIDE §Kit Fidelity workaround scope.
   local dev_log_dates_tmp
-  dev_log_dates_tmp=$(mktemp)
+  dev_log_dates_tmp=$(mktemp); _TMPFILES+=("$dev_log_dates_tmp")
   if [ -f "$dev_log" ]; then
     awk '/^[0-9]{4}-[0-9]{2}-[0-9]{2}/ { print substr($0, 1, 10) }' "$dev_log" | sort -u > "$dev_log_dates_tmp"
   fi
@@ -3556,7 +3566,10 @@ check_psk041_kit_gap_disposition() {
     # emits no final newline, so a gap fixed by exactly ONE commit counted as
     # 0 lines via wc -l and false-flagged forever.
     local matched
-    matched=$(git -C "$PROJ_ROOT" log --all --since="@$ts_epoch" \
+    # QA-D9-P7-002: --branches (local branches only) instead of --all — a gap-fix
+    # commit lands on a local branch, so remote-tracking refs (origin/*) only
+    # duplicate history and inflate ref-expansion cost on large/old repos.
+    matched=$(git -C "$PROJ_ROOT" log --branches --since="@$ts_epoch" \
       --grep="$gap_id" --pretty=tformat:%H 2>/dev/null | wc -l | tr -d ' \n')
     [ -z "$matched" ] && matched=0
 

@@ -64,6 +64,24 @@ NOISE_RE='^(KIT-GAP-[0-9A-Za-z]+|QA-[A-Z0-9][A-Z0-9-]*|ADR-[0-9]+|ADL-|PSK[0-9]+
 # Secondary filter — drop change-descriptions lacking feature identity
 CHANGE_NOISE_RE='( removed$| → |expanded from|expanded to match|unchanged at|updated$|Step [0-9]+ refactored|Step [0-9]+ replaced|"[^"]+")'
 
+# QA-D11-P5-001: tertiary filter — drop CHANGELOG release-note NARRATIVE fragments
+# that are change DESCRIPTIONS, not capabilities needing doc coverage. These are
+# bolded as a bullet's structural anchor (a trailing-colon section header like
+# "Count cascade:" / "Implementation plan:", or a past-tense change sentence like
+# "Examples copies re-synced" / "agent-reqs-template.md enriched:"), but they name
+# no user-facing feature — so reporting them MISSING is noise. Patterns:
+#   - trailing-colon narrative headers (".*:$")
+#   - "Carryover from …", "Closes …", "Consistency sweep …", "Count cascade …"
+#   - past-tense sweep verbs: re-synced / enriched / documented / cleanup / heal
+#   - "New flow doc …", "New JIT-loaded skill …", "New generic kit-rules entry …"
+#     (the NEW ARTIFACT itself is covered under its filename token elsewhere; the
+#      announcement bullet is narrative)
+#   - "Reflex cycle-NN …", "Reliability layers …" status lines
+# NB the extractor emits "term<TAB>fullline"; the filters run on the joined line,
+# so term-trailing patterns are anchored to the TAB (field-1 end), not line-end.
+# TAB is spelled as a literal tab inside the bracket [<TAB>] below.
+NARRATIVE_NOISE_RE='(:	|^Carryover from |^Closes |^Consistency sweep|^Count cascade|^Convergence-blocking|^Examples copies |^Predicted failure |^One-shot heal |^Stale [a-z]|^Reflex cycle-[0-9]|^Reliability layers|^New flow doc |^New JIT-loaded skill |^New generic kit-rules entry |^Sub-agent prompts cite |^B[0-9]+ verdict rule|references removed| re-synced	| enriched	)'
+
 # Extract features from current-minor CHANGELOG section.
 features=$(awk -v minor="$minor" '
   /^## / { in_minor = 0 }
@@ -84,7 +102,7 @@ features=$(awk -v minor="$minor" '
       print term "\t" line
     }
   }
-' "$CHANGELOG" | grep -vE "$NOISE_RE" | grep -vE "$CHANGE_NOISE_RE" | sort -u)
+' "$CHANGELOG" | grep -vE "$NOISE_RE" | grep -vE "$CHANGE_NOISE_RE" | grep -vE "$NARRATIVE_NOISE_RE" | sort -u)
 
 if [ -z "$features" ]; then
   echo -e "${YELLOW}No features extracted from CHANGELOG $minor section.${NC}"

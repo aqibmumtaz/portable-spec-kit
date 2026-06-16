@@ -11,7 +11,7 @@
         ]
       }
     ],
-    "Stop": [
+    "UserPromptSubmit": [
       {
         "hooks": [
           {
@@ -21,5 +21,10 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash agent/scripts/psk-session-monitor.sh --statusline",
+    "padding": 0
   }
 }

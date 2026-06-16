@@ -110,7 +110,7 @@ if [ -f "$PROJ_ROOT/.claude/settings.json" ] && grep -q "psk-sync-check" "$PROJ_
 fi
 
 # Remove git pre-commit hook (only if PSK-installed)
-GIT_ROOT=$(cd "$PROJ_ROOT" && git rev-parse --show-toplevel 2>/dev/null)
+GIT_ROOT=$(git -C "$PROJ_ROOT" rev-parse --show-toplevel 2>/dev/null)
 if [ -n "$GIT_ROOT" ] && [ -f "$GIT_ROOT/.git/hooks/pre-commit" ] && grep -q "psk-sync-check" "$GIT_ROOT/.git/hooks/pre-commit" 2>/dev/null; then
   rm -f "$GIT_ROOT/.git/hooks/pre-commit"
   REMOVED=$((REMOVED + 1))

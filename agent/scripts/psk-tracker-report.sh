@@ -103,6 +103,12 @@ date_range() {
         next=$(date -d "$current + 1 day" "+%Y-%m-%d" 2>/dev/null)
         ;;
     esac
+    # QA-D34-P5-002: this empty-string guard is the host-portability safety net.
+    # The Darwin/BSD arm uses `date -v`, the Linux arm uses GNU `date -d`; on a
+    # host whose `date` supports neither flavor (or on a parse error) the command
+    # substitution yields empty and we break the loop cleanly rather than spin or
+    # emit garbage. So the GNU `date -d` on the line above is always reached only
+    # on a non-BSD host AND its failure is contained here.
     [ -z "$next" ] && break
     current="$next"
   done

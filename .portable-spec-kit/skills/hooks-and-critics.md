@@ -60,6 +60,32 @@ bash agent/scripts/psk-install-hooks.sh --status   # check what's installed
 
 Detects and wraps existing hooks (Husky, pre-commit framework, custom). Never overwrites.
 
+## Session Health Indicator Hooks (v0.6.93+)
+
+`psk-install-hooks.sh` also wires the **Session Health Indicator** — a context-window
+drift signal that counters the lost-in-the-middle effect. Two surfaces, both installed by
+the same script and both fail-safe (any error or missing data exits 0 silently, never
+blocking a turn):
+
+| Surface | Wiring | What it does |
+|---|---|---|
+| **statusLine** (structural, always-on) | Claude Code `statusLine` command runs `psk-session-monitor.sh --statusline` | Prints `ctx: <badge> · opt: <badge>` to the status bar every turn, agent-independent — shows even when the agent's attention dilutes. |
+| **UserPromptSubmit hook** (agent-facing) | A `UserPromptSubmit` hook fires once per real user turn | Injects a `SESSION_HEALTH:` line as `additionalContext` (so the agent mirrors the `ctx:` badge in its breadcrumb) plus a de-duped red-zone `/clear` banner via `systemMessage`. |
+
+Why `UserPromptSubmit` and not `Stop`: a `Stop` hook would re-invoke the agent every turn
+and loop. `UserPromptSubmit` fires once per real user turn.
+
+The badge is a measured 3-level reading from the live transcript's
+`.message.usage` (green `<50%` · yellow `50–79%` · red `≥80%`). The red-zone `/clear`
+banner fires once per band (never every turn), re-arming after a `/clear` or auto-compaction.
+On a nested-kit install the installer mirrors both surfaces into the parent workspace's
+Claude Code settings with workspace-relative paths and never clobbers an operator's
+existing `statusLine`.
+
+Probe out-of-band: `bash agent/scripts/psk-session-monitor.sh --check` (full reading) or
+`--badge` (just the badge string). Bypass the whole monitor with
+`PSK_SESSION_MONITOR_DISABLED=1`.
+
 ## Critic Protocol (Sub-Agent) — at the final validation gate
 
 When a workflow's final validation step runs, the dual gate fires in this order:
