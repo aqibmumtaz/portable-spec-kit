@@ -3066,6 +3066,95 @@ else
   fail "68.8: HF0 wording leaked back into $_HF0_WORDING_HIT file(s)"
 fi
 
+# 68.9: KIT-GAP-0103 — kit-evolution MUST NOT auto-propagate the kit into a
+# separate installed project. Two structural guards verified here:
+#   (a) reflex/config.yml kit_evolution.auto is false (no auto-trigger), and
+#   (b) kit-evolution.sh Phase 6 project-write is gated behind an explicit
+#       per-run opt-in (--auto-update AND KIT_EVOLUTION_ALLOW_PROJECT_WRITE=1),
+#       so the default path SKIPS the orchestrate-build and never rewrites the
+#       source project's working tree.
+_KE_CFG="$PROJ/reflex/config.yml"
+_KE_SH="$PROJ/reflex/lib/kit-evolution.sh"
+
+# (a) config default — kit_evolution.auto: false (under the kit_evolution: key).
+if awk '
+  /^kit_evolution:/ { in_blk=1; next }
+  in_blk && /^[A-Za-z]/ { in_blk=0 }
+  in_blk && /^[[:space:]]+auto:[[:space:]]*false/ { found=1 }
+  END { exit(found?0:1) }
+' "$_KE_CFG" 2>/dev/null; then
+  pass "68.9a: reflex/config.yml kit_evolution.auto is false (no auto kit→project propagation)"
+else
+  fail "68.9a: kit_evolution.auto is NOT false — auto-propagation re-enabled"
+fi
+
+# (b1) static guard — Phase 6 requires the explicit env opt-in token.
+if grep -q "KIT_EVOLUTION_ALLOW_PROJECT_WRITE" "$_KE_SH" 2>/dev/null \
+   && grep -q "ALLOW_PROJECT_WRITE" "$_KE_SH" 2>/dev/null; then
+  pass "68.9b: kit-evolution.sh Phase 6 gates project-write behind KIT_EVOLUTION_ALLOW_PROJECT_WRITE opt-in"
+else
+  fail "68.9b: Phase-6 explicit-opt-in guard missing — project-write not gated"
+fi
+
+# (b2) functional — with --auto-update but WITHOUT the env opt-in, the real
+# default-skip branch (elif ! $ALLOW_PROJECT_WRITE) runs and the source project
+# is NOT touched. Isolate by copying kit-evolution.sh into a throwaway fake
+# kit-root with no-op stub siblings, so Phases 3/4/5 hit stubs (LIB_DIR/KIT_ROOT
+# point at the fake) and Phase 6 reaches the real default-skip branch fast +
+# side-effect-free. The source project's psk-orchestrate.sh is a sentinel that
+# records iff it ran — assert it did NOT.
+_KE_TMP="$(mktemp -d "/tmp/psk-kitevo-test-$$-XXXXXX")"
+mkdir -p "$_KE_TMP/kit/reflex/lib" "$_KE_TMP/kit/agent/scripts" "$_KE_TMP/kit/tests" \
+         "$_KE_TMP/kit/agent/tasks" "$_KE_TMP/proj/agent/scripts"
+# Copy the real Phase-6 logic under test into the fake kit-root.
+cp "$_KE_SH" "$_KE_TMP/kit/reflex/lib/kit-evolution.sh"
+# No-op stubs for Phases 3/4/5 (always exit 0 so control reaches Phase 6).
+cat > "$_KE_TMP/kit/reflex/run.sh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+for s in test-spec-kit.sh test-spd-benchmarking.sh test-release-check.sh; do
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$_KE_TMP/kit/tests/$s"
+  chmod +x "$_KE_TMP/kit/tests/$s"
+done
+printf '#!/usr/bin/env bash\nexit 0\n' > "$_KE_TMP/kit/reflex/lib/smoke-test-examples.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$_KE_TMP/kit/agent/scripts/psk-progress.sh"
+chmod +x "$_KE_TMP/kit/reflex/run.sh" "$_KE_TMP/kit/reflex/lib/smoke-test-examples.sh" \
+         "$_KE_TMP/kit/agent/scripts/psk-progress.sh"
+# Source project's sentinel orchestrate: writes a marker iff invoked.
+cat > "$_KE_TMP/proj/agent/scripts/psk-orchestrate.sh" <<EOF
+#!/usr/bin/env bash
+echo "ORCHESTRATE-RAN:\$*" > "$_KE_TMP/orchestrate-ran.marker"
+exit 0
+EOF
+chmod +x "$_KE_TMP/proj/agent/scripts/psk-orchestrate.sh"
+# One dispositioned Gxx task so Phase 1 finds work and reaches Phase 6.
+cat > "$_KE_TMP/kit/agent/tasks/G99-kitgap0103-test.md" <<'EOF'
+# G99 — kit-evolution opt-in regression fixture
+## Disposition: defer
+EOF
+# Run the copied script with --auto-update but WITHOUT the env opt-in. This
+# exercises the real default-skip branch (no --dry-run).
+_KE_OUT=$(env -u KIT_EVOLUTION_ALLOW_PROJECT_WRITE \
+  bash "$_KE_TMP/kit/reflex/lib/kit-evolution.sh" \
+    --kit-root "$_KE_TMP/kit" \
+    --tasks-dir "$_KE_TMP/kit/agent/tasks" \
+    --source-project "$_KE_TMP/proj" \
+    --auto-update 2>&1 || true)
+if [ ! -f "$_KE_TMP/orchestrate-ran.marker" ]; then
+  pass "68.9c: Phase 6 default-skip branch does NOT invoke orchestrate-build without explicit opt-in"
+else
+  fail "68.9c: Phase 6 invoked orchestrate-build without the explicit opt-in (auto-propagation leak)"
+fi
+# (b3) the default-skip path surfaces the explicit-install guidance to the operator.
+if echo "$_KE_OUT" | grep -q "project write SKIPPED" \
+   && echo "$_KE_OUT" | grep -q "install.sh"; then
+  pass "68.9d: Phase 6 default-skip prints the explicit install-process guidance"
+else
+  fail "68.9d: Phase 6 default-skip did not surface the explicit install guidance"
+fi
+rm -rf "$_KE_TMP"
+
 # =============================================================================
 # Section 69 — HF1 Reflex spawn-qa / spawn-dev psk-spawn.sh retrofit (v0.6.60)
 # =============================================================================
