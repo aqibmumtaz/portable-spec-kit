@@ -30,6 +30,23 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # point to tests/sections/, which would clobber the orchestrator's tests/ path.
 ORCHESTRATOR_DIR="$SCRIPT_DIR"
 
+# ── no-silent-wait self-wrap (default progress heartbeat) ───────────────────
+# A direct `bash tests/test-spec-kit.sh` is a multi-minute silent wait — running
+# slow looks identical to hung. Re-exec ourselves through psk-progress.sh so
+# EVERY direct invocation emits an elapsed/✓✗-count heartbeat to stderr. The
+# wrapper passes stdout + exit code through verbatim, so the per-test lines, the
+# final `RESULTS:` line, and the exit code that gates + test-release-check parse
+# are all unaffected (heartbeats go to stderr only).
+#   PSK_PROGRESS_ACTIVE guard — prevents infinite re-exec AND double-wrap when a
+#   reflex gate already routes us through psk-progress.sh (the wrapper exports
+#   PSK_PROGRESS_ACTIVE=1 before running us, so we see it and skip).
+#   PSK_PROGRESS_DISABLED=1 escape hatch — run with no wrap at all.
+_PSK_PROGRESS="$ORCHESTRATOR_DIR/../agent/scripts/psk-progress.sh"
+if [ -z "${PSK_PROGRESS_ACTIVE:-}" ] && [ "${PSK_PROGRESS_DISABLED:-0}" != "1" ] && [ -x "$_PSK_PROGRESS" ]; then
+  export PSK_PROGRESS_ACTIVE=1
+  exec bash "$_PSK_PROGRESS" --label "test-spec-kit" --metric '✓|✗' -- bash "$0" "$@"
+fi
+
 # Load shared helpers + globals (PASS/FAIL/TOTAL/PROJ/ROOT/kit_grep/...)
 source "$SCRIPT_DIR/lib.sh"
 

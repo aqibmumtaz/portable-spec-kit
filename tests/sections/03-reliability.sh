@@ -8470,6 +8470,16 @@ _PROG="$PROJ/agent/scripts/psk-progress.sh"
 if [ -x "$_PROG" ]; then
   pass "105.1: psk-progress.sh exists and is executable"
 
+  # 105.2–105.5 test the DEFAULT heartbeat-emitting path. If the ambient
+  # environment carries PSK_PROGRESS_DISABLED=1 (e.g. the operator ran the whole
+  # suite under that escape hatch) the child psk-progress calls below would
+  # inherit it and emit no heartbeat — a false failure. Neutralize the ambient
+  # state for these sub-tests; 105.6 re-sets PSK_PROGRESS_DISABLED inline on its
+  # own command, so it is unaffected by this unset.
+  _p105_saved_disabled="${PSK_PROGRESS_DISABLED:-}"
+  _p105_saved_active="${PSK_PROGRESS_ACTIVE:-}"
+  unset PSK_PROGRESS_DISABLED PSK_PROGRESS_ACTIVE
+
   # 105.2 — exit-code passthrough (success)
   bash "$_PROG" --label t -- bash -c 'exit 0' >/dev/null 2>&1; _p105_rc=$?
   [ "$_p105_rc" -eq 0 ] && pass "105.2: exit-code passthrough — success returns 0" || fail "105.2: success exit not preserved ($_p105_rc)"
@@ -8491,6 +8501,10 @@ if [ -x "$_PROG" ]; then
   fi
   rm -f "$_p105_m"
 
+  # Restore ambient env state captured above (don't leak the unset to later tests).
+  [ -n "$_p105_saved_disabled" ] && export PSK_PROGRESS_DISABLED="$_p105_saved_disabled"
+  [ -n "$_p105_saved_active" ] && export PSK_PROGRESS_ACTIVE="$_p105_saved_active"
+
   # 105.6 — PSK_PROGRESS_DISABLED bypass: no heartbeat, exit still preserved
   if PSK_PROGRESS_DISABLED=1 bash "$_PROG" --label b --interval 1 -- bash -c 'sleep 2' 2>&1 | grep -q '\[progress\]'; then
     fail "105.6: bypass still emitted a heartbeat"
@@ -8509,6 +8523,62 @@ if grep -q 'psk-progress.sh' "$PROJ/reflex/lib/gates.sh" 2>/dev/null \
   pass "105.7: gates.sh + spawn-qa.sh + kit-evolution.sh route long blocking ops through psk-progress.sh"
 else
   fail "105.7: a silent-wait site is not wired to psk-progress.sh"
+fi
+
+# ── 105.8–105.11 — test-spec-kit.sh self-wrap (default progress heartbeat) ───
+# The direct test entrypoint re-execs through psk-progress.sh so EVERY run shows
+# progress, with an anti-double-wrap guard. We assert this structurally + with a
+# fast functional probe of the export — never by running the full suite here
+# (that would recurse + take ~17 min).
+_TSK="$PROJ/tests/test-spec-kit.sh"
+
+# 105.8 — psk-progress.sh exports PSK_PROGRESS_ACTIVE to the wrapped command
+#   (this is the signal a self-wrapping child reads to skip its own wrap).
+if [ -x "$_PROG" ]; then
+  _p105_active=$(bash "$_PROG" --label probe --tail 5 -- bash -c 'echo "ACT=[$PSK_PROGRESS_ACTIVE]"' 2>&1 | grep -oE 'ACT=\[[01]?\]' | head -1)
+  [ "$_p105_active" = "ACT=[1]" ] \
+    && pass "105.8: psk-progress.sh exports PSK_PROGRESS_ACTIVE=1 to the wrapped command (anti-double-wrap signal)" \
+    || fail "105.8: psk-progress.sh did not export PSK_PROGRESS_ACTIVE=1 (got '$_p105_active')"
+else
+  pass "105.8: skip (psk-progress.sh absent)"
+fi
+
+# 105.9 — test-spec-kit.sh has the self-wrap exec block routed through psk-progress.sh
+if grep -q 'exec bash "$_PSK_PROGRESS" --label "test-spec-kit"' "$_TSK" 2>/dev/null; then
+  pass "105.9: test-spec-kit.sh self-wraps through psk-progress.sh (default progress heartbeat)"
+else
+  fail "105.9: test-spec-kit.sh is missing the psk-progress self-wrap exec block"
+fi
+
+# 105.10 — the self-wrap is gated by BOTH PSK_PROGRESS_ACTIVE (no re-exec / no
+#   double-wrap) AND PSK_PROGRESS_DISABLED (escape hatch) AND an executable check.
+if grep -qE 'if \[ -z "\$\{PSK_PROGRESS_ACTIVE:-\}" \] && \[ "\$\{PSK_PROGRESS_DISABLED:-0\}" != "1" \] && \[ -x "\$_PSK_PROGRESS" \]; then' "$_TSK" 2>/dev/null; then
+  pass "105.10: self-wrap guarded by PSK_PROGRESS_ACTIVE + PSK_PROGRESS_DISABLED + executable check"
+else
+  fail "105.10: self-wrap guard is missing one of PSK_PROGRESS_ACTIVE / PSK_PROGRESS_DISABLED / -x checks"
+fi
+
+# 105.11 — guard-branch decisions hold for all 3 scenarios (replicates the exact
+#   guard expression so a future edit that breaks the logic is caught fast).
+_p105_guard() {
+  local _x="$PROJ/agent/scripts/psk-progress.sh"
+  if [ -z "${PSK_PROGRESS_ACTIVE:-}" ] && [ "${PSK_PROGRESS_DISABLED:-0}" != "1" ] && [ -x "$_x" ]; then
+    echo "wrap"
+  else
+    echo "inline"
+  fi
+}
+if [ -x "$_PROG" ]; then
+  _g_default=$( unset PSK_PROGRESS_ACTIVE; unset PSK_PROGRESS_DISABLED; _p105_guard )
+  _g_active=$( export PSK_PROGRESS_ACTIVE=1; unset PSK_PROGRESS_DISABLED; _p105_guard )
+  _g_disabled=$( unset PSK_PROGRESS_ACTIVE; export PSK_PROGRESS_DISABLED=1; _p105_guard )
+  if [ "$_g_default" = "wrap" ] && [ "$_g_active" = "inline" ] && [ "$_g_disabled" = "inline" ]; then
+    pass "105.11: guard decides wrap(default) / inline(ACTIVE set) / inline(DISABLED set) correctly"
+  else
+    fail "105.11: guard decisions wrong (default=$_g_default active=$_g_active disabled=$_g_disabled)"
+  fi
+else
+  pass "105.11: skip (psk-progress.sh absent)"
 fi
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
