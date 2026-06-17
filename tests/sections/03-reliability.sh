@@ -3066,7 +3066,7 @@ else
   fail "68.8: HF0 wording leaked back into $_HF0_WORDING_HIT file(s)"
 fi
 
-# 68.9: KIT-GAP-0103 — kit-evolution MUST NOT auto-propagate the kit into a
+# 68.9: KIT-GAP-0104 — kit-evolution MUST NOT auto-propagate the kit into a
 # separate installed project. Two structural guards verified here:
 #   (a) reflex/config.yml kit_evolution.auto is false (no auto-trigger), and
 #   (b) kit-evolution.sh Phase 6 project-write is gated behind an explicit
@@ -7834,15 +7834,23 @@ else
 fi
 
 # 93.3: End-to-end probe — invoke psk-sync-check.sh with the sentinel set;
-#       assert the skip-line appears and command completes within budget
-#       (no recursive process spawn). Wall-clock budget: 120s on the real
-#       project; the recursion (pre-fix) hung 8+ hours.
+#       assert the skip-line appears (93.3a — structural recursion-guard signal)
+#       and command completes within a generous anti-hang budget (93.3b).
+#
+#       93.3a is the definitive structural guard: the PSK005 skip-line proves
+#       the recursion-guard fired and short-circuited the R→F→T re-entry.
+#
+#       93.3b is a generous anti-hang bound: the pre-fix recursion hung 8+
+#       hours; a 600s budget is ample even on a heavily-loaded host while
+#       still catching a real regression by orders of magnitude. The budget is
+#       env-configurable via PSK_SYNC_CHECK_BUDGET_SEC (default 600s) so CI
+#       or slower machines can tune without touching the test source.
+#
 #       NB: `timeout(1)` is not present on stock macOS; we rely on the
 #       harness-level timeout in test-spec-kit.sh + an in-script elapsed
 #       check after the call. If recursion regressed, this section would
 #       hang the whole suite — which is itself a loud structural alarm.
-#       The guard test isolates the skip-line + elapsed-within-budget
-#       behavior structurally, not via OS-level timeout.
+_S93_BUDGET="${PSK_SYNC_CHECK_BUDGET_SEC:-600}"
 _S93_START=$(date -u +%s)
 _S93_OUT=$(PSK_IN_TEST_RELEASE_CHECK=1 bash "$_S93_SYNC" --project "$PROJ" --full 2>&1 || true)
 _S93_END=$(date -u +%s)
@@ -7854,10 +7862,12 @@ if echo "$_S93_OUT_PLAIN" | grep -q 'PSK005: R→F→T gate skipped'; then
 else
   fail "93.3a: PSK005 skip-line NOT emitted when sentinel set (output head: $(echo "$_S93_OUT_PLAIN" | grep -i PSK005 | head -2))"
 fi
-if [ "$_S93_ELAPSED" -lt 120 ]; then
-  pass "93.3b: psk-sync-check.sh completes within 120s budget when sentinel set (elapsed ${_S93_ELAPSED}s — no recursive process spawn)"
+# 93.3b: generous anti-hang bound (overridable via PSK_SYNC_CHECK_BUDGET_SEC).
+# 93.3a is the structural guard; 93.3b catches the 8h+ recursion with huge margin.
+if [ "$_S93_ELAPSED" -lt "$_S93_BUDGET" ]; then
+  pass "93.3b: psk-sync-check.sh completes within ${_S93_BUDGET}s budget when sentinel set (elapsed ${_S93_ELAPSED}s — no recursive process spawn)"
 else
-  fail "93.3b: psk-sync-check.sh exceeded 120s budget — recursion-guard regressed (${_S93_ELAPSED}s)"
+  fail "93.3b: psk-sync-check.sh exceeded ${_S93_BUDGET}s anti-hang budget — recursion-guard regressed (${_S93_ELAPSED}s)"
 fi
 
 # ============================================================================
