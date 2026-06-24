@@ -302,3 +302,35 @@ done
 grep -qE 'release: v\[0-9\]|release: v' "$SYNC_CHECK" \
   && pass "97.15: F85.2 — PSK040 whitelist recognizes 'release: vX.Y.Z' subjects" \
   || fail "97.15: F85.2 — PSK040 whitelist missing release-subject pattern"
+
+# ── G27 (QA-D22-001/002): --log-gap emits single 5-field TSV; committed log canonical ──
+# AC1 — committed agent/.kit-gap-log is fully canonical: every data line is a 5-field TSV
+# record with an ISO-8601 timestamp (with 'T') in field 1. Guards against the malformed
+# space-separated / wrong-order / shattered-continuation entries G27 repaired.
+_g27_bad=$(awk -F'\t' '!/^#/ && !/^$/ && (NF!=5 || $1!~/^[0-9]{4}-[0-9]{2}-[0-9]{2}T/){c++} END{print c+0}' "$PROJ/agent/.kit-gap-log")
+[ "$_g27_bad" = "0" ] \
+  && pass "97.16: G27 — agent/.kit-gap-log fully canonical (0 malformed data lines)" \
+  || fail "97.16: G27 — $_g27_bad malformed lines in .kit-gap-log (expected 0)"
+
+# AC2 — log_gap() sanitizes embedded tabs/newlines so a future entry cannot shatter.
+grep -qE "tr '\\\\t\\\\r\\\\n'" "$WRAPPER" \
+  && pass "97.16: G27 — log_gap() sanitizes tab/newline/CR in fields" \
+  || fail "97.16: G27 — log_gap() missing field sanitization"
+
+# AC3 — BEHAVIORAL: run --log-gap in an isolated temp PROJ_ROOT with a multi-line + tab
+# friction; the appended entry must be exactly ONE line with 5 tab-separated fields.
+_g27_tmp=$(mktemp -d)
+mkdir -p "$_g27_tmp/agent/scripts" "$_g27_tmp/.portable-spec-kit"
+cp "$WRAPPER" "$_g27_tmp/agent/scripts/psk-kit-cmd.sh"
+# wrapper hard-requires the canonical-command inventory before any action — provide it
+cp "$PROJ/.portable-spec-kit/kit-commands.yml" "$_g27_tmp/.portable-spec-kit/kit-commands.yml" 2>/dev/null
+_g27_friction=$(printf 'line-one\nline-two\twith-tab')
+bash "$_g27_tmp/agent/scripts/psk-kit-cmd.sh" --log-gap "reflex/run.sh" "$_g27_friction" "do the fix" >/dev/null 2>&1
+_g27_datalines=$(awk '!/^#/ && !/^$/' "$_g27_tmp/agent/.kit-gap-log" 2>/dev/null | wc -l | tr -d ' ')
+_g27_nf=$(awk -F'\t' '!/^#/ && !/^$/{print NF; exit}' "$_g27_tmp/agent/.kit-gap-log" 2>/dev/null)
+if [ "$_g27_datalines" = "1" ] && [ "$_g27_nf" = "5" ]; then
+  pass "97.16: G27 — multi-line/tab friction → single 5-field TSV entry (lines=$_g27_datalines NF=$_g27_nf)"
+else
+  fail "97.16: G27 — sanitization failed (lines=$_g27_datalines NF=$_g27_nf, expected 1/5)"
+fi
+rm -rf "$_g27_tmp"

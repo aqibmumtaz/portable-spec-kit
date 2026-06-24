@@ -80,3 +80,20 @@ if grep -q 'ADR-089' "$PROJ/agent/PLANS.md"; then
 else
   fail "f85 AC9: ADR-089 missing from PLANS.md"
 fi
+
+# AC10 — BEHAVIORAL: no-inline-fallback contract enforced at RUNTIME (QA-CRIT-FIDELITY-F85-01).
+# AC3 only proves the wrapper file exists. This invokes it with a non-canonical command
+# (no --rationale) and verifies it BLOCKS (AWAITING_RATIONALE, non-zero exit) AND does NOT
+# dispatch the underlying command — the structural proof there is no inline-fallback branch.
+f85_out=$(bash "$WRAPPER" reflex --single 2>&1); f85_rc=$?
+if echo "$f85_out" | grep -q 'AWAITING_RATIONALE' && [ "$f85_rc" -ne 0 ]; then
+  pass "f85 AC10: non-canonical without --rationale blocks (AWAITING_RATIONALE, exit=$f85_rc)"
+else
+  fail "f85 AC10: non-canonical without --rationale should block (got exit=$f85_rc)"
+fi
+# The blocked command must NOT have dispatched reflex/run.sh — no autoloop/pass/cycle output.
+if echo "$f85_out" | grep -qiE 'prep-release|autoloop until convergence|reflex pass|cycle-[0-9]'; then
+  fail "f85 AC10: psk-kit-cmd.sh dispatched reflex despite missing --rationale (inline-fallback)"
+else
+  pass "f85 AC10: command NOT dispatched (no-inline-fallback contract confirmed)"
+fi

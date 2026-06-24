@@ -24,8 +24,13 @@ PASS="${PASS:-0}"
 FAIL="${FAIL:-0}"
 TOTAL="${TOTAL:-0}"
 
-pass() { ((PASS++)); ((TOTAL++)); echo "  ✓ $1"; }
-fail() { ((FAIL++)); ((TOTAL++)); echo "  ✗ $1"; }
+# PSK_TEST_FILTER (set by test-spec-kit.sh --filter) — when set, only tests whose
+# message matches the ERE are counted + printed. Uniform across EVERY section + feature
+# file (no per-test structural change) — Verification Fidelity: run/report a specific
+# test THROUGH the harness instead of replicating its logic inline.
+_psk_test_match() { [ -z "${PSK_TEST_FILTER:-}" ] && return 0; printf '%s' "$1" | grep -qE "$PSK_TEST_FILTER"; }
+pass() { _psk_test_match "$1" || return 0; ((PASS++)); ((TOTAL++)); echo "  ✓ $1"; }
+fail() { _psk_test_match "$1" || return 0; ((FAIL++)); ((TOTAL++)); echo "  ✗ $1"; }
 section() { echo ""; echo "═══ $1 ═══"; }
 
 # Project paths — derived from this file's location so sections can be

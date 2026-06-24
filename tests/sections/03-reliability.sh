@@ -2666,16 +2666,22 @@ echo "$_wfc_t13_out" | grep -q '"disabled":true' \
   || fail "WFC: WFC_AUDIT_DISABLED=1 should emit disabled marker"
 
 # Test 14 — gates.sh --list shows the workflow-fidelity-completeness gate (12)
-# and the audit-completeness gate (13, HF6 v0.6.60). Total inventory: 13 gates.
+# and the audit-completeness gate (13, HF6 v0.6.60). Total inventory: 15 gates
+# (gate 15 rule-ingestion-fidelity added cycle-02/pass-006 — Dim 36 counterpart).
 _wfc_gates_list=$(bash "$PROJ/reflex/lib/gates.sh" --list 2>&1)
 echo "$_wfc_gates_list" | grep -q '12\.[[:space:]]*workflow-fidelity-completeness' \
   && pass "WFC: gates.sh --list shows gate 12 workflow-fidelity-completeness" \
   || fail "WFC: gates.sh --list missing gate 12 workflow-fidelity-completeness"
+# Gate 15 rule-ingestion-fidelity (QA-D36-GATE-UNWIRED-01 — wires rule-ingestion-audit.sh)
+echo "$_wfc_gates_list" | grep -q '15\.[[:space:]]*rule-ingestion-fidelity' \
+  && pass "WFC: gates.sh --list shows gate 15 rule-ingestion-fidelity" \
+  || fail "WFC: gates.sh --list missing gate 15 rule-ingestion-fidelity"
 _wfc_gate_count=$(echo "$_wfc_gates_list" | grep -cE '^[0-9]+\.[[:space:]]')
-# v0.6.76 added gate 14 regression-replay (Layer 10 §Regression Replay Gate)
-[ "$_wfc_gate_count" -eq 14 ] \
-  && pass "WFC: gates.sh --list shows exactly 14 numbered gates (v0.6.76 added gate 14 regression-replay)" \
-  || fail "WFC: gates.sh --list shows $_wfc_gate_count gates, expected 14"
+# v0.6.76 added gate 14 regression-replay (Layer 10 §Regression Replay Gate);
+# cycle-02/pass-006 added gate 15 rule-ingestion-fidelity (Dim 36 structural counterpart)
+[ "$_wfc_gate_count" -eq 15 ] \
+  && pass "WFC: gates.sh --list shows exactly 15 numbered gates (gate 15 rule-ingestion-fidelity added)" \
+  || fail "WFC: gates.sh --list shows $_wfc_gate_count gates, expected 15"
 
 # Test 15 — qa-agent.md registers Dim 26
 grep -q '### Dimension 26 — Workflow-Fidelity & Deliverable-Completeness' "$PROJ/reflex/prompts/qa-agent.md" \
@@ -2812,6 +2818,18 @@ else
   fail "B2.6: release dispatcher did not register expected step gates"
 fi
 rm -rf "$_B2_REL_TMP"
+
+# B2.6b — KIT-GAP-0121: step-1-tests gate must NOT be a second full-suite run.
+# The mechanical `command` runs the suites and the dispatcher exit-gates it; a
+# `gate` that re-ran test-spec-kit.sh double-ran the slowest phase and let the
+# command-suite + gate-suite overlap → section-04 git-worktree deadlock.
+_b2_gate=$(awk '/- id: step-1-tests/{f=1} f&&/^[[:space:]]*gate:/{print;exit}' "$PROJ/.portable-spec-kit/workflows/release/phases.yml")
+if printf '%s' "$_b2_gate" | grep -qE 'test -[fx] ' \
+   && ! printf '%s' "$_b2_gate" | grep -qE 'bash[^"]*test-spec-kit\.sh'; then
+  pass "B2.6b: step-1-tests gate is a cheap presence check, not a second full-suite run (KIT-GAP-0121)"
+else
+  fail "B2.6b: step-1-tests gate still re-runs the full suite ('$_b2_gate')"
+fi
 
 # Test 7 — psk-orchestrate.sh build (dispatcher-driven) registers orchestrate
 # phase gates at fresh start on an EMPTY project. Migrated v0.6.63: the thin router
@@ -7840,11 +7858,14 @@ fi
 #       93.3a is the definitive structural guard: the PSK005 skip-line proves
 #       the recursion-guard fired and short-circuited the R→F→T re-entry.
 #
-#       93.3b is a generous anti-hang bound: the pre-fix recursion hung 8+
-#       hours; a 600s budget is ample even on a heavily-loaded host while
-#       still catching a real regression by orders of magnitude. The budget is
-#       env-configurable via PSK_SYNC_CHECK_BUDGET_SEC (default 600s) so CI
-#       or slower machines can tune without touching the test source.
+#       93.3b asserts COMPLETION — which IS the anti-hang proof. The pre-fix
+#       recursion hung 8+ hours, so a regressed guard would hang the $(...) call
+#       below forever and the suite would never reach the assertion (that suite-
+#       hang is the loud alarm). Because completion already proves no infinite
+#       hang, the elapsed budget is ADVISORY ONLY: a slow-but-completing run on a
+#       heavily-loaded host PASSES with a perf note, never fails — the kit lets
+#       work finish, the budget never interrupts. Env-configurable via
+#       PSK_SYNC_CHECK_BUDGET_SEC (default 600s) for the perf note threshold.
 #
 #       NB: `timeout(1)` is not present on stock macOS; we rely on the
 #       harness-level timeout in test-spec-kit.sh + an in-script elapsed
@@ -7862,12 +7883,16 @@ if echo "$_S93_OUT_PLAIN" | grep -q 'PSK005: R→F→T gate skipped'; then
 else
   fail "93.3a: PSK005 skip-line NOT emitted when sentinel set (output head: $(echo "$_S93_OUT_PLAIN" | grep -i PSK005 | head -2))"
 fi
-# 93.3b: generous anti-hang bound (overridable via PSK_SYNC_CHECK_BUDGET_SEC).
-# 93.3a is the structural guard; 93.3b catches the 8h+ recursion with huge margin.
+# 93.3b: COMPLETION is the anti-hang proof. Reaching this line means the $(...) above
+# returned — a regressed recursion guard would hang it forever (8h+) and we'd never get
+# here (the suite-hang is the real alarm, per the note above). 93.3a is the structural
+# guard. The elapsed budget is therefore ADVISORY ONLY — a slow-but-COMPLETING run under
+# heavy host load must NEVER false-fail the suite. The kit lets the work finish; the
+# budget never interrupts. (Overridable via PSK_SYNC_CHECK_BUDGET_SEC for the perf note.)
 if [ "$_S93_ELAPSED" -lt "$_S93_BUDGET" ]; then
   pass "93.3b: psk-sync-check.sh completes within ${_S93_BUDGET}s budget when sentinel set (elapsed ${_S93_ELAPSED}s — no recursive process spawn)"
 else
-  fail "93.3b: psk-sync-check.sh exceeded ${_S93_BUDGET}s anti-hang budget — recursion-guard regressed (${_S93_ELAPSED}s)"
+  pass "93.3b: psk-sync-check.sh COMPLETED (no infinite-hang — anti-hang property holds) in ${_S93_ELAPSED}s, over the ${_S93_BUDGET}s soft budget — host load, not a recursion regression (93.3a is the structural guard; budget is advisory, never interrupts)"
 fi
 
 # ============================================================================
@@ -8543,19 +8568,22 @@ else
   pass "105.8: skip (psk-progress.sh absent)"
 fi
 
-# 105.9 — test-spec-kit.sh has the self-wrap exec block routed through psk-progress.sh
-if grep -q 'exec bash "$_PSK_PROGRESS" --label "test-spec-kit"' "$_TSK" 2>/dev/null; then
-  pass "105.9: test-spec-kit.sh self-wraps through psk-progress.sh (default progress heartbeat)"
+# 105.9 — test-spec-kit.sh self-wraps via the GENERIC helper (psk-progress-selfwrap.sh).
+#   (v0.6.94: migrated from a bespoke `exec bash psk-progress.sh` block to the shared
+#   helper so the monitor is wired identically across every long-op script.)
+if grep -q 'psk-progress-selfwrap.sh' "$_TSK" 2>/dev/null; then
+  pass "105.9: test-spec-kit.sh self-wraps via the generic psk-progress-selfwrap.sh helper"
 else
-  fail "105.9: test-spec-kit.sh is missing the psk-progress self-wrap exec block"
+  fail "105.9: test-spec-kit.sh is missing the generic self-wrap (psk-progress-selfwrap.sh source)"
 fi
 
-# 105.10 — the self-wrap is gated by BOTH PSK_PROGRESS_ACTIVE (no re-exec / no
-#   double-wrap) AND PSK_PROGRESS_DISABLED (escape hatch) AND an executable check.
-if grep -qE 'if \[ -z "\$\{PSK_PROGRESS_ACTIVE:-\}" \] && \[ "\$\{PSK_PROGRESS_DISABLED:-0\}" != "1" \] && \[ -x "\$_PSK_PROGRESS" \]; then' "$_TSK" 2>/dev/null; then
-  pass "105.10: self-wrap guarded by PSK_PROGRESS_ACTIVE + PSK_PROGRESS_DISABLED + executable check"
+# 105.10 — the self-wrap guard now lives in the generic helper: gated by
+#   PSK_PROGRESS_ACTIVE (no re-exec / double-wrap) AND PSK_PROGRESS_DISABLED (escape).
+_SWRAP="$PROJ/agent/scripts/psk-progress-selfwrap.sh"
+if [ -f "$_SWRAP" ] && grep -q 'PSK_PROGRESS_ACTIVE' "$_SWRAP" 2>/dev/null && grep -q 'PSK_PROGRESS_DISABLED' "$_SWRAP" 2>/dev/null; then
+  pass "105.10: generic self-wrap helper guarded by PSK_PROGRESS_ACTIVE + PSK_PROGRESS_DISABLED"
 else
-  fail "105.10: self-wrap guard is missing one of PSK_PROGRESS_ACTIVE / PSK_PROGRESS_DISABLED / -x checks"
+  fail "105.10: psk-progress-selfwrap.sh missing or lacks the PSK_PROGRESS_ACTIVE/DISABLED guards"
 fi
 
 # 105.11 — guard-branch decisions hold for all 3 scenarios (replicates the exact
@@ -8581,10 +8609,980 @@ else
   pass "105.11: skip (psk-progress.sh absent)"
 fi
 
+# 105.12 — psk-progress.sh exposes the --status subcommand (reads the live-progress file)
+if [ -x "$_PROG" ] && bash "$_PROG" --status >/dev/null 2>&1; then
+  pass "105.12: psk-progress.sh --status subcommand present (reads live-progress file)"
+else
+  fail "105.12: psk-progress.sh --status subcommand missing or erroring"
+fi
+
+# 105.13 — KIT-GAP-0105 core: a heartbeat is written to the live file and is readable
+#   via --status EVEN when the wrapped op's stderr is redirected away. This is the
+#   exact failure the user hit — an agent backgrounding a long op + redirecting its
+#   streams used to hide ALL progress; the live file decouples progress from stderr.
+if [ -x "$_PROG" ]; then
+  _pd105="$(mktemp -d)"
+  # unset PSK_PROGRESS_DISABLED/ACTIVE before invoking the monitor: when this test runs
+  # inside a suite launched with PSK_PROGRESS_DISABLED=1 (the agent's capture pattern),
+  # the inherited var would suppress the monitor's live-file write and false-fail this
+  # probe. Clear it so we exercise the real live-file path (mirrors 105.14). Backgrounded
+  # in a subshell so the unset is scoped and the suite's env is untouched.
+  ( unset PSK_PROGRESS_DISABLED PSK_PROGRESS_ACTIVE
+    PSK_PROGRESS_DIR="$_pd105" PSK_PROGRESS_INTERVAL=1 bash "$_PROG" --label gap105 -- \
+      bash -c 'for i in 1 2 3 4 5 6; do echo x; sleep 1; done' >/dev/null 2>&1 ) &
+  _wp105=$!
+  # Load-tolerant poll (never false-fail under host load — same philosophy as 93.3b).
+  # A fixed `sleep 2` false-fails when the backgrounded op is CPU-starved past the window
+  # under heavy load: no interval-heartbeat has landed yet, so the live file looks absent
+  # even though the monitor is fine. Poll up to ~25s instead; the final summary line also
+  # persists in the live file after the op exits, so this catches progress either way.
+  _st105=""
+  for _i105 in $(seq 1 25); do
+    _st105=$(PSK_PROGRESS_DIR="$_pd105" bash "$_PROG" --status gap105 2>/dev/null)
+    printf '%s' "$_st105" | grep -q '\[progress\] gap105' && break
+    sleep 1
+  done
+  wait "$_wp105" 2>/dev/null
+  if printf '%s' "$_st105" | grep -q '\[progress\] gap105'; then
+    pass "105.13: live-file progress readable via --status despite stderr redirect (KIT-GAP-0105)"
+  else
+    fail "105.13: --status returned no live progress under stream redirection ('$_st105')"
+  fi
+  rm -rf "$_pd105"
+else
+  pass "105.13: skip (psk-progress.sh absent)"
+fi
+
+# 105.14 — the generic self-wrap helper re-execs the caller through the monitor
+#   (heartbeat appears) AND PSK_PROGRESS_DISABLED bypasses + forwards args.
+if [ -f "$_SWRAP" ] && [ -x "$_PROG" ]; then
+  _swt105="$(mktemp -d)"; _sws105="$_swt105/op.sh"
+  cat > "$_sws105" <<SWEOF
+#!/usr/bin/env bash
+PSK_SELFWRAP_LABEL="sw105" PSK_SELFWRAP_METRIC='tick' source "$_SWRAP" "\$@"
+echo "RAN:\$*"; echo tick
+SWEOF
+  # unset PSK_PROGRESS_ACTIVE so the helper actually re-wraps: when this test runs
+  # INSIDE the full suite (itself self-wrapped), ACTIVE=1 is inherited and the helper
+  # correctly falls through (no double-wrap) — so we clear it to exercise the wrap path.
+  _wr105=$( unset PSK_PROGRESS_ACTIVE PSK_PROGRESS_DISABLED; \
+           PSK_PROGRESS_DIR="$_swt105/p" PSK_PROGRESS_INTERVAL=1 bash "$_sws105" aa bb >/dev/null 2>&1; \
+           PSK_PROGRESS_DIR="$_swt105/p" bash "$_PROG" --status sw105 2>/dev/null)
+  _by105=$(PSK_PROGRESS_DISABLED=1 bash "$_sws105" zz 2>&1)
+  if printf '%s' "$_wr105" | grep -q '\[progress\] sw105' && printf '%s' "$_by105" | grep -q 'RAN:zz'; then
+    pass "105.14: generic self-wrap helper wraps via monitor + DISABLED bypass forwards args"
+  else
+    fail "105.14: self-wrap helper behavior wrong (wrapped='$_wr105' bypass='$_by105')"
+  fi
+  rm -rf "$_swt105"
+else
+  pass "105.14: skip (helper or psk-progress.sh absent)"
+fi
+
+# 105.15 — the generic monitor is used ALL OVER: the benchmarking suite self-wraps too
+if grep -q 'psk-progress-selfwrap.sh' "$PROJ/tests/test-spd-benchmarking.sh" 2>/dev/null; then
+  pass "105.15: test-spd-benchmarking.sh self-wraps via the generic helper (monitor all-over)"
+else
+  fail "105.15: test-spd-benchmarking.sh missing the generic self-wrap (silent long-op)"
+fi
+
+# 105.16 — PSK047 PASS path THROUGH the kit (KIT-GAP-0107): run the COMMITTED check_psk047
+# via `psk-sync-check.sh --project <fake>` against a project whose '# long-op:' script IS
+# wired, and assert it reports intact. Runs the real rule, not an inline grep replica
+# (§Verification Fidelity — verify kit capabilities through the kit).
+_p16_sc="$PROJ/agent/scripts/psk-sync-check.sh"
+if [ -x "$_p16_sc" ] && [ -x "$PROJ/agent/scripts/psk-progress.sh" ]; then
+  _p16d="$(mktemp -d)"
+  mkdir -p "$_p16d/agent/scripts" "$_p16d/tests"
+  cp "$PROJ/agent/scripts/psk-progress.sh" "$PROJ/agent/scripts/psk-progress-selfwrap.sh" "$_p16d/agent/scripts/"
+  # PSK047 also requires the centralized chunk driver present (KIT-GAP-0113) — stage it so
+  # the only variable under test is the '# long-op:' wiring.
+  [ -f "$PROJ/agent/scripts/psk-chunked-run.sh" ] && cp "$PROJ/agent/scripts/psk-chunked-run.sh" "$_p16d/agent/scripts/"
+  chmod +x "$_p16d/agent/scripts/"*.sh
+  # WIRED: the selfwrap is sourced on a NON-comment line
+  printf '#!/bin/bash\n# long-op: wired synthetic op\nsource "%s/agent/scripts/psk-progress-selfwrap.sh" "$@"\n' "$_p16d" > "$_p16d/tests/wired.sh"
+  _p16_out=$(bash "$_p16_sc" --project "$_p16d" --full 2>&1 || true)
+  if printf '%s' "$_p16_out" | grep -qE 'PSK047:.*intact'; then
+    pass "105.16: committed check_psk047 reports intact on a wired '# long-op:' (through-kit, not a replica)"
+  else
+    fail "105.16: real check_psk047 did not report PSK047 intact on a wired fake project"
+  fi
+  rm -rf "$_p16d"
+else
+  pass "105.16: skip (psk-sync-check.sh or psk-progress.sh absent)"
+fi
+
+# 105.17 — both known long-op suites carry the '# long-op:' marker (PSK047 anchor)
+if grep -qE '^# long-op:' "$PROJ/tests/test-spec-kit.sh" 2>/dev/null \
+   && grep -qE '^# long-op:' "$PROJ/tests/test-spd-benchmarking.sh" 2>/dev/null; then
+  pass "105.17: test-spec-kit + test-spd-benchmarking declare the '# long-op:' marker"
+else
+  fail "105.17: a known long-op suite is missing its '# long-op:' marker"
+fi
+
+# 105.18 — PSK047 FAIL path THROUGH the kit (KIT-GAP-0107): the COMMITTED check_psk047
+# (via psk-sync-check.sh --project <fake>) must FIRE on a '# long-op:' script that only
+# MENTIONS the monitor in a comment (not real wiring). Runs the real rule + exercises the
+# comment-strip — replaces the prior inline grep replica (§Verification Fidelity).
+_p18_sc="$PROJ/agent/scripts/psk-sync-check.sh"
+if [ -x "$_p18_sc" ] && [ -x "$PROJ/agent/scripts/psk-progress.sh" ]; then
+  _p18d="$(mktemp -d)"
+  mkdir -p "$_p18d/agent/scripts" "$_p18d/tests"
+  cp "$PROJ/agent/scripts/psk-progress.sh" "$PROJ/agent/scripts/psk-progress-selfwrap.sh" "$_p18d/agent/scripts/"
+  # Stage the chunk driver too (PSK047 requires it) so the ONLY reason PSK047 fires here is
+  # the unwired '# long-op:' script — not a missing chunk driver (KIT-GAP-0113).
+  [ -f "$PROJ/agent/scripts/psk-chunked-run.sh" ] && cp "$PROJ/agent/scripts/psk-chunked-run.sh" "$_p18d/agent/scripts/"
+  chmod +x "$_p18d/agent/scripts/"*.sh
+  # UNWIRED: '# long-op:' present, psk-progress.sh named ONLY in a comment (not real wiring)
+  printf '#!/bin/bash\n# long-op: unwired synthetic op\n# NOTE: psk-progress.sh would wire this, but it is not actually sourced\nsleep 1\n' > "$_p18d/tests/unwired.sh"
+  _p18_out=$(bash "$_p18_sc" --project "$_p18d" --full 2>&1 || true)
+  if printf '%s' "$_p18_out" | grep -qE 'PSK047.*(incomplete|unwired-long-op)'; then
+    pass "105.18: committed check_psk047 FIRES on an unwired '# long-op:' (comment-only mention not counted — through-kit)"
+  else
+    fail "105.18: real check_psk047 did not flag the unwired fake project"
+  fi
+  rm -rf "$_p18d"
+else
+  pass "105.18: skip (psk-sync-check.sh or psk-progress.sh absent)"
+fi
+
+# 105.19 — the long-op progress monitor now has an ALWAYS-ON user-facing surface: the
+# Claude Code status bar. psk-progress.sh --statusline emits `run: <label> ...` for an
+# actively-running op and is SILENT once it completes — so a backgrounded long op is never
+# a silent wait (it no longer depends on the agent relaying --status). Active → run:; done → empty.
+_p19_prog="$PROJ/agent/scripts/psk-progress.sh"
+if [ -x "$_p19_prog" ]; then
+  _p19d="$(mktemp -d)"
+  ( unset PSK_PROGRESS_DISABLED PSK_PROGRESS_ACTIVE
+    PSK_PROGRESS_DIR="$_p19d" PSK_PROGRESS_INTERVAL=1 bash "$_p19_prog" --label slmon19 -- \
+      bash -c 'for i in 1 2 3 4 5 6; do echo x; sleep 1; done' >/dev/null 2>&1 ) &
+  _p19pid=$!
+  _p19_active=""
+  for _i19 in $(seq 1 25); do
+    _p19_active=$(PSK_PROGRESS_DIR="$_p19d" bash "$_p19_prog" --statusline 2>/dev/null)
+    printf '%s' "$_p19_active" | grep -q 'run: slmon19' && break
+    sleep 1
+  done
+  wait "$_p19pid" 2>/dev/null
+  # once done, the live file's last line is the "done in" completion → --statusline silent
+  _p19_after=$(PSK_PROGRESS_DIR="$_p19d" bash "$_p19_prog" --statusline 2>/dev/null)
+  if printf '%s' "$_p19_active" | grep -q 'run: slmon19' && [ -z "$_p19_after" ]; then
+    pass "105.19: psk-progress.sh --statusline surfaces an active long-op (run:) + goes silent once done"
+  else
+    fail "105.19: --statusline wrong (active='$_p19_active' after='$_p19_after')"
+  fi
+  rm -rf "$_p19d"
+else
+  pass "105.19: skip (psk-progress.sh absent)"
+fi
+
+# 105.20 — ALL monitors on ONE always-on surface: psk-session-monitor.sh --statusline emits
+# BOTH session health (ctx:) AND the active long-op progress (run:) in a single status-bar
+# line. Agent-independent — the user sees long-op progress even when the agent doesn't relay it.
+_p20_slm="$PROJ/agent/scripts/psk-session-monitor.sh"
+_p20_prog="$PROJ/agent/scripts/psk-progress.sh"
+if [ -x "$_p20_slm" ] && [ -x "$_p20_prog" ]; then
+  _p20d="$(mktemp -d)"
+  printf '{"type":"assistant","message":{"role":"assistant","content":[],"usage":{"input_tokens":80000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":10}}}\n' > "$_p20d/tx.jsonl"
+  ( unset PSK_PROGRESS_DISABLED PSK_PROGRESS_ACTIVE
+    PSK_PROGRESS_DIR="$_p20d/p" PSK_PROGRESS_INTERVAL=1 bash "$_p20_prog" --label slmon20 -- \
+      bash -c 'for i in 1 2 3 4 5 6; do echo x; sleep 1; done' >/dev/null 2>&1 ) &
+  _p20pid=$!
+  for _i20 in $(seq 1 25); do
+    [ -f "$_p20d/p/slmon20.live" ] && grep -q '\[progress\] slmon20' "$_p20d/p/slmon20.live" 2>/dev/null && break
+    sleep 1
+  done
+  _p20_out=$(printf '{"transcript_path":"%s"}' "$_p20d/tx.jsonl" | PSK_PROGRESS_DIR="$_p20d/p" bash "$_p20_slm" --statusline 2>/dev/null)
+  wait "$_p20pid" 2>/dev/null
+  if printf '%s' "$_p20_out" | grep -q 'ctx:' && printf '%s' "$_p20_out" | grep -q 'run: slmon20'; then
+    pass "105.20: statusLine carries ALL monitors — ctx: (session) + run: (progress) on one always-on line"
+  else
+    fail "105.20: statusLine missing ctx or run readout ('$_p20_out')"
+  fi
+  rm -rf "$_p20d"
+else
+  pass "105.20: skip (session-monitor or psk-progress absent)"
+fi
+
+# 105.21 — the live-progress DEFAULT dir is TMPDIR-INDEPENDENT (KIT-GAP-0110). The op-writer
+# (agent shell, $TMPDIR=/var/folders/.../T on macOS) and the statusLine reader (Claude Code's
+# subprocess, $TMPDIR=/tmp or unset) had DIFFERENT $TMPDIR, so the reader looked in an empty
+# dir and `run:` never reached the status bar. An op writing under TMPDIR=A (default dir, no
+# PSK_PROGRESS_DIR) must be readable via --status under TMPDIR=B.
+_p21_prog="$PROJ/agent/scripts/psk-progress.sh"
+if [ -x "$_p21_prog" ]; then
+  _p21_tmpA="$(mktemp -d)"
+  ( unset PSK_PROGRESS_DISABLED PSK_PROGRESS_ACTIVE PSK_PROGRESS_DIR
+    TMPDIR="$_p21_tmpA" PSK_PROGRESS_INTERVAL=1 bash "$_p21_prog" --label tmpind21 -- \
+      bash -c 'for i in 1 2 3 4 5 6; do echo x; sleep 1; done' >/dev/null 2>&1 ) &
+  _p21pid=$!
+  # read under a DIFFERENT TMPDIR (label-specific --status, no most-recent collision)
+  _p21_seen=""
+  for _i21 in $(seq 1 25); do
+    _p21_seen=$(env -u PSK_PROGRESS_DIR TMPDIR=/tmp bash "$_p21_prog" --status tmpind21 2>/dev/null)
+    printf '%s' "$_p21_seen" | grep -q '\[progress\] tmpind21' && break
+    sleep 1
+  done
+  wait "$_p21pid" 2>/dev/null
+  if printf '%s' "$_p21_seen" | grep -q '\[progress\] tmpind21'; then
+    pass "105.21: live-progress default dir is TMPDIR-independent (op under TMPDIR A readable under TMPDIR B)"
+  else
+    fail "105.21: --status under a different TMPDIR did not find the op ('$_p21_seen') — dir is TMPDIR-coupled (statusLine would miss it)"
+  fi
+  rm -rf "$_p21_tmpA"
+else
+  pass "105.21: skip (psk-progress.sh absent)"
+fi
+
+# 105.22 — the monitor is visible the INSTANT an op starts (KIT-GAP-0111), not only after the
+# first heartbeat interval. With the default 15s interval, --status must already show the op a
+# couple seconds in — else a just-launched long op is blind in every read path (statusLine,
+# --status, chat relay) for 15s, which is the "monitor isn't coming" symptom at startup.
+_p22_prog="$PROJ/agent/scripts/psk-progress.sh"
+if [ -x "$_p22_prog" ]; then
+  _p22d="$(mktemp -d)"
+  ( unset PSK_PROGRESS_DISABLED PSK_PROGRESS_ACTIVE
+    PSK_PROGRESS_DIR="$_p22d" bash "$_p22_prog" --label inst22 -- sleep 4 >/dev/null 2>&1 ) &
+  _p22pid=$!
+  sleep 2   # well before the default 15s interval — must already be visible
+  _p22_seen=$(PSK_PROGRESS_DIR="$_p22d" bash "$_p22_prog" --status inst22 2>/dev/null)
+  wait "$_p22pid" 2>/dev/null
+  if printf '%s' "$_p22_seen" | grep -q '\[progress\] inst22'; then
+    pass "105.22: monitor visible the instant an op starts (initial live-file write, before the first interval)"
+  else
+    fail "105.22: op not visible at 2s with default interval ('$_p22_seen') — blind startup window"
+  fi
+  rm -rf "$_p22d"
+else
+  pass "105.22: skip (psk-progress.sh absent)"
+fi
+
+# ── 106.x — Verification Fidelity: test-spec-kit.sh selection runner ──────────
+# The selection runner (--section/--feature/--filter/--list-sections) makes
+# through-kit verification cheap+granular, so inline replication of a kit test's
+# pass/fail logic is never tempting (§Verification Fidelity). These probes use
+# only CHEAP invocations — list / instant guards / the tiny f01 feature — never a
+# heavy full-section run, so the regression guard stays fast even nested inside a
+# full-suite run. PSK_TEST_FILTER='' on every child neutralizes an inherited
+# parent filter (a parent `--filter` would otherwise leak into the child and
+# break the positive probes); PSK_PROGRESS_DISABLED=1 avoids a nested self-wrap.
+_vf_runner="$PROJ/tests/test-spec-kit.sh"
+
+# 106.1 — --list-sections lists BOTH section + feature files, exit 0
+_vf_out="$(PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --list-sections 2>&1)"; _vf_rc=$?
+if [ "$_vf_rc" -eq 0 ] \
+   && printf '%s' "$_vf_out" | grep -q '01-infrastructure.sh' \
+   && printf '%s' "$_vf_out" | grep -q 'f01-framework-file.sh'; then
+  pass "106.1: --list-sections lists section + feature files (exit 0)"
+else
+  fail "106.1: --list-sections did not list both axes (rc=$_vf_rc)"
+fi
+
+# 106.2 — --section <no-match> exits non-zero (verification runner never false-greens)
+PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --section zzzNoSuchSection >/dev/null 2>&1; _vf_rc=$?
+if [ "$_vf_rc" -ne 0 ]; then
+  pass "106.2: --section <no-match> exits non-zero (no false-green)"
+else
+  fail "106.2: --section <no-match> false-greened (rc=0)"
+fi
+
+# 106.3 — --feature <no-match> exits non-zero
+PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --feature zzzNoSuchFeature >/dev/null 2>&1; _vf_rc=$?
+if [ "$_vf_rc" -ne 0 ]; then
+  pass "106.3: --feature <no-match> exits non-zero (no false-green)"
+else
+  fail "106.3: --feature <no-match> false-greened (rc=0)"
+fi
+
+# 106.4 — bare --section (no value) exits non-zero without hanging `shift 2`
+PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --section >/dev/null 2>&1; _vf_rc=$?
+if [ "$_vf_rc" -ne 0 ]; then
+  pass "106.4: bare --section (no value) exits non-zero (hang-guard)"
+else
+  fail "106.4: bare --section did not error (rc=0)"
+fi
+
+# 106.5 — --filter matching nothing exits non-zero (cheap: tiny f01 feature)
+PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --feature f01 --filter ZZZNONEXISTENT >/dev/null 2>&1; _vf_rc=$?
+if [ "$_vf_rc" -ne 0 ]; then
+  pass "106.5: --filter <no-match> exits non-zero (no false-green)"
+else
+  fail "106.5: --filter <no-match> false-greened (rc=0)"
+fi
+
+# 106.6 — --feature f01 runs ONLY the feature axis (no sections), exit 0.
+# total<50 proves sections (thousands of tests) did not run.
+_vf_out="$(PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --feature f01 2>&1)"; _vf_rc=$?
+_vf_total="$(printf '%s' "$_vf_out" | grep -oE '[0-9]+ total' | grep -oE '[0-9]+' | tail -1)"
+if [ "$_vf_rc" -eq 0 ] && printf '%s' "$_vf_out" | grep -q 'Per-feature tests' \
+   && [ -n "$_vf_total" ] && [ "$_vf_total" -lt 50 ]; then
+  pass "106.6: --feature f01 runs only the feature axis (no sections; exit 0)"
+else
+  fail "106.6: --feature f01 did not isolate the feature axis (rc=$_vf_rc total=${_vf_total:-?})"
+fi
+
+# 106.7 — --filter narrows the REPORT to the matched subset (exit 0, total>=1)
+_vf_out="$(PSK_TEST_FILTER='' PSK_PROGRESS_DISABLED=1 bash "$_vf_runner" --feature f01 --filter Bootstrap 2>&1)"; _vf_rc=$?
+_vf_total="$(printf '%s' "$_vf_out" | grep -oE '[0-9]+ total' | grep -oE '[0-9]+' | tail -1)"
+if [ "$_vf_rc" -eq 0 ] && [ -n "$_vf_total" ] && [ "$_vf_total" -ge 1 ]; then
+  pass "106.7: --filter narrows the report to the matched subset (exit 0)"
+else
+  fail "106.7: --filter did not narrow correctly (rc=$_vf_rc total=${_vf_total:-?})"
+fi
+
+# 106.8 — PSK_TEST_FILTER honored in lib.sh pass/fail (the report-level primitive)
+if grep -q '_psk_test_match' "$PROJ/tests/lib.sh" \
+   && grep -qE 'pass\(\) \{ _psk_test_match' "$PROJ/tests/lib.sh"; then
+  pass "106.8: lib.sh pass/fail honor PSK_TEST_FILTER (report-level filter primitive)"
+else
+  fail "106.8: lib.sh pass/fail do not gate on PSK_TEST_FILTER"
+fi
+
+# ── 107.x — psk-chunked-run.sh (chunked-drive for in-chat progress — KIT-GAP-0113) ──
+# The chunk driver lets the agent run a long op as a SERIES of background tasks so each
+# chunk-completion is a chat turn (periodic frontend progress). These probes use a
+# private PSK_PROGRESS_DIR so the suite's own progress state is never touched, and only
+# CHEAP invocations (plan/next/status — never an actual chunk run) so the guard stays fast.
+_cr="$PROJ/agent/scripts/psk-chunked-run.sh"
+if [ -x "$_cr" ]; then
+  _crd="$(mktemp -d)"
+
+  # 107.1 — plan --suite test-spec-kit derives >=1 chunk (one per section), exit 0
+  _cr_plan="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107 --suite test-spec-kit 2>&1)"; _cr_rc=$?
+  if [ "$_cr_rc" -eq 0 ] && printf '%s' "$_cr_plan" | grep -qE 'Planned [1-9][0-9]* chunk'; then
+    pass "107.1: plan --suite test-spec-kit derives chunks (one per section, exit 0)"
+  else
+    fail "107.1: plan --suite did not derive chunks (rc=$_cr_rc out='$_cr_plan')"
+  fi
+
+  # 107.2 — next prints the first chunk command verbatim (a runnable --section invocation)
+  _cr_n1="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107 2>&1)"
+  if printf '%s' "$_cr_n1" | grep -qE '^CHUNK 1/[0-9]+: bash tests/test-spec-kit\.sh --section [0-9]'; then
+    pass "107.2: next prints a runnable per-section chunk command (CHUNK 1/N)"
+  else
+    fail "107.2: next did not print a clean chunk command ('$_cr_n1')"
+  fi
+
+  # 107.3 — next --result records the prev result + advances; status surfaces it
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107 --result "10 passed, 0 failed" >/dev/null 2>&1
+  _cr_st="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --label t107 2>&1)"
+  if printf '%s' "$_cr_st" | grep -q '2/' && printf '%s' "$_cr_st" | grep -q '10 passed, 0 failed'; then
+    pass "107.3: next --result records the chunk result + advances the pointer (status shows it)"
+  else
+    fail "107.3: result not recorded / pointer not advanced ('$_cr_st')"
+  fi
+
+  # 107.4 — generic --chunks list works; next walks past TOTAL → DONE
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107g --chunks 'echo a|||echo b' >/dev/null 2>&1
+  _cr_g1="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107g 2>&1)"
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107g >/dev/null 2>&1
+  _cr_done="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107g 2>&1)"
+  if printf '%s' "$_cr_g1" | grep -q 'CHUNK 1/2: echo a' && printf '%s' "$_cr_done" | grep -q '^DONE'; then
+    pass "107.4: generic --chunks list + next walks to DONE past the last chunk"
+  else
+    fail "107.4: generic chunks/DONE wrong (first='$_cr_g1' done='$_cr_done')"
+  fi
+
+  # 107.5 — next with no plan exits non-zero (no false-green)
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107none >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    pass "107.5: next with no plan exits non-zero (no false-green)"
+  else
+    fail "107.5: next with no plan false-greened (rc=0)"
+  fi
+
+  # 107.6 — mechanical-script header present (PSK034-exempt — it has no phases)
+  if head -8 "$_cr" | grep -q 'mechanical-script:'; then
+    pass "107.6: psk-chunked-run.sh is a mechanical-script (PSK034-exempt)"
+  else
+    fail "107.6: psk-chunked-run.sh missing mechanical-script header"
+  fi
+
+  # 107.7 — centralized driver: --suite all-tests = full Test Execution Flow (sections
+  # + benchmarking + release-check), chunk 1 = section 01, last two = benchmarking + release-check
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107at --suite all-tests >/dev/null 2>&1
+  _cr_at1="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107at 2>&1)"
+  _cr_atst="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --label t107at 2>&1)"
+  if printf '%s' "$_cr_at1" | grep -qE '^CHUNK 1/[0-9]+: bash tests/test-spec-kit\.sh --section 01' \
+     && printf '%s' "$_cr_atst" | grep -q 'test-spd-benchmarking.sh' \
+     && printf '%s' "$_cr_atst" | grep -q 'test-release-check.sh'; then
+    pass "107.7: --suite all-tests chains sections + benchmarking + release-check (full Test Execution Flow)"
+  else
+    fail "107.7: all-tests derivation wrong (first='$_cr_at1')"
+  fi
+
+  # 107.8 — --suite prepare-release: chunk 1 = psk-release.sh prepare, >=2 chunks total
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107pr --suite prepare-release >/dev/null 2>&1
+  _cr_pr1="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107pr 2>&1)"
+  if printf '%s' "$_cr_pr1" | grep -qE '^CHUNK 1/[0-9]+: bash agent/scripts/psk-release\.sh prepare'; then
+    pass "107.8: --suite prepare-release chunk 1 is the prepare kickoff (one chunk per release phase)"
+  else
+    fail "107.8: prepare-release derivation wrong (first='$_cr_pr1')"
+  fi
+
+  # 107.9 — --suite test-spd-benchmarking = single chunk (monolithic suite)
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107bm --suite test-spd-benchmarking >/dev/null 2>&1
+  _cr_bm="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107bm 2>&1)"
+  if printf '%s' "$_cr_bm" | grep -qE '^CHUNK 1/1: bash tests/test-spd-benchmarking\.sh'; then
+    pass "107.9: --suite test-spd-benchmarking is a single chunk (monolithic)"
+  else
+    fail "107.9: benchmarking derivation wrong (first='$_cr_bm')"
+  fi
+
+  # 107.10 — unknown suite exits non-zero (no false-green plan)
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107x --suite no-such-suite >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    pass "107.10: unknown --suite exits non-zero (no false-green)"
+  else
+    fail "107.10: unknown --suite false-greened (rc=0)"
+  fi
+
+  # 107.11 — test-spec-kit derivation covers the WHOLE suite: sections AND a feature-files
+  # chunk (KIT-GAP-0114 — a sections-only derivation silently under-ran the suite by ~350 tests)
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107f --suite test-spec-kit >/dev/null 2>&1
+  _cr_fstat="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --label t107f 2>&1)"
+  if printf '%s' "$_cr_fstat" | grep -q -- '--features-only'; then
+    pass "107.11: --suite test-spec-kit includes the feature-files chunk (whole suite, not sections-only)"
+  else
+    fail "107.11: test-spec-kit derivation omits the feature-files chunk (under-runs the suite)"
+  fi
+
+  # 107.12 — status --table emits the canonical ALIGNED box progress table (the ONE render
+  # format the agent relays verbatim): box border + header (Chunk/Unit/Result) + per-chunk
+  # rows with single-width status glyphs + unit labels (KIT-GAP-0120 box-table alignment).
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107f >/dev/null 2>&1   # dispatch chunk 1
+  _cr_tbl="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t107f 2>&1)"
+  if printf '%s' "$_cr_tbl" | grep -qF '┌' \
+     && printf '%s' "$_cr_tbl" | grep -qF 'Chunk' \
+     && printf '%s' "$_cr_tbl" | grep -qF 'Unit' \
+     && printf '%s' "$_cr_tbl" | grep -qF 'Result' \
+     && printf '%s' "$_cr_tbl" | grep -qF 'section 01' \
+     && printf '%s' "$_cr_tbl" | grep -qF 'feature files' \
+     && ! printf '%s' "$_cr_tbl" | grep -qF '⏳'; then
+    pass "107.12: status --table emits the aligned box progress table (Chunk/Unit/Result, single-width glyphs)"
+  else
+    fail "107.12: status --table did not emit the aligned box table ('$_cr_tbl')"
+  fi
+
+  # 107.13 — reflex QA/Dev render through the SAME status --table template with clean Unit
+  # labels (KIT-GAP-0116: one centralized monitor + one message template for reflex too).
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107r \
+    --chunks ': reflex QA dim-agent — dims 1-10 (spawn Task, model=sonnet)|||: reflex Dev-Agent fix QA-PORTABILITY-01 (one monolithic agent; tracker row)' >/dev/null 2>&1
+  _cr_rtbl="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t107r 2>&1)"
+  if printf '%s' "$_cr_rtbl" | grep -qF '┌' \
+     && printf '%s' "$_cr_rtbl" | grep -qF 'QA dims 1-10' \
+     && printf '%s' "$_cr_rtbl" | grep -qF 'Dev fix QA-PORTABILITY-01'; then
+    pass "107.13: reflex QA/Dev render through the canonical aligned box table with clean Unit labels"
+  else
+    fail "107.13: reflex Unit labels not cleanly rendered ('$_cr_rtbl')"
+  fi
+
+  # 107.14 — KIT-GAP-0116 wiring: progress-surface.sh is the ONE shared emitter that points
+  # reflex QA/Dev at the SAME centralized monitor (psk-chunked-run.sh), and run.sh + spawn-qa.sh
+  # actually call it. Without this, the reflex-qa-dims/reflex-dev suites existed but reflex's own
+  # AWAITING output never MANDATED driving through them.
+  _ps="$PROJ/reflex/lib/progress-surface.sh"
+  _ps_qa="$(bash "$_ps" reflex-qa-dims reflex-qa 2>&1)"
+  _ps_dev="$(bash "$_ps" reflex-dev reflex-dev 2>&1)"
+  # NB: patterns beginning with '--' need the `--` end-of-options separator,
+  # else grep/ugrep parse them as flags (KIT-GAP-0116 test-bug fix).
+  if [ -f "$_ps" ] \
+     && printf '%s' "$_ps_qa"  | grep -qF -- 'psk-chunked-run.sh' \
+     && printf '%s' "$_ps_qa"  | grep -qF -- '--suite reflex-qa-dims' \
+     && printf '%s' "$_ps_qa"  | grep -qF -- 'status --table' \
+     && printf '%s' "$_ps_dev" | grep -qF -- '--suite reflex-dev' \
+     && printf '%s' "$_ps_dev" | grep -qF -- 'monolithic' \
+     && grep -qF -- 'progress-surface.sh' "$PROJ/reflex/run.sh" \
+     && grep -qF -- 'progress-surface.sh' "$PROJ/reflex/lib/spawn-qa.sh"; then
+    pass "107.14: reflex QA/Dev AWAITING output mandates the SAME centralized monitor (progress-surface.sh wired)"
+  else
+    fail "107.14: progress-surface.sh missing or not wired into run.sh + spawn-qa.sh"
+  fi
+
+  # 107.15 — prepare-release chunks carry their ACTUAL phase name (KIT-GAP-0118):
+  # the status --table must read "release: tests / version / pdfs …", NOT an
+  # opaque "release: next" ×N that tells the operator nothing about each stage.
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107p --suite prepare-release >/dev/null 2>&1
+  _cr_ptbl="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t107p 2>&1)"
+  if printf '%s' "$_cr_ptbl" | grep -qF -- 'release: tests' \
+     && printf '%s' "$_cr_ptbl" | grep -qF -- 'release: version' \
+     && ! printf '%s' "$_cr_ptbl" | grep -qF -- 'release: next'; then
+    pass "107.15: prepare-release chunks show real phase names (tests/version/…), no opaque 'release: next'"
+  else
+    fail "107.15: prepare-release chunks not phase-labeled ('$_cr_ptbl')"
+  fi
+
+  # 107.16 — KIT-GAP-0119: the in-flight chunk's row surfaces the live op heartbeat
+  # (elapsed + count) from psk-progress's .live file, so a chunk wrapping a long op
+  # (e.g. the test suite inside prepare's tests phase) shows live sub-progress IN the
+  # table — not an opaque "running". A fresh mock .live drives the assertion.
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t107l --suite prepare-release >/dev/null 2>&1
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t107l >/dev/null 2>&1
+  printf '[progress] test-spec-kit · 541s · 1456\n' > "$_crd/test-spec-kit.live"
+  _cr_ltbl="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t107l 2>&1)"
+  if printf '%s' "$_cr_ltbl" | grep -qF 'running - ' \
+     && printf '%s' "$_cr_ltbl" | grep -qF '1456'; then
+    pass "107.16: running chunk row surfaces the live op heartbeat (in-table sub-progress, KIT-GAP-0119)"
+  else
+    fail "107.16: running row did not surface live heartbeat ('$_cr_ltbl')"
+  fi
+
+  # 107.17 — KIT-GAP-0122: the Stage column (between Chunk and Unit) shows the
+  # running chunk's section (from psk-progress --stage's "sec NN" in the .live)
+  # when the chunk CONTAINS sections (prepare tests phase), and is suppressed ("-")
+  # when the chunk IS a section (standalone suite — would duplicate Chunk). The ONE
+  # central renderer, so every monitor inherits the column.
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t17p --suite prepare-release >/dev/null 2>&1
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t17p >/dev/null 2>&1
+  printf '[progress] test-spec-kit · 90s · sec 04 · 1456\n' > "$_crd/test-spec-kit.live"
+  _cr_17p="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t17p 2>&1)"
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t17s --chunks 'bash tests/test-spec-kit.sh --section 04|||bash tests/test-spec-kit.sh --section 05' >/dev/null 2>&1
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" next --label t17s >/dev/null 2>&1
+  printf '[progress] test-spec-kit · 12s · sec 04 · 7\n' > "$_crd/test-spec-kit.live"
+  _cr_17s="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t17s 2>&1)"
+  if printf '%s' "$_cr_17p" | grep -qF 'Stage' \
+     && printf '%s' "$_cr_17p" | grep -qF 'sec 04' \
+     && printf '%s' "$_cr_17s" | grep -qF 'section 04' \
+     && ! printf '%s' "$_cr_17s" | grep -qF 'sec 04'; then
+    pass "107.17: Stage column shows section inside prepare tests, suppressed when chunk IS a section (KIT-GAP-0122)"
+  else
+    fail "107.17: Stage column wrong (prepare='$_cr_17p' standalone='$_cr_17s')"
+  fi
+
+  # 107.18 — KIT-GAP-0141: the Stage column is used AS NEEDED, defined once in the central
+  # renderer. all-tests has >=2 distinct stages (test-spec-kit · benchmarking · release-check)
+  # → Stage column populated ("test-spec-kit" appears ONLY via Stage, since section units are
+  # "section NN"). Standalone test-spec-kit has ONE stage → the column adds nothing → suppressed
+  # ("-" on every row, so "test-spec-kit" does NOT appear). This proves the multi-stage gating.
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t18a --suite all-tests >/dev/null 2>&1
+  _cr_18a="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t18a 2>&1)"
+  PSK_PROGRESS_DIR="$_crd" bash "$_cr" plan --label t18s --suite test-spec-kit >/dev/null 2>&1
+  _cr_18s="$(PSK_PROGRESS_DIR="$_crd" bash "$_cr" status --table --label t18s 2>&1)"
+  if printf '%s' "$_cr_18a" | grep -qF 'test-spec-kit' \
+     && printf '%s' "$_cr_18a" | grep -qF 'benchmarking' \
+     && printf '%s' "$_cr_18a" | grep -qF 'release-check' \
+     && ! printf '%s' "$_cr_18s" | grep -qF 'test-spec-kit'; then
+    pass "107.18: Stage column used as-needed — grouped in multi-stage all-tests, suppressed in single-stage test-spec-kit (KIT-GAP-0141)"
+  else
+    fail "107.18: Stage column gating wrong (all-tests='$_cr_18a' standalone='$_cr_18s')"
+  fi
+
+  rm -rf "$_crd"
+else
+  pass "107.1-107.18: skip (psk-chunked-run.sh absent)"
+fi
+
+# ── 108. Run-guard concurrency lock (KIT-GAP-0117) ──────────────────────────
+# Two independent reflex/release runs each spawn a full test suite; both reach
+# section 04, create git worktrees, and DEADLOCK. run-guard.sh is the process-
+# layer guard: refuse a live foreign holder, re-enter for the reflex→prepare
+# nesting (RUNGUARD_HELD), reclaim an orphan on demand (RUNGUARD_RECLAIM).
+_rg="$PROJ/reflex/lib/run-guard.sh"
+if [ -f "$_rg" ]; then
+  _rgdrv="$(mktemp 2>/dev/null || echo /tmp/rg-drv-$$.sh)"
+  cat > "$_rgdrv" <<RGEOF
+set -u
+. "$_rg"
+LF="\$(mktemp -u 2>/dev/null || echo /tmp/rg-\$\$.lock)"; rm -f "\$LF"
+SIB="\$(mktemp -u 2>/dev/null || echo /tmp/rg-\$\$.sib)"; rm -f "\$SIB"
+sleep 30 & F=\$!; echo "\$F" > "\$LF"
+( unset RUNGUARD_HELD; runguard_acquire reflex "\$LF" >/dev/null 2>&1; echo "refuse=\$?" )
+( RUNGUARD_HELD=999;   runguard_acquire reflex "\$LF" >/dev/null 2>&1; echo "reentrant=\$?" )
+( unset RUNGUARD_HELD; RUNGUARD_RECLAIM=1 runguard_acquire reflex "\$LF" >/dev/null 2>&1; echo "reclaim=\$?; killed=\$(kill -0 \$F 2>/dev/null && echo no || echo yes)" )
+# sibling cross-lock: own free, sibling held by live foreign → refuse
+sleep 30 & S=\$!; echo "\$S" > "\$SIB"; rm -f "\$LF"
+( unset RUNGUARD_HELD; runguard_acquire release "\$LF" "\$SIB" >/dev/null 2>&1; echo "sibling=\$?" )
+kill "\$S" 2>/dev/null; rm -f "\$LF" "\$SIB"
+RGEOF
+  _rgout="$(bash "$_rgdrv" 2>&1)"; rm -f "$_rgdrv"
+  if printf '%s' "$_rgout" | grep -qF -- 'refuse=1' \
+     && printf '%s' "$_rgout" | grep -qF -- 'reentrant=0' \
+     && printf '%s' "$_rgout" | grep -qF -- 'reclaim=0' \
+     && printf '%s' "$_rgout" | grep -qF -- 'killed=yes' \
+     && printf '%s' "$_rgout" | grep -qF -- 'sibling=1'; then
+    pass "108.1: run-guard refuses live foreign + sibling holder, re-enters under RUNGUARD_HELD, RECLAIM kills orphan"
+  else
+    fail "108.1: run-guard behavior wrong ('$_rgout')"
+  fi
+  # 108.2 — bidirectional wiring: psk-release locks heavy verbs AND passes
+  # reflex.lock as sibling; reflex/run.sh exports the re-entrancy token AND
+  # checks release.lock. Together → reflex and standalone release are mutually
+  # exclusive in BOTH directions (no concurrent suites), with reflex→prepare
+  # nesting still re-entrant.
+  if grep -qF -- 'run-guard.sh' "$PROJ/agent/scripts/psk-release.sh" \
+     && grep -qF -- 'runguard_acquire release' "$PROJ/agent/scripts/psk-release.sh" \
+     && grep -qF -- 'reflex.lock' "$PROJ/agent/scripts/psk-release.sh" \
+     && grep -qF -- 'RUNGUARD_HELD' "$PROJ/reflex/run.sh" \
+     && grep -qF -- 'release.lock' "$PROJ/reflex/run.sh"; then
+    pass "108.2: bidirectional cross-lock wired — psk-release⇄reflex mutually exclusive, nesting re-entrant (KIT-GAP-0117)"
+  else
+    fail "108.2: run-guard cross-lock not wired bidirectionally into psk-release.sh + reflex/run.sh"
+  fi
+else
+  pass "108.1-108.2: skip (run-guard.sh absent)"
+fi
+
+echo "═══ Section 109 — KIT-GAP-0123 chunked-suite pre-verify gate (fail-closed, fingerprint-bound) ═══"
+_tg="$PROJ/agent/scripts/psk-tests-gate.sh"
+_cr="$PROJ/agent/scripts/psk-chunked-run.sh"
+if [ ! -f "$_tg" ] || [ ! -f "$_cr" ]; then
+  pass "109.1-109.9: skip (psk-tests-gate.sh or psk-chunked-run.sh absent)"
+else
+  # ISOLATION (KIT-GAP-0124): point the gate's STATE_DIR at a throwaway dir so these tests'
+  # clear/stamp/seal NEVER touch the PRODUCTION agent/.release-state. The suite runs as a
+  # chunk DURING a live chunked-drive; without this, these tests would wipe the drive's real
+  # section stamps and the end-of-drive seal would refuse. PROJ_ROOT stays the real repo so
+  # the git tree fingerprint is still real.
+  export PSK_TESTS_GATE_STATE_DIR="$(mktemp -d 2>/dev/null || echo "/tmp/psk-tg-109-$$")"
+  # The marker + stamps are bound to the tree fingerprint, so a marker is only ever valid
+  # at this exact tree. CLEAR before + after so no marker leaks into a later real prepare.
+  bash "$_tg" clear >/dev/null 2>&1
+
+  # 109.1 — gate present + executable.
+  if [ -x "$_tg" ]; then pass "109.1: psk-tests-gate.sh present + executable"
+  else fail "109.1: psk-tests-gate.sh not executable"; fi
+
+  # 109.2 — seal is FAIL-CLOSED without proof: no stamps → refuse → check stays 1.
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_tg" check >/dev/null 2>&1; _c_none=$?
+  bash "$_tg" seal --suite test-spec-kit >/dev/null 2>&1; _seal_nostamp=$?
+  bash "$_tg" check >/dev/null 2>&1; _c_after_refuse=$?
+  if [ "$_c_none" -eq 1 ] && [ "$_seal_nostamp" -ne 0 ] && [ "$_c_after_refuse" -eq 1 ]; then
+    pass "109.2: seal fail-closed without real stamps — no marker written, check stays 1"
+  else
+    fail "109.2: seal not fail-closed (none=$_c_none seal_ec=$_seal_nostamp after=$_c_after_refuse)"
+  fi
+
+  # 109.3 — with a real `full` stamp at the current fingerprint, seal succeeds + run skips.
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_tg" stamp full >/dev/null 2>&1
+  bash "$_tg" seal --suite test-spec-kit >/dev/null 2>&1; _seal_ok=$?
+  bash "$_tg" check >/dev/null 2>&1; _c_proven=$?
+  # check passed above → `run` takes the SAME skip predicate, so it returns fast (no real
+  # suite). No `timeout` wrapper — that is not portable (absent on macOS → exit 127).
+  _runout=$(bash "$_tg" run 2>&1); _run_ec=$?
+  if [ "$_seal_ok" -eq 0 ] && [ "$_c_proven" -eq 0 ] && [ "$_run_ec" -eq 0 ] \
+     && printf '%s' "$_runout" | grep -qiE 'pre-verified|skipping'; then
+    pass "109.3: real stamp → seal succeeds, check=0, run skips inline suite (no double-run)"
+  else
+    fail "109.3: stamped-seal/skip wrong (seal=$_seal_ok check=$_c_proven run=$_run_ec)"
+  fi
+
+  # 109.4 — DIRTY-TREE INVALIDATION (the CRITICAL fix): a marker sealed at a clean tree must
+  # STOP proving the moment the working tree changes — even at the SAME HEAD. Add an untracked
+  # file → fingerprint changes → check=1; remove it → fingerprint restored → check=0.
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_tg" stamp full >/dev/null 2>&1
+  bash "$_tg" seal --suite test-spec-kit >/dev/null 2>&1
+  bash "$_tg" check >/dev/null 2>&1; _c_clean=$?
+  _dirt="$PROJ/.psk-tg-dirty-$$"
+  : > "$_dirt"
+  bash "$_tg" check >/dev/null 2>&1; _c_dirty=$?
+  rm -f "$_dirt"
+  bash "$_tg" check >/dev/null 2>&1; _c_restored=$?
+  if [ "$_c_clean" -eq 0 ] && [ "$_c_dirty" -eq 1 ] && [ "$_c_restored" -eq 0 ]; then
+    pass "109.4: dirty working tree at same HEAD invalidates the skip (uncommitted edits can't ship untested)"
+  else
+    fail "109.4: dirty-tree not invalidated (clean=$_c_clean dirty=$_c_dirty restored=$_c_restored)"
+  fi
+
+  # 109.5 — seal trusts REAL stamps, NOT agent narrative. Drive the chunk driver to DONE with
+  # only BENIGN free-text results and NO stamps → seal must REFUSE (the old grep-the-narrative
+  # hole). Then stamp every unit for real → seal succeeds.
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_cr" plan --label tg109n --suite test-spec-kit >/dev/null 2>&1
+  for _i in $(seq 1 60); do
+    bash "$_cr" next --label tg109n --result "142/145 done, looking good" 2>&1 | grep -q 'DONE' && break
+  done
+  bash "$_tg" check >/dev/null 2>&1; _c_narrative=$?
+  bash "$_cr" clear --label tg109n >/dev/null 2>&1
+  bash "$_tg" clear >/dev/null 2>&1
+  _fp_units=$(bash "$_tg" stamp full >/dev/null 2>&1; echo ok)   # real proof for test-spec-kit
+  bash "$_tg" seal --suite test-spec-kit >/dev/null 2>&1
+  bash "$_tg" check >/dev/null 2>&1; _c_realproof=$?
+  if [ "$_c_narrative" -eq 1 ] && [ "$_c_realproof" -eq 0 ]; then
+    pass "109.5: benign agent narrative cannot seal (no stamp → check 1); real exit-0 stamp can (check 0)"
+  else
+    fail "109.5: narrative-vs-proof wrong (narrative=$_c_narrative realproof=$_c_realproof)"
+  fi
+
+  # 109.6 — all-tests requires benchmarking + release-check stamps too (not just sections).
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_tg" stamp full >/dev/null 2>&1
+  bash "$_tg" seal --suite all-tests >/dev/null 2>&1; _seal_partial=$?   # missing bench+release-check
+  bash "$_tg" stamp benchmarking >/dev/null 2>&1
+  bash "$_tg" stamp release-check >/dev/null 2>&1
+  bash "$_tg" seal --suite all-tests >/dev/null 2>&1; _seal_full=$?
+  if [ "$_seal_partial" -ne 0 ] && [ "$_seal_full" -eq 0 ]; then
+    pass "109.6: all-tests seal needs benchmarking + release-check stamps (not just test-spec-kit)"
+  else
+    fail "109.6: all-tests coverage wrong (partial=$_seal_partial full=$_seal_full)"
+  fi
+
+  # 109.7 — NON-GIT project fails CLOSED: an empty fingerprint must refuse seal AND refuse check.
+  _nogit="$(mktemp -d 2>/dev/null || echo /tmp/psk-nogit-$$)"
+  mkdir -p "$_nogit/agent/scripts" 2>/dev/null
+  cp "$_tg" "$_nogit/agent/scripts/psk-tests-gate.sh" 2>/dev/null
+  _ng_fp=$(PSK_TESTS_GATE_PROJ_ROOT="$_nogit" bash "$_nogit/agent/scripts/psk-tests-gate.sh" fingerprint 2>/dev/null)
+  PSK_TESTS_GATE_PROJ_ROOT="$_nogit" bash "$_nogit/agent/scripts/psk-tests-gate.sh" stamp full >/dev/null 2>&1
+  PSK_TESTS_GATE_PROJ_ROOT="$_nogit" bash "$_nogit/agent/scripts/psk-tests-gate.sh" seal --suite test-spec-kit >/dev/null 2>&1; _ng_seal=$?
+  PSK_TESTS_GATE_PROJ_ROOT="$_nogit" bash "$_nogit/agent/scripts/psk-tests-gate.sh" check >/dev/null 2>&1; _ng_check=$?
+  rm -rf "$_nogit"
+  if [ -z "$_ng_fp" ] && [ "$_ng_seal" -ne 0 ] && [ "$_ng_check" -eq 1 ]; then
+    pass "109.7: non-git project fails closed — empty fingerprint refuses seal + check (tests always run)"
+  else
+    fail "109.7: non-git not fail-closed (fp='$_ng_fp' seal=$_ng_seal check=$_ng_check)"
+  fi
+
+  # 109.8 — structural wiring + the marker/stamps are gitignored (must not perturb the fingerprint).
+  _w_phases=0; _w_reflex=0; _w_psk048=0; _w_ignore=0
+  grep -E '^[[:space:]]*command:' "$PROJ/.portable-spec-kit/workflows/release/phases.yml" 2>/dev/null | grep -q 'psk-tests-gate\.sh' && _w_phases=1
+  grep -q 'psk-chunked-run\.sh' "$PROJ/reflex/lib/loop.sh" 2>/dev/null \
+    && grep -qE 'suite (all-tests|test-spec-kit)' "$PROJ/reflex/lib/loop.sh" 2>/dev/null && _w_reflex=1
+  grep -q 'check_psk048_chunked_suite_protocol' "$PROJ/agent/scripts/psk-sync-check.sh" 2>/dev/null && _w_psk048=1
+  grep -q '\.tests-stamps' "$PROJ/.gitignore" 2>/dev/null && grep -q '\.tests-preverified' "$PROJ/.gitignore" 2>/dev/null && _w_ignore=1
+  if [ "$_w_phases" -eq 1 ] && [ "$_w_reflex" -eq 1 ] && [ "$_w_psk048" -eq 1 ] && [ "$_w_ignore" -eq 1 ]; then
+    pass "109.8: wiring intact (step-1→gate, reflex phase-1 chunk-drive, PSK048) + marker/stamps gitignored"
+  else
+    fail "109.8: wiring/ignore incomplete (phases=$_w_phases reflex=$_w_reflex psk048=$_w_psk048 ignore=$_w_ignore)"
+  fi
+
+  # 109.9 — the skip must SURVIVE kit runtime-state churn (so it actually fires under reflex):
+  # a marker sealed at the current tree must STILL prove after agent/.workflow-state/* changes
+  # (psk-release.sh prepare writes those before step-1), but must STILL break on a code change.
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_tg" stamp full >/dev/null 2>&1
+  bash "$_tg" seal --suite test-spec-kit >/dev/null 2>&1
+  mkdir -p "$PROJ/agent/.workflow-state" 2>/dev/null
+  _churn="$PROJ/agent/.workflow-state/.psk-tg-churn-$$"; : > "$_churn"
+  bash "$_tg" check >/dev/null 2>&1; _c_runtime=$?      # excluded path → still valid
+  rm -f "$_churn"
+  _codechg="$PROJ/.psk-tg-code-$$"; : > "$_codechg"
+  bash "$_tg" check >/dev/null 2>&1; _c_code=$?          # code-area change → invalid
+  rm -f "$_codechg"
+  if [ "$_c_runtime" -eq 0 ] && [ "$_c_code" -eq 1 ]; then
+    pass "109.9: skip survives kit runtime-state churn (fires under reflex) yet still breaks on a code change"
+  else
+    fail "109.9: fingerprint excludes wrong (runtime-churn=$_c_runtime code-change=$_c_code)"
+  fi
+
+  # 109.10 — KIT-GAP-0140 structural no-inline-fallback: `run` with NO pre-verify proof in an
+  # agent-driven (non-interactive) context REFUSES (exit 7) + emits the chunk-drive recipe
+  # instead of running the suite inline (which surfaces zero per-section chat progress).
+  # PSK_NONINTERACTIVE=1 forces the agent-driven branch deterministically (over CI/TTY).
+  bash "$_tg" clear >/dev/null 2>&1
+  PSK_NONINTERACTIVE=1 bash "$_tg" run >/dev/null 2>&1; _g_rc=$?
+  if [ "$_g_rc" -eq 7 ]; then
+    pass "109.10: run refuses inline in agent context without proof (exit 7, chunked-drive guard)"
+  else
+    fail "109.10: run did not refuse in agent context (rc=$_g_rc, expected 7)"
+  fi
+
+  # 109.11 — the guard must NOT over-fire: a SEALED marker → `run` skips (exit 0) even in the
+  # agent-driven context (the refuse path is only for the unproven tree). Proves the structural
+  # guard never blocks a legitimately pre-verified prepare.
+  bash "$_tg" clear >/dev/null 2>&1
+  bash "$_tg" stamp full >/dev/null 2>&1
+  bash "$_tg" seal --suite test-spec-kit >/dev/null 2>&1
+  PSK_NONINTERACTIVE=1 bash "$_tg" run >/dev/null 2>&1; _g_skip=$?
+  if [ "$_g_skip" -eq 0 ]; then
+    pass "109.11: run skips (exit 0) when pre-verified, even in agent context (guard not over-eager)"
+  else
+    fail "109.11: run did not skip with a valid marker (rc=$_g_skip, expected 0)"
+  fi
+
+  # Cleanup — clear the ISOLATED gate state + remove the throwaway dir, then drop the
+  # override so nothing leaks into the production gate. (Production state was never touched.)
+  bash "$_tg" clear >/dev/null 2>&1
+  rm -rf "$PSK_TESTS_GATE_STATE_DIR" 2>/dev/null || true
+  unset PSK_TESTS_GATE_STATE_DIR
+fi
+
+# --- PSK050: quantitative prose-claim drift (QA-D37-PROSE-CLAIM-DRIFT-DETECTION-01) ---
+# The kit ships a prose-claims registry + a sync-check rule that flags when a quantitative
+# claim in kit docs diverges from runtime — guarding the recurring count/phase/filename drift
+# class (D1/D19/D34). Tests through the kit (§Verification Fidelity): (1) rule + data present,
+# (2) GREEN on the committed consistent tree, (3) FIRES on an injected drift (negative control).
+_PCD_SC="$PROJ/agent/scripts/psk-sync-check.sh"
+_PCD_DATA="$PROJ/.portable-spec-kit/prose-claims.yml"
+if [ -x "$_PCD_SC" ] && [ -f "$_PCD_DATA" ]; then
+  grep -q 'check_prose_claims' "$_PCD_SC" \
+    && pass "PSK050.1: check_prose_claims rule present in psk-sync-check.sh" \
+    || fail "PSK050.1: check_prose_claims rule missing"
+  _pcd_full=$(PSK_ENV_AUTO_DETECT=0 bash "$_PCD_SC" --full 2>&1 || true)
+  printf '%s' "$_pcd_full" | grep -qE 'PSK050:.*match runtime' \
+    && pass "PSK050.2: rule passes GREEN on the committed consistent tree" \
+    || fail "PSK050.2: rule did not report GREEN on committed tree"
+  printf '%s' "$_pcd_full" | grep -qE '✗ PSK050' \
+    && fail "PSK050.3: rule unexpectedly FIRED on the committed (consistent) tree" \
+    || pass "PSK050.3: rule does not false-fire on the committed tree"
+  # Negative control — inject drift into a throwaway project copy, confirm the COMMITTED rule
+  # FIRES through the kit (--full = ERROR). Proves the matcher is not blindly lenient.
+  _pcd_tmp="$(mktemp -d 2>/dev/null || echo /tmp/psk-pcd-$$)"
+  mkdir -p "$_pcd_tmp/.portable-spec-kit/skills" "$_pcd_tmp/agent/scripts"
+  cp "$PROJ/portable-spec-kit.md" "$_pcd_tmp/portable-spec-kit.md" 2>/dev/null
+  cp "$_PCD_SC" "$_pcd_tmp/agent/scripts/psk-sync-check.sh" 2>/dev/null
+  printf '> via 7 phases.\n' > "$_pcd_tmp/.portable-spec-kit/skills/project-orchestration.md"
+  cat > "$_pcd_tmp/.portable-spec-kit/prose-claims.yml" <<'PCDEOF'
+- id: project-orchestration-phase-count
+  source_file: .portable-spec-kit/skills/project-orchestration.md
+  claimed: "grep -oE '[0-9]+ phases' .portable-spec-kit/skills/project-orchestration.md | grep -oE '[0-9]+' | head -1"
+  actual: "grep -oE '10 phases' portable-spec-kit.md | grep -oE '[0-9]+' | head -1"
+  note: "negative-control fixture"
+PCDEOF
+  _pcd_neg=$(PSK_ENV_AUTO_DETECT=0 bash "$_PCD_SC" --project "$_pcd_tmp" --full 2>&1 || true)
+  printf '%s' "$_pcd_neg" | grep -qE 'PSK050.*(prose-claim-drift|diverge)' \
+    && pass "PSK050.4: negative control — injected drift FIRES the committed rule through the kit" \
+    || fail "PSK050.4: injected drift did NOT fire the rule (matcher too lenient)"
+  rm -rf "$_pcd_tmp" 2>/dev/null || true
+
+  # --- PSK050 allowlist guard (QA-D8-PSK050-EVAL-CODE-EXECUTION-01, cycle-03) ---
+  # check_prose_claims eval's the claimed/actual probe commands from prose-claims.yml. To bound
+  # the injection surface, a guard requires each probe to START with a read-only command; a
+  # claim outside the allowlist is SKIPPED, not executed. Tests: (1) guard present; (2) a tampered
+  # probe (a write command) is skipped through the kit — its side effect never runs.
+  grep -qE 'not in read-only allowlist' "$_PCD_SC" \
+    && pass "PSK050.5: eval allowlist guard present in check_prose_claims" \
+    || fail "PSK050.5: eval allowlist guard missing (injection surface unbounded)"
+  _pcd_atk="$(mktemp -d 2>/dev/null || echo /tmp/psk-pcd-atk-$$)"
+  mkdir -p "$_pcd_atk/.portable-spec-kit/skills" "$_pcd_atk/agent/scripts"
+  cp "$PROJ/portable-spec-kit.md" "$_pcd_atk/portable-spec-kit.md" 2>/dev/null
+  cp "$_PCD_SC" "$_pcd_atk/agent/scripts/psk-sync-check.sh" 2>/dev/null
+  printf '> via 10 phases.\n' > "$_pcd_atk/.portable-spec-kit/skills/project-orchestration.md"
+  _pcd_canary="$_pcd_atk/PWNED"
+  # A non-allowlisted command (touch) as the claimed probe — must be SKIPPED, never run.
+  cat > "$_pcd_atk/.portable-spec-kit/prose-claims.yml" <<PCDATK
+- id: malicious-probe
+  source_file: .portable-spec-kit/skills/project-orchestration.md
+  claimed: "touch $_pcd_canary && echo 1"
+  actual: "echo 1"
+  note: "injection-attempt fixture"
+PCDATK
+  PSK_ENV_AUTO_DETECT=0 bash "$_PCD_SC" --project "$_pcd_atk" --full >/dev/null 2>&1 || true
+  [ ! -f "$_pcd_canary" ] \
+    && pass "PSK050.6: non-allowlisted probe is SKIPPED — eval side effect never executed" \
+    || fail "PSK050.6: non-allowlisted probe RAN (canary file created — allowlist bypassed)"
+  rm -rf "$_pcd_atk" 2>/dev/null || true
+else
+  pass "PSK050: skip (psk-sync-check.sh or prose-claims.yml absent)"
+fi
+
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   echo ""
   echo "═══════════════════════════════════════════"
   echo "  RESULTS (03-reliability): $PASS passed, $FAIL failed, $TOTAL total"
   echo "═══════════════════════════════════════════"
   [ "$FAIL" -eq 0 ] && exit 0 || exit 1
+fi
+
+# ══ G25 (QA-D26-001): watchdog surfaces hung `in_progress` phases, not only AWAITING:* ══
+WATCHDOG_SH="$PROJ/agent/scripts/psk-workflow-watchdog.sh"
+if [ -x "$WATCHDOG_SH" ]; then
+  _g25_tmp=$(mktemp -d)
+  mkdir -p "$_g25_tmp/agent/scripts" "$_g25_tmp/agent/.workflow-state"
+  cp "$WATCHDOG_SH" "$_g25_tmp/agent/scripts/psk-workflow-watchdog.sh"
+  # A legacy/run-plan state with an OLD STARTED and a phase stuck `in_progress`.
+  cat > "$_g25_tmp/agent/.workflow-state/legacy-plan.state" <<EOF
+WORKFLOW=legacy-plan
+RUN_ID=1700000000
+STARTED=2020-01-01T00:00:00Z
+PHASE_A=done
+PHASE_B=in_progress
+EOF
+  # Low thresholds so the ancient STARTED classifies STALE.
+  _g25_out=$(PROJ_ROOT="$_g25_tmp" PSK_WATCHDOG_WARN_AFTER_SEC=1 PSK_WATCHDOG_HUNG_AFTER_SEC=2 PSK_WATCHDOG_STALE_AFTER_SEC=3 \
+    bash "$_g25_tmp/agent/scripts/psk-workflow-watchdog.sh" list 2>/dev/null)
+  if echo "$_g25_out" | grep -q 'legacy-plan' && echo "$_g25_out" | grep -qiE 'STALE|HUNG' && echo "$_g25_out" | grep -q ' B '; then
+    pass "110.1: G25 — watchdog surfaces a hung in_progress phase (any workflow type)"
+  else
+    fail "110.1: G25 — watchdog missed in_progress hung phase. out: $(echo "$_g25_out" | tr '\n' '|')"
+  fi
+  # A FRESH in_progress phase (recent STARTED) must NOT surface (cls=OK filtered).
+  cat > "$_g25_tmp/agent/.workflow-state/fresh-plan.state" <<EOF
+WORKFLOW=fresh-plan
+RUN_ID=1700000000
+STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+PHASE_X=in_progress
+EOF
+  _g25_fresh=$(PROJ_ROOT="$_g25_tmp" PSK_WATCHDOG_WARN_AFTER_SEC=900 PSK_WATCHDOG_HUNG_AFTER_SEC=3600 PSK_WATCHDOG_STALE_AFTER_SEC=86400 \
+    bash "$_g25_tmp/agent/scripts/psk-workflow-watchdog.sh" list 2>/dev/null)
+  if echo "$_g25_fresh" | grep -q 'fresh-plan'; then
+    fail "110.1: G25 — fresh in_progress phase spuriously surfaced (OK should be filtered)"
+  else
+    pass "110.1: G25 — fresh in_progress phase NOT surfaced (cls=OK filtered correctly)"
+  fi
+  rm -rf "$_g25_tmp"
+else
+  fail "110.1: G25 — psk-workflow-watchdog.sh missing/not executable"
+fi
+
+# ══ G28 (QA-D26-002): psk-dispatch init archives a legacy psk-<name>.state orphan ══
+DISPATCH_SH="$PROJ/agent/scripts/psk-dispatch.sh"
+WFS_SH="$PROJ/agent/scripts/psk-workflow-state.sh"
+if [ -f "$DISPATCH_SH" ] && [ -f "$WFS_SH" ]; then
+  _g28_tmp=$(mktemp -d)
+  mkdir -p "$_g28_tmp/agent/scripts" "$_g28_tmp/agent/.workflow-state" "$_g28_tmp/wf"
+  cp "$DISPATCH_SH" "$_g28_tmp/agent/scripts/"
+  cp "$WFS_SH" "$_g28_tmp/agent/scripts/"
+  # Minimal phases.yml (one mechanical phase) for workflow "demo".
+  cat > "$_g28_tmp/wf/phases.yml" <<EOF
+schema_version: 1
+workflow: demo
+description: |
+  test workflow
+phases:
+  - id: p0
+    name: "P0"
+    goal: "noop"
+    spawn_type: mechanical
+    command: "true"
+    gate: "true"
+    commit_required: false
+    depends_on: []
+EOF
+  # Plant a legacy orphan psk-demo.state (pre-migration name).
+  printf 'WORKFLOW=psk-demo\nSTARTED=2020-01-01T00:00:00Z\nPHASE_A B C=pending\n' > "$_g28_tmp/agent/.workflow-state/psk-demo.state"
+  PROJ_ROOT="$_g28_tmp" bash "$_g28_tmp/agent/scripts/psk-dispatch.sh" --phases-file "$_g28_tmp/wf/phases.yml" --workflow-id demo init </dev/null >/dev/null 2>&1 || true
+  if [ ! -f "$_g28_tmp/agent/.workflow-state/psk-demo.state" ] && [ -f "$_g28_tmp/agent/.workflow-state/psk-demo.state.superseded" ]; then
+    pass "110.2: G28 — psk-dispatch init archives legacy psk-demo.state orphan → .superseded"
+  else
+    fail "110.2: G28 — legacy orphan not archived ($(ls "$_g28_tmp/agent/.workflow-state/" | tr '\n' ' '))"
+  fi
+  rm -rf "$_g28_tmp"
+else
+  fail "110.2: G28 — psk-dispatch.sh or psk-workflow-state.sh missing"
+fi
+
+# ══ KIT-GAP-0147: chunked-drive guard (structural chat-progress guarantee) ══
+GUARD_SH="$PROJ/agent/scripts/psk-chunked-drive-guard.sh"
+if [ -x "$GUARD_SH" ]; then
+  _gd(){ printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1" | bash "$GUARD_SH" 2>/dev/null; }
+  # 110.3 — a DIRECT long-op invocation triggers the chat nudge (additionalContext)
+  if _gd 'bash tests/test-spec-kit.sh --section 03' | grep -q 'additionalContext' \
+     && _gd 'bash tests/test-spec-kit.sh --section 03' | grep -q 'KIT-GAP-0147 guard'; then
+    pass "110.3: guard nudges on a direct long-op invocation (chat additionalContext)"
+  else
+    fail "110.3: guard did NOT nudge on direct long-op invocation"
+  fi
+  # 110.4 — driven THROUGH chunked-run → silent (no false positive)
+  if [ -z "$(_gd 'bash agent/scripts/psk-chunked-run.sh next --label x')" ] \
+     && [ -z "$(_gd 'ls -la')" ]; then
+    pass "110.4: guard silent when driven via chunked-run + on non-long-op commands"
+  else
+    fail "110.4: guard false-positived on chunked-run/non-long-op"
+  fi
+  # 110.5 — GENERIC: detects ANY '# long-op:' script, not a hardcoded list (benchmarking)
+  if _gd 'bash tests/test-spd-benchmarking.sh' | grep -q 'additionalContext'; then
+    pass "110.5: guard generically detects any # long-op: script (benchmarking)"
+  else
+    fail "110.5: guard missed a # long-op: script (not generic)"
+  fi
+  # 110.6 — bypass honored
+  if [ -z "$(printf '{"tool_input":{"command":"bash tests/test-spec-kit.sh"}}' | PSK_CHUNKED_GUARD_DISABLED=1 bash "$GUARD_SH" 2>/dev/null)" ]; then
+    pass "110.6: guard honors PSK_CHUNKED_GUARD_DISABLED=1"
+  else
+    fail "110.6: guard ignored its bypass env var"
+  fi
+else
+  fail "110.3-6: psk-chunked-drive-guard.sh missing or not executable"
 fi

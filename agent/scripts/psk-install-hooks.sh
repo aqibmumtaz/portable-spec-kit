@@ -133,9 +133,9 @@ fi
 # the kit's own .claude/. Result: the UserPromptSubmit session-monitor + PostToolUse drift-check
 # never fire, so the ctx:/opt: indicators have no data and silently suppress. Mirror
 # the hooks into the workspace settings (paths RELATIVE TO THE WORKSPACE so they
-# resolve from that cwd), merging into any existing settings via jq (idempotent,
-# never clobbers the operator's permissions/other keys). Runs regardless of whether
-# the kit's own project-level hooks are already installed.
+# resolve from that cwd), merging into any existing settings via a python3 JSON merge
+# (idempotent, never clobbers the operator's permissions/other keys). Runs regardless of
+# whether the kit's own project-level hooks are already installed.
 _wire_workspace_hooks() {
   [ -z "$GIT_ROOT" ] && return 0
   [ "$GIT_ROOT" = "$PROJ_ROOT" ] && return 0    # not nested — project hooks already apply
@@ -149,42 +149,140 @@ _wire_workspace_hooks() {
   # project in the same workspace).
   mon_cmd="bash $rel/agent/scripts/psk-session-monitor.sh"
   sl_cmd="$mon_cmd --statusline"
-  if ! command -v jq >/dev/null 2>&1; then
-    echo -e "  ${YELLOW}⚠${NC} jq not found — wire workspace settings manually in $ws_settings (UserPromptSubmit hook + statusLine → $mon_cmd)" >&2
-    return 0
-  fi
-  # Skip ONLY when fully wired: monitor under UserPromptSubmit (NOT lingering under Stop) AND a
-  # statusLine present. An install from the buggy build wired the monitor under Stop (a Stop hook
-  # that returns additionalContext re-invokes the agent every turn → infinite loop) — that MUST be
-  # migrated, never skipped. The guard checks the event + statusLine presence, not just the name.
-  if [ -f "$ws_settings" ] && [ "$FORCE" = false ] \
-     && jq -e --arg mon "$mon_cmd" '(([.hooks.UserPromptSubmit[]?.hooks[]?.command] | index($mon)) != null) and (([.hooks.Stop[]?.hooks[]?.command] | index($mon)) == null) and (.statusLine != null)' "$ws_settings" >/dev/null 2>&1; then
-    echo -e "  ${YELLOW}⚠${NC} Workspace session-monitor + statusLine already wired ($ws_settings) — use --force"
+  # KIT-GAP-0147: mirror the chunked-drive guard too. Unlike the kit's sync-check drift-check,
+  # the guard is SAFE in a shared workspace — it no-ops on any Bash command that is not a kit
+  # long-op, and it MUST live in the workspace settings to fire (the session runs at the
+  # workspace root, so Claude Code resolves PostToolUse from there, not the kit's own .claude/).
+  guard_cmd="bash $rel/agent/scripts/psk-chunked-drive-guard.sh"
+  # The merge runs through python3 — an established kit dependency (see psk-env.sh /
+  # psk-spawn.sh / psk-sync-check.sh) that ships on macOS and every mainstream Linux. The
+  # earlier implementation depended on a JSON CLI that is NOT universally present, and silently
+  # left the workspace hooks unmirrored on any host that lacked it. python3 closes that gap so
+  # the nested-workspace wiring now works everywhere without an extra tool install.
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo -e "  ${YELLOW}⚠${NC} python3 not found — wire workspace settings manually in $ws_settings (UserPromptSubmit hook + statusLine → $mon_cmd)" >&2
     return 0
   fi
   mkdir -p "$GIT_ROOT/.claude"
-  base="{}"; [ -f "$ws_settings" ] && base=$(cat "$ws_settings" 2>/dev/null)
-  [ -f "$ws_settings" ] && cp "$ws_settings" "$ws_settings.psk-backup.$(date +%s)" 2>/dev/null || true
-  tmp_ws=$(mktemp)
-  # Migrate-and-add: strip the monitor from any legacy .hooks.Stop wiring (the loop bug), ensure it
-  # is present exactly once under .hooks.UserPromptSubmit, AND set the statusLine to the ctx badge
-  # (only if absent — never clobber an operator's custom statusLine). Idempotent.
-  if printf '%s' "$base" | jq \
-      --arg mon "$mon_cmd" --arg sl "$sl_cmd" '
-        .hooks //= {}
-        | (if (.hooks.Stop|type)=="array" then
-             .hooks.Stop = ((.hooks.Stop | map(.hooks |= map(select(.command != $mon)))) | map(select((.hooks|length) > 0)))
-           else . end)
-        | (if (.hooks.Stop|type)=="array" and (.hooks.Stop|length)==0 then del(.hooks.Stop) else . end)
-        | .hooks.UserPromptSubmit //= []
-        | (if ([.hooks.UserPromptSubmit[]?.hooks[]?.command] | index($mon)) then .
-           else .hooks.UserPromptSubmit += [{hooks:[{type:"command",command:$mon}]}] end)
-        | .statusLine //= {type:"command", command:$sl, padding:0}
-      ' > "$tmp_ws" 2>/dev/null && [ -s "$tmp_ws" ] && jq empty "$tmp_ws" 2>/dev/null; then
-    mv "$tmp_ws" "$ws_settings"
+  # One python3 invocation does BOTH the wired-state check AND the migrate-and-merge, so the
+  # JSON is parsed once. Contract (exit codes):
+  #   0  = merged + written (or would-write); stdout = status keyword
+  #   10 = already fully wired (monitor under UserPromptSubmit, none under Stop, statusLine set)
+  #         → skip unless --force
+  #   1  = parse / write error → leave file unchanged
+  # The merge is idempotent and never clobbers an operator's custom statusLine or other keys:
+  #   - strip the monitor from any legacy .hooks.Stop wiring (the loop bug from an old build)
+  #   - ensure the monitor is present exactly once under .hooks.UserPromptSubmit
+  #   - set .statusLine only if absent
+  local force_flag="0"; [ "$FORCE" = true ] && force_flag="1"
+  local py_status
+  py_status=$(MON="$mon_cmd" SL="$sl_cmd" GUARD="$guard_cmd" WS="$ws_settings" FORCE_FLAG="$force_flag" python3 - <<'PY'
+import json, os, sys, time, shutil
+
+mon   = os.environ["MON"]
+sl    = os.environ["SL"]
+guard = os.environ["GUARD"]
+ws    = os.environ["WS"]
+force = os.environ.get("FORCE_FLAG", "0") == "1"
+
+data = {}
+if os.path.exists(ws):
+    try:
+        with open(ws, "r") as f:
+            txt = f.read().strip()
+        data = json.loads(txt) if txt else {}
+        if not isinstance(data, dict):
+            data = {}
+    except Exception:
+        # unparseable existing settings — treat as empty base, but back it up below
+        data = {}
+
+def cmds(event):
+    out = []
+    for grp in data.get("hooks", {}).get(event, []) or []:
+        if isinstance(grp, dict):
+            for h in grp.get("hooks", []) or []:
+                if isinstance(h, dict) and "command" in h:
+                    out.append(h["command"])
+    return out
+
+fully_wired = (mon in cmds("UserPromptSubmit")
+               and mon not in cmds("Stop")
+               and guard in cmds("PostToolUse")
+               and data.get("statusLine") is not None)
+
+if fully_wired and not force and os.path.exists(ws):
+    print("already-wired")
+    sys.exit(10)
+
+# --- migrate + merge (idempotent) ---
+data.setdefault("hooks", {})
+hooks = data["hooks"]
+
+# 1. strip the monitor from any legacy Stop wiring; drop now-empty Stop groups / key
+if isinstance(hooks.get("Stop"), list):
+    new_stop = []
+    for grp in hooks["Stop"]:
+        if isinstance(grp, dict):
+            grp = dict(grp)
+            grp["hooks"] = [h for h in (grp.get("hooks") or [])
+                            if not (isinstance(h, dict) and h.get("command") == mon)]
+            if grp.get("hooks"):
+                new_stop.append(grp)
+        else:
+            new_stop.append(grp)
+    if new_stop:
+        hooks["Stop"] = new_stop
+    else:
+        hooks.pop("Stop", None)
+
+# 2. ensure monitor present exactly once under UserPromptSubmit
+ups = hooks.setdefault("UserPromptSubmit", [])
+if mon not in cmds("UserPromptSubmit"):
+    ups.append({"hooks": [{"type": "command", "command": mon}]})
+
+# 3. set statusLine only if absent (never clobber an operator's custom one)
+if data.get("statusLine") is None:
+    data["statusLine"] = {"type": "command", "command": sl, "padding": 0}
+
+# 4. KIT-GAP-0147: ensure the chunked-drive guard is present exactly once under a
+#    PostToolUse Bash matcher (idempotent; safe — no-ops on non-kit commands).
+if guard not in cmds("PostToolUse"):
+    ptu = hooks.setdefault("PostToolUse", [])
+    ptu.append({"matcher": "Bash", "hooks": [{"type": "command", "command": guard}]})
+
+# back up an existing file before overwrite
+if os.path.exists(ws):
+    try:
+        shutil.copy2(ws, ws + ".psk-backup." + str(int(time.time())))
+    except Exception:
+        pass
+
+tmp = ws + ".tmp." + str(os.getpid())
+try:
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    json.loads(open(tmp).read())   # validate before swap
+    os.replace(tmp, ws)            # atomic
+except Exception as e:
+    try:
+        os.remove(tmp)
+    except Exception:
+        pass
+    sys.stderr.write("merge error: %s\n" % e)
+    sys.exit(1)
+print("merged")
+sys.exit(0)
+PY
+)
+  local py_rc=$?
+  if [ "$py_rc" -eq 10 ]; then
+    echo -e "  ${YELLOW}⚠${NC} Workspace session-monitor + statusLine already wired ($ws_settings) — use --force"
+    return 0
+  elif [ "$py_rc" -eq 0 ]; then
     echo -e "  ${GREEN}✓${NC} Mirrored session-monitor (UserPromptSubmit) + statusLine into workspace settings (nested kit): $ws_settings"
   else
-    rm -f "$tmp_ws"
     echo -e "  ${RED}✗${NC} Could not merge workspace settings — left unchanged: $ws_settings" >&2
   fi
 }
@@ -233,6 +331,15 @@ install_claude_hook() {
           {
             "type": "command",
             "command": "bash agent/scripts/psk-sync-check.sh --quick"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash agent/scripts/psk-chunked-drive-guard.sh"
           }
         ]
       }

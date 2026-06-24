@@ -100,6 +100,13 @@ check_tools() {
     echo -e "${RED}       Install them first, then re-run this script.${NC}"
     exit 1
   fi
+  # Optional dependency: jq is used ONLY by psk-install-hooks.sh to merge the
+  # session-monitor hook + statusLine into a nested-kit parent workspace's
+  # .claude/settings.json. Without jq that one merge is skipped with a manual-wiring
+  # hint (install still succeeds). Surfaced here so the dependency is explicit, not silent.
+  if ! command -v jq >/dev/null 2>&1; then
+    echo -e "${YELLOW}Note:${NC} jq not found — optional. Nested-kit workspace session-monitor wiring will be skipped with a manual-wiring hint. Install jq to enable automatic workspace-settings merge."
+  fi
 }
 
 # --- Print banner ---
@@ -163,6 +170,11 @@ fetch() {
     fi
   fi
 
+  # A08 (OWASP software/data integrity) — ACCEPTED RISK, documented in README "Supply-chain
+  # integrity". Downloads use HTTPS/TLS (transport integrity) from raw.githubusercontent.com; there
+  # is no separate pre-execution signature check. Mitigations: `install.sh --verify` prints the
+  # installer SHA-256 for audit; the README's "Verify before running" recipe lets the operator
+  # inspect the installer first. A published detached signature is a future hardening.
   if curl -fsSL "$RAW_BASE/$src_path" -o "$dest_path" 2>/dev/null; then
     return 0
   fi
@@ -543,10 +555,10 @@ install_reflex() {
     local lib_files=(preconditions.sh spawn-qa.sh spawn-dev.sh file-bugs.sh gates.sh regression-diff.sh score.sh \
       anonymize.sh audit-integrity.sh auto-extract-adl.sh auto-submit.sh \
       check-abort-integrity.sh check-audit-completeness.sh check-installer-coverage.sh check-kit-genericity.sh check-reqs-coverage.sh check-rft-integrity.sh check-rule-conflicts.sh check-test-vacuousness.sh \
-      console-probe.ts count-dims.sh cycle-summary.sh dev-self-verify.sh doc-code-diff.sh external-research.sh extract-claims.sh \
+      console-probe.ts count-dims.sh coverage-distribution-audit.sh cycle-summary.sh dev-self-verify.sh dim-coverage.sh doc-code-diff.sh external-research.sh extract-claims.sh \
       assertion-strength-audit.sh feature-traceability-audit.sh findings-registry.sh freshness-drift-audit.sh heal-iter-status.sh host-portability-audit.sh \
       identify-integration-probes.sh intake.sh kit-evolution.sh log-hardening.sh longitudinal-drift-audit.sh loop.sh mandate-audit.sh \
-      orchestration-phase-6-5.sh prose-constant-audit.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh root-resolution-audit.sh scaffold-behavioral-tests.sh \
+      orchestration-phase-6-5.sh progress-surface.sh prose-constant-audit.sh prune-history.sh purge-current-sandbox.sh recover.sh reset.sh root-resolution-audit.sh rule-ingestion-audit.sh run-guard.sh scaffold-behavioral-tests.sh \
       self-test-mutation.sh server-lifecycle.sh smoke-test-examples.sh state-diff.sh token-report.sh track-tokens.sh update-eval-trace.sh \
       workflow-fidelity-audit.sh)
     for f in "${lib_files[@]}"; do

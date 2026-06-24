@@ -26,7 +26,7 @@
 | **Inputs** | Prep-release commit · `agent/SPECS.md` · `agent/REQS.md` · source code · `reflex/config.yml` · Phase 0 pre-computed artifacts (`claims.yaml`, `state-diff.yaml`) |
 | **Outputs** | `reflex/history/cycle-NN/pass-NNN/` (findings.yaml · signoff.md · verdict.md · dev-trace.md · gates-result.md) · fast-forward merge to main on GRANTED |
 | **Script** | `bash reflex/run.sh` — sole public entry point |
-| **Gate** | 14 mechanical gates per pass (protected-files · commit-convention · console-cleanliness · mandate-compliance · convergence-audit · playwright-suite · config-yml · dev-self-verify · kit-evolution G1/G2 · workflow-fidelity-completeness · audit-completeness · regression-replay) |
+| **Gate** | 15 mechanical gates per pass (protected-files · commit-convention · console-cleanliness · mandate-compliance · convergence-audit · playwright-suite · config-yml · dev-self-verify · kit-evolution G1/G2 · workflow-fidelity-completeness · audit-completeness · regression-replay · rule-ingestion-fidelity) |
 | **When blocked** | INTERRUPTED verdict from prior pass without `operator-recovered` annotation (L1 abort-detection) · precondition gate failures (clean tree, prep-release marker, bootstrap integrity) |
 
 ---
@@ -60,11 +60,12 @@
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │  PHASE 4: GATES + VERDICT + DECISION (automated)            │
-│     gates.sh runs 14 mechanical gates                       │
+│     gates.sh runs 15 mechanical gates                       │
 │     regression-diff.sh + score.sh + write_verdict           │
 │     ├─ GRANTED  → ff-merge dev branch → main; cycle done    │
-│     ├─ DENIED + iter < 3 → restart Phase 1 (same cycle)     │
-│     └─ DENIED + iter 3 / REGRESSION → MANUAL_REVIEW_NEEDED  │
+│     ├─ DENIED + not-converged → restart Phase 1 (same cycle)│
+│     └─ REGRESSION / plateau / floor / loop-ceiling →        │
+│        MANUAL_REVIEW_NEEDED                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,6 +90,12 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 
 **Phase 0 pre-compute helpers (run before QA-Agent spawns):** `reflex/lib/check-reqs-coverage.sh` (v0.6.19+, ADR-031 — REQS-coverage gate emitting `reqs-coverage.yaml`), `reflex/lib/check-rule-conflicts.sh` (v0.6.20+, ADR-030 — rule-conflict scan emitting `rule-conflicts.yaml`), `reflex/lib/check-rft-integrity.sh` (R→F→T deep audit). All three are deterministic, sub-second, free, and run on every pass before the QA-Agent gets context. Findings auto-promote to QA's input so the QA-Agent reasons against pre-computed gaps rather than rediscovering them probabilistically.
 
+**Additional reflex/lib audit probes:** `reflex/lib/coverage-distribution-audit.sh` (Dim 37 — coverage-DISTRIBUTION audit: flags load-bearing kit scripts with zero test references, so hollow-coverage gaps surface) and `reflex/lib/rule-ingestion-audit.sh` (verifies agent rule-file loaders do not truncate the framework file). Both are shipped kit scripts installed by `install.sh` and exercised in `tests/sections/04-reflex.sh`.
+
+**Reflex/lib coverage + resume helpers:** five further deterministic helpers complete the audit-infrastructure layer. `reflex/lib/check-installer-coverage.sh` (Dim 16 installer-manifest validation — verifies every shipping script/skill/lib helper on disk is covered by `install.sh`, closing BS-003). `reflex/lib/count-dims.sh` (dynamic dim union — KIT-GAP-0086: counts the QA review dimensions declared across both representations in `reflex/prompts/qa-agent.md` so no count is hardcoded). `reflex/lib/dim-coverage.sh` (per-dim coverage classifier — KIT-GAP-0115: reports a dim partial as `COMPLETE | INCOMPLETE | MISSING` against its assigned range, so `run.sh --resume-dims` re-dispatches a watchdog-reaped partial rather than only wholly-missing ones). `reflex/lib/run-guard.sh` (concurrent-suite deadlock guard — KIT-GAP-0117 process-layer execution lock: refuses a second independent heavy run for the same project, since two concurrent test suites deadlock on git worktrees). `reflex/lib/heal-iter-status.sh` (reconciles stale `RUNNING` `.iter-status.yml` entries left by an interrupted pass back to a terminal state per §Convergence L3). All five are shipped by `install.sh` and exercised in `tests/sections/04-reflex.sh`.
+
+**Progress-surface emitter:** `reflex/lib/progress-surface.sh` — the ONE shared emitter for a reflex phase's progress-surface instruction. Wired into `reflex/run.sh` (QA dim-dispatch) and `reflex/lib/spawn-qa.sh` so every reflex AWAITING pause mandates the agent drive its progress through `psk-chunked-run.sh` + the canonical `status --table` renderer (KIT-GAP-0116, part of the §No-Silent-Wait system — see flow doc 34). Shipped by `install.sh` and exercised in `tests/sections/03-reliability.sh` (107.14).
+
 **QA blind-spots registry (v0.6.25+, ADR-036):** `reflex/history/qa-blind-spots.md` is an append-only YAML log of every QA miss surfaced by humans. QA reads it at Phase 0 Step 0.0 — before any other input — per `reflex/prompts/qa-agent.md` mandate. Every entry with `status: open` generates a probe in the test plan. Skipping the registry read is itself a finding (`QA-BLIND-SKIP-NN`). Status flow: `open` (probe needed) → `probed` (deterministic kit probe exists) → `retired` (class no longer relevant). Three seed entries on landing — BS-001 REQS-coverage gap class, BS-002 client-grade UI gap class, BS-003 install.sh out-of-sync class.
 
 **Probe-coverage metric (v0.6.25+):** `reflex/history/summary.csv` schema v4 adds `probe_coverage_pct` = (claims with `status: verified` or `status: falsified`) / total claims emitted by `extract-claims.sh`. Empty when claims.yaml absent. Trend upward over passes signals a more verifiable project. Auto-migrates older v1/v2/v3 CSVs in place.
@@ -112,7 +119,7 @@ Formal name: *Adversarial Verbal Actor-Critic Refinement Loop (AVACR)*. Operatio
 - **Dev cannot touch AGENT.md / AGENT_CONTEXT.md:** three enforcement layers (prompt mandate, `gates.sh` per-commit diff check, `psk-sync-check.sh` pre-commit hook on `reflex/dev-*` branches). Violations route to human-arbitration.
 - **No abort without a verdict:** EXIT/INT/TERM traps write a fallback `INTERRUPTED` verdict.md if the mainline doesn't reach the verdict-write block. Recovery requires `--recover-from-abort <pass-id>` before the next run.
 - **Sandbox is purged after QA:** `purge-current-sandbox.sh` removes the QA worktree unconditionally after findings are extracted. Dev physically cannot read QA's private workspace.
-- **Per-commit mechanical gates:** broken fixes never land. 14 gates per pass. Effort dials are guidance-only since v0.6.35 (`guidance:` in reflex/config.yml — `recommended_tool_calls_per_pass: 1000`, `recommended_retries_per_task: 10`); they are never STOP signals.
+- **Per-commit mechanical gates:** broken fixes never land. 15 gates per pass. Effort dials are guidance-only since v0.6.35 (`guidance:` in reflex/config.yml — `recommended_tool_calls_per_pass: 1000`, `recommended_retries_per_task: 10`); they are never STOP signals.
 - **GRANTED advances the cycle, not finding-count zero:** minor/non-blocking findings carry forward to the next cycle — no wasted re-verify pass.
 - **`reflex/` is out of QA scope:** avoids recursion; QA-Agent never tests reflex itself.
 
@@ -158,11 +165,15 @@ Layers 1, 2, 6 are **deterministic bash pre-compute** (<2s + <200 tokens combine
 
 Entry: `bash reflex/run.sh` (default mode = autoloop · alternatively `bash reflex/run.sh single` for one pass only).
 
-Reflex cycle state lives in `agent/.release-state/loop-state.yml` (records cycle id + current iteration). Every iteration runs the four phases below. Max 3 iterations before MANUAL_REVIEW_NEEDED.
+Reflex cycle state lives in `agent/.release-state/loop-state.yml` (records cycle id + current iteration). Every iteration runs the four phases below.
+
+**Durable session-resume hand-off (KIT-GAP-0144).** Iteration 1's release-prep phase is AGENT-DRIVEN (the agent runs the chunked test suite + release ceremony out-of-process), so `reflex/lib/loop.sh` persists a durable `prep-release-awaiting-agent` state marker before exiting and pausing. A later `bash reflex/run.sh --loop --resume` re-enters at that exact marker — the resume handler's `release_already_shipped()` idempotency guard checks reachable history for the already-shipped version, so a re-run after the release actually landed advances straight to QA instead of re-running prep. Iteration 2+ skips the ceremony and jumps straight to QA (bookend pattern: only iter-1 prep + a single final convergence refresh). The L2 EXIT/INT/TERM trap writes a fallback `INTERRUPTED` verdict on any abnormal exit, so every pass dir always carries a verdict (the §Convergence L1 abort-detection contract).
+
+**Stopping conditions are convergence-derived, not a fixed iteration cap.** The loop iterates until convergence (GRANTED / REGRESSION / findings-floor / plateau / fix-rate drop); `convergence.infinite_loop_protection` (default 100 in `reflex/config.yml`) is an escape-hatch ceiling, not the primary stop.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ITERATION N (of max 3) — Phase 1: RELEASE-PREP             │
+│  ITERATION N (until convergence) — Phase 1: RELEASE-PREP    │
 │     iter 1: bash agent/scripts/psk-release.sh prepare       │
 │       (full version bump + ARD/PDF regen)                   │
 │     iter 2+: bash agent/scripts/psk-release.sh refresh      │
@@ -230,8 +241,8 @@ Reflex cycle state lives in `agent/.release-state/loop-state.yml` (records cycle
 │     update-eval-trace — refreshes cross-pass register       │
 │     GRANTED → ff-merge dev branch → parent (or --no-ff on   │
 │               divergence) + delete branch · exit 0          │
-│     DENIED + iter < 3 → restart Phase 1 (same cycle)        │
-│     DENIED + iter = 3 → MANUAL_REVIEW_NEEDED · exit 2       │
+│     DENIED + not-converged → restart Phase 1 (same cycle)   │
+│     plateau / floor / loop-ceiling → MANUAL_REVIEW · exit 2 │
 │     REGRESSION → retain dev branch · exit 2                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -408,7 +419,7 @@ The HF4b workflow watchdog (`agent/scripts/psk-workflow-watchdog.sh`) detects hu
 1. **Dev-branch isolation.** Dev-Agent commits to `reflex/dev-cycle-NN-pass-NNN` (for autoloop) or `reflex/dev-standalone-pass-NNN` (single-pass), a dedicated branch off the current HEAD. Main branch stays clean during the pass. On GRANTED verdict, run.sh fast-forward merges into the parent branch (falls back to `--no-ff` if parent diverged) and deletes the dev branch. On DENIED / REGRESSION the branch is retained (last 3 unhappy branches kept; pruned beyond that).
 2. **Protected-files write-ban (3-layer).** `agent/AGENT.md` and `agent/AGENT_CONTEXT.md` are owned by the spec-persistent pipeline, never by reflex findings. Enforced at three layers: Dev-Agent prompt ("NEVER modify"), `gates.sh` per-commit diff check, and `psk-sync-check.sh` pre-commit hook (branch-gated to `reflex/dev-*`). If a finding's recommendation touches these files, Dev-Agent files it as Bucket D + routes a `QA-<ID>-ARB` task to human-arbitration.
 3. **Sandbox purge after QA:** `file-bugs.sh` removes the current pass's QA sandbox worktree the moment findings are extracted into the committed `reflex/history/<pass>/`. Dev physically cannot read QA's private workspace — structural enforcement, not trust-based.
-4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 14 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim), kit-evolution-file-scope (G1, PKFL), kit-genericity-proof (G2, PKFL — active on `REFLEX_KIT_EVOLUTION=1` passes), workflow-fidelity-completeness (12th), audit-completeness (13th), regression-replay (14th — Layer 10 §Regression Replay Gate, replays every verified-fixed finding's invocation_verbatim before any verdict advances).
+4. **Per-commit mechanical gates.** Pre-commit hook + Dev-Agent's per-task gate check. Broken fixes never land. Commit convention: `autoloop fix QA-<ID>: <reason>\n\n[source: <pass-name>]` (trailer is a HARD REQUIREMENT — Dev-Agent verifies and amends if missing). `gates.sh` runs 15 gates per pass: protected-files, commit-convention, console-cleanliness, mandate-compliance (8th), convergence-audit (9th), playwright-suite (npm ci first), config-yml gates, dev-self-verify (10th — replays each finding's `regression_vector.invocation_verbatim` to verify Dev's fix claim), kit-evolution-file-scope (G1, PKFL), kit-genericity-proof (G2, PKFL — active on `REFLEX_KIT_EVOLUTION=1` passes), workflow-fidelity-completeness (12th), audit-completeness (13th — `reflex/lib/check-audit-completeness.sh` synthesis-detection probe), regression-replay (14th — Layer 10 §Regression Replay Gate, replays every verified-fixed finding's invocation_verbatim before any verdict advances), rule-ingestion-fidelity (15th — `reflex/lib/rule-ingestion-audit.sh` canary/truncation probe, the Dim 36 structural counterpart, fires every pass at block-severity MINOR).
 5. **Max 3 retries per task.** Gate fails after 3 attempts → task marked `[~]` (human review).
 6. **Max 200 tool calls per cycle.** Budget cap aborts runaway cycles.
 7. **Regression detection.** Next pass verifies previously-fixed tasks haven't reopened; `regression-diff.md` records closed / persisted / new / regressed per pass.
@@ -642,13 +653,14 @@ tests/
                                       sources lib.sh + each section in
                                       dependency order
   sections/
-    01-infrastructure.sh   (346 tests · standalone-runnable)
-    02-pipeline.sh         (395 tests · standalone-runnable)
-    03-reliability.sh      (267 tests · standalone-runnable)
-    04-reflex.sh           (463 tests · standalone-runnable)
+    01-infrastructure.sh   (standalone-runnable)
+    02-pipeline.sh         (standalone-runnable)
+    03-reliability.sh      (standalone-runnable)
+    04-reflex.sh           (standalone-runnable)
+    ...                    (additional NN-*.sh section + feature files)
 ```
 
-Each section file is independently runnable: `bash tests/sections/04-reflex.sh` works from any cwd, sources lib.sh, increments the same counter globals, exits with own RESULTS line. Orchestrator aggregates via shared globals when sections are sourced (not bash'd). Total: 2720 framework tests; +145 benchmarking via separate `tests/test-spd-benchmarking.sh`.
+Each section file is independently runnable: `bash tests/sections/04-reflex.sh` works from any cwd, sources lib.sh, increments the same counter globals, exits with own RESULTS line. Orchestrator aggregates via shared globals when sections are sourced (not bash'd). Total: 3020 framework tests; +145 benchmarking via separate `tests/test-spd-benchmarking.sh`.
 
 ### Standalone analysis helpers (v0.6.11 — closes QA-DOC-HELPER-01)
 

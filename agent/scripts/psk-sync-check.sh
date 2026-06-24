@@ -1038,16 +1038,27 @@ check_readme_install_list() {
   [ -z "$installs_line" ] && { emit_pass "README install list (no 'Installs:' line — skipped)"; return; }
 
   # Parse "NN reliability scripts · NN skill files · NN stack-aware CI templates"
+  # KIT-GAP (QA-P006-PSK013-BLIND-SPOT-01): the README writes the script count in a
+  # backtick-decorated form — "63 `psk-*` reliability scripts" — where the literal
+  # `psk-*` sits BETWEEN the number and "reliability scripts". The old regex
+  # `[0-9]+ reliability scripts` could not match across that token, so declared_scripts
+  # was empty and the count-integrity check passed VACUOUSLY (no comparison happened).
+  # The number-then-(optional backtick psk-* token)-then-"reliability" form below
+  # matches BOTH the legacy "NN reliability scripts" and the current backtick form.
   local declared_scripts declared_skills declared_ci
-  declared_scripts=$(echo "$installs_line" | grep -oE '[0-9]+ reliability scripts' | grep -oE '^[0-9]+')
+  declared_scripts=$(echo "$installs_line" | grep -oE '[0-9]+[[:space:]]+(`?psk-\*`?[[:space:]]+)?reliability scripts' | grep -oE '^[0-9]+')
   declared_skills=$(echo "$installs_line" | grep -oE '[0-9]+ skill files' | grep -oE '^[0-9]+')
   declared_ci=$(echo "$installs_line" | grep -oE '[0-9]+ stack-aware CI templates' | grep -oE '^[0-9]+')
 
   # Actual counts on disk
-  # "Reliability scripts" = psk-*.sh excluding optional Jira/tracker helpers
-  # (install.sh distinguishes these: `scripts` vs `optional` variables)
+  # "Reliability scripts" = ALL psk-*.sh. The README's "NN `psk-*` reliability scripts
+  # + M helper scripts" wording counts EVERY psk-*.sh (the Jira/tracker psk-* scripts
+  # included), then lists the 3 NON-psk helpers (install-tracker, sync, uninstall-tracker)
+  # separately as "+ M helper scripts". So the declared count == count of psk-*.sh, and
+  # excluding jira/tracker here (the prior `grep -vE '(jira|tracker)'`) under-counted by 3,
+  # making the comparison fail even after the regex was fixed. Count all psk-*.sh.
   local actual_scripts actual_skills actual_ci
-  actual_scripts=$(ls "$PROJ_ROOT"/agent/scripts/psk-*.sh 2>/dev/null | grep -vE '(jira|tracker)' | wc -l | tr -d ' ')
+  actual_scripts=$(ls "$PROJ_ROOT"/agent/scripts/psk-*.sh 2>/dev/null | wc -l | tr -d ' ')
   actual_skills=$(ls "$PROJ_ROOT"/.portable-spec-kit/skills/*.md 2>/dev/null | wc -l | tr -d ' ')
   actual_ci=$(ls "$PROJ_ROOT"/.portable-spec-kit/templates/ci/ci-*.yml 2>/dev/null | wc -l | tr -d ' ')
 
@@ -1814,6 +1825,34 @@ check_kit_version_drift() {
     emit_warn "AGENT_CONTEXT.md Kit: field ($ctx_kit_ver) doesn't match installed kit ($installed_kit_ver) — run: grep -n 'Kit:' agent/AGENT_CONTEXT.md to update (advisory)"
   else
     emit_pass "Kit version drift (no drift detected)"
+  fi
+}
+
+# --- CHECK: .portable-spec-kit/config.md kit_version currency (advisory) ---
+#
+# KIT-GAP (QA-P006-CONFIG-VERSION-STALE-01): check_kit_version_drift above compares
+# AGENT_CONTEXT.md Kit: vs portable-spec-kit.md **Version:** — it does NOT read
+# .portable-spec-kit/config.md, whose `kit_version` field is written by install.sh
+# and is a team-visible, kit-managed claim. A project that does not re-run install.sh
+# after each kit bump silently accumulates config.md version drift, invisible to
+# sync-check. This advisory check closes that blind spot: compare config.md kit_version
+# against the installed portable-spec-kit.md version. Advisory only (never blocks) —
+# the remedy is "re-run install.sh" or let psk-version-cascade.sh refresh it on a bump.
+check_config_kit_version() {
+  run_check
+  local cfg="$PROJ_ROOT/.portable-spec-kit/config.md"
+  local cfg_ver="" installed_kit_ver=""
+  [ ! -f "$cfg" ] && { emit_pass "config.md kit_version (no config.md — skipped)"; return; }
+
+  cfg_ver=$(grep -m1 -E 'kit_version' "$cfg" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  if [ -f "$PROJ_ROOT/portable-spec-kit.md" ]; then
+    installed_kit_ver=$(grep -m1 '^\*\*Version:\*\*' "$PROJ_ROOT/portable-spec-kit.md" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  fi
+
+  if [ -n "$cfg_ver" ] && [ -n "$installed_kit_ver" ] && [ "$cfg_ver" != "$installed_kit_ver" ]; then
+    emit_warn "config.md kit_version ($cfg_ver) is stale vs installed kit ($installed_kit_ver) — re-run install.sh to refresh, or it refreshes on the next version-cascade (advisory)"
+  else
+    emit_pass "config.md kit_version (current: ${cfg_ver:-n/a})"
   fi
 }
 
@@ -3743,13 +3782,17 @@ check_psk044_command_invocation_fidelity() {
   # Walk last 5 cycles. Count cycles with only pass-001 (no pass-002+).
   local cycle_dirs single_pass_count=0 total=0
   cycle_dirs=$(ls -1d "$history_dir"/cycle-* 2>/dev/null | sort -V | tail -5)
-  for d in $cycle_dirs; do
+  # Iterate newline-separated paths safely — unquoted `for d in $cycle_dirs`
+  # word-splits on spaces in PROJ_ROOT (QA-PORTABILITY-01), silently finding 0
+  # cycle dirs on space-containing project paths.
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
     [ -d "$d" ] || continue
     total=$((total+1))
     local pass_count
     pass_count=$(ls -1d "$d"/pass-* 2>/dev/null | wc -l | tr -d ' ')
     [ "$pass_count" = "1" ] && single_pass_count=$((single_pass_count+1))
-  done
+  done <<< "$cycle_dirs"
 
   if [ "$total" = "0" ]; then
     [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK044: no recent cycles — skip"
@@ -3863,6 +3906,309 @@ check_psk046_model_policy_wiring() {
   run_check
 }
 
+# --- CHECK PSK047: progress-monitor wiring (no-silent-wait, KIT-GAP-0105) ---
+# Keeps the generic progress monitor wired ALL OVER the kit: the monitor scripts must
+# exist + be executable, and every script that declares itself a '# long-op:' MUST wire
+# the monitor (source psk-progress-selfwrap.sh OR route through psk-progress.sh) so it is
+# never a silent multi-minute wait. Declaration-based → opt-in, zero false-positive.
+# Bypass: PSK_PSK047_DISABLED=1.
+check_psk047_monitor_wiring() {
+  if [ "${PSK_PSK047_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK047: skipped (PSK_PSK047_DISABLED=1)"
+    run_check
+    return
+  fi
+  local prog="$PROJ_ROOT/agent/scripts/psk-progress.sh"
+  local selfwrap="$PROJ_ROOT/agent/scripts/psk-progress-selfwrap.sh"
+  # Skip on projects that predate the progress monitor (no psk-progress.sh).
+  if [ ! -f "$prog" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK047: progress monitor not installed — skip"
+    run_check
+    return
+  fi
+  local chunked="$PROJ_ROOT/agent/scripts/psk-chunked-run.sh"
+  local missing=""
+  [ -x "$prog" ]     || missing="$missing psk-progress.sh(+x)"
+  [ -x "$selfwrap" ] || missing="$missing psk-progress-selfwrap.sh(+x)"
+  # The centralized chunk driver (message-based progress, KIT-GAP-0113) must also be
+  # present — it is how every long op surfaces progress as chat messages by default.
+  [ -x "$chunked" ]  || missing="$missing psk-chunked-run.sh(+x)"
+  # Every '# long-op:'-declared script must wire the monitor.
+  local unwired="" f
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    # Comment-strip first: a mere MENTION of psk-progress.sh in a comment is not wiring.
+    # Require a real source/invocation on a non-comment line (else false-pass — audit NIT).
+    # NB: grep -E (NOT -q) consumes all input — `grep -q` would close the pipe on first
+    # match and SIGPIPE the upstream grep, which under `set -o pipefail` propagates as a
+    # non-zero pipeline and false-flags a wired script as unwired.
+    if grep -vE '^[[:space:]]*#' "$f" 2>/dev/null \
+         | grep -E 'psk-progress-selfwrap\.sh|psk-progress\.sh' >/dev/null 2>&1; then
+      : # wired on a real (non-comment) line
+    else
+      unwired="$unwired ${f#"$PROJ_ROOT"/}"
+    fi
+  done < <(grep -rlE '^# long-op:' --include='*.sh' --exclude-dir=history --exclude-dir=sandbox "$PROJ_ROOT/tests" "$PROJ_ROOT/agent/scripts" "$PROJ_ROOT/reflex" 2>/dev/null)
+  [ -n "$unwired" ] && missing="$missing unwired-long-op:[$unwired ]"
+  if [ -z "$missing" ]; then
+    emit_pass "PSK047: progress-monitor wiring intact (monitor + chunk driver present + every # long-op: script wired)"
+    run_check
+    return
+  fi
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK047: monitor wiring incomplete —$missing"
+  emit_issue "PSK047" "monitor-wiring" \
+    "progress-monitor wiring incomplete (missing:$missing) — a long-op may run as a silent multi-minute wait (no-silent-wait)" \
+    "Ensure agent/scripts/psk-progress.sh + psk-progress-selfwrap.sh + psk-chunked-run.sh are present + executable, and every script with a '# long-op:' header sources psk-progress-selfwrap.sh (or routes through psk-progress.sh). Bypass: PSK_PSK047_DISABLED=1."
+  run_check
+}
+
+# --- CHECK PSK048: chunked-suite pre-verify protocol (no-silent-wait, KIT-GAP-0123) ---
+# Guarantees that running reflex/prepare surfaces PER-SECTION chat progress rather than
+# one opaque multi-minute suite. Three wirings must hold:
+#   (1) agent/scripts/psk-tests-gate.sh present + executable (the pre-verify gate)
+#   (2) release/phases.yml step-1-tests routes its command through psk-tests-gate.sh
+#       (so a chunked-driven suite can pre-verify + skip the opaque inline re-run)
+#   (3) reflex/lib/loop.sh Phase-1 directs the chunked-drive of the suite
+#       (psk-chunked-run.sh + an all-tests/test-spec-kit suite) BEFORE prepare
+# If any is removed, reflex silently reverts to an opaque suite (the regression this
+# rule guards). Skipped on projects predating the chunk driver. Bypass: PSK_PSK048_DISABLED=1.
+check_psk048_chunked_suite_protocol() {
+  if [ "${PSK_PSK048_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK048: skipped (PSK_PSK048_DISABLED=1)"
+    run_check
+    return
+  fi
+  local chunked="$PROJ_ROOT/agent/scripts/psk-chunked-run.sh"
+  local gate="$PROJ_ROOT/agent/scripts/psk-tests-gate.sh"
+  local phases="$PROJ_ROOT/.portable-spec-kit/workflows/release/phases.yml"
+  local loop="$PROJ_ROOT/reflex/lib/loop.sh"
+  # Skip on projects that predate the chunk driver (older installs).
+  if [ ! -f "$chunked" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK048: chunk driver not installed — skip"
+    run_check
+    return
+  fi
+  local missing=""
+  [ -x "$gate" ] || missing="$missing psk-tests-gate.sh(+x)"
+  # (2) step-1-tests must route through the gate (not a raw inline test-spec-kit.sh run).
+  if [ -f "$phases" ]; then
+    grep -E '^[[:space:]]*command:' "$phases" 2>/dev/null | grep -q 'psk-tests-gate\.sh' \
+      || missing="$missing step-1-tests-not-gated"
+  fi
+  # (3) reflex Phase-1 must direct the chunked-drive of the suite before prepare.
+  if [ -f "$loop" ]; then
+    if grep -q 'psk-chunked-run\.sh' "$loop" 2>/dev/null \
+       && grep -qE 'suite (all-tests|test-spec-kit)' "$loop" 2>/dev/null; then
+      :
+    else
+      missing="$missing reflex-phase1-not-chunk-driven"
+    fi
+  fi
+  if [ -z "$missing" ]; then
+    emit_pass "PSK048: chunked-suite pre-verify protocol intact (gate + step-1 routing + reflex phase-1 chunk-drive)"
+    run_check
+    return
+  fi
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK048: chunked-suite protocol incomplete —$missing"
+  emit_issue "PSK048" "chunked-suite-protocol" \
+    "chunked-suite pre-verify protocol incomplete (missing:$missing) — reflex/prepare may run the test suite as one opaque op with NO per-section chat progress (no-silent-wait)" \
+    "Ensure agent/scripts/psk-tests-gate.sh is present+executable, release/phases.yml step-1-tests command routes through psk-tests-gate.sh, and reflex/lib/loop.sh Phase-1 directs 'psk-chunked-run.sh ... --suite all-tests'. Bypass: PSK_PSK048_DISABLED=1."
+  run_check
+}
+
+# --- CHECK PSK049: progress-table template single-source (KIT-GAP-0141) ---
+# The box-table progress renderer is the ONE template every long op relays. Its defining
+# primitives — the awk pad("Chunk"…)/pad("Result"…) column formatter — must live ONLY in
+# agent/scripts/psk-chunked-run.sh. Any OTHER kit script that hand-draws the table is a
+# duplicated template that drifts (the stale `| Chunk | Unit | Result |` prose in psk-spawn.sh
+# missed the Stage column until KIT-GAP-0141). Other scripts must REFERENCE the canonical
+# renderer via `psk-chunked-run.sh status --table`, never re-implement it. Bypass: PSK_PSK049_DISABLED=1.
+check_psk049_table_template_single_source() {
+  if [ "${PSK_PSK049_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK049: skipped (PSK_PSK049_DISABLED=1)"
+    run_check
+    return
+  fi
+  local chunked="$PROJ_ROOT/agent/scripts/psk-chunked-run.sh"
+  # Skip on projects that predate the chunk driver.
+  if [ ! -f "$chunked" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK049: chunk driver not installed — skip"
+    run_check
+    return
+  fi
+  local dupes="" f
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    # psk-chunked-run.sh is the canonical home; psk-sync-check.sh is THIS checker (its
+    # detection pattern + doc necessarily name the primitives) — neither is a duplicate renderer.
+    case "$f" in */psk-chunked-run.sh|*/psk-sync-check.sh) continue ;; esac
+    dupes="$dupes ${f#"$PROJ_ROOT"/}"
+  done < <(grep -rlE 'pad\("Chunk"|pad\("Result"' --include='*.sh' --exclude-dir=history --exclude-dir=sandbox "$PROJ_ROOT/agent/scripts" "$PROJ_ROOT/reflex" 2>/dev/null)
+  if [ -z "$dupes" ]; then
+    emit_pass "PSK049: progress-table template single-sourced in psk-chunked-run.sh (no hand-drawn duplicates)"
+    run_check
+    return
+  fi
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK049: progress-table renderer duplicated in —$dupes"
+  emit_issue "PSK049" "table-template-single-source" \
+    "the progress-table renderer is hand-drawn outside psk-chunked-run.sh (in:$dupes) — a duplicated template drifts (e.g. a stale column set). The table must be ONE template." \
+    "Remove the hand-drawn box table; reference the canonical renderer via 'bash agent/scripts/psk-chunked-run.sh status --table --label <name>'. Bypass: PSK_PSK049_DISABLED=1."
+  run_check
+}
+
+# --- CHECK PSK050: quantitative prose-claim drift (QA-D37-PROSE-CLAIM-DRIFT-DETECTION-01) ---
+# PSK001-PSK049 audit STRUCTURAL facts but nothing audited prose-level quantitative claims
+# (a number / phase-count / filename in kit docs that diverges from runtime). That class of
+# drift recurred cycle-over-cycle (D1 "11 checks", D19 "8 phases", D34 "partial-findings-all").
+# This rule reads .portable-spec-kit/prose-claims.yml — the single source of truth mapping each
+# claim to a `claimed` probe (the value the PROSE asserts) and an `actual` probe (the live
+# runtime value) — and flags drift when they differ. ADVISORY in --quick, ERROR in --full.
+# Bypass: PSK_PSK050_DISABLED=1. Skipped when the data file is absent (older installs).
+check_prose_claims() {
+  if [ "${PSK_PSK050_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK050: skipped (PSK_PSK050_DISABLED=1)"
+    run_check
+    return
+  fi
+  local data="$PROJ_ROOT/.portable-spec-kit/prose-claims.yml"
+  if [ ! -f "$data" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK050: no prose-claims.yml — skip"
+    run_check
+    return
+  fi
+  local id="" source_file="" claimed_cmd="" actual_cmd="" note=""
+  local drift_n=0 checked_n=0 drift_msg=""
+  # Flat-record parser: each `- id:` starts a new record; fields follow until the next.
+  _psk050_eval_record() {
+    [ -z "$id" ] && return
+    # Skip records whose source_file is absent (e.g. a user project lacking this kit doc).
+    if [ -n "$source_file" ] && [ ! -f "$PROJ_ROOT/$source_file" ]; then return; fi
+    [ -z "$claimed_cmd" ] || [ -z "$actual_cmd" ] && return
+    checked_n=$((checked_n + 1))
+    # Allowlist guard (QA-D8-PSK050-EVAL-CODE-EXECUTION-01): prose-claims.yml is a committed
+    # git file of grep/awk probes, but eval'ing its contents is an injection surface if the file
+    # is ever compromised (malicious PR, supply-chain, untrusted user-project copy). Require each
+    # probe to START with a known read-only command. A claim whose command falls outside the
+    # allowlist is SKIPPED (counted as a skip, not a drift) so a tampered file cannot run
+    # arbitrary code in the pre-commit / PostToolUse / CI context that runs sync-check.
+    if ! printf '%s' "$claimed_cmd" | grep -qE '^[[:space:]]*(grep|awk|echo|ls|wc|find|cat|sed|head|tail|sort|uniq|cut|tr|printf|test|\[)[[:space:]]' \
+       || ! printf '%s' "$actual_cmd" | grep -qE '^[[:space:]]*(grep|awk|echo|ls|wc|find|cat|sed|head|tail|sort|uniq|cut|tr|printf|test|\[)[[:space:]]'; then
+      [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK050: skipping claim '$id' — command not in read-only allowlist"
+      return
+    fi
+    # Post-prefix injection guard (QA-D8-PSK050-EVAL-CODE-EXECUTION-01): the read-only-prefix
+    # check above only validates the FIRST token. A probe like 'grep foo; rm -rf ~' starts with
+    # a safe prefix but chains a destructive command via a sequencer (;), a background op (&),
+    # a redirect (> <), a command-substitution ($(...) / backtick), or a process-substitution
+    # (<(...)). Reject any probe carrying those so the eval below cannot run a chained or
+    # substituted command. A plain pipe (|) to another read-only command is the established,
+    # safe prose-claims pattern (e.g. 'grep … | wc -l') and is intentionally NOT rejected: each
+    # stage's first token is still constrained by the read-only allowlist of the overall claim.
+    if printf '%s' "$claimed_cmd" | grep -qE '[;&<>`]|\$\(' \
+       || printf '%s' "$actual_cmd" | grep -qE '[;&<>`]|\$\('; then
+      [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK050: skipping claim '$id' — command contains a sequencer/redirect/substitution metacharacter"
+      return
+    fi
+    local cv av
+    cv=$( cd "$PROJ_ROOT" && eval "$claimed_cmd" 2>/dev/null | awk 'NR==1{print $1}' )  # eval-allowlist: read-only prefix guard + post-prefix separator guard above validate $claimed_cmd before this eval
+    av=$( cd "$PROJ_ROOT" && eval "$actual_cmd"  2>/dev/null | awk 'NR==1{print $1}' )  # eval-allowlist: read-only prefix guard + post-prefix separator guard above validate $actual_cmd before this eval
+    if [ "$cv" != "$av" ]; then
+      drift_n=$((drift_n + 1))
+      drift_msg="$drift_msg ${id}(prose='${cv}' runtime='${av}')"
+    fi
+  }
+  local line key val
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      \#*|'') continue ;;
+    esac
+    if printf '%s' "$line" | grep -qE '^[[:space:]]*-[[:space:]]*id:'; then
+      _psk050_eval_record
+      id=$(printf '%s' "$line" | sed -E 's/^[[:space:]]*-[[:space:]]*id:[[:space:]]*//')
+      source_file=""; claimed_cmd=""; actual_cmd=""; note=""
+      continue
+    fi
+    key=$(printf '%s' "$line" | sed -E 's/^[[:space:]]*([a-z_]+):.*$/\1/')
+    val=$(printf '%s' "$line" | sed -E 's/^[[:space:]]*[a-z_]+:[[:space:]]*//')
+    # Strip one layer of surrounding double-quotes from command values.
+    val=$(printf '%s' "$val" | sed -E 's/^"(.*)"$/\1/')
+    case "$key" in
+      source_file) source_file="$val" ;;
+      claimed)     claimed_cmd="$val" ;;
+      actual)      actual_cmd="$val" ;;
+      note)        note="$val" ;;
+    esac
+  done < "$data"
+  _psk050_eval_record   # flush the last record
+  if [ "$drift_n" -eq 0 ]; then
+    emit_pass "PSK050: $checked_n quantitative prose-claim(s) match runtime"
+    run_check
+    return
+  fi
+  if [ "$QUICK" = true ]; then
+    emit_warn "PSK050: prose-claim drift (advisory in --quick) —$drift_msg"
+  else
+    emit_issue "PSK050" "prose-claim-drift" \
+      "quantitative prose claim(s) diverge from runtime —$drift_msg" \
+      "Update the prose in the cited source_file to match runtime, or update .portable-spec-kit/prose-claims.yml if the claim moved. Bypass: PSK_PSK050_DISABLED=1."
+  fi
+  run_check
+}
+
+# --- CHECK PSK051: chunked-drive guarantee (KIT-GAP-0147) ---
+# The chat-visible progress table (psk-chunked-run.sh status --table) is the ONLY surface
+# every client renders, but driving a long op through it is AGENT-DRIVEN — an agent can run
+# a long op as a plain Bash call and the chat shows nothing. PSK051 makes the GUARANTEE
+# structural: (1) the PostToolUse chunked-drive guard exists + is wired (it nudges, outside
+# agent control, when a long op is run un-chunked); (2) every `# long-op:` script is
+# CHUNK-REACHABLE through the centralized driver (a matching --suite case), so no chunkable
+# long op can exist without a centralized-table path. Bypass: PSK_PSK051_DISABLED=1.
+check_psk051_chunked_drive_guarantee() {
+  if [ "${PSK_PSK051_DISABLED:-0}" = "1" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK051: skipped (PSK_PSK051_DISABLED=1)"
+    run_check
+    return
+  fi
+  local chunked="$PROJ_ROOT/agent/scripts/psk-chunked-run.sh"
+  local guard="$PROJ_ROOT/agent/scripts/psk-chunked-drive-guard.sh"
+  # Skip on projects that predate the chunk driver.
+  if [ ! -f "$chunked" ]; then
+    [ "$QUICK" = false ] && echo -e "  ${GREEN}✓${NC} PSK051: chunk driver not installed — skip"
+    run_check
+    return
+  fi
+  local problems=""
+  # (1) guard present + executable
+  [ -f "$guard" ] || problems="$problems guard-missing"
+  [ -f "$guard" ] && [ ! -x "$guard" ] && problems="$problems guard-not-executable"
+  # (2) guard wired in project .claude/settings.json (PostToolUse)
+  local settings="$PROJ_ROOT/.claude/settings.json"
+  if [ -f "$settings" ] && ! grep -q 'psk-chunked-drive-guard' "$settings" 2>/dev/null; then
+    problems="$problems guard-not-wired-in-settings"
+  fi
+  # (3) every `# long-op:` script is chunk-reachable: its suite (basename minus .sh) appears
+  #     as a case in psk-chunked-run.sh. (test-spec-kit.sh→test-spec-kit), etc.
+  local unreachable="" f base suite
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    base="${f##*/}"; suite="${base%.sh}"
+    grep -qE "^[[:space:]]*${suite}[)|]" "$chunked" 2>/dev/null \
+      || grep -qE "[|]${suite}[)|]" "$chunked" 2>/dev/null \
+      || unreachable="$unreachable ${f#"$PROJ_ROOT"/}"
+  done < <(grep -rlE '^# long-op:' --include='*.sh' --exclude-dir=history --exclude-dir=sandbox "$PROJ_ROOT/tests" "$PROJ_ROOT/agent/scripts" "$PROJ_ROOT/reflex" 2>/dev/null)
+  [ -n "$unreachable" ] && problems="$problems chunk-unreachable:[$unreachable ]"
+  if [ -z "$problems" ]; then
+    emit_pass "PSK051: chunked-drive guarantee intact (guard present+wired + every # long-op: chunk-reachable)"
+    run_check
+    return
+  fi
+  [ "$QUICK" = false ] && echo -e "  ${YELLOW}⚠${NC} PSK051: chunked-drive guarantee incomplete —$problems"
+  emit_issue "PSK051" "chunked-drive-guarantee" \
+    "the chat-progress guarantee is not structural (issues:$problems) — a long op may run with NO chat-visible table (KIT-GAP-0147)" \
+    "Ensure agent/scripts/psk-chunked-drive-guard.sh is present+executable, wired as a PostToolUse(Bash) hook in .claude/settings.json (run psk-install-hooks.sh), and every '# long-op:' script has a matching psk-chunked-run.sh --suite case. Bypass: PSK_PSK051_DISABLED=1."
+  run_check
+}
+
 # --- Main dispatch ---
 main() {
   # Header (only in non-quick mode)
@@ -3903,6 +4249,7 @@ main() {
     check_version
     check_test_count
     check_kit_version_drift
+    check_config_kit_version
     check_flow_count
     check_feature_count
     check_specs_staleness
@@ -3950,6 +4297,11 @@ main() {
     check_psk044_command_invocation_fidelity
     check_psk045_toc_drift
     check_psk046_model_policy_wiring
+    check_psk047_monitor_wiring
+    check_psk048_chunked_suite_protocol
+    check_psk049_table_template_single_source
+    check_prose_claims
+    check_psk051_chunked_drive_guarantee
   fi
 
   # Bypass-log surface: warn if any bypass recorded in the last 24h

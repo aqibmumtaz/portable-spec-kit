@@ -91,7 +91,7 @@
     <div><strong style="color:#dce4f0;">Author:</strong> Dr. Aqib Mumtaz, Ph.D.</div>
     <div><strong style="color:#dce4f0;">Specialization:</strong> Ph.D. Computer Science — Artificial Intelligence</div>
     <div><strong style="color:#dce4f0;">Research:</strong> Multimodal AI, Healthcare AI, Autonomous Surveillance</div>
-    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.93</div>
+    <div><strong style="color:#dce4f0;">Version:</strong> v0.6.99</div>
     <div><strong style="color:#dce4f0;">Date:</strong> June 2026</div>
   </div>
 </div>
@@ -316,6 +316,62 @@
   <li><strong>ARD user guide + CI generation:</strong> <code>psk-generate-user-guide.sh</code> (generates <code>ard/user-guide.html</code> from README + AGENT.md), <code>psk-generate-ci.sh</code> (auto-creates <code>.github/workflows/ci.yml</code> from stack detection). Both wired into <code>psk-release.sh</code> Steps 1 + 7 as non-fatal hooks.</li>
   <li><strong>Dim 25 mandate audit extensions:</strong> Three new checks in <code>mandate-audit.sh</code>: ARD user guide absent (ADVISORY), DB migration scaffold absent for Drizzle/Prisma projects (MINOR), shadcn/ui components empty (MINOR). Stack-specific fix patterns (drizzle migrations, shadcn/ui, REQS status sync, UI test quality) added to <code>dev-agent.md</code>.</li>
   <li><strong>Tests:</strong> 1837 framework + 145 benchmarking = 1982. N62/D updated to expect stay-in-cycle behavior per convergence discipline fix.</li>
+</ul>
+
+<h3>v0.6.99 — Structural chat-progress guarantee + maintainer-backlog drain</h3>
+<ul>
+  <li><strong>KIT-GAP-0147</strong> (<code>agent/scripts/psk-chunked-drive-guard.sh</code> NEW + <strong>PSK051</strong>): the chunked-drive box table is the only progress surface every client renders, but driving a long op through it had been agent-driven — an agent could run a long op as a plain Bash call and the chat would show nothing. A generic PostToolUse(Bash) hook detects ANY long op invoked directly (keys off the canonical <code># long-op:</code> marker plus <code>reflex/run.sh</code> / <code>psk-release.sh prepare|refresh</code> / <code>sync-check --full</code>) and injects a chat-surfaced nudge to re-drive it chunked; covered the moment a new long op gets its <code># long-op:</code> header; fires outside agent control. PSK051 verifies the guard is present + wired as a PostToolUse hook and that every <code># long-op:</code> script is chunk-reachable; <code>psk-install-hooks.sh</code> wires it into the project + nested-workspace settings.</li>
+  <li><strong>Maintainer-backlog drain (6 fixes):</strong> G43 — §Reliability "11 structural checks" prose corrected to 56, guarded by a new <strong>PSK050</strong> prose-claim drift gate. G25 — <code>psk-workflow-watchdog.sh</code> surfaces <code>in_progress</code>/<code>running</code> phases. G27 — <code>psk-kit-cmd.sh</code> log sanitization + <code>.kit-gap-log</code> repaired to canonical 5-field TSV. G28 — <code>psk-dispatch.sh init</code> archives legacy orphan-state files. G31 — <code>tests/features/f86-session-health.sh</code> gives F86 its R→F→T coverage. G35 — <code>summary.csv</code> documents blank cost columns as uninstrumented.</li>
+  <li><strong>Backlog triage:</strong> 13 tasks closed-resolved, 5 rejected, 4 kept as proposals; ADR-095 + ADR-096 recorded. 3165 tests passing (3020 framework + 145 benchmarking), 0 failed.</li>
+</ul>
+
+<h3>v0.6.98 — Reflex cycle-03 convergence: Dev-Agent fixes 10 scope:kit findings + monitor auto-render + redispatch phantom-spawn fix</h3>
+<ul>
+  <li>The reflex cycle-03 kit-self-test convergence pass: the QA wave surfaced 14 actionable findings (5 MAJOR); the Dev-Agent fixed 10 <code>scope:kit</code> findings end-to-end under kit-evolution mode (1 <code>scope:meta</code> routed, 3 advisory deferred); all 15 mechanical gates passed green.</li>
+  <li><strong>KIT-GAP-0142</strong> (<code>reflex/run.sh</code>): the <code>--resume-dims</code> detect loop stalled reporting phantom missing dim-sets — the spawn-parsing awk matched nested <code>prior_findings</code> ids as phantom records; fixed by skipping any record lacking both <code>artifact</code> and <code>assigned_dims</code>.</li>
+  <li><strong>KIT-GAP-0143</strong> (<code>reflex/lib/progress-surface.sh</code>): the QA/Dev monitor tables were agent-hand-built (off-by-one risk); now the ONE shared emitter auto-renders the accurate <code>status --table</code> from the kit, driving the tracker deterministically and filling each result from the pass artifacts.</li>
+  <li>Cycle-03 Dev fixes added a new <strong>PSK050</strong> prose-claim drift gate plus 9 more <code>scope:kit</code> fixes; flow-doc currency updates (15 gates, 3020/3165 test counts, PSK001-PSK050 range). 3165 tests passing, 0 failed.</li>
+</ul>
+
+<h3>v0.6.97 — Reflex cycle-03 kit-self-test: generic single-sourced progress-table + structural chunked-drive guard + cycle-summary empty-cycle fix</h3>
+<ul>
+  <li><strong>KIT-GAP-0139 — cycle-summary skips bare just-advanced cycle dirs:</strong> <code>reflex/lib/cycle-summary.sh</code> <code>discover_cycles</code> now yields only cycles with ≥1 pass dir. A reflex <code>--next-cycle</code> advance pins <code>.active-cycle=N</code> before cycle-N's first pass exists, leaving a bare <code>cycle-NN/</code> dir; <code>discover_cycles</code> listed it and <code>summarize_cycle</code> returned 1, failing the aggregate run (test 98.10). Now bare just-advanced cycles are skipped (informational); the explicit-<code>$1</code> path still returns non-zero for a named empty cycle.</li>
+  <li><strong>KIT-GAP-0140 — psk-tests-gate structural no-inline-fallback guard:</strong> <code>run</code> previously ran the full suite inline when no pre-verify marker existed — including in an agent-driven context, where one opaque background block surfaces zero per-section progress in the turn-based chat. Now <code>run</code> REFUSES (exit 7 + chunk-drive recipe) in an agent context (no TTY, not CI, no <code>PSK_TESTS_GATE_ALLOW_INLINE=1</code>), forcing the chunked path; CI/TTY/opt-in still run inline. Same no-inline-fallback pattern as <code>psk-spawn.sh</code>. Regression: 109.10 + 109.11.</li>
+  <li><strong>KIT-GAP-0141 — generic single-sourced progress-table:</strong> each chunk carries a static <code># stage:&lt;name&gt;</code> bash-comment label; the ONE central renderer (<code>psk-chunked-run.sh</code>) counts distinct stages and shows the <code>Stage</code> column only when ≥2 (<code>all-tests</code> → test-spec-kit/benchmarking/release-check), suppressing it for a single-suite drive. <code>psk-spawn.sh</code>'s stale hand-written column lists now reference the canonical <code>status --table</code>; new sync-check <strong>PSK049</strong> guards single-source; the No-Silent-Wait recipe mandates pasting the table into the reply message body. Regression: 107.18 (+ 107.17 live-stage path preserved).</li>
+</ul>
+
+<h3>v0.6.96 — Kit-evolution Dev-fix path: the reflex Dev-Agent fixes scope:kit findings end-to-end</h3>
+<ul>
+  <li><strong>KIT-GAP-0129 — kit-evolution.sh pause-aware:</strong> Phase 3 ran <code>if ! bash run.sh single</code> and treated <code>run.sh</code>'s exit-2 (AWAITING the multi-author QA dim-agent spawn) as a FAILURE, aborting every kit-evolution pass at preflight-end. Now exit 2/3 is a pause the main agent drives (<code>--resume-dims</code>/<code>--resume</code>/<code>--resume-dev</code>); the wrapper records pause state, propagates exit 2, and re-entry idempotent-skips a completed pass.</li>
+  <li><strong>KIT-GAP-0130 — Dev-Agent kit-fix authorization:</strong> <code>REFLEX_KIT_EVOLUTION=1</code> only activated the genericity gates before; it did not tell the Dev-Agent it could FIX <code>scope:kit</code> findings (default routes them to maintainer review). Now <code>spawn-dev.sh</code> injects a per-pass authorization gated strictly on the env var; §Reflex-Finding-Classification carries the matching exception so the prompt and the kit rule agree. <code>scope:meta</code> stays maintainer-routed.</li>
+  <li><strong>KIT-GAP-0131 — G1 file-scope kit-prefix check:</strong> the enumerated-subdir allowlist false-flagged the kit's own files (<code>ard/</code>, <code>agent/tasks/</code>, <code>reflex/history/</code>) when the kit is nested in a parent repo, and <code>--relative</code> hid sibling bleed. Redesigned to flag only paths OUTSIDE the kit prefix (<code>git rev-parse --show-prefix</code>) — robust in both topologies, catches real sibling-project bleed.</li>
+  <li><strong>Dev-Agent fixes (12 scope:kit findings):</strong> jq→python3 JSON merge (removes the jq dependency), <code>set -eo pipefail</code> hardening, 7 previously-untested scripts now covered (<code>tests/sections/98-script-coverage.sh</code>), prose-constant + longitudinal-drift audit-probe precision, install.sh lib coverage, and the curl-install OWASP-A08 accepted-risk doc. 4 net-new-feature findings routed to non-blocking backlog (G43-G46). 3165 tests passing (3020 framework + 145 benchmarking), 0 failed.</li>
+</ul>
+
+<h3>v0.6.95 — Fail-closed tests pre-verify gate: in-chat progress for reflex/prepare</h3>
+<ul>
+  <li><strong>KIT-GAP-0123 — fail-closed tests pre-verify gate (<code>psk-tests-gate.sh</code>, new):</strong> the long test suite is decoupled from the release ceremony's opaque <code>step-1-tests</code>. The agent drives the suite CHUNKED first (per-section chat progress via <code>psk-chunked-run.sh</code>); each test process writes its own real exit-0 STAMP; on all-green the gate SEALS a fail-closed pre-verify marker keyed to a full tree fingerprint (<code>HEAD</code> + working tree). <code>step-1-tests</code> routes through <code>psk-tests-gate.sh run</code>, which SKIPS the inline re-run only when the marker proves the current tree — so reflex/prepare surfaces the suite per-section in the chat and step-1 is a no-op (no double-run). Any code/test change, dirty tree, missing/failed unit, or non-git → tests run. Marker + stamps gitignored.</li>
+  <li><strong>KIT-GAP-0123-HARDENED — adversarial-review redesign:</strong> a 4-lens review of the first HEAD-SHA design found 3 CRITICALs (dirty-tree-at-same-HEAD shipping untested edits, the seal grepping agent free-text instead of real test output, zero-results sealing green). Redesigned fail-closed and proof-based: the marker seals only from real exit-0 stamps, every stamp + marker bind the tree fingerprint, non-git refuses to seal AND to skip, and the fail-open mtime window was removed.</li>
+  <li><strong>KIT-GAP-0124 — gate-state isolation:</strong> <code>PSK_TESTS_GATE_STATE_DIR</code> points section-109's gate exercise at a throwaway dir so it can't clobber production stamps during a live chunked-drive.</li>
+  <li><strong>PSK048</strong> enforces the chunked-suite pre-verify wiring (gate present + step-1 routed + reflex Phase-1 chunk-driven). KIT-GAP-0116 wires reflex QA/Dev progress through the centralized <code>psk-chunked-run.sh</code>. Tests 109.1-109.9; flow doc <code>34-no-silent-wait.md</code> updated. 3165 tests passing (3020 framework + 145 benchmarking).</li>
+</ul>
+
+<h3>v0.6.94 — No-silent-wait centralized progress: chunked-drive + status --table + whole-suite coverage</h3>
+<ul>
+  <li><strong>KIT-GAP-0113 — centralized chunked-drive (<code>psk-chunked-run.sh</code>, new):</strong> chat messages are the only progress surface every client renders (the Claude Code <code>statusLine</code> bar is CLI-terminal-only — the VS Code extension / app UI does not render it), so chunked-drive is now the DEFAULT for every long op: it runs the op as a series of short background tasks, and each chunk-completion becomes a chat turn that prints the result + launches the next chunk. Registry via <code>--suite test-spec-kit</code> / <code>all-tests</code> / <code>prepare-release</code>; <code>status --table</code> renders the canonical <code>| Chunk | Unit | Result |</code> progress table.</li>
+  <li><strong>KIT-GAP-0114 — whole-suite coverage:</strong> the <code>--suite test-spec-kit</code> derivation chunked only sections, silently omitting the 85 feature files (~430 tests); fixed to cover the whole suite.</li>
+  <li><strong>KIT-GAP-0109/0110/0111 — <code>psk-progress.sh</code> hardening:</strong> <code>--statusline</code> surface, TMPDIR-independent live dir, instant live-file write at op start.</li>
+  <li><strong>PSK047</strong> now also requires the chunk driver present; new flow doc <code>34-no-silent-wait.md</code>; §No-Silent-Wait + §Session Health framing flipped so the breadcrumb (chat) is the guarantee and the statusLine is a CLI-only complement. 3165 tests passing (3020 framework + 145 benchmarking).</li>
+</ul>
+
+<h3>v0.6.93 — Session-health indicator: structural statusLine + UserPromptSubmit loop fix + authoritative ctx limit</h3>
+<ul>
+  <li><strong>KIT-GAP-0097 — <code>ctx:</code> monitor surfaces structurally:</strong> migrated the hook event <code>Stop → UserPromptSubmit</code> (a Stop hook returning <code>additionalContext</code> re-invokes the agent every turn, so the badge looped); new <code>--statusline</code> mode renders <code>ctx:</code> (+<code>opt:</code>) to the Claude Code status bar every turn independent of the agent. <code>resolve_limit</code> derives the context window authoritatively from a <code>compact_boundary</code>'s <code>compactMetadata.preTokens</code> instead of a 220k guess.</li>
+</ul>
+
+<h3>v0.6.92 — Multi-author reflex enforcement: structural inline-prevention + detect-and-redispatch</h3>
+<ul>
+  <li><strong>KIT-GAP-0098 — inline-prevention keystone:</strong> <code>reflex/run.sh</code>'s orchestrator may write only planning artifacts; <code>findings.yaml</code> is synthesized solely from <code>partial-findings-dims-*.yaml</code> emitted by real dim-agents, so a multi-author QA pass can no longer silently collapse to inline synthesis. Dim-agent count is now dynamic (<code>ceil(dims / max_dims_per_spawn)</code>). Detect-and-redispatch resolves qa-prefixed spawn ids via the wave manifest's <code>artifact:</code> path.</li>
 </ul>
 
 <h3>v0.6.91 — Cycle-01 clean-restart + kit-fidelity state-machine fixes</h3>
@@ -1056,7 +1112,7 @@ examples/my-app/
 </div>
 
 <div class="footer">
-  Portable Spec Kit &bull; v0.6.93 &bull; June 2026
+  Portable Spec Kit &bull; v0.6.99 &bull; June 2026
 </div>
 
 </div>
@@ -1074,7 +1130,7 @@ examples/my-app/
     <div><strong style="color:#dce4f0;">GitHub:</strong> github.com/aqibmumtaz</div>
   </div>
   <div style="margin-top: 40px;">
-    <div class="badge">v0.6.93 &bull; June 2026</div>
+    <div class="badge">v0.6.99 &bull; June 2026</div>
   </div>
   <div style="margin-top: 30px; font-size: 9pt; color: #6b7fa5;">
     &copy; 2026 Dr. Aqib Mumtaz. All rights reserved.

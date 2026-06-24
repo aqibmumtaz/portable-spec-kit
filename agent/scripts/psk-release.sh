@@ -53,6 +53,30 @@ else
   RED=''; CYAN=''; YELLOW=''; NC=''
 fi
 
+# === Run-guard (KIT-GAP-0117) — refuse a standalone release while another
+# reflex/release run is active for THIS project. Two concurrent runs each spawn
+# a full test-spec-kit suite; both reach the section-04 reflex tests, create git
+# worktrees, and DEADLOCK on the worktree/index ops. Re-entrant: a reflex-driven
+# prepare inherits RUNGUARD_HELD and skips (no self-block). Only the heavy verbs
+# lock; status/help/show stay free. Bypass: RUNGUARD_DISABLED=1.
+case "${1:-}" in
+  prepare|refresh|next)
+    _RG_LIB="$SCRIPT_DIR/../../reflex/lib/run-guard.sh"
+    if [ -f "$_RG_LIB" ]; then
+      # shellcheck source=/dev/null
+      . "$_RG_LIB"
+      # sibling = reflex.lock → also refuse if a reflex autoloop (which runs its
+      # own prep suite) is live, so the two never spawn concurrent suites.
+      if ! runguard_acquire release \
+            "$PROJ_ROOT/agent/.workflow-state/release.lock" \
+            "$PROJ_ROOT/agent/.workflow-state/reflex.lock"; then
+        exit 1
+      fi
+      trap 'runguard_release' EXIT INT TERM
+    fi
+    ;;
+esac
+
 # === BOOTSTRAP GATE (pre-Step-0) ===
 # Ensures the kit was actually installed in this project before any release
 # work begins. Without this, a partially-bootstrapped project can run

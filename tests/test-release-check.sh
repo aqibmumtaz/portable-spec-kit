@@ -414,6 +414,9 @@ elif [ "$ISSUES" -eq 0 ]; then
   COVERAGE=100
   echo "  ✅ RELEASE READY — $TOTAL_DONE features, 100% test coverage"
   echo ""
+  # KIT-GAP-0123: real exit-0 stamp so `all-tests` chunked-drive can pre-verify this unit.
+  _tgr="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/agent/scripts/psk-tests-gate.sh"
+  [ -x "$_tgr" ] && bash "$_tgr" stamp release-check 2>/dev/null || true
   exit 0
 else
   COVERAGE=$(( (FILE_EXISTS * 100) / TOTAL_DONE ))

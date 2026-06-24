@@ -63,6 +63,9 @@ agent/.release-state/last-prep-release
 agent/.release-state/test-ref-cache.txt
 agent/.release-state/test-ref-cache.key
 agent/.release-state/reflex.lock
+agent/.release-state/release.lock
+agent/.release-state/.tests-preverified
+agent/.release-state/.tests-stamps/
 tests/.psk-optimize-counts.cache
 
 # Per-user profiles (created on first session, not shared across contributors)
@@ -72,3 +75,18 @@ reflex/history/.active-cycle
 # HF3 (v0.6.60) — retry-queue.yml itself IS committed (durable across sessions);
 # only the ephemeral lock directory is excluded.
 agent/.workflow-state/.retry-queue.lock/
+# QA-D30-RETRY-QUEUE-STALE-01 — the eviction archive is a transient per-machine
+# tombstone log (age-out of stale entries), not durable shared state — excluded.
+agent/.workflow-state/.retry-queue-archive.yml
+# KIT-GAP-0125 — the release/dispatch lock is written to .workflow-state/release.lock
+# (NOT .release-state/release.lock, line 66). The transient lock must not block reflex's
+# scoped clean-tree precondition.
+agent/.workflow-state/release.lock
+# QA-D17-PHASE0-*-WALL-CLOCK-01 — Phase-0 helper warm caches (check-rft-integrity +
+# doc-code-diff) are mtime-keyed, per-machine, transient — recomputed on any input
+# change. Not durable shared state — excluded.
+agent/.workflow-state/phase0-cache/
+# G28 — legacy/superseded workflow-state archives (watchdog + psk-dispatch cleanup artifacts)
+agent/.workflow-state/*.superseded
+
+reflex/lib/_psk028_test_fixture.sh

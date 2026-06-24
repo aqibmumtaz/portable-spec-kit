@@ -94,3 +94,85 @@ if bash "$QUEUE_SCRIPT" list >/dev/null 2>&1; then
 else
   pass "f80 AC5: list subcommand reachable (non-zero acceptable on empty queue)"
 fi
+
+# AC6 — eviction / age-out hygiene (QA-D30-RETRY-QUEUE-STALE-01).
+# Without an age-out policy the queue accumulates stale cross-cycle HUNG entries
+# unboundedly (the drain step then processes increasingly-stale entries each
+# session start). This asserts the `evict` subcommand exists and behaviorally
+# age-outs a stale pending entry while keeping a fresh one — and that a
+# never-give-up AWAITING_HUMAN_ARBITRATION entry is NEVER auto-evicted. Isolated
+# temp queue + archive so the real queue is untouched.
+F80_EVTMP=$(mktemp -d)
+F80_EVQ="$F80_EVTMP/retry-queue.yml"
+F80_EVA="$F80_EVTMP/.retry-queue-archive.yml"
+cat > "$F80_EVQ" <<'F80EVEOF'
+# test queue
+schema_version: 1
+entries:
+  - id: 'stale-pending'
+    workflow: 'reflex-pass-cycle-01-pass-002'
+    phase: 'qa'
+    spawn_target: 'qa-agent'
+    prompt_file: '/tmp/p.md'
+    artifact_file: '/tmp/a.md'
+    retry_count: 1
+    max_retries: 5
+    status: 'pending'
+    next_attempt_at: '2026-01-10T00:00:00Z'
+    last_error: 'watchdog: HUNG detected'
+    created: '2026-01-01T00:00:00Z'
+    updated: '2026-01-01T00:00:00Z'
+  - id: 'stale-human-arb'
+    workflow: 'reflex-pass-cycle-01-pass-002'
+    phase: 'dev'
+    spawn_target: 'dev-agent'
+    prompt_file: '/tmp/p2.md'
+    artifact_file: '/tmp/a2.md'
+    retry_count: 6
+    max_retries: 5
+    status: 'AWAITING_HUMAN_ARBITRATION'
+    next_attempt_at: ''
+    last_error: 'exhausted'
+    created: '2026-01-01T00:00:00Z'
+    updated: '2026-01-01T00:00:00Z'
+  - id: 'fresh-pending'
+    workflow: 'reflex-pass-cycle-99-pass-001'
+    phase: 'qa'
+    spawn_target: 'qa-agent'
+    prompt_file: '/tmp/p3.md'
+    artifact_file: '/tmp/a3.md'
+    retry_count: 0
+    max_retries: 5
+    status: 'pending'
+    next_attempt_at: '2099-01-01T00:00:00Z'
+    last_error: 'transient'
+    created: '2099-01-01T00:00:00Z'
+    updated: '2099-01-01T00:00:00Z'
+F80EVEOF
+
+# AC6a — `evict` subcommand is dispatched (not "unknown subcommand").
+if PSK_RETRY_QUEUE_FILE="$F80_EVQ" PSK_RETRY_ARCHIVE_FILE="$F80_EVA" \
+   bash "$QUEUE_SCRIPT" evict 3 >/dev/null 2>&1; then
+  pass "f80 AC6a: evict subcommand is defined and runs"
+else
+  fail "f80 AC6a: evict subcommand missing or errored"
+fi
+
+# AC6b — after evict, the stale pending entry is gone but the fresh one + the
+# human-arbitration entry remain.
+F80_EVLIST=$(PSK_RETRY_QUEUE_FILE="$F80_EVQ" bash "$QUEUE_SCRIPT" list 2>/dev/null)
+if ! printf '%s' "$F80_EVLIST" | grep -q 'stale-pending' \
+   && printf '%s' "$F80_EVLIST" | grep -q 'fresh-pending' \
+   && printf '%s' "$F80_EVLIST" | grep -q 'stale-human-arb'; then
+  pass "f80 AC6b: evict aged-out the stale pending entry, kept fresh + human-arbitration entries"
+else
+  fail "f80 AC6b: evict mis-pruned (list='$(printf '%s' "$F80_EVLIST" | tr '\n' ' ')')"
+fi
+
+# AC6c — the evicted entry was tombstoned to the archive (audit trail).
+if [ -f "$F80_EVA" ] && grep -q 'stale-pending' "$F80_EVA" && grep -q 'auto-evicted' "$F80_EVA"; then
+  pass "f80 AC6c: evicted entry tombstoned to .retry-queue-archive.yml"
+else
+  fail "f80 AC6c: evicted entry not archived (archive present=$([ -f "$F80_EVA" ] && echo yes || echo no))"
+fi
+rm -rf "$F80_EVTMP"

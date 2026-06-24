@@ -1,7 +1,7 @@
 # Skill — Professional Project Generation (v0.6.14+)
 
 > **When loaded:** user requests "create my project" / "build me an X" / project setup runs in **professional mode** (any non-trivial requirement).
-> **What it does:** orchestrates a kit-driven flow that turns loose requirements into a polished, secure, working application via 8 phases.
+> **What it does:** orchestrates a kit-driven flow that turns loose requirements into a polished, secure, working application via 10 phases.
 > **Companion skills:** `requirement-research.md` · `ui-design-system.md` · `security-baseline.md` · `source-structures.md` · `project-setup.md`
 
 The kit does not just scaffold files — when given requirements (formal or informal, small or large), it researches the domain, expands the requirements professionally, designs a polished UI system, applies security baselines, scaffolds with auth + middleware in place, implements feature-by-feature with tests, and then runs reflex on the result.
@@ -16,9 +16,9 @@ The `professional mode` branch in `project-setup.md` triggers this skill when:
 
 If the user wants the lightweight `scaffold-only mode` (just create empty agent/ files, no generation), they say so — *"just scaffold"*, *"empty setup"*, *"don't generate code"*.
 
-## The 8-phase flow
+## The 10-phase flow
 
-Each phase has a deliverable and a confirm-with-user gate. **Never skip a gate** — the user redirects between phases, not after.
+Each phase has a deliverable and a confirm-with-user gate. **Never skip a gate** — the user redirects between phases, not after. The ten phases mirror the canonical pipeline in `portable-spec-kit.md` §Project orchestration: capture → 7-dim research → expand REQS → SPECS+PLANS → UI design system → secure scaffold → feature implementation → release ceremony → reflex audit → final handoff. (Phase 6.5, the pre-flight mandate-conformance audit, is a sub-gate of the secure-scaffold phase, not a numbered pipeline phase.)
 
 ### Phase 1 — Capture loose requirements
 
@@ -160,13 +160,25 @@ UI features always cite the design system (use design tokens, not hard-coded val
 
 **Gate:** after each feature, brief progress report. *"F1 done — [test count] tests, all green. F2 next?"*
 
-### Phase 8 — Reflex audit the generated project
+### Phase 8 — Release ceremony
 
-Once all features `[x]`, run `bash reflex/run.sh` against the generated project. Reflex (Adversarial Verbal Actor-Critic Refinement Loop) hunts the project across 23 dimensions, files findings, Dev fixes, iterates to convergence (GRANTED).
+Once all features `[x]`, run the kit's release ceremony (`bash agent/scripts/psk-release.sh prepare`, then iterate `next`). This bumps the version, regenerates docs/ARD/PDFs, syncs the spec pipeline (SPECS / PLANS / TASKS / RELEASES / CHANGELOG), and runs the dual-critic validation gate. The project enters reflex audit in a consistent, release-shaped state rather than a half-synced one.
+
+**Gate:** *"Release prepared: v0.N. Tests green, docs synced, dual-critic passed. Proceed to reflex audit?"*
+
+### Phase 9 — Reflex audit the generated project
+
+Run `bash reflex/run.sh` against the generated project. Reflex (Adversarial Verbal Actor-Critic Refinement Loop) hunts the project across its full dimension set, files findings, Dev fixes, iterates to convergence (GRANTED).
 
 This is the kit's honesty gate — the same machinery that audits the kit itself audits the project the kit just generated.
 
-**Gate:** *"Reflex GRANTED at iter N. N findings filed, N fixed, 0 regressions. Project ready for review."*
+**Gate:** *"Reflex GRANTED at iter N. N findings filed, N fixed, 0 regressions. Proceed to handoff?"*
+
+### Phase 10 — Final handoff
+
+Write `HANDOFF.md` at the project root: how to install + run, the env-config choice, the stack summary, the R→F→T traceability map, the reflex verdict, and the next-steps backlog. This is the single artifact the human reads to take over the generated project.
+
+**Gate:** *"HANDOFF.md written. Project ready for review — install/run instructions, traceability map, and reflex verdict all captured."*
 
 ## Anti-patterns (don't do these)
 
@@ -180,11 +192,11 @@ This is the kit's honesty gate — the same machinery that audits the kit itself
 
 | Phrase | What kicks off |
 |---|---|
-| *"create a project for X"* / *"build me an app that does Y"* | Full 8-phase flow |
+| *"create a project for X"* / *"build me an app that does Y"* | Full 10-phase flow |
 | *"polished"* / *"professional"* / *"production-ready"* | Force professional mode |
 | *"just scaffold"* / *"empty setup"* / *"don't generate"* | Scaffold-only mode (legacy `project-setup.md` flow) |
 | *"redo design system"* | Re-run Phase 5 only |
-| *"audit my project"* | Skip to Phase 8 (reflex on existing project) |
+| *"audit my project"* | Skip to Phase 9 (reflex on existing project) |
 
 ## Output paths summary
 

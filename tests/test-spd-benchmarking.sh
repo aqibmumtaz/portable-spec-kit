@@ -1,4 +1,5 @@
 #!/bin/bash
+# long-op: SPD benchmarking suite — self-wraps via psk-progress-selfwrap.sh (no-silent-wait / PSK047)
 # ═══════════════════════════════════════════════════════════════
 # SPD Multi-Project Benchmarking Suite
 # Simulates 5 projects × 3 methodologies × 8 phases × 15 metrics
@@ -11,6 +12,11 @@
 set -e
 
 PROJ="$(cd "$(dirname "$0")/.." && pwd)"
+# Generic self-wrap (no-silent-wait) — surface progress for this long benchmarking suite
+# via the ONE shared helper every kit long-op script sources. Heartbeats + a live file
+# (psk-progress.sh --status) so it is never a silent multi-minute wait.
+PSK_SELFWRAP_LABEL="spd-benchmarking" PSK_SELFWRAP_METRIC='✓|✗' PSK_SELFWRAP_TAIL=10 \
+  source "$PROJ/agent/scripts/psk-progress-selfwrap.sh" "$@"
 TEMP="/tmp/spd-bench-$(date +%s)"
 REPORT="$PROJ/tests/spd-benchmarking-report.md"
 CSV="$PROJ/tests/spd-benchmarking-data.csv"
@@ -168,7 +174,7 @@ EOF
 # RELEASES.md — $PROJECT
 > **Purpose:** Version history.
 ## v0.1 — Current (In Progress)
-Kit: v0.6.93
+Kit: v0.6.99
 EOF
   cat > "$S_DIR/agent/AGENT.md" << EOF
 # AGENT.md — $PROJECT
@@ -648,6 +654,9 @@ echo "════════════════════════�
 
 if [ $FAIL -eq 0 ]; then
   echo "  ✅ ALL BENCHMARKS PASSED"
+  # KIT-GAP-0123: real exit-0 stamp so `all-tests` chunked-drive can pre-verify this unit.
+  _tg="$PROJ/agent/scripts/psk-tests-gate.sh"
+  [ -x "$_tg" ] && bash "$_tg" stamp benchmarking 2>/dev/null || true
   exit 0
 else
   echo "  ❌ $FAIL BENCHMARKS FAILED"

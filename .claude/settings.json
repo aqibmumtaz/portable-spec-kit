@@ -9,6 +9,15 @@
             "command": "bash agent/scripts/psk-sync-check.sh --quick"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash agent/scripts/psk-chunked-drive-guard.sh"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
